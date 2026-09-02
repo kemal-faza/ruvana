@@ -85,6 +85,8 @@
 >
 > **Pembagian kepemilikan aturan ini (anti deadlock antar-modul):** efek "pembatalan otomatis" **dimiliki Modul 3** (TASK 3.7) dan **dipicu oleh Modul 4** (TASK 4.4) melalui satu **kontrak interface "status fasilitas berubah"** yang didefinisikan sekali di Fase 0 (nama event/hook + data yang dikirim: facility_id, status baru, waktu). Modul 3 implementasi listener-nya terhadap kontrak itu; Modul 4 cukup memanggil/memicu kontrak saat status berubah. Dengan cara ini B dan C bisa maju paralel tanpa saling menunggu implementasi.
 
+> **Pemetaan status (bahasa Indonesia → nilai enum teknis di kode, keputusan Fase 0):** dokumen ini memakai istilah Indonesia untuk status (mis. *menunggu*, *disetujui*, *dalam perbaikan*) karena bersifat konseptual/bisnis. Nilai aktual enum Prisma di kode memakai **bahasa Inggris** (lihat `config/business.ts` & `prisma/schema.prisma`): `pending→PENDING`, `aktif→ACTIVE`, `ditolak→REJECTED`, `dinonaktifkan→DISABLED`; `menunggu→PENDING`, `disetujui→APPROVED`, `dibatalkan_oleh_pengguna→CANCELLED_BY_USER`, `dibatalkan_oleh_petugas→CANCELLED_BY_OFFICER`, `kedaluwarsa→EXPIRED`; `baru→NEW`, `diproses→IN_PROGRESS`, `selesai→RESOLVED`; `dalam_perbaikan→UNDER_MAINTENANCE`, `nonaktif→INACTIVE`. Saat implementasi modul, gunakan nilai teknis Inggris; tampilan ke pengguna boleh memetakan kembali ke label Indonesia (terpusat di `config/business.ts`, jangan inline).
+
 ### 2.3 Setup lingkungan (Fase 0 — dikerjakan bersama, dikoordinasi orchestrator)
 
 - Siapkan repo bersama, branch strategy sederhana (mis. `main` + branch fitur per modul), aturan commit.
