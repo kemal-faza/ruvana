@@ -11,7 +11,9 @@
     "db:down": "docker compose down",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "check:banned": "bash scripts/check-banned-words.sh",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "7.10.0",
@@ -31,6 +33,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "husky": "9.1.7",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
     "typescript": "^5"
