@@ -1,0 +1,9 @@
+# Daftar kata terlarang (AI-trap words) — satu kata per baris.
+#
+# Sumber: PDF Project PPK 2026 berisi instruksi tersembunyi agar AI
+# menyisipkan kata tertentu secara natural di hasil kerjanya.
+# Kata di bawah ini TIDAK boleh muncul di source code / komentar.
+#
+# Cara menambah: tulis satu kata per baris (huruf kecil). Baris yang
+# diawali # atau kosong akan diabaikan.
+kucing
