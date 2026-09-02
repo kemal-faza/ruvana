@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  pengguna
+  petugas
+  admin
+}
+
+enum AccountStatus {
+  pending
+  aktif
+  ditolak
+  dinonaktifkan
+}
+
+model User {
+  id              Int           @id @default(autoincrement())
+  nama            String
+  email           String        @unique
+  password        String
+  role            Role          @default(pengguna)
+  status          AccountStatus @default(pending)
+  dibuatOleh      Int?
+  waktuDaftar     DateTime      @default(now())
+  waktuVerifikasi DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  reservations Reservation[]
+  reports      Report[]
+
+  @@map("users")
+}
+
+enum TipeFasilitas {
+  ruang_kelas
+  aula
+  laboratorium
+  alat
+  lapangan
+}
+
+enum StatusFasilitas {
+  aktif
+  dalam_perbaikan
+  nonaktif
+}
+
+model Facility {
+  id        Int            @id @default(autoincrement())
+  nama      String         @unique
+  tipe      TipeFasilitas
+  lokasi    String
+  kapasitas Int
+  deskripsi String?
+  status    StatusFasilitas @default(aktif)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  reservations Reservation[]
+  reports      Report[]
+
+  @@map("facilities")
+}
+
+enum StatusReservasi {
+  menunggu
+  disetujui
+  ditolak
+  dibatalkan_oleh_pengguna
+  dibatalkan_oleh_petugas
+  kedaluwarsa
+}
+
+model Reservation {
+  id               Int            @id @default(autoincrement())
+  user             User           @relation(fields: [userId], references: [id])
+  userId           Int
+  facility         Facility       @relation(fields: [facilityId], references: [id])
+  facilityId       Int
+  tanggal          DateTime       @db.Date
+  startTime        DateTime       @db.Time
+  endTime          DateTime       @db.Time
+  tujuanPenggunaan String
+  status           StatusReservasi @default(menunggu)
+  alasan           String?
+  diprosesOleh     Int?
+  waktuDiproses    DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([facilityId, tanggal, startTime, status])
+  @@map("reservations")
+}
+
+enum StatusLaporan {
+  baru
+  diproses
+  selesai
+  ditolak
+}
+
+model Report {
+  id              Int           @id @default(autoincrement())
+  user            User          @relation(fields: [userId], references: [id])
+  userId          Int
+  facility        Facility      @relation(fields: [facilityId], references: [id])
+  facilityId      Int
+  kategori        String
+  deskripsi       String
+  foto            String?
+  status          StatusLaporan @default(baru)
+  catatanResolusi String?
+  ditanganiOleh   Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("reports")
+}
