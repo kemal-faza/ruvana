@@ -1,0 +1,23 @@
+services:
+  db:
+    image: mariadb:11.4
+    container_name: ruvana-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-ruvana}
+      MARIADB_USER: ${MYSQL_USER:-ruvana}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD:-ruvana_pass}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mariadb-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
