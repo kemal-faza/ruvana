@@ -11,10 +11,10 @@ async function main() {
 
   // Akun demo per role (upsert per email — idempoten)
   const akun = [
-    { email: "admin@ruvana.test", nama: "Admin Ruvana", role: "admin", status: "aktif" },
-    { email: "petugas@ruvana.test", nama: "Petugas Ruvana", role: "petugas", status: "aktif" },
-    { email: "pengguna@ruvana.test", nama: "Pengguna Ruvana", role: "pengguna", status: "aktif" },
-    { email: "pending@ruvana.test", nama: "User Pending", role: "pengguna", status: "pending" },
+    { email: "admin@ruvana.test", nama: "Admin Ruvana", role: "admin", status: "ACTIVE" },
+    { email: "petugas@ruvana.test", nama: "Petugas Ruvana", role: "petugas", status: "ACTIVE" },
+    { email: "pengguna@ruvana.test", nama: "Pengguna Ruvana", role: "pengguna", status: "ACTIVE" },
+    { email: "pending@ruvana.test", nama: "User Pending", role: "pengguna", status: "PENDING" },
   ] as const;
 
   for (const a of akun) {
@@ -26,7 +26,7 @@ async function main() {
         nama: a.nama,
         password: hash,
         role: a.role as "pengguna" | "petugas" | "admin",
-        status: a.status as "pending" | "aktif",
+        status: a.status as "PENDING" | "ACTIVE",
       },
     });
   }
@@ -47,7 +47,7 @@ async function main() {
     await prisma.facility.upsert({
       where: { nama: f.nama },
       update: {},
-      create: { ...f, tipe: f.tipe as "ruang_kelas" | "aula" | "laboratorium" | "alat" | "lapangan", status: "aktif" },
+      create: { ...f, tipe: f.tipe as "ruang_kelas" | "aula" | "laboratorium" | "alat" | "lapangan", status: "ACTIVE" },
     });
   }
 

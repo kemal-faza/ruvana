@@ -14,10 +14,10 @@ enum Role {
 }
 
 enum AccountStatus {
-  pending
-  aktif
-  ditolak
-  dinonaktifkan
+  PENDING
+  ACTIVE
+  REJECTED
+  DISABLED
 }
 
 model User {
@@ -26,7 +26,7 @@ model User {
   email           String        @unique
   password        String
   role            Role          @default(pengguna)
-  status          AccountStatus @default(pending)
+  status          AccountStatus @default(PENDING)
   dibuatOleh      Int?
   waktuDaftar     DateTime      @default(now())
   waktuVerifikasi DateTime?
@@ -48,9 +48,9 @@ enum TipeFasilitas {
 }
 
 enum StatusFasilitas {
-  aktif
-  dalam_perbaikan
-  nonaktif
+  ACTIVE
+  UNDER_MAINTENANCE
+  INACTIVE
 }
 
 model Facility {
@@ -60,7 +60,7 @@ model Facility {
   lokasi    String
   kapasitas Int
   deskripsi String?
-  status    StatusFasilitas @default(aktif)
+  status    StatusFasilitas @default(ACTIVE)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
@@ -71,12 +71,12 @@ model Facility {
 }
 
 enum StatusReservasi {
-  menunggu
-  disetujui
-  ditolak
-  dibatalkan_oleh_pengguna
-  dibatalkan_oleh_petugas
-  kedaluwarsa
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED_BY_USER
+  CANCELLED_BY_OFFICER
+  EXPIRED
 }
 
 model Reservation {
@@ -89,7 +89,7 @@ model Reservation {
   startTime        DateTime       @db.Time
   endTime          DateTime       @db.Time
   tujuanPenggunaan String
-  status           StatusReservasi @default(menunggu)
+  status           StatusReservasi @default(PENDING)
   alasan           String?
   diprosesOleh     Int?
   waktuDiproses    DateTime?
@@ -101,10 +101,10 @@ model Reservation {
 }
 
 enum StatusLaporan {
-  baru
-  diproses
-  selesai
-  ditolak
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
 }
 
 model Report {
@@ -116,7 +116,7 @@ model Report {
   kategori        String
   deskripsi       String
   foto            String?
-  status          StatusLaporan @default(baru)
+  status          StatusLaporan @default(NEW)
   catatanResolusi String?
   ditanganiOleh   Int?
   createdAt       DateTime      @default(now())
