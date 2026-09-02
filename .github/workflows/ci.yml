@@ -45,6 +45,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Pengecekan kata terlarang (AI-trap words dari PDF Project PPK 2026).
+      # Lapisan kedua setelah pre-commit hook — melindungi dari commit --no-verify.
+      - name: Cek kata terlarang
+        run: pnpm check:banned
+
       # Route types (mis. global LayoutProps di app/layout.tsx) baru tersedia
       # setelah `next typegen`. tsc --noEmit harus jalan SETELAH typegen,
       # jika tidak akan error "Cannot find name 'LayoutProps'".
