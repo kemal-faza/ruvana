@@ -26,7 +26,7 @@
 - **Jam operasional:** 07.00–20.00.
 - **Slot reservasi tetap 30 menit** (mis. 07.00–07.30, 07.30–08.00, dst.).
 - `start_time` & `end_time` reservasi **wajib** dalam jam operasional dan kelipatan 30 menit — **validasi dilakukan di sisi server**, bukan hanya di tampilan kalender.
-- Konflik jadwal (dua reservasi pada fasilitas & slot yang sama) **dicegah sistem**.
+- Konflik jadwal dicegah sistem **saat persetujuan**: dalam satu slot, hanya boleh ada satu reservasi berstatus **disetujui** per fasilitas (US#9). Reservasi **menunggu** boleh overlap (bersaing) — lihat §2.2 & Modul 3.
 
 ---
 
@@ -55,24 +55,28 @@
 | Tampilan (view) | UI pages/komponen (server-rendered) yang hanya menampilkan data hasil controller |
 | Konfigurasi | File konfigurasi terpusat: kredensial DB (env), konstanta bisnis (jam operasional, durasi slot, batas pembatalan), daftar role/status |
 
-**Konvensi folder proyek (sesuai ketentuan PDF — target):**
+**Konvensi folder proyek (sesuai ketentuan PDF — target, pendekatan A+C):**
 - `/public` → aset statis (gambar/logo, termasuk foto unggahan laporan yang disajikan publik).
-- `/app` → routing, server logic/controller (validasi, aturan bisnis, transisi status), dan halaman/komponen view.
-- `/views` → (jika dipisah lebih tegas) subfolder/bagian yang khusus menampung tampilan (layout/komponen UI) agar jelas mana view mana controller.
+- `/app` → routing, server logic/controller (validasi, aturan bisnis, transisi status), dan halaman (view).
+- `/components` → komponen UI reusable (lapisan view).
+- `/prisma` → model layer (skema + migrasi + seed).
+- `/lib` → helper/utilitas + Prisma Client singleton + kontrak interface.
 - `/config` → kredensial DB via env + konstanta bisnis terpusat (jam operasional, durasi slot, batas pembatalan, daftar role/status).
+- Folder `/views` literal **tidak dibuat** (bukan konvensi Next.js) — pemisahan Model/Controller/View dijelaskan lewat struktur di atas + **README pemetaan** (lihat Fase 0 / design doc), yang memenuhi ketentuan dosen.
 
 > Prinsip: view **tidak boleh** berisi query DB atau aturan bisnis; model **tidak boleh** mengurus tampilan; aturan bisnis hidup di controller/service layer, bukan tersebar di komponen UI.
 
 ### 2.2 Skema database konseptual (dasar — boleh ditambah asumsi/atribut)
 
 **Users**
-- id, nama, email, password (hash), role (pengguna/petugas/admin — akses "pengunjung" = tanpa sesi, **tidak** disimpan sebagai baris Users), status akun (aktif/pending/dinonaktifkan), dibuat_oleh (untuk akun buatan admin), waktu_daftar, waktu_verifikasi
+- id, nama, email, password (hash), role (pengguna/petugas/admin — akses "pengunjung" = tanpa sesi, **tidak** disimpan sebagai baris Users), status akun (pending/aktif/ditolak/dinonaktifkan — registrasi mandiri mulai `pending`, verifikasi admin → `aktif`/`ditolak`, akun buatan admin langsung `aktif`), dibuat_oleh (untuk akun buatan admin), waktu_daftar, waktu_verifikasi
 
 **Facilities**
 - id, nama, tipe (ruang kelas/aula/laboratorium/alat/lapangan), lokasi, kapasitas, deskripsi, status ketersediaan (aktif/dalam perbaikan/nonaktif)
 
 **Reservations**
-- id, user_id (pemesan), facility_id, tanggal, start_time, end_time (kelipatan 30 menit, dalam 07.00–20.00), tujuan penggunaan, status (menunggu/disetujui/ditolak/dibatalkan/kedaluwarsa), alasan_penolakan/pembatalan, diproses_oleh (petugas), waktu_pengajuan, waktu_diproses
+- id, user_id (pemesan), facility_id, tanggal, start_time, end_time (kelipatan 30 menit, dalam 07.00–20.00), tujuan penggunaan, status (menunggu/disetujui/ditolak/dibatalkan_oleh_pengguna/dibatalkan_oleh_petugas/kedaluwarsa), alasan_penolakan/pembatalan, diproses_oleh (petugas), waktu_pengajuan, waktu_diproses
+- **Aturan overlap:** Dua reservasi berstatus **menunggu** BOLEH overlap di slot yang sama (mereka "bersaing"). Yang **dilarang** overlap hanya yang berstatus **disetujui** — dicek di **logika aplikasi saat petugas approve** (US#9), bukan saat pengajuan.
 
 **Reports**
 - id, user_id (pelapor), facility_id, kategori, deskripsi, foto, status (baru/diproses/selesai/ditolak), catatan_resolusi, ditangani_oleh (petugas), waktu_dibuat, waktu_selesai
@@ -84,9 +88,9 @@
 ### 2.3 Setup lingkungan (Fase 0 — dikerjakan bersama, dikoordinasi orchestrator)
 
 - Siapkan repo bersama, branch strategy sederhana (mis. `main` + branch fitur per modul), aturan commit.
-- Buat **skeleton folder** sesuai konvensi di §2.1 (`/public`, `/app`, `/views`, `/config`) agar struktur awal sudah memenuhi pembagian folder yang diminta PDF.
+- Buat **skeleton folder** sesuai konvensi di §2.1 (`/public`, `/app`, `/components`, `/prisma`, `/lib`, `/config` — tanpa `/views` literal; pemisahan lapisan via README pemetaan) agar struktur awal sudah memenuhi pembagian folder yang diminta PDF.
 - Siapkan environment: Next.js + ORM + MySQL/MariaDB (lokal/Docker), file konfigurasi env.
-- Buat skema DB (tabel Users, Facilities, Reservations, Reports + relasi) & **seed data** (contoh fasilitas lintas tipe, contoh akun per role, contoh reservasi/laporan untuk kebutuhan demo).
+- Buat skema DB (tabel Users, Facilities, Reservations, Reports + relasi) & **seed data** (contoh fasilitas lintas tipe + contoh akun per role; contoh reservasi/laporan menyusul saat Modul 3/4).
 - Tulis konstanta bisnis terpusat di konfigurasi: jam operasional (07.00–20.00), durasi slot (30 menit), batas pembatalan pengguna (H−2 jam sebelum mulai, lihat Modul 3), daftar status.
 - **Definisikan kontrak interface "status fasilitas berubah"** (nama event/hook + data yang dikirim: facility_id, status baru, waktu) — dipakai TASK 3.7 (listener) & TASK 4.4 (pemicu) agar modul 3 & 4 tidak saling menunggu.
 - Setup halaman dasar & navigasi (landing sederhana) agar tiap anggota punya kerangka yang sama.
@@ -159,9 +163,9 @@ TASK Mx.y — <judul>
 
 ### TASK 2.2 — Detail fasilitas & jadwal ketersediaan per slot
 - **Tujuan:** Pengunjung/pengguna melihat ketersediaan jadwal per slot 30 menit (tersedia/tidak tersedia) untuk suatu fasilitas — **tanpa** melihat detail pemohon atau tujuan penggunaan.
-- **Langkah:** Halaman detail per fasilitas → pilih tanggal → tampilkan grid slot 07.00–20.00 (26 slot) berlabel tersedia/tidak tersedia (slot berstatus menunggu/disetujui/diperbaiki = tidak tersedia). Tidak menampilkan siapa pemohon & tujuan.
-- **Aturan/Validasi:** Ketersediaan dihitung dari reservasi berstatus **menunggu/disetujui** (status fasilitas *dalam perbaikan* memblokir semua slot). Definisi "tersedia" ini **sama** dengan aturan anti-bentrok di Modul 3 (TASK 3.1) — slot dengan pengajuan menunggu juga tampil tidak tersedia agar pengguna tak bisa memilih slot yang akan ditolak server.
-- **Acceptance:** Grid slot benar: slot yang dipesan (menunggu/disetujui) tampil tidak tersedia; tanpa login tetap bisa melihat status slot.
+- **Langkah:** Halaman detail per fasilitas → pilih tanggal → tampilkan grid slot 07.00–20.00 (26 slot). Slot berlabel **tidak tersedia** jika ada reservasi berstatus **disetujui**, atau fasilitas berstatus *dalam perbaikan/nonaktif*. Slot dengan reservasi **menunggu** tetap tampil tersedia (boleh diajukan — pengajuan "bersaing"), opsional dengan penanda halus "ada pengajuan menunggu" tanpa membocorkan pemohon/tujuan.
+- **Aturan/Validasi:** "Tidak tersedia" = slot sudah **disetujui** (atau fasilitas *dalam perbaikan/nonaktif*). Reservasi **menunggu tidak memblokir slot** — konsisten dengan aturan overlap di Modul 3 (TASK 3.1: pending boleh overlap).
+- **Acceptance:** Grid slot benar: slot disetujui / fasilitas tidak aktif tampil tidak tersedia; slot ber-menunggu tetap bisa dipilih; tanpa login tetap bisa melihat status slot.
 - **US:** #1.
 
 ### TASK 2.3 — Pencarian & filter fasilitas
@@ -185,11 +189,11 @@ TASK Mx.y — <judul>
 - **Langkah:** Pilih fasilitas → tanggal → pilih **satu atau lebih slot 30 menit berurutan** dari grid ketersediaan → isi tujuan penggunaan → ajukan → status awal **menunggu**.
 - **Aturan/Validasi (server, bukan hanya UI):**
   - Rentang waktu dalam 07.00–20.00 & kelipatan 30 menit.
-  - Tidak boleh tumpang-tindih dengan reservasi **disetujui/menunggu** lain pada fasilitas & slot sama.
+  - Tidak boleh tumpang-tindih dengan reservasi berstatus **disetujui** pada fasilitas & slot sama (reservasi **menunggu boleh overlap** — pengajuan bersaing; konflik antar-menunggu diselesaikan saat approve).
   - Fasilitas berstatus *dalam perbaikan* atau *nonaktif* tidak bisa direservasi.
   - Tidak boleh reservasi di masa lalu.
   - Validasi server + client.
-- **Acceptance:** Reservasi valid tersimpan berstatus menunggu; upaya reservasi bentrok/di luar jam/di masa lalu **ditolak server**.
+- **Acceptance:** Reservasi valid tersimpan berstatus menunggu (termasuk saat ada menunggu lain di slot sama); upaya reservasi bentrok dengan disetujui / di luar jam / di masa lalu / fasilitas nonaktif **ditolak server**.
 - **US:** #3.
 - **Dependensi:** Auth (login), Modul 2 (grid slot).
 
@@ -200,23 +204,23 @@ TASK Mx.y — <judul>
 - **Dependensi:** TASK 3.1, TASK 1.3 (guard milik-sendiri).
 
 ### TASK 3.3 — Pembatalan oleh pengguna
-- **Langkah:** Tombol batalkan pada reservasi miliknya (status menunggu/disetujui) dengan konfirmasi; batas waktu **H−2 jam sebelum waktu mulai**; simpan alasan/keterangan pembatalan (sistem mencatat pembatalan oleh pengguna).
+- **Langkah:** Tombol batalkan pada reservasi miliknya (status menunggu/disetujui) dengan konfirmasi; batas waktu **H−2 jam sebelum waktu mulai**; simpan alasan/keterangan pembatalan — sistem mencatat status **dibatalkan_oleh_pengguna**.
 - **Aturan/Validasi:** Pembatalan ditolak jika sudah < 2 jam sebelum mulai (pesan: hubungi petugas); hanya pemilik yang bisa membatalkan.
-- **Acceptance:** Pembatalan di dalam batas berhasil & slot kembali tersedia; di luar batas ditolak.
+- **Acceptance:** Pembatalan di dalam batas berhasil & slot kembali tersedia (bila tadi disetujui); di luar batas ditolak.
 - **US:** #4.
 - **Dependensi:** TASK 3.1, TASK 3.2.
 
 ### TASK 3.4 — Antrian & pemrosesan reservasi oleh petugas
 - **Tujuan:** Petugas melihat dashboard/antrian reservasi berstatus **menunggu** & memproses manual.
 - **Langkah:** Antrian reservasi menunggu (urut sesuai waktu pengajuan) → petugas lihat detail → **approve** atau **reject** (wajib isi alasan saat menolak) → sistem catat petugas pemroses & waktu proses.
-- **Aturan/Validasi:** Saat **approve**, sistem **mencegah bentrok** (double-check server: fasilitas & slot sama sudah disetujui/menunggu lain → tolak/peringatkan). Saat fasilitas berubah *dalam perbaikan*, reservasi terafiliasi ditangani sesuai aturan Modul 4.
+- **Aturan/Validasi:** Saat **approve**, sistem **mencegah bentrok** (double-check server: fasilitas & slot sama sudah ada yang **disetujui** → tolak/peringatkan; beberapa *menunggu* di slot sama diselesaikan di sini — yang pertama di-approve menang, sisanya bisa ditolak/diinformasikan). Saat fasilitas berubah *dalam perbaikan*, reservasi terafiliasi ditangani sesuai aturan Modul 4.
 - **Acceptance:** Antrian hanya berisi yang belum diproses; approve yang bentrok ditolak sistem; reject memerlukan alasan; pengguna melihat status baru di riwayat.
 - **US:** #8 (sebagian), #9.
 - **Dependensi:** TASK 3.1, Auth (role petugas).
 
 ### TASK 3.5 — Pembatalan mendesak oleh petugas
-- **Langkah:** Petugas membatalkan reservasi berstatus **disetujui** (kondisi mendesak, mis. fasilitas mendadak tak bisa dipakai) dengan **alasan wajib**; pengguna mendapat keterangan alasan di riwayat.
-- **Acceptance:** Pembatalan mendesak tersimpan dengan alasan; slot kembali tersedia; tercatat sebagai dibatalkan petugas.
+- **Langkah:** Petugas membatalkan reservasi berstatus **disetujui** (kondisi mendesak, mis. fasilitas mendadak tak bisa dipakai) dengan **alasan wajib** — sistem mencatat status **dibatalkan_oleh_petugas**; pengguna mendapat keterangan alasan di riwayat.
+- **Acceptance:** Pembatalan mendesak tersimpan dengan alasan (status dibatalkan_oleh_petugas); slot kembali tersedia.
 - **US:** #10.
 - **Dependensi:** TASK 3.4.
 
@@ -228,8 +232,8 @@ TASK Mx.y — <judul>
 
 ### TASK 3.7 — Pembatalan otomatis reservasi saat fasilitas diperbaiki (listener)
 - **Tujuan:** Memastikan aturan lintas-modul berjalan: begitu fasilitas berubah ke *dalam perbaikan*, reservasi yang terdampak ikut dibatalkan otomatis.
-- **Langkah:** Implementasikan **listener** terhadap kontrak interface "status fasilitas berubah" (didefinisikan Fase 0, dipicu TASK 4.4): saat fasilitas menjadi *dalam perbaikan*, semua reservasi masa depan berstatus **disetujui** pada fasilitas itu **otomatis dibatalkan** dengan alasan otomatis "fasilitas dalam perbaikan"; saat kembali *aktif*, tidak ada aksi tambahan (slot otomatis tersedia lagi).
-- **Acceptance:** Saat kontrak dipicu dengan status *dalam perbaikan*, reservasi terafiliasi berstatus disetujui langsung berubah ke dibatalkan (alasan otomatis) & slot bebas. (Pengujian menyeluruh dengan UI Modul 4 dilakukan di Fase 4 integrasi.)
+- **Langkah:** Implementasikan **listener** terhadap kontrak interface "status fasilitas berubah" (didefinisikan Fase 0, dipicu TASK 4.4): saat fasilitas menjadi *dalam perbaikan*, semua reservasi masa depan berstatus **disetujui** pada fasilitas itu **otomatis dibatalkan** dengan status **dibatalkan_oleh_petugas** & alasan otomatis "fasilitas dalam perbaikan"; saat kembali *aktif*, tidak ada aksi tambahan (slot otomatis tersedia lagi).
+- **Acceptance:** Saat kontrak dipicu dengan status *dalam perbaikan*, reservasi terafiliasi berstatus disetujui langsung berubah ke dibatalkan_oleh_petugas (alasan otomatis) & slot bebas. (Pengujian menyeluruh dengan UI Modul 4 dilakukan di Fase 4 integrasi.)
 - **US:** #10, #12 (bagian integrasi).
 - **Dependensi:** TASK 3.5 + kontrak interface "status fasilitas berubah" (Fase 0). Tidak menunggu implementasi Modul 4 — cukup kontraknya.
 
@@ -347,7 +351,7 @@ TASK Mx.y — <judul>
 ### 11.3 Checklist kualitas (dari ketentuan umum PDF)
 - [ ] Authentication: registrasi, login, logout berjalan.
 - [ ] Struktur kode terpisah: model (DB), view (tampilan), controller (logika proses).
-- [ ] Pembagian folder minimal ada: `/public`, `/app`, `/views`, `/config` (lihat §2.1).
+- [ ] Pembagian folder ada: `/public`, `/app`, `/components`, `/prisma`, `/lib`, `/config` (tanpa `/views` literal — lihat §2.1 & README pemetaan Model/Controller/View).
 - [ ] Validasi server **dan** client pada form penting.
 - [ ] Validasi slot reservasi (07.00–20.00, kelipatan 30 menit) di **server**.
 - [ ] Pencegahan konflik jadwal saat approve.
