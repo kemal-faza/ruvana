@@ -35,9 +35,12 @@ jobs:
 
       # Client Prisma tidak di-commit (generated/ di-gitignore) dan
       # tidak ada di lockfile, jadi wajib di-generate sebelum typecheck/build.
-      # Prisma generate hanya membaca prisma/schema.prisma — tidak butuh DB.
+      # prisma.config.ts (Prisma 7) memuat env("DATABASE_URL") saat config di-load,
+      # jadi DATABASE_URL dummy harus tersedia di env — generate tidak menyentuh DB.
       - name: Generate Prisma client
         run: pnpm prisma generate
+        env:
+          DATABASE_URL: mysql://ruvana:ruvana_pass@localhost:3306/ruvana
 
       - name: Lint
         run: pnpm lint
