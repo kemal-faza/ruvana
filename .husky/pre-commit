@@ -1,0 +1,3 @@
+# Jalankan pengecekan kata terlarang (AI-trap words) pada file yang di-staged.
+# Script exit non-zero => commit dibatalkan.
+pnpm exec bash scripts/check-banned-words.sh --staged
