@@ -45,6 +45,13 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Route types (mis. global LayoutProps di app/layout.tsx) baru tersedia
+      # setelah `next typegen`. tsc --noEmit harus jalan SETELAH typegen,
+      # jika tidak akan error "Cannot find name 'LayoutProps'".
+      # Referensi: https://nextjs.org/docs/app/api-reference/cli/next#next-typegen-options
+      - name: Generate route types
+        run: pnpm exec next typegen
+
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
