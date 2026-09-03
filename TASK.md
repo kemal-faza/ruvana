@@ -12,7 +12,7 @@
 |---|---|
 | Nama aplikasi | Ruvana — Sistem Reservasi & Pelaporan Fasilitas Kampus |
 | Tujuan | Mengelola penggunaan fasilitas kampus (ruang kelas, aula, laboratorium, alat, lapangan): cek ketersediaan, reservasi, pelaporan kerusakan, pemrosesan terpusat oleh petugas & admin |
-| Stack | Next.js (App Router) + ORM + MySQL/MariaDB |
+| Stack | Next.js (App Router) + ORM + PostgreSQL |
 | Cakupan dokumen | Modul 1–5: Authentication, Facility & Discovery, Reservation, Reporting & Maintenance, Admin & Analytics |
 | Repo | GitHub/GitLab bersama (wajib) — setiap anggota commit dengan pesan jelas |
 
@@ -91,7 +91,7 @@
 
 - Siapkan repo bersama, branch strategy sederhana (mis. `main` + branch fitur per modul), aturan commit.
 - Buat **skeleton folder** sesuai konvensi di §2.1 (`/public`, `/app`, `/components`, `/prisma`, `/lib`, `/config` — tanpa `/views` literal; pemisahan lapisan via README pemetaan) agar struktur awal sudah memenuhi pembagian folder yang diminta PDF.
-- Siapkan environment: Next.js + ORM + MySQL/MariaDB (lokal/Docker), file konfigurasi env.
+- Siapkan environment: Next.js + ORM + PostgreSQL (lokal/Docker), file konfigurasi env.
 - Buat skema DB (tabel Users, Facilities, Reservations, Reports + relasi) & **seed data** (contoh fasilitas lintas tipe + contoh akun per role; contoh reservasi/laporan menyusul saat Modul 3/4).
 - Tulis konstanta bisnis terpusat di konfigurasi: jam operasional (07.00–20.00), durasi slot (30 menit), batas pembatalan pengguna (H−2 jam sebelum mulai, lihat Modul 3), daftar status.
 - **Definisikan kontrak interface "status fasilitas berubah"** (nama event/hook + data yang dikirim: facility_id, status baru, waktu) — dipakai TASK 3.7 (listener) & TASK 4.4 (pemicu) agar modul 3 & 4 tidak saling menunggu.
