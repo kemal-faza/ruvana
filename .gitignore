@@ -52,4 +52,4 @@ generated/
 # --- pengecualian agar template & migrasi ikut ter-commit ---
 !.env.example
 !prisma/migrations/**/*.sql
-!docker/mariadb-init/**/*.sql
+!docker/postgres-init/**/*.sql
