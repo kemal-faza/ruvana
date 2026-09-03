@@ -49,6 +49,10 @@ docs/
 # --- generated prisma client (tidak di-commit) ---
 generated/
 
+# --- compose lokal khusus mesin pengembang (jangan di-commit) ---
+docker-compose.local.yml
+docker-compose.override.yml
+
 # --- pengecualian agar template & migrasi ikut ter-commit ---
 !.env.example
 !prisma/migrations/**/*.sql
