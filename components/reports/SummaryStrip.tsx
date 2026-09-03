@@ -10,85 +10,89 @@ interface SummaryStripProps {
   onSelect: (key: FilterKey) => void;
 }
 
-interface ItemStyle {
-  tint: string;
-  value: string;
-  activeRing: string;
+interface StatStyle {
+  dot: string;
+  text: string;
+  activeBg: string;
 }
 
-const ITEMS: { key: FilterKey; label: string; hint: string }[] = [
-  { key: "semua", label: "Total", hint: "seluruh laporan" },
-  { key: "baru", label: "Baru", hint: "menunggu proses" },
-  { key: "diproses", label: "Diproses", hint: "sedang ditangani" },
-  { key: "selesai", label: "Selesai", hint: "telah dituntaskan" },
+const STATUS_ITEMS: { key: StatusLaporan; label: string; hint: string; style: StatStyle }[] = [
+  {
+    key: "baru",
+    label: "Baru",
+    hint: "menunggu",
+    style: { dot: "bg-[#7C9A97]", text: "text-[#5A5754]", activeBg: "bg-[#7C9A97]/[0.07]" },
+  },
+  {
+    key: "diproses",
+    label: "Diproses",
+    hint: "ditangani",
+    style: { dot: "bg-[#C4953A]", text: "text-[#5A5754]", activeBg: "bg-[#C4953A]/[0.07]" },
+  },
+  {
+    key: "selesai",
+    label: "Selesai",
+    hint: "tuntas",
+    style: { dot: "bg-[#6B9E7C]", text: "text-[#5A5754]", activeBg: "bg-[#6B9E7C]/[0.07]" },
+  },
 ];
-
-const STYLES: Record<string, ItemStyle> = {
-  semua: { tint: "bg-[#405E5C]/8", value: "text-[#405E5C]", activeRing: "ring-[#405E5C]/40" },
-  baru: { tint: "bg-[#6F8987]/12", value: "text-[#405E5C]", activeRing: "ring-[#6F8987]/40" },
-  diproses: { tint: "bg-[#D1A438]/10", value: "text-[#8A6D1F]", activeRing: "ring-[#D1A438]/45" },
-  selesai: { tint: "bg-[#3E7C6B]/10", value: "text-[#3E7C6B]", activeRing: "ring-[#3E7C6B]/40" },
-};
-
-const ICONS: Record<string, ReactNode> = {
-  semua: (
-    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path d="M10 2a6 6 0 0 0-6 6v3.586l-.707.707A1 1 0 0 0 4 14h12a1 1 0 0 0 .707-1.707L16 11.586V8a6 6 0 0 0-6-6zM10 18a3 3 0 0 1-3-3h6a3 3 0 0 1-3 3z" />
-    </svg>
-  ),
-  baru: (
-    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path fillRule="evenodd" d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm.75 5a.75.75 0 0 0-1.5 0v3.5a.75.75 0 0 0 .436.681l2.5 1.25a.75.75 0 0 0 .628-1.362L10.75 9.62V7z" clipRule="evenodd" />
-    </svg>
-  ),
-  diproses: (
-    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM6.75 10.25a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75z" />
-    </svg>
-  ),
-  selesai: (
-    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5z" clipRule="evenodd" />
-    </svg>
-  ),
-};
 
 export default function SummaryStrip({ total, counts, active, onSelect }: SummaryStripProps) {
   return (
-    <section className="overflow-hidden rounded-lg border border-[#405E5C]/15 bg-[#FAFCFB] shadow-sm">
-      <div className="flex items-baseline justify-between gap-4 px-5 pt-4">
-        <h2 className="text-sm font-semibold text-[#263B3A]">Ringkasan Laporan</h2>
-        <p className="text-xs text-[#6D8080]">
-          {total} laporan tercatat · klik untuk memfilter
-        </p>
-      </div>
+    <section className="overflow-hidden rounded-[14px] border border-black/[0.05] bg-white/60 backdrop-blur-[6px]">
+      <div className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:gap-0">
+        {/* Total - Hero */}
+        <button
+          type="button"
+          onClick={() => onSelect("semua")}
+          aria-pressed={active === "semua"}
+          className={`group flex items-baseline gap-3 pr-0 transition-colors sm:pr-8 ${
+            active === "semua" ? "" : "sm:border-r sm:border-black/[0.06]"
+          }`}
+        >
+          <span className={`text-[36px] font-bold tracking-tight tabular-nums leading-none transition-colors ${
+            active === "semua" ? "text-[#C4953A]" : "text-[#2C2A28]"
+          }`}>
+            {total}
+          </span>
+          <span className="flex flex-col text-left">
+            <span className="text-[13px] font-semibold text-[#2C2A28]">Total</span>
+            <span className="text-[11px] text-[#8C8780]">seluruh laporan</span>
+          </span>
+        </button>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 px-4 pb-4 sm:grid-cols-4 sm:gap-3">
-        {ITEMS.map((item) => {
-          const value = item.key === "semua" ? total : counts[item.key];
-          const s = STYLES[item.key];
-          const isActive = active === item.key;
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onSelect(item.key)}
-              aria-pressed={isActive}
-              className={`group relative overflow-hidden rounded-lg p-3.5 text-left transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] ${
-                isActive ? `ring-2 ${s.activeRing}` : "ring-1 ring-inset ring-[#405E5C]/10"
-              } ${s.tint}`}
-            >
-              <span className="flex items-center justify-between">
-                <span className={`text-2xl font-bold tabular-nums ${s.value}`}>{value}</span>
-                <span className={`flex h-7 w-7 items-center justify-center rounded-md ${s.tint} ${s.value}`}>
-                  {ICONS[item.key]}
+        {/* Status Stats */}
+        <div className="flex flex-1 items-center justify-around sm:justify-evenly">
+          {STATUS_ITEMS.map((item, idx) => {
+            const value = counts[item.key];
+            const isActive = active === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => onSelect(item.key)}
+                aria-pressed={isActive}
+                className={`flex items-center gap-2.5 rounded-[8px] px-3 py-2 transition-colors sm:px-4 ${
+                  isActive ? item.style.activeBg : "hover:bg-black/[0.02]"
+                } ${idx < STATUS_ITEMS.length - 1 ? "" : ""}`}
+              >
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                  isActive ? `bg-white/80 shadow-[0_1px_3px_rgba(0,0,0,0.06)]` : "bg-black/[0.03]"
+                }`}>
+                  <span className={`h-2 w-2 rounded-full ${item.style.dot}`} />
                 </span>
-              </span>
-              <span className="mt-1 block text-xs font-semibold text-[#263B3A]">{item.label}</span>
-              <span className="block text-[11px] text-[#6D8080]">{item.hint}</span>
-            </button>
-          );
-        })}
+                <span className="text-left">
+                  <span className={`block text-[20px] font-bold tabular-nums leading-tight transition-colors ${
+                    isActive ? "text-[#2C2A28]" : item.style.text
+                  }`}>
+                    {value}
+                  </span>
+                  <span className="block text-[11px] text-[#8C8780]">{item.label}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

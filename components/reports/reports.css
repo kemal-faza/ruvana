@@ -1,65 +1,85 @@
+/* ── Animations ─────────────────────────────────────────────── */
+
 @keyframes rv-fade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes rv-slide-up {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes rv-slide-in-right {
-  from { opacity: 0; transform: translateX(22px); }
+  from { opacity: 0; transform: translateX(18px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes rv-scale-in {
-  from { opacity: 0; transform: scale(0.97); }
+  from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
 }
 
 .animate-rv-fade {
-  animation: rv-fade 0.18s ease-out;
+  animation: rv-fade 0.15s ease-out;
 }
 
 .animate-rv-slide-up {
-  animation: rv-slide-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rv-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-rv-slide-in-right {
-  animation: rv-slide-in-right 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rv-slide-in-right 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-rv-scale-in {
-  animation: rv-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rv-scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ── Page Background ────────────────────────────────────────── */
+
 .rv-page-bg {
-  background-color: #e5eff0;
+  background-color: #F0EDE8;
   background-image:
-    radial-gradient(900px 420px at 88% -90px, rgba(64, 94, 92, 0.10), transparent 60%),
-    radial-gradient(760px 360px at -8% 8%, rgba(64, 94, 92, 0.07), transparent 55%);
+    radial-gradient(1200px 600px at 12% -100px, rgba(175, 158, 125, 0.09), transparent 55%),
+    radial-gradient(900px 450px at 92% 5%, rgba(91, 138, 138, 0.04), transparent 50%),
+    radial-gradient(700px 350px at 55% 95%, rgba(196, 149, 58, 0.025), transparent 45%);
   background-attachment: fixed;
 }
 
+/* ── Header Surface ─────────────────────────────────────────── */
+
 .rv-hero-surface {
-  background: linear-gradient(180deg, rgba(250, 252, 251, 0.96), rgba(250, 252, 251, 0.82));
-  border-bottom: 1px solid rgba(111, 137, 135, 0.25);
+  background: linear-gradient(180deg, rgba(240, 237, 232, 0.92) 0%, rgba(240, 237, 232, 0.65) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.rv-surface-card {
-  background: #fafcfb;
-  border: 1px solid rgba(111, 137, 135, 0.22);
+/* ── Frosted Surfaces ───────────────────────────────────────── */
+
+.rv-surface {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
+
+.rv-surface-frost {
+  background: rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* ── Text Classes ───────────────────────────────────────────── */
 
 .rv-text-heading {
-  color: #263b3a;
+  color: #2C2A28;
 }
 
 .rv-text-body {
-  color: #405e5c;
+  color: #5A5754;
 }
 
 .rv-text-muted {
-  color: #6d8080;
+  color: #8C8780;
 }

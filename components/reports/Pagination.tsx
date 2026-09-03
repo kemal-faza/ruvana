@@ -18,7 +18,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
   const nextDisabled = currentPage >= totalPages;
 
   const navBtn =
-    "inline-flex h-8 items-center gap-1 rounded-md border border-[#405E5C]/20 bg-[#FAFCFB] px-3 text-sm font-medium text-[#405E5C] transition-colors hover:bg-[#E5EFF0] hover:text-[#263B3A] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-[#FAFCFB] disabled:hover:text-[#405E5C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438]";
+    "inline-flex h-8 items-center gap-1 rounded-[8px] border border-black/[0.07] bg-white/70 px-3 text-[13px] font-medium text-[#5A5754] transition-colors hover:bg-black/[0.035] hover:text-[#2C2A28] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/70 disabled:hover:text-[#5A5754] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50";
 
   return (
     <nav className="mt-5 flex flex-wrap items-center justify-center gap-1.5" aria-label="Paginasi laporan">
@@ -29,7 +29,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         className={navBtn}
         aria-label="Halaman sebelumnya"
       >
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
           <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10 12.77 13.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02z" clipRule="evenodd" />
         </svg>
         Sebelumnya
@@ -40,15 +40,15 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         const hasGap = idx > 0 && arr[idx - 1] !== p - 1;
         return (
           <span key={p} className="inline-flex items-center gap-1.5">
-            {hasGap && <span className="px-0.5 text-sm text-[#6D8080]">…</span>}
+            {hasGap && <span className="px-0.5 text-[13px] text-[#B0AAA2]">...</span>}
             <button
               type="button"
               onClick={() => onPageChange(p)}
               aria-current={isCurrent ? "page" : undefined}
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] ${
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50 ${
                 isCurrent
-                  ? "bg-[#405E5C] text-white"
-                  : "border border-[#405E5C]/20 bg-[#FAFCFB] text-[#405E5C] hover:bg-[#E5EFF0] hover:text-[#263B3A]"
+                  ? "bg-[#2C2A28] text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                  : "border border-black/[0.07] bg-white/70 text-[#5A5754] hover:bg-black/[0.035] hover:text-[#2C2A28]"
               }`}
             >
               {p}
@@ -65,7 +65,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         aria-label="Halaman berikutnya"
       >
         Berikutnya
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
           <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02z" clipRule="evenodd" />
         </svg>
       </button>

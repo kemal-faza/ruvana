@@ -20,12 +20,12 @@ interface FilterTabsProps {
   counts: Record<"semua" | StatusLaporan, number>;
 }
 
-const DOTS: Record<string, string> = {
-  semua: "#405E5C",
-  baru: "#6F8987",
-  diproses: "#D1A438",
-  selesai: "#3E7C6B",
-  ditolak: "#C2727A",
+const DOT_COLORS: Record<string, string> = {
+  semua: "#5A5754",
+  baru: "#7C9A97",
+  diproses: "#C4953A",
+  selesai: "#6B9E7C",
+  ditolak: "#B87070",
 };
 
 export default function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
@@ -33,7 +33,7 @@ export default function FilterTabs({ active, onChange, counts }: FilterTabsProps
     <div
       role="tablist"
       aria-label="Filter status laporan"
-      className="grid w-full grid-cols-2 gap-1 rounded-lg border border-[#405E5C]/15 bg-[#FAFCFB] p-1 shadow-sm sm:grid-cols-3 md:grid-cols-5"
+      className="flex flex-wrap items-center gap-1"
     >
       {FILTER_OPTIONS.map((opt) => {
         const isActive = active === opt.key;
@@ -43,24 +43,24 @@ export default function FilterTabs({ active, onChange, counts }: FilterTabsProps
             role="tab"
             aria-selected={isActive}
             onClick={() => onChange(opt.key)}
-            className={`relative flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] focus-visible:ring-offset-1 ${
+            className={`relative inline-flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-[13px] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50 focus-visible:ring-offset-1 ${
               isActive
-                ? "bg-[#D1A438]/12 text-[#263B3A]"
-                : "text-[#6D8080] hover:bg-[#E5EFF0] hover:text-[#405E5C]"
+                ? "bg-[#2C2A28] text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                : "text-[#8C8780] hover:bg-black/[0.035] hover:text-[#5A5754]"
             }`}
           >
             <span
               aria-hidden
               className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                isActive ? "" : "bg-[#C7D3D3]"
+                isActive ? "opacity-80" : ""
               }`}
-              style={isActive ? { backgroundColor: DOTS[opt.key] } : undefined}
+              style={{ backgroundColor: isActive ? "rgba(255,255,255,0.7)" : DOT_COLORS[opt.key] }}
             />
             <span>{opt.label}</span>
             {counts[opt.key] > 0 && (
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[11px] leading-none tabular-nums ${
-                  isActive ? "bg-[#FAFCFB]/80 text-[#405E5C]" : "bg-[#E5EFF0] text-[#6D8080]"
+                className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none tabular-nums ${
+                  isActive ? "bg-white/20 text-white/90" : "bg-black/[0.04] text-[#8C8780]"
                 }`}
               >
                 {counts[opt.key]}

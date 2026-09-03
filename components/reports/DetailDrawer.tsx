@@ -16,9 +16,9 @@ interface DetailDrawerProps {
 const STATUS_STEPS = ["baru", "diproses", "selesai"] as const;
 
 const STEP_COLOR: Record<string, { done: string; dot: string; label: string }> = {
-  baru: { done: "bg-[#6F8987]", dot: "ring-[#6F8987]", label: "text-[#405E5C]" },
-  diproses: { done: "bg-[#D1A438]", dot: "ring-[#D1A438]", label: "text-[#8A6D1F]" },
-  selesai: { done: "bg-[#3E7C6B]", dot: "ring-[#3E7C6B]", label: "text-[#3E7C6B]" },
+  baru: { done: "bg-[#7C9A97]", dot: "ring-[#7C9A97]", label: "text-[#5A5754]" },
+  diproses: { done: "bg-[#C4953A]", dot: "ring-[#C4953A]", label: "text-[#8A6D1F]" },
+  selesai: { done: "bg-[#6B9E7C]", dot: "ring-[#6B9E7C]", label: "text-[#6B9E7C]" },
 };
 
 function Timeline({ status }: { status: Report["status"] }) {
@@ -46,7 +46,7 @@ function Timeline({ status }: { status: Report["status"] }) {
             <div className="flex w-full items-center">
               <div
                 className={`mb-5 h-0.5 flex-1 rounded transition-colors ${
-                  idx > 0 ? (reached(idx - 1) ? stepStyle.done : "bg-[#C7D3D3]") : "invisible"
+                  idx > 0 ? (reached(idx - 1) ? stepStyle.done : "bg-black/[0.08]") : "invisible"
                 }`}
                 aria-hidden
               />
@@ -57,7 +57,7 @@ function Timeline({ status }: { status: Report["status"] }) {
                       ? `${stepStyle.done} border-transparent text-white`
                       : isCurrent
                       ? `bg-white ${stepStyle.dot} border-transparent`
-                      : "border-[#C7D3D3] bg-white"
+                      : "border-black/[0.10] bg-white"
                   }`}
                 >
                   {done ? (
@@ -67,7 +67,7 @@ function Timeline({ status }: { status: Report["status"] }) {
                   ) : isCurrent ? (
                     <span className="h-2 w-2 rounded-full bg-current" />
                   ) : (
-                    <span className="h-2 w-2 rounded-full bg-[#C7D3D3]" />
+                    <span className="h-2 w-2 rounded-full bg-black/[0.08]" />
                   )}
                 </span>
                 <span
@@ -75,8 +75,8 @@ function Timeline({ status }: { status: Report["status"] }) {
                     isCurrent
                       ? `font-semibold ${stepStyle.label}`
                       : done
-                      ? "font-medium text-[#405E5C]"
-                      : "text-[#9AAEAD]"
+                      ? "font-medium text-[#5A5754]"
+                      : "text-[#B0AAA2]"
                   }`}
                 >
                   {labels[step]}
@@ -87,7 +87,7 @@ function Timeline({ status }: { status: Report["status"] }) {
                   idx < STATUS_STEPS.length - 1
                     ? done
                       ? stepStyle.done
-                      : "bg-[#C7D3D3]"
+                      : "bg-black/[0.08]"
                     : "invisible"
                 }`}
                 aria-hidden
@@ -102,9 +102,9 @@ function Timeline({ status }: { status: Report["status"] }) {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 px-3.5 py-2.5 text-sm">
-      <dt className="text-[#6D8080]">{label}</dt>
-      <dd className="text-right font-medium text-[#263B3A]">{value}</dd>
+    <div className="flex items-center justify-between gap-4 px-4 py-2.5 text-[13px]">
+      <dt className="text-[#8C8780]">{label}</dt>
+      <dd className="text-right font-medium text-[#2C2A28]">{value}</dd>
     </div>
   );
 }
@@ -128,18 +128,18 @@ export default function DetailDrawer({ report, facility, open, onClose }: Detail
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Detail laporan">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] animate-rv-fade" onClick={onClose} />
+      <div className="absolute inset-0 bg-[#2C2A28]/30 backdrop-blur-[2px] animate-rv-fade" onClick={onClose} />
       <div className="absolute inset-0 flex justify-end">
-        <aside className="flex h-full w-full max-w-md flex-col overflow-hidden bg-[#FAFCFB] shadow-2xl animate-rv-slide-in-right sm:border-l sm:border-[#405E5C]/15">
-          <header className="flex items-center justify-between border-b border-[#405E5C]/15 bg-white px-5 py-4">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6D8080]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#D1A438]" aria-hidden />
+        <aside className="flex h-full w-full max-w-md flex-col overflow-hidden bg-[#F8F6F3] shadow-2xl animate-rv-slide-in-right sm:border-l sm:border-black/[0.06]">
+          <header className="flex items-center justify-between border-b border-black/[0.06] bg-white/80 px-5 py-4 backdrop-blur-[8px]">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#8C8780]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#C4953A]" aria-hidden />
               LP-#{String(report.id).padStart(4, "0")}
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1.5 text-[#6D8080] transition-colors hover:bg-[#E5EFF0] hover:text-[#405E5C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438]"
+              className="rounded-[8px] p-1.5 text-[#8C8780] transition-colors hover:bg-black/[0.04] hover:text-[#5A5754] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50"
               aria-label="Tutup detail laporan"
             >
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -149,11 +149,11 @@ export default function DetailDrawer({ report, facility, open, onClose }: Detail
           </header>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="border-b border-[#405E5C]/10 bg-gradient-to-b from-[#E5EFF0]/60 to-[#FAFCFB] px-5 py-5">
+            <div className="border-b border-black/[0.04] bg-gradient-to-b from-[#F0EDE8]/60 to-[#F8F6F3] px-5 py-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-lg font-semibold text-[#263B3A]">{report.facilityName}</h3>
-                  <p className="mt-0.5 text-xs text-[#6D8080]">
+                  <h3 className="text-[17px] font-semibold text-[#2C2A28]">{report.facilityName}</h3>
+                  <p className="mt-0.5 text-[12px] text-[#8C8780]">
                     {facility ? `${report.kategori} · ${facility.lokasi}` : report.kategori}
                   </p>
                 </div>
@@ -162,7 +162,7 @@ export default function DetailDrawer({ report, facility, open, onClose }: Detail
             </div>
 
             <div className="px-5 pt-5">
-              <div className="relative h-52 w-full overflow-hidden rounded-xl border border-[#405E5C]/15">
+              <div className="relative h-52 w-full overflow-hidden rounded-[12px] border border-black/[0.06]">
                 {report.foto && !fotoFailed ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -172,7 +172,7 @@ export default function DetailDrawer({ report, facility, open, onClose }: Detail
                       onError={() => setFotoFailed(true)}
                       className="h-full w-full object-cover"
                     />
-                    <span className="absolute left-2 top-2 rounded bg-[#263B3A]/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
+                    <span className="absolute left-2 top-2 rounded-[6px] bg-[#2C2A28]/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
                       Foto Bukti
                     </span>
                   </>
@@ -184,26 +184,26 @@ export default function DetailDrawer({ report, facility, open, onClose }: Detail
 
             <div className="space-y-6 px-5 py-5">
               <section>
-                <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#6D8080]">
+                <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#8C8780]">
                   Progres Penanganan
                 </h4>
                 <Timeline status={report.status} />
               </section>
 
               <section>
-                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#6D8080]">
+                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8C8780]">
                   Deskripsi
                 </h4>
-                <p className="whitespace-pre-wrap rounded-lg border border-[#405E5C]/10 bg-[#E5EFF0]/50 px-3.5 py-3 text-sm leading-relaxed text-[#263B3A]">
+                <p className="whitespace-pre-wrap rounded-[10px] border border-black/[0.04] bg-white/60 px-4 py-3 text-[13px] leading-relaxed text-[#2C2A28]">
                   {report.deskripsi}
                 </p>
               </section>
 
               <section>
-                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#6D8080]">
+                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8C8780]">
                   Informasi
                 </h4>
-                <dl className="divide-y divide-[#405E5C]/10 rounded-lg border border-[#405E5C]/15 bg-[#E5EFF0]/40">
+                <dl className="divide-y divide-black/[0.04] rounded-[10px] border border-black/[0.05] bg-white/60">
                   <InfoRow label="Pelapor" value={report.userName} />
                   <InfoRow label="Ditangani oleh" value={report.ditanganiOleh ?? "Belum ditugaskan"} />
                   <InfoRow label="Diajukan" value={formatWaktu(report.createdAt)} />
@@ -213,22 +213,22 @@ export default function DetailDrawer({ report, facility, open, onClose }: Detail
 
               {report.catatanResolusi && (
                 <section>
-                  <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#6D8080]">
+                  <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8C8780]">
                     Catatan Penyelesaian
                   </h4>
-                  <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-sm text-emerald-800">
+                  <div className="rounded-[10px] border border-[#6B9E7C]/15 bg-[#6B9E7C]/[0.05] px-4 py-3 text-[13px] text-[#4A7A5C]">
                     {report.catatanResolusi}
                   </div>
                 </section>
               )}
 
               {report.status === "baru" && (
-                <div className="rounded-lg border border-[#6F8987]/25 bg-[#6F8987]/10 px-4 py-3 text-sm text-[#405E5C]">
+                <div className="rounded-[10px] border border-[#7C9A97]/15 bg-[#7C9A97]/[0.05] px-4 py-3 text-[13px] text-[#5A5754]">
                   Laporan menunggu diproses petugas. Pembaruan status akan tampil di sini.
                 </div>
               )}
               {report.status === "ditolak" && (
-                <div className="rounded-lg border border-[#C2727A]/30 bg-[#C2727A]/10 px-4 py-3 text-sm text-[#A04A52]">
+                <div className="rounded-[10px] border border-[#B87070]/15 bg-[#B87070]/[0.05] px-4 py-3 text-[13px] text-[#8E4F55]">
                   {report.catatanResolusi ?? "Laporan ini ditolak oleh petugas."}
                 </div>
               )}

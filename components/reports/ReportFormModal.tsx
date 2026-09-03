@@ -11,9 +11,9 @@ interface ReportFormModalProps {
 }
 
 const inputBase =
-  "w-full rounded-lg border border-[#6F8987]/35 bg-white px-3 py-2 text-sm text-[#263B3A] placeholder:text-[#9AAEAD] transition-colors focus:border-[#405E5C] focus:outline-none focus:ring-2 focus:ring-[#405E5C]/10 disabled:cursor-not-allowed disabled:bg-[#E5EFF0]/60";
+  "w-full rounded-[10px] border border-black/[0.08] bg-white px-3 py-2 text-[13px] text-[#2C2A28] placeholder:text-[#B0AAA2] transition-colors focus:border-[#5A5754]/30 focus:outline-none focus:ring-2 focus:ring-[#5A5754]/8 disabled:cursor-not-allowed disabled:bg-[#F0EDE8]/60";
 
-const labelBase = "mb-1.5 block text-sm font-medium text-[#405E5C]";
+const labelBase = "mb-1.5 block text-[13px] font-medium text-[#5A5754]";
 
 interface FieldError {
   facilityId?: string;
@@ -110,18 +110,18 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Ajukan laporan kerusakan">
       <div className="flex min-h-full items-end justify-center sm:items-center sm:p-4">
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] animate-rv-fade" onClick={onClose} />
-        <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl bg-[#FAFCFB] shadow-2xl animate-rv-slide-up sm:rounded-2xl">
-          <header className="flex items-center justify-between border-b border-[#405E5C]/15 bg-white px-6 py-4">
+        <div className="fixed inset-0 bg-[#2C2A28]/30 backdrop-blur-[2px] animate-rv-fade" onClick={onClose} />
+        <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[16px] bg-[#F8F6F3] shadow-2xl animate-rv-slide-up sm:rounded-[16px]">
+          <header className="flex items-center justify-between border-b border-black/[0.06] bg-white/80 px-6 py-4 backdrop-blur-[8px]">
             <div>
-              <h2 className="text-base font-semibold text-[#263B3A]">Ajukan Laporan</h2>
-              <p className="text-xs text-[#6D8080]">Laporkan kerusakan atau masalah fasilitas kampus</p>
+              <h2 className="text-[15px] font-semibold text-[#2C2A28]">Ajukan Laporan</h2>
+              <p className="text-[12px] text-[#8C8780]">Laporkan kerusakan atau masalah fasilitas kampus</p>
             </div>
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-md p-1.5 text-[#6D8080] transition-colors hover:bg-[#E5EFF0] hover:text-[#405E5C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438]"
+              className="rounded-[8px] p-1.5 text-[#8C8780] transition-colors hover:bg-black/[0.04] hover:text-[#5A5754] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50"
               aria-label="Tutup form laporan"
             >
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -132,21 +132,21 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
 
           {success ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center animate-rv-fade">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#6B9E7C]/[0.10] text-[#6B9E7C]">
                 <svg className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                   <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <p className="text-base font-semibold text-[#263B3A]">Laporan berhasil diajukan</p>
-                <p className="mt-1 text-sm text-[#6D8080]">
+                <p className="text-[15px] font-semibold text-[#2C2A28]">Laporan berhasil diajukan</p>
+                <p className="mt-1 text-[13px] text-[#8C8780]">
                   Terima kasih! Laporan Anda telah tercatat dan akan diproses oleh petugas.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-2 rounded-lg bg-[#D1A438] px-4 py-2 text-sm font-semibold text-[#263B3A] shadow-sm transition-all hover:brightness-105 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] focus-visible:ring-offset-2"
+                className="mt-2 rounded-[10px] bg-[#C4953A] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(196,149,58,0.25)] transition-all hover:brightness-105 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A] focus-visible:ring-offset-2"
               >
                 Selesai
               </button>
@@ -155,13 +155,13 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
             <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
                 <fieldset className="space-y-4">
-                  <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#6D8080]">
+                  <legend className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8C8780]">
                     Detail Kerusakan
                   </legend>
 
                   <div>
                     <label htmlFor="facility" className={labelBase}>
-                      Fasilitas <span className="text-rose-500">*</span>
+                      Fasilitas <span className="text-[#B87070]">*</span>
                     </label>
                     <select
                       id="facility"
@@ -183,13 +183,13 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                       ))}
                     </select>
                     {fieldErrors.facilityId && (
-                      <p className="mt-1 text-xs text-rose-600">{fieldErrors.facilityId}</p>
+                      <p className="mt-1 text-[12px] text-[#B87070]">{fieldErrors.facilityId}</p>
                     )}
                   </div>
 
                   <div>
                     <label htmlFor="kategori" className={labelBase}>
-                      Kategori <span className="text-rose-500">*</span>
+                      Kategori <span className="text-[#B87070]">*</span>
                     </label>
                     <select
                       id="kategori"
@@ -217,13 +217,13 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                       ))}
                     </select>
                     {fieldErrors.kategori && (
-                      <p className="mt-1 text-xs text-rose-600">{fieldErrors.kategori}</p>
+                      <p className="mt-1 text-[12px] text-[#B87070]">{fieldErrors.kategori}</p>
                     )}
                   </div>
 
                   <div>
                     <label htmlFor="deskripsi" className={labelBase}>
-                      Deskripsi <span className="text-rose-500">*</span>
+                      Deskripsi <span className="text-[#B87070]">*</span>
                     </label>
                     <textarea
                       id="deskripsi"
@@ -240,25 +240,25 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                     />
                     <div className="mt-1 flex items-center justify-between">
                       {fieldErrors.deskripsi ? (
-                        <p className="text-xs text-rose-600">{fieldErrors.deskripsi}</p>
+                        <p className="text-[12px] text-[#B87070]">{fieldErrors.deskripsi}</p>
                       ) : (
                         <span />
                       )}
-                      <p className="ml-auto text-xs text-[#9AAEAD] tabular-nums">{deskripsi.length} / 200</p>
+                      <p className="ml-auto text-[11px] text-[#B0AAA2] tabular-nums">{deskripsi.length} / 200</p>
                     </div>
                   </div>
                 </fieldset>
 
                 <fieldset className="space-y-2">
-                  <legend className="text-xs font-semibold uppercase tracking-wide text-[#6D8080]">
-                    Foto Bukti <span className="text-rose-500">*</span>
+                  <legend className="text-[11px] font-semibold uppercase tracking-wide text-[#8C8780]">
+                    Foto Bukti <span className="text-[#B87070]">*</span>
                   </legend>
 
                   {foto ? (
-                    <div className="relative overflow-hidden rounded-xl border border-[#405E5C]/15 animate-rv-fade">
+                    <div className="relative overflow-hidden rounded-[12px] border border-black/[0.06] animate-rv-fade">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={foto} alt="Pratinjau foto laporan" className="h-48 w-full object-cover" />
-                      <div className="flex items-center justify-between bg-[#263B3A]/75 px-3 py-2 text-xs text-white">
+                      <div className="flex items-center justify-between bg-[#2C2A28]/80 px-3 py-2 text-[12px] text-white/90">
                         <span className="truncate">{fotoName}</span>
                         <div className="flex shrink-0 items-center gap-3">
                           <button
@@ -275,7 +275,7 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                               setFotoName("");
                               if (fileInputRef.current) fileInputRef.current.value = "";
                             }}
-                            className="font-medium text-rose-300 hover:text-rose-200"
+                            className="font-medium text-[#E8A0A0] hover:text-[#F0C0C0]"
                           >
                             Hapus
                           </button>
@@ -296,16 +296,16 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                       }}
                       onDragLeave={() => setDragOver(false)}
                       onDrop={handleDrop}
-                      className={`flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-9 text-sm text-[#6D8080] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] ${
+                      className={`flex w-full flex-col items-center justify-center gap-2 rounded-[12px] border-2 border-dashed px-4 py-9 text-[13px] text-[#8C8780] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50 ${
                         dragOver
-                          ? "border-[#405E5C] bg-[#E5EFF0]"
+                          ? "border-[#5A5754]/30 bg-[#F0EDE8]"
                           : fieldErrors.foto
-                          ? "border-rose-300 bg-rose-50/40"
-                          : "border-[#6F8987]/50 bg-[#E5EFF0]/40 hover:border-[#405E5C]/70 hover:bg-[#E5EFF0]/70"
+                          ? "border-[#B87070]/30 bg-[#B87070]/[0.03]"
+                          : "border-black/[0.08] bg-[#F0EDE8]/40 hover:border-black/[0.12] hover:bg-[#F0EDE8]/60"
                       }`}
                     >
                       <svg
-                        className={`h-8 w-8 ${dragOver ? "text-[#405E5C]" : "text-[#6F8987]"}`}
+                        className={`h-8 w-8 ${dragOver ? "text-[#5A5754]" : "text-[#B0AAA2]"}`}
                         viewBox="0 0 20 20"
                         fill="currentColor"
                         aria-hidden
@@ -314,10 +314,10 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                         <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
                       </svg>
                       <span className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center">
-                        <span className="font-semibold text-[#405E5C]">Klik untuk unggah</span>
-                        <span className="text-[#6D8080]">atau seret foto di sini</span>
+                        <span className="font-semibold text-[#5A5754]">Klik untuk unggah</span>
+                        <span className="text-[#8C8780]">atau seret foto di sini</span>
                       </span>
-                      <span className="text-xs text-[#6D8080]">JPG, PNG · maks 5 MB · wajib diisi</span>
+                      <span className="text-[11px] text-[#B0AAA2]">JPG, PNG · maks 5 MB · wajib diisi</span>
                     </button>
                   )}
                   <input
@@ -330,24 +330,24 @@ export default function ReportFormModal({ open, facilities, onClose, onSubmit }:
                     tabIndex={-1}
                   />
                   {fieldErrors.foto && !foto && (
-                    <p className="text-xs text-rose-600">{fieldErrors.foto}</p>
+                    <p className="text-[12px] text-[#B87070]">{fieldErrors.foto}</p>
                   )}
                 </fieldset>
               </div>
 
-              <footer className="flex items-center justify-end gap-3 border-t border-[#405E5C]/10 bg-[#E5EFF0]/40 px-6 py-4">
+              <footer className="flex items-center justify-end gap-3 border-t border-black/[0.04] bg-[#F0EDE8]/40 px-6 py-4 backdrop-blur-[6px]">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={submitting}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-[#6D8080] transition-colors hover:bg-[#E5EFF0] hover:text-[#405E5C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] disabled:opacity-50"
+                  className="rounded-[10px] px-4 py-2 text-[13px] font-medium text-[#8C8780] transition-colors hover:bg-black/[0.035] hover:text-[#5A5754] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A]/50 disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#D1A438] px-4 py-2 text-sm font-semibold text-[#263B3A] shadow-sm shadow-[#D1A438]/25 transition-all hover:brightness-105 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D1A438] focus-visible:ring-offset-2 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-[#C4953A] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(196,149,58,0.25)] transition-all hover:shadow-[0_2px_8px_rgba(196,149,58,0.30)] hover:brightness-105 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4953A] focus-visible:ring-offset-2 disabled:opacity-60"
                 >
                   {submitting && (
                     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
