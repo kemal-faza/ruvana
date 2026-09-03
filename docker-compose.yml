@@ -1,20 +1,19 @@
 services:
   db:
-    image: mariadb:11.4
+    image: postgres:16
     container_name: ruvana-db
     restart: unless-stopped
     environment:
-      MARIADB_DATABASE: ${MYSQL_DATABASE:-ruvana}
-      MARIADB_USER: ${MYSQL_USER:-ruvana}
-      MARIADB_PASSWORD: ${MYSQL_PASSWORD:-ruvana_pass}
-      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-ruvana}
+      POSTGRES_USER: ${POSTGRES_USER:-ruvana}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ruvana_pass}
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - db_data:/var/lib/mysql
-      - ./docker/mariadb-init:/docker-entrypoint-initdb.d:ro
+      - db_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ruvana} -d ${POSTGRES_DB:-ruvana}"]
       interval: 5s
       timeout: 5s
       retries: 10

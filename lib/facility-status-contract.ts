@@ -16,6 +16,6 @@ export interface FacilityStatusChangedPayload {
 
 // Dokumentasi kontrak (dipakai Modul 3 & 4):
 // - Pemicu (Modul 4): saat status fasilitas berubah, panggil emitFacilityStatusChanged(payload).
-// - Listener (Modul 3): saat payload statusBaru = 'dalam_perbaikan', batalkan reservasi
-//   masa depan berstatus 'disetujui' pada facilityId tsb (alasan otomatis).
+// - Listener (Modul 3): saat payload statusBaru = 'UNDER_MAINTENANCE', batalkan reservasi
+//   masa depan berstatus 'APPROVED' pada facilityId tsb (alasan otomatis).
 export type FacilityStatusChangedListener = (payload: FacilityStatusChangedPayload) => Promise<void>;

@@ -40,7 +40,7 @@ jobs:
       - name: Generate Prisma client
         run: pnpm prisma generate
         env:
-          DATABASE_URL: mysql://ruvana:ruvana_pass@localhost:3306/ruvana
+          DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
 
       - name: Lint
         run: pnpm lint
@@ -64,5 +64,5 @@ jobs:
         run: pnpm build
         env:
           # Build halaman statis (belum ada data fetching) — tidak butuh DB.
-          DATABASE_URL: mysql://ruvana:ruvana_pass@localhost:3306/ruvana
+          DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
           NEXT_TELEMETRY_DISABLED: "1"

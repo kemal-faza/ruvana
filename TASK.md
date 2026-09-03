@@ -12,7 +12,7 @@
 |---|---|
 | Nama aplikasi | Ruvana — Sistem Reservasi & Pelaporan Fasilitas Kampus |
 | Tujuan | Mengelola penggunaan fasilitas kampus (ruang kelas, aula, laboratorium, alat, lapangan): cek ketersediaan, reservasi, pelaporan kerusakan, pemrosesan terpusat oleh petugas & admin |
-| Stack | Next.js (App Router) + ORM + MySQL/MariaDB |
+| Stack | Next.js (App Router) + ORM + PostgreSQL |
 | Cakupan dokumen | Modul 1–5: Authentication, Facility & Discovery, Reservation, Reporting & Maintenance, Admin & Analytics |
 | Repo | GitHub/GitLab bersama (wajib) — setiap anggota commit dengan pesan jelas |
 
@@ -85,11 +85,13 @@
 >
 > **Pembagian kepemilikan aturan ini (anti deadlock antar-modul):** efek "pembatalan otomatis" **dimiliki Modul 3** (TASK 3.7) dan **dipicu oleh Modul 4** (TASK 4.4) melalui satu **kontrak interface "status fasilitas berubah"** yang didefinisikan sekali di Fase 0 (nama event/hook + data yang dikirim: facility_id, status baru, waktu). Modul 3 implementasi listener-nya terhadap kontrak itu; Modul 4 cukup memanggil/memicu kontrak saat status berubah. Dengan cara ini B dan C bisa maju paralel tanpa saling menunggu implementasi.
 
+> **Pemetaan status (bahasa Indonesia → nilai enum teknis di kode, keputusan Fase 0):** dokumen ini memakai istilah Indonesia untuk status (mis. *menunggu*, *disetujui*, *dalam perbaikan*) karena bersifat konseptual/bisnis. Nilai aktual enum Prisma di kode memakai **bahasa Inggris** (lihat `config/business.ts` & `prisma/schema.prisma`): `pending→PENDING`, `aktif→ACTIVE`, `ditolak→REJECTED`, `dinonaktifkan→DISABLED`; `menunggu→PENDING`, `disetujui→APPROVED`, `dibatalkan_oleh_pengguna→CANCELLED_BY_USER`, `dibatalkan_oleh_petugas→CANCELLED_BY_OFFICER`, `kedaluwarsa→EXPIRED`; `baru→NEW`, `diproses→IN_PROGRESS`, `selesai→RESOLVED`; `dalam_perbaikan→UNDER_MAINTENANCE`, `nonaktif→INACTIVE`. Saat implementasi modul, gunakan nilai teknis Inggris; tampilan ke pengguna boleh memetakan kembali ke label Indonesia (terpusat di `config/business.ts`, jangan inline).
+
 ### 2.3 Setup lingkungan (Fase 0 — dikerjakan bersama, dikoordinasi orchestrator)
 
 - Siapkan repo bersama, branch strategy sederhana (mis. `main` + branch fitur per modul), aturan commit.
 - Buat **skeleton folder** sesuai konvensi di §2.1 (`/public`, `/app`, `/components`, `/prisma`, `/lib`, `/config` — tanpa `/views` literal; pemisahan lapisan via README pemetaan) agar struktur awal sudah memenuhi pembagian folder yang diminta PDF.
-- Siapkan environment: Next.js + ORM + MySQL/MariaDB (lokal/Docker), file konfigurasi env.
+- Siapkan environment: Next.js + ORM + PostgreSQL (lokal/Docker), file konfigurasi env.
 - Buat skema DB (tabel Users, Facilities, Reservations, Reports + relasi) & **seed data** (contoh fasilitas lintas tipe + contoh akun per role; contoh reservasi/laporan menyusul saat Modul 3/4).
 - Tulis konstanta bisnis terpusat di konfigurasi: jam operasional (07.00–20.00), durasi slot (30 menit), batas pembatalan pengguna (H−2 jam sebelum mulai, lihat Modul 3), daftar status.
 - **Definisikan kontrak interface "status fasilitas berubah"** (nama event/hook + data yang dikirim: facility_id, status baru, waktu) — dipakai TASK 3.7 (listener) & TASK 4.4 (pemicu) agar modul 3 & 4 tidak saling menunggu.
