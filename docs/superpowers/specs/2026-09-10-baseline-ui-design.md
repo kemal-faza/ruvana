@@ -25,6 +25,8 @@ Di luar cakupan: landing publik, dashboard, autentikasi, query Prisma, request j
 
 Gunakan **shadcn berbasis Base UI** untuk fondasi komponen, **Motion** untuk micro-interactions, **Lucide React** untuk ikon, serta Tailwind CSS v4 untuk styling. Token shadcn dipetakan ke token Ruvana agar tidak membentuk palette kedua. Hanya dependency dan komponen yang dibutuhkan baseline yang ditambahkan.
 
+Struktur sidebar memakai **shadcn `sidebar-01`** sebagai basis karena label menu selalu terlihat dan navigasi dapat dikelompokkan secara jelas. Footer akun dan logout mengadaptasi pola `sidebar-07`. Search, version switcher, team switcher, project menu, submenu, dan collapse-to-icons dari block sumber tidak disertakan.
+
 ## Arsitektur
 
 ### Fondasi global
@@ -50,7 +52,7 @@ Server Component pada modul autentikasi kelak menjadi pemilik sesi dan hanya men
 
 ## Shell dan navigasi
 
-- **Desktop, `>=1024px`:** sidebar gelap selebar 232–256 px, identitas Ruvana di atas, menu vertikal, akun dan logout di bawah, serta outlet fleksibel.
+- **Desktop, `>=1024px`:** sidebar gelap selebar 232–256 px, identitas Ruvana di atas, kelompok menu berlabel, akun dan logout di bawah, serta outlet fleksibel. Label menu selalu terlihat; sidebar tidak berubah menjadi icon rail.
 - **Tablet, `768–1023px`:** app bar dengan navigasi yang dapat dibuka sebagai drawer; ruang konten tetap satu atau dua kolom sesuai konsumennya.
 - **Mobile, `<768px`:** app bar dan drawer satu kolom tanpa horizontal overflow.
 
@@ -97,6 +99,7 @@ Playwright memeriksa viewport mobile, tablet, dan desktop; horizontal overflow; 
 
 - Token, Poppins, `lang="id"`, spacing, radius, shadow, focus, status, dan motion sesuai `DESIGN.md`.
 - Desktop sidebar, tablet/mobile app bar, dan drawer bekerja pada breakpoint yang ditetapkan.
+- Desktop mengadaptasi `sidebar-01` dengan footer akun ala `sidebar-07`, tanpa fitur block yang berada di luar cakupan.
 - Shell menerima data melalui interface presentasional dan tidak mengandung business role rules.
 - Core 6 tersedia sebagai komponen shadcn/Base UI bergaya Ruvana.
 - Lucide adalah keluarga ikon default dan aturan aksesibilitas ikon dipenuhi.
