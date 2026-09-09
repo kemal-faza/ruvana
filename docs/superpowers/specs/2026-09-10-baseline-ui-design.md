@@ -13,7 +13,7 @@ Route `/` sementara menjadi katalog shell dan primitive. Ia bukan landing publik
 
 Baseline harus:
 
-- menerapkan token semantik, Poppins, ikon, focus state, dan motion Ruvana;
+- menerapkan token semantik light/dark, Poppins, ikon, focus state, dan motion Ruvana;
 - menyediakan shell yang menerima navigasi dan identitas dari pemanggil tanpa aturan role;
 - menyediakan Button, Field, Card, Badge, Skeleton, dan Empty state;
 - memenuhi responsive behavior dan WCAG 2.2 AA;
@@ -31,9 +31,13 @@ Struktur sidebar memakai **shadcn `sidebar-01`** sebagai basis karena label menu
 
 ### Fondasi global
 
-`globals.css` mendefinisikan warna, status, typography, spacing, radius, shadow, focus ring, durasi, dan easing sebagai token semantik dari `DESIGN.md`. Komponen tidak mengulang raw color bila token semantik tersedia.
+`globals.css` mendefinisikan warna, status, typography, spacing, radius, shadow, focus ring, durasi, dan easing sebagai token semantik dari `DESIGN.md`. Komponen tidak mengulang raw color atau memakai primitive scale bila token semantik tersedia.
 
-Root layout memuat Poppins melalui integrasi font Next.js, menetapkan `lang="id"`, dan mempertahankan metadata Ruvana. Global styles juga menyediakan canvas, selection, focus-visible, dan reduced-motion defaults.
+Sistem warna memakai OKLCH dengan distribusi lightness **Fixed**. Primitive dibatasi menjadi lima scale: `primary`, warm `neutral`, `green`, `red`, dan `yellow`. Semantic `success`, `destructive`, dan `warning` masing-masing mengalias scale green, red, dan yellow; compatibility token `secondary` dan `accent` shadcn memetakan neutral. Deklarasi warna hitam/putih tidak diduplikasi. Neutral mendominasi canvas, surface, teks, border, dan control; primary terbatas pada aksi utama, focus, dan active navigation; warna intent hanya muncul ketika membawa makna.
+
+Light dan dark theme memetakan ulang semantic token yang sama. Kunjungan pertama mengikuti `prefers-color-scheme`; pengguna dapat memilih light atau dark melalui theme toggle dan pilihannya disimpan. Shell gelap memakai tingkat primary gelap bila lulus evaluasi visual dan kontras, tanpa menambah keluarga warna baru. Semua pasangan foreground/background semantic harus memenuhi WCAG 2.x AA; boundary dan focus indicator memenuhi persyaratan non-text contrast. Status tetap memakai teks atau ikon dan diperiksa pada simulasi protanopia, deuteranopia, dan tritanopia.
+
+Root layout memuat Poppins melalui integrasi font Next.js, menetapkan `lang="id"`, dan mempertahankan metadata Ruvana. Theme provider menerapkan preferensi sistem dan pilihan tersimpan tanpa flash tema yang salah. Global styles juga menyediakan canvas, selection, focus-visible, dan reduced-motion defaults.
 
 ### Primitive UI
 
@@ -56,7 +60,7 @@ Server Component pada modul autentikasi kelak menjadi pemilik sesi dan hanya men
 - **Tablet, `768–1023px`:** app bar dengan navigasi yang dapat dibuka sebagai drawer; ruang konten tetap satu atau dua kolom sesuai konsumennya.
 - **Mobile, `<768px`:** app bar dan drawer satu kolom tanpa horizontal overflow.
 
-Item navigasi memiliki target minimal 44×44 px, ikon, label Indonesia, hover, focus-visible, dan active cue yang tidak bergantung pada warna. Active state berasal dari pathname. Drawer berbasis shadcn/Base UI harus menjebak fokus, membuat latar inert, mendukung Escape, menutup setelah navigasi, dan mengembalikan fokus ke pemicu.
+Item navigasi memiliki target minimal 44×44 px, ikon, label Indonesia, hover, focus-visible, dan active cue yang tidak bergantung pada warna. Active state berasal dari pathname. Drawer berbasis shadcn/Base UI harus menjebak fokus, membuat latar inert, mendukung Escape, menutup setelah navigasi, dan mengembalikan fokus ke pemicu. Theme toggle memakai ikon Lucide, memiliki accessible name yang mencerminkan aksi berikutnya, dan tersedia melalui shell pada semua breakpoint.
 
 ## Core primitives
 
@@ -91,13 +95,15 @@ Behavior tests mencakup:
 - active navigation;
 - drawer dengan pointer dan keyboard, focus trap, Escape, serta focus return;
 - reduced motion;
+- preferensi sistem, pergantian light/dark, dan penyimpanan pilihan tema;
 - axe check pada shell dan katalog.
 
-Playwright memeriksa viewport mobile, tablet, dan desktop; horizontal overflow; serta visual regression minimum untuk katalog desktop dan mobile drawer terbuka. Hindari snapshot DOM besar. Verifikasi akhir mengikuti urutan proyek: Prisma generate, lint, banned-word check, Next typegen, TypeScript, test, visual checks, lalu production build.
+Playwright memeriksa viewport mobile, tablet, dan desktop; horizontal overflow; serta visual regression minimum untuk katalog desktop dan mobile drawer terbuka dalam light dan dark theme. Pemeriksaan kontras mencakup pasangan semantic aktual, bukan hanya hasil generator. Hindari snapshot DOM besar. Verifikasi akhir mengikuti urutan proyek: Prisma generate, lint, banned-word check, Next typegen, TypeScript, test, visual checks, lalu production build.
 
 ## Kriteria penerimaan
 
-- Token, Poppins, `lang="id"`, spacing, radius, shadow, focus, status, dan motion sesuai `DESIGN.md`.
+- Lima primitive scale OKLCH, semantic aliases, Poppins, `lang="id"`, spacing, radius, shadow, focus, status, dan motion sesuai keputusan desain.
+- Light/dark theme mengikuti sistem pada kunjungan pertama, dapat diganti pengguna, tersimpan, dan tidak menampilkan flash tema yang salah.
 - Desktop sidebar, tablet/mobile app bar, dan drawer bekerja pada breakpoint yang ditetapkan.
 - Desktop mengadaptasi `sidebar-01` dengan footer akun ala `sidebar-07`, tanpa fitur block yang berada di luar cakupan.
 - Shell menerima data melalui interface presentasional dan tidak mengandung business role rules.
@@ -105,6 +111,7 @@ Playwright memeriksa viewport mobile, tablet, dan desktop; horizontal overflow; 
 - Lucide adalah keluarga ikon default dan aturan aksesibilitas ikon dipenuhi.
 - Motion terbatas pada micro-interactions yang disepakati serta mendukung reduced motion.
 - `/` menampilkan katalog berlabel pratinjau tanpa database atau business content.
+- Pasangan semantic memenuhi target kontras, dan informasi status tetap terbaca pada simulasi gangguan persepsi warna.
 - Behavior, accessibility, responsive, visual, lint, typecheck, dan build checks lulus.
 
 ## Keputusan yang ditunda
