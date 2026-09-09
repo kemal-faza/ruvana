@@ -40,9 +40,20 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-AGENTS.md
 CLAUDE.md
-docs/
+
+# Dokumentasi lokal di-ignore secara default. Hanya artefak kontrak tim berikut
+# yang dilacak; direktori induk harus di-unignore agar negasi file bekerja.
+/docs/*
+!/docs/PRD.md
+!/docs/DESIGN.md
+!/docs/api/
+/docs/api/*
+!/docs/api/openapi.yaml
+!/docs/superpowers/
+/docs/superpowers/*
+!/docs/DECISION.md
+
 *.pdf
 *.sql
 
@@ -57,3 +68,5 @@ docker-compose.override.yml
 !.env.example
 !prisma/migrations/**/*.sql
 !docker/postgres-init/**/*.sql
+
+.codegraph/
