@@ -100,6 +100,48 @@ function useSidebarController(
   return { state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar }
 }
 
+function useMemoizedSidebarContext({
+  state,
+  open,
+  setOpen,
+  isMobile,
+  openMobile,
+  setOpenMobile,
+  toggleSidebar,
+}: SidebarContextProps) {
+  return React.useMemo(
+    () => ({ state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar }),
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+  )
+}
+
+function SidebarProviderLayout({
+  className,
+  style,
+  children,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-wrapper"
+      style={
+        {
+          "--sidebar-width": SIDEBAR_WIDTH,
+          "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+          ...style,
+        } as React.CSSProperties
+      }
+      className={cn(
+        "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
 function SidebarProvider({
   defaultOpen = true,
   open: openProp,
@@ -113,47 +155,14 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
-  const {
-    state,
-    open,
-    setOpen,
-    isMobile,
-    openMobile,
-    setOpenMobile,
-    toggleSidebar,
-  } = useSidebarController(defaultOpen, openProp, setOpenProp)
-  const contextValue = React.useMemo<SidebarContextProps>(
-    () => ({
-      state,
-      open,
-      setOpen,
-      isMobile,
-      openMobile,
-      setOpenMobile,
-      toggleSidebar,
-    }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
-  )
+  const sidebarController = useSidebarController(defaultOpen, openProp, setOpenProp)
+  const contextValue = useMemoizedSidebarContext(sidebarController)
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <div
-        data-slot="sidebar-wrapper"
-        style={
-          {
-            "--sidebar-width": SIDEBAR_WIDTH,
-            "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-            ...style,
-          } as React.CSSProperties
-        }
-        className={cn(
-          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
-          className
-        )}
-        {...props}
-      >
+      <SidebarProviderLayout className={className} style={style} {...props}>
         {children}
-      </div>
+      </SidebarProviderLayout>
     </SidebarContext.Provider>
   )
 }
@@ -182,6 +191,7 @@ function SidebarNonCollapsible({ className, children, ...props }: SidebarProps) 
 function SidebarMobile({
   side,
   dir,
+  className,
   openMobile,
   setOpenMobile,
   children,
@@ -199,7 +209,10 @@ function SidebarMobile({
         data-sidebar="sidebar"
         data-slot="sidebar"
         data-mobile="true"
-        className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+        className={cn(
+          "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+          className
+        )}
         style={
           {
             "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -214,6 +227,53 @@ function SidebarMobile({
         <div className="flex h-full w-full flex-col">{children}</div>
       </SheetContent>
     </Sheet>
+  )
+}
+
+function SidebarDesktopGap({ variant }: { variant: SidebarProps["variant"] }) {
+  return (
+    <div
+      data-slot="sidebar-gap"
+      className={cn(
+        "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+        "group-data-[collapsible=offcanvas]:w-0",
+        "group-data-[side=right]:rotate-180",
+        variant === "floating" || variant === "inset"
+          ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
+          : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+      )}
+    />
+  )
+}
+
+function SidebarDesktopContainer({
+  side,
+  variant,
+  className,
+  children,
+  ...props
+}: SidebarProps & { side: "left" | "right"; variant: "sidebar" | "floating" | "inset" }) {
+  return (
+    <div
+      data-slot="sidebar-container"
+      data-side={side}
+      className={cn(
+        "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
+        variant === "floating" || variant === "inset"
+          ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
+          : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+        className
+      )}
+      {...props}
+    >
+      <div
+        data-sidebar="sidebar"
+        data-slot="sidebar-inner"
+        className="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -235,39 +295,15 @@ function SidebarDesktop({
       data-side={side}
       data-slot="sidebar"
     >
-      {/* This is what handles the sidebar gap on desktop */}
-      <div
-        data-slot="sidebar-gap"
-        className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
-          "group-data-[collapsible=offcanvas]:w-0",
-          "group-data-[side=right]:rotate-180",
-          variant === "floating" || variant === "inset"
-            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
-        )}
-      />
-      <div
-        data-slot="sidebar-container"
-        data-side={side}
-        className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
-          // Adjust the padding for floating and inset variants.
-          variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
-          className
-        )}
+      <SidebarDesktopGap variant={variant} />
+      <SidebarDesktopContainer
+        side={side}
+        variant={variant}
+        className={className}
         {...props}
       >
-        <div
-          data-sidebar="sidebar"
-          data-slot="sidebar-inner"
-          className="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
-        >
-          {children}
-        </div>
-      </div>
+        {children}
+      </SidebarDesktopContainer>
     </div>
   )
 }
@@ -296,6 +332,7 @@ function Sidebar({
       <SidebarMobile
         side={side}
         dir={dir}
+        className={className}
         openMobile={openMobile}
         setOpenMobile={setOpenMobile}
         {...props}
@@ -499,7 +536,7 @@ function SidebarGroupAction({
     props: mergeProps<"button">(
       {
         className: cn(
-          "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
+          "absolute top-3.5 right-3 flex size-6 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
           className
         ),
       },

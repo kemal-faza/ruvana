@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 import {
   Sidebar,
+  SidebarGroupAction,
   SidebarMenuAction,
   SidebarMenuSkeleton,
   SidebarProvider,
@@ -32,6 +33,16 @@ describe("aksesibilitas sidebar", () => {
     expect(screen.getByRole("button", { name: "Aksi menu" })).toHaveClass("size-6")
   })
 
+  it("memberi target desktop SidebarGroupAction minimal 24 piksel", () => {
+    render(
+      <SidebarProvider>
+        <SidebarGroupAction aria-label="Aksi grup" />
+      </SidebarProvider>,
+    )
+
+    expect(screen.getByRole("button", { name: "Aksi grup" })).toHaveClass("size-6")
+  })
+
   it("menggunakan accessible name bahasa Indonesia pada sidebar dan sheet", async () => {
     setMatchMedia("(max-width: 1023px)", true)
     const user = userEvent.setup()
@@ -39,7 +50,7 @@ describe("aksesibilitas sidebar", () => {
     render(
       <SidebarProvider>
         <SidebarTrigger />
-        <Sidebar>
+        <Sidebar className="mobile-sidebar-custom">
           <p>Menu navigasi</p>
         </Sidebar>
         <SidebarRail />
@@ -54,6 +65,7 @@ describe("aksesibilitas sidebar", () => {
     await user.click(trigger)
 
     const dialog = await screen.findByRole("dialog", { name: "Navigasi utama" })
+    expect(dialog).toHaveClass("mobile-sidebar-custom")
     expect(dialog).toHaveTextContent("Menampilkan navigasi utama pada perangkat seluler.")
     expect(screen.getByRole("button", { name: "Tutup" })).toBeInTheDocument()
     expect(screen.queryByText("Sidebar")).not.toBeInTheDocument()
