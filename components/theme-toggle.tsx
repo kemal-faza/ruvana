@@ -5,6 +5,10 @@ import { useTheme } from "next-themes"
 import { useSyncExternalStore } from "react"
 import { Button } from "@/components/ui/button"
 
+export function getNextTheme(resolvedTheme: string | undefined): "light" | "dark" {
+  return resolvedTheme === "dark" ? "light" : "dark"
+}
+
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
@@ -19,7 +23,7 @@ export function ThemeToggle() {
       size="icon"
       aria-label={label}
       disabled={!mounted}
-      onClick={() => setTheme(dark ? "light" : "dark")}
+      onClick={() => setTheme(getNextTheme(resolvedTheme))}
     >
       {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
     </Button>
