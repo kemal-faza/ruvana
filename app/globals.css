@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-poppins), Poppins, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-canvas: #F7F5EF;
+  --color-surface: #FFFFFF;
+  --color-action-brand: #6F7F3B;
+  --color-action-strong: #526222;
+  --color-accent-gold: #D9A441;
+  --color-highlight-orange: #E89B45;
+  --color-text: #252525;
+  --color-text-muted-brand: #77746D;
+  --color-text-muted: #5F5D57;
+  --color-border: #E5E2D9;
+  --color-border-strong: #526222;
+  --color-focus-ring: #526222;
+  --color-subtle: #F1F0EA;
+  --color-shell-dark: #1A1E14;
+
+  --color-status-pending-text: #6B4700;
+  --color-status-pending-surface: #FFF3D6;
+  --color-status-success-text: #1F5C3A;
+  --color-status-success-surface: #E7F4EC;
+  --color-status-danger-text: #9B1C1C;
+  --color-status-danger-surface: #FDECEC;
+  --color-status-info-text: #075985;
+  --color-status-info-surface: #E0F2FE;
+  --color-status-neutral-text: #4A4A46;
+  --color-status-neutral-surface: #F1F0EA;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
 }
