@@ -7,7 +7,7 @@ import { cn } from "cn"
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state"
 export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-export const SIDEBAR_WIDTH = "16rem"
+export const SIDEBAR_WIDTH = "15rem"
 export const SIDEBAR_WIDTH_MOBILE = "18rem"
 export const SIDEBAR_WIDTH_ICON = "3rem"
 export const SIDEBAR_KEYBOARD_SHORTCUT = "b"
@@ -41,31 +41,21 @@ function useSidebarController(
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
   const [_open, _setOpen] = React.useState(defaultOpen)
-  const open = openProp ?? _open
+  const open = isMobile ? openProp ?? _open : true
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
+      if (!isMobile) return
       const openState = typeof value === "function" ? value(open) : value
       if (setOpenProp) setOpenProp(openState)
       else _setOpen(openState)
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
-    [setOpenProp, open]
+    [isMobile, setOpenProp, open]
   )
 
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((value) => !value) : setOpen((value) => !value)
-  }, [isMobile, setOpen, setOpenMobile])
-
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        toggleSidebar()
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleSidebar])
+    if (isMobile) setOpenMobile((value) => !value)
+  }, [isMobile, setOpenMobile])
 
   const state: SidebarContextProps["state"] = open ? "expanded" : "collapsed"
   return { state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar }
