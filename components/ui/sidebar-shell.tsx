@@ -29,7 +29,7 @@ function SidebarNonCollapsible({ className, children, ...props }: SidebarProps) 
     <div
       data-slot="sidebar"
       className={cn(
-        "flex min-h-svh w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
+        "flex h-[100vh] w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
         className
       )}
       {...props}

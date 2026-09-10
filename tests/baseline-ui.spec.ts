@@ -23,8 +23,8 @@ test.describe("baseline UI behavior (RED)", () => {
     const sidebar = page.locator('[data-slot="sidebar"]').first()
     await expect(navigation).toBeVisible()
     await expect
-      .poll(() => sidebar.evaluate((element) => element.getBoundingClientRect().height >= window.innerHeight))
-      .toBe(true)
+      .poll(() => sidebar.evaluate((element) => element.getBoundingClientRect().height))
+      .toBe(await page.evaluate(() => window.innerHeight))
     await expect(page.getByRole("button", { name: "Buka navigasi" })).toHaveCount(0)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
