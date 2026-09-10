@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -9,10 +9,11 @@ vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme, setTheme }),
 }))
 
-import { ThemeToggle } from "@/components/theme-toggle"
+import { getNextTheme, ThemeToggle } from "@/components/theme-toggle"
 
 describe("ThemeToggle", () => {
   beforeEach(() => {
+    cleanup()
     setTheme.mockClear()
     resolvedTheme = "light"
   })
@@ -29,5 +30,16 @@ describe("ThemeToggle", () => {
     resolvedTheme = "dark"
     render(<ThemeToggle />)
     expect(await screen.findByRole("button", { name: "Gunakan tema terang" })).toBeInTheDocument()
+  })
+
+  it("mengubah tema gelap menjadi tema terang", async () => {
+    resolvedTheme = "dark"
+    const user = userEvent.setup()
+    render(<ThemeToggle />)
+
+    await user.click(await screen.findByRole("button", { name: "Gunakan tema terang" }))
+
+    expect(getNextTheme(resolvedTheme)).toBe("light")
+    expect(setTheme).toHaveBeenCalledWith("light")
   })
 })
