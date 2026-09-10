@@ -14,6 +14,14 @@ export interface NavigationGroup {
   items: readonly NavigationItem[]
 }
 
+export interface SerializableNavigationItem extends Omit<NavigationItem, "icon"> {
+  icon: string
+}
+
+export interface SerializableNavigationGroup extends Omit<NavigationGroup, "items"> {
+  items: readonly SerializableNavigationItem[]
+}
+
 export interface ShellAccount {
   displayName: string
   roleLabel: string

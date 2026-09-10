@@ -90,7 +90,7 @@ describe("AppShell", () => {
 
     for (let index = 0; index < focusableElements.length + 1; index += 1) {
       await user.tab()
-      await waitFor(() => expect(dialog).toContainElement(document.activeElement))
+      await waitFor(() => expect(dialog).toContainElement(document.activeElement as HTMLElement))
     }
 
     await user.keyboard("{Escape}")

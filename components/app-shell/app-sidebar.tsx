@@ -3,7 +3,15 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, useReducedMotion } from "motion/react"
-import { LogOut } from "lucide-react"
+import {
+  Building2,
+  CalendarDays,
+  Circle,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+} from "lucide-react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
@@ -20,21 +28,39 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { getMotionTransition } from "@/lib/motion"
-import type { NavigationGroup, NavigationItem, ShellAccount } from "@/components/app-shell/types"
+import type {
+  NavigationGroup,
+  NavigationItem,
+  SerializableNavigationGroup,
+  SerializableNavigationItem,
+  ShellAccount,
+} from "@/components/app-shell/types"
 
 interface AppSidebarProps {
-  navigation: readonly NavigationGroup[]
+  navigation: readonly (NavigationGroup | SerializableNavigationGroup)[]
   account: ShellAccount
   logoutDestination: string
 }
 
 interface NavigationListProps {
-  navigation: readonly NavigationGroup[]
+  navigation: readonly (NavigationGroup | SerializableNavigationGroup)[]
   onNavigate?: () => void
 }
 
-function isNavigationItemActive(pathname: string, item: NavigationItem) {
+function isNavigationItemActive(pathname: string, item: NavigationItem | SerializableNavigationItem) {
   return pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`))
+}
+
+const iconRegistry = {
+  Building2,
+  CalendarDays,
+  ClipboardList,
+  LayoutDashboard,
+  Settings,
+} as const
+
+function resolveIcon(icon: NavigationItem["icon"] | string) {
+  return typeof icon === "string" ? iconRegistry[icon as keyof typeof iconRegistry] ?? Circle : icon
 }
 
 function NavigationList({ navigation, onNavigate }: NavigationListProps) {
@@ -52,7 +78,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
             <SidebarMenu>
               {group.items.map((item) => {
                 const active = isNavigationItemActive(pathname, item)
-                const Icon = item.icon
+                const Icon = resolveIcon(item.icon)
 
                 return (
                   <SidebarMenuItem key={item.key}>
@@ -71,9 +97,9 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
                         <motion.span
                           aria-hidden="true"
                           data-motion-transform="true"
-                          layoutId={isMobile ? "active-navigation-drawer" : "active-navigation-desktop"}
+                          layoutId={reduceMotion === true ? undefined : isMobile ? "active-navigation-drawer" : "active-navigation-desktop"}
                           transition={transition}
-                          className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-sidebar-primary"
+                          className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-sidebar-primary motion-reduce:!transform-none"
                         />
                       )}
                       <Icon aria-hidden="true" />
@@ -94,10 +120,10 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
   return (
     <motion.div
       data-motion-transform="true"
-      initial={{ opacity: 0, x: reduceMotion === true ? 0 : -8 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={reduceMotion === true ? { opacity: 1 } : { opacity: 0, x: -8 }}
+      animate={reduceMotion === true ? { opacity: 1 } : { opacity: 1, x: 0 }}
       transition={transition}
-      className="min-w-0"
+      className="min-w-0 motion-reduce:!transform-none"
     >
       {navigationMarkup}
     </motion.div>
