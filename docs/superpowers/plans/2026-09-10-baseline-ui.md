@@ -12,7 +12,7 @@
 
 - Gunakan pnpm `10.30.2`; pertahankan Next.js `16.3.4`, React/React DOM `19.2.8`, dan TypeScript strict.
 - Baca panduan terkait di `node_modules/next/dist/docs/` sebelum mengubah API Next.js; untuk task ini panduan font dan testing sudah diidentifikasi.
-- Gunakan shadcn dengan **Base UI**, bukan Radix UI; gunakan CSS variables dan `new-york` style.
+- Gunakan shadcn dengan **Base UI**, bukan Radix UI; gunakan CSS variables dan pinned `base-nova` preset.
 - Primitive warna hanya `primary`, warm `neutral`, `green`, `red`, dan `yellow`; semantic status mengalias tiga intent scale dan shadcn `secondary`/`accent` mengalias neutral.
 - Gunakan semantic color utilities pada komponen; primitive scale hanya untuk mendefinisikan semantic mappings atau kebutuhan visual yang tidak memiliki makna semantic.
 - Target WCAG 2.2 AA, target sentuh minimal 44×44 px, focus-visible jelas, status tidak bergantung pada warna, dan seluruh copy user-facing berbahasa Indonesia.
@@ -20,7 +20,8 @@
 - Desktop dimulai pada `1024px`; sidebar 232–256 px dan tidak pernah menjadi icon rail. Tablet 768–1023 px dan mobile <768 px memakai app bar plus drawer.
 - Jangan tambahkan Prisma query, autentikasi, role filtering, network request, landing publik, toast, chart, tabel, upload, atau komponen domain.
 - Ikuti RED–GREEN–REFACTOR; setiap implementasi behavior didahului test yang diamati gagal.
-- Jangan stage direktori lokal `.superpowers/`; docs diabaikan secara default sehingga stage plan/spec hanya dengan path eksplisit dan `-f` bila diperlukan.
+- Jangan stage direktori lokal `.superpowers/`.
+- **Review workflow commit:** setelah koreksi review ini selesai dan sebelum implementasi dimulai, commit file plan ini sendiri dengan `git add -f docs/superpowers/plans/2026-09-10-baseline-ui.md && git commit -m "docs: tetapkan rencana baseline UI"`. Jangan memasukkan `docs/superpowers/specs/` atau file plan ini ke commit implementasi berikutnya; keduanya sudah menjadi artefak review yang committed.
 
 ## File Structure
 
@@ -32,14 +33,14 @@
 - `playwright.config.ts` — browser projects dan web server untuk E2E/visual test.
 - `components/theme-provider.tsx` — adapter `next-themes`.
 - `components/theme-toggle.tsx` — kontrol tema light/dark yang hydration-safe.
-- `components/ui/{button,input,field,card,badge,skeleton,empty,sheet,sidebar,tooltip}.tsx` — primitive shadcn/Base UI dan dependency internal sidebar.
+- `components/ui/{button,input,field,card,badge,skeleton,empty,label,separator,sheet,sidebar,tooltip}.tsx` — primitive shadcn/Base UI dan seluruh dependency lokal yang dihasilkan oleh perintah CLI pinned.
 - `hooks/use-mobile.ts` — breakpoint drawer `<1024px` yang dipakai sidebar.
 - `components/app-shell/types.ts` — kontrak navigation/account/logout.
 - `components/app-shell/app-sidebar.tsx` — brand, grouped navigation, active state, account, logout.
 - `components/app-shell/mobile-app-bar.tsx` — brand, drawer trigger, dan theme toggle.
 - `components/app-shell/app-shell.tsx` — komposisi responsive shell dan content outlet.
 - `components/ui/*.test.tsx`, `components/theme-toggle.test.tsx`, `components/app-shell/*.test.tsx` — behavior dan axe coverage terkolokasi.
-- `tests/baseline-ui.spec.ts` — responsive, theme, keyboard, dan screenshot assertions.
+- `tests/baseline-ui.spec.ts` — behavior RED contracts dibuat sebelum implementasi; visual assertions ditambahkan pada Task 6.
 
 **Modify**
 
@@ -78,16 +79,16 @@ export interface ShellAccount {
 export interface AppShellProps {
   navigation: readonly NavigationGroup[]
   account: ShellAccount
-  logoutHref: string
+  logoutDestination: string
   children: React.ReactNode
 }
 ```
 
-`logoutHref` dipilih daripada callback agar katalog tetap dapat dirender sebagai Server Component dan pemilik autentikasi kelak dapat memasok route/action endpoint. Shell tidak mengeksekusi business logic.
+`logoutDestination` adalah kontrak destination-page yang aman: pemanggil server hanya memasok path halaman internal same-origin (contoh `"/keluar"`), lalu shell merender ordinary Next `Link` berlabel `Keluar`. Nilai ini bukan endpoint mutasi, bukan Server Action, bukan callback, dan tidak boleh mengubah sesi melalui GET. Integrasi sesi di masa depan hanya boleh mengganti link ini dengan `<form method="post" action={serverAction}>` yang memanggil POST Server Action; mutasi sesi tidak boleh disisipkan ke dalam `logoutDestination`. Shell tetap tidak mengeksekusi business logic.
 
 ## Execution Order
 
-- **Wave 1 (sequential foundation):** Task 1 — dependency, test harness, shadcn/Base UI, tokens, font, dan theme provider.
+- **Wave 1 (sequential foundation):** Task 1 — dependency, test harness, browser behavior RED contracts, shadcn/Base UI, tokens, font, dan theme provider.
 - **Wave 2 (parallel):** Task 2 dan Task 3 — primitive files berbeda dan hanya bergantung pada foundation Task 1.
 - **Wave 3 (sequential):** Task 4 — shell bergantung pada primitive dan theme controls Tasks 1–3.
 - **Wave 4 (sequential):** Task 5 — katalog mengomposisikan seluruh public contract.
@@ -102,6 +103,8 @@ export interface AppShellProps {
 - Create: `lib/utils.ts`
 - Create: `vitest.config.mts`
 - Create: `vitest.setup.ts`
+- Create: `playwright.config.ts`
+- Create: `tests/baseline-ui.spec.ts`
 - Create: `components/theme-provider.tsx`
 - Create: `components/theme-toggle.tsx`
 - Test: `components/theme-toggle.test.tsx`
@@ -153,11 +156,146 @@ Create `vitest.setup.ts`:
 
 ```ts
 import "@testing-library/jest-dom/vitest"
+
+const mediaState = new Map<string, boolean>()
+const mediaLists = new Map<string, Set<MediaQueryList>>()
+const mediaListeners = new Map<string, Set<(event: MediaQueryListEvent) => void>>()
+
+export function setMatchMedia(query: string, matches: boolean) {
+  mediaState.set(query, matches)
+  mediaLists.get(query)?.forEach((mediaList) => {
+    Object.defineProperty(mediaList, "matches", { configurable: true, value: matches })
+  })
+  const event = { matches, media: query } as MediaQueryListEvent
+  mediaListeners.get(query)?.forEach((listener) => listener(event))
+}
+
+export function resetMatchMedia() {
+  mediaState.clear()
+  mediaLists.clear()
+  mediaListeners.clear()
+}
+
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: (query: string): MediaQueryList => {
+    const listeners = mediaListeners.get(query) ?? new Set()
+    mediaListeners.set(query, listeners)
+    const mediaList = {
+      matches: mediaState.get(query) ?? false,
+      media: query,
+      onchange: null,
+      addEventListener: (_type, listener) => listeners.add(listener as (event: MediaQueryListEvent) => void),
+      removeEventListener: (_type, listener) => listeners.delete(listener as (event: MediaQueryListEvent) => void),
+      addListener: (listener) => listeners.add(listener),
+      removeListener: (listener) => listeners.delete(listener),
+      dispatchEvent: () => true,
+    } as MediaQueryList
+    const lists = mediaLists.get(query) ?? new Set()
+    lists.add(mediaList)
+    mediaLists.set(query, lists)
+    return mediaList
+  },
+})
 ```
+
+The polyfill is deliberately controllable rather than hard-coded: every desktop test calls `setMatchMedia("(max-width: 1023px)", false)`, every narrow test calls it with `true`, and each test calls `resetMatchMedia()` in `afterEach`. Do not read `window.matchMedia` directly in tests or silently fall back to `innerWidth`; the generated `use-mobile.ts` listener must exercise this controllable implementation.
 
 Expected: dependency installation exits 0. Do not run Vitest until the failing test exists in Step 2.
 
-- [ ] **Step 2: Write the failing theme-toggle contract test (RED)**
+- [ ] **Step 2: Write nonvisual browser behavior contracts before UI implementation (RED)**
+
+Create `playwright.config.ts` now, before installing or implementing the product components:
+
+```ts
+import { defineConfig, devices } from "@playwright/test"
+
+export default defineConfig({
+  testDir: "./tests",
+  baseURL: "http://127.0.0.1:3000",
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  webServer: {
+    command: "pnpm dev",
+    url: "http://127.0.0.1:3000",
+    reuseExistingServer: !process.env.CI,
+  },
+})
+```
+
+Create `tests/baseline-ui.spec.ts` with only these nonvisual contracts. They are intentionally written before the theme provider, shell, drawer, and Motion implementation:
+
+```ts
+import { expect, test } from "@playwright/test"
+
+test.describe("baseline UI behavior (RED)", () => {
+  test("pilihan tema mengalahkan sistem dan tersimpan", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" })
+    await page.goto("/")
+    await page.getByRole("button", { name: "Gunakan tema gelap" }).first().click()
+    await expect(page.locator("html")).toHaveClass(/dark/)
+    await page.reload()
+    await expect(page.locator("html")).toHaveClass(/dark/)
+  })
+
+  test("desktop selalu menampilkan sidebar dan Ctrl/Cmd+B tidak mengubahnya", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto("/")
+    const navigation = page.getByRole("navigation", { name: "Navigasi utama" })
+    await expect(navigation).toBeVisible()
+    await expect(page.getByRole("button", { name: "Buka navigasi" })).toHaveCount(0)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    ).toBe(true)
+    await page.keyboard.press("Control+b")
+    await page.keyboard.press("Meta+b")
+    await expect(navigation).toBeVisible()
+  })
+
+  test("tablet dan mobile mempertahankan openMobile pada Sheet", async ({ page }) => {
+    for (const width of [390, 834]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto("/")
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      ).toBe(true)
+      const trigger = page.getByRole("button", { name: "Buka navigasi" })
+      await expect(trigger).toBeVisible()
+      await trigger.click()
+      const drawer = page.getByRole("dialog", { name: "Navigasi utama" })
+      await expect(drawer).toBeVisible()
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      ).toBe(true)
+      await page.keyboard.press("Escape")
+      await expect(drawer).toBeHidden()
+      await expect(trigger).toBeFocused()
+      await trigger.click()
+      await drawer.getByRole("link", { name: "Reservasi" }).click()
+      await expect(drawer).toBeHidden()
+    }
+  })
+
+  test("rendered transform nonaktif pada reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    await page.goto("/")
+    const motionNodes = page.locator("[data-motion-transform]")
+    await expect(motionNodes).not.toHaveCount(0)
+    await expect
+      .poll(() =>
+        motionNodes.evaluateAll((nodes) =>
+          nodes.every((node) => getComputedStyle(node).transform === "none"),
+        ),
+      )
+      .toBe(true)
+  })
+})
+```
+
+Run: `pnpm exec playwright test tests/baseline-ui.spec.ts --grep "behavior \(RED\)"`
+
+Expected: FAIL because the current page has no theme persistence, responsive shell, drawer dialog, or `[data-motion-transform]` contract. Keep this failure recorded; do not add screenshot assertions here.
+
+- [ ] **Step 3: Write the failing theme-toggle contract test (RED)**
 
 Create `components/theme-toggle.test.tsx`:
 
@@ -197,38 +335,40 @@ describe("ThemeToggle", () => {
 })
 ```
 
-- [ ] **Step 3: Run the focused test and observe the intended failure**
+- [ ] **Step 4: Run the focused test and observe the intended failure**
 
 Run: `pnpm test -- components/theme-toggle.test.tsx`
 
 Expected: FAIL because `@/components/theme-toggle` does not exist.
 
-- [ ] **Step 4: Initialize shadcn/Base UI and install minimum components**
+- [ ] **Step 5: Initialize shadcn/Base UI deterministically and install minimum components**
 
-Run `pnpm dlx shadcn@4.21.0 init`, selecting:
-
-```text
-Framework: Next.js
-Base library: Base UI
-Style: New York
-Base color: Olive
-CSS variables: Yes
-Global CSS: app/globals.css
-RSC: Yes
-TypeScript/TSX: Yes
-Aliases: @/components, @/components/ui, @/lib, @/lib/utils, @/hooks
-```
-
-Then run:
+Run exactly:
 
 ```bash
-pnpm dlx shadcn@4.21.0 add button input field card badge skeleton empty sidebar
+pnpm dlx shadcn@4.21.0 init --template next --base base --preset nova --css-variables --no-rtl --no-pointer
+```
+
+`base-nova` is the CLI v4 default Base UI preset. It supplies the preset structure only; Ruvana’s approved semantic token hierarchy replaces its generated palette in `app/globals.css` during Step 6. Immediately inspect `components.json` and verify that it records the Next template, Base UI/base-nova preset, CSS variables, RSC/TSX settings, `app/globals.css`, and the existing `@/*` aliases before generating components.
+
+Run the pinned component command once as a dry run and inspect that its output contains the complete local inventory documented below:
+
+```bash
+pnpm dlx shadcn@4.21.0 add button input field card badge skeleton empty label separator sheet sidebar tooltip use-mobile --dry-run
+```
+
+Only after the dry-run output is verified, run the real command and then install the remaining product dependencies:
+
+```bash
+pnpm dlx shadcn@4.21.0 add button input field card badge skeleton empty label separator sheet sidebar tooltip use-mobile
 pnpm add motion next-themes lucide-react
 ```
 
-Inspect generated `components.json` before continuing. It must point to `app/globals.css`, keep Tailwind config blank for v4, set `rsc` and `tsx` true, and identify Base UI. If the installed CLI schema uses a field name different from the current CLI output, preserve the CLI-generated field rather than inventing one.
+The pinned registry's documented generated imports define the complete local inventory; do not replace it with a glob or an unspecified “dependencies” placeholder. `field.tsx` imports `@/components/ui/label` and `@/components/ui/separator`; `sidebar.tsx` imports `@/components/ui/button`, `@/components/ui/input`, `@/components/ui/separator`, `@/components/ui/sheet`, `@/components/ui/skeleton`, `@/components/ui/tooltip`, and `@/hooks/use-mobile`. Therefore this command must emit exactly these local generated files: `components/ui/button.tsx`, `components/ui/input.tsx`, `components/ui/field.tsx`, `components/ui/card.tsx`, `components/ui/badge.tsx`, `components/ui/skeleton.tsx`, `components/ui/empty.tsx`, `components/ui/label.tsx`, `components/ui/separator.tsx`, `components/ui/sheet.tsx`, `components/ui/sidebar.tsx`, `components/ui/tooltip.tsx`, and `hooks/use-mobile.ts`. Package imports such as `class-variance-authority`, `lucide-react`, and the selected Base UI/shadcn runtime are dependencies, not additional local generated files.
 
-- [ ] **Step 5: Replace generated palette with the approved token hierarchy**
+Re-open `components.json` after the real add and verify it still points to `app/globals.css`, keeps Tailwind config blank for v4, preserves `rsc` and `tsx`, identifies Base UI/base-nova, and retains the aliases emitted by the exact init command. If the installed CLI schema uses a field name different from the current CLI output, preserve the CLI-generated field rather than inventing one.
+
+- [ ] **Step 6: Replace generated palette with the approved token hierarchy**
 
 In `app/globals.css`, retain `@import "tailwindcss"`, generated animation imports required by shadcn, and expose only these public primitive families through `@theme inline`:
 
@@ -290,6 +430,8 @@ In `app/globals.css`, retain `@import "tailwindcss"`, generated animation import
   --color-sidebar-ring: var(--sidebar-ring);
   --radius-control: 0.625rem;
   --radius-card: 1.25rem;
+  --duration-motion-standard: var(--motion-duration-standard);
+  --ease-motion-standard: var(--motion-easing-standard);
   --shadow-subtle: 0 2px 8px rgb(0 0 0 / 0.04);
 }
 ```
@@ -300,6 +442,8 @@ Define the five complete primitive scales below. The chromatic scales preserve t
 :root {
   --black: oklch(0% 0 0);
   --white: oklch(100% 0 0);
+  --motion-duration-standard: 180ms;
+  --motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --spacing-page-mobile: 1rem;
   --spacing-page-tablet: 1.75rem;
   --spacing-page-desktop: 2rem;
@@ -459,7 +603,7 @@ Map semantic roles as follows:
 
 Add base rules for `body`, `::selection`, `*:focus-visible`, and `@media (prefers-reduced-motion: reduce)` using only semantic variables. Do not retain the old media-query theme because `next-themes` owns the `.dark` class.
 
-- [ ] **Step 6: Implement the provider, root integration, and minimal toggle (GREEN)**
+- [ ] **Step 7: Implement the provider, root integration, and minimal toggle (GREEN)**
 
 Create `components/theme-provider.tsx` using the official shadcn adapter:
 
@@ -506,7 +650,7 @@ export function ThemeToggle() {
 }
 ```
 
-Update `app/layout.tsx` to use `Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" })`, set `lang="id"`, add `suppressHydrationWarning`, and wrap children with:
+Update `app/layout.tsx` to use `const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" })`, set `lang="id"`, add `suppressHydrationWarning`, and apply `poppins.variable` to the root `<html>` class (not only to CSS configuration). Preserve the existing Ruvana metadata exactly: title `Ruvana — Reservasi Fasilitas Kampus` and description `Sistem reservasi & pelaporan fasilitas kampus (ruang kelas, aula, laboratorium, alat, lapangan).` Do not replace it with shadcn/default metadata. Wrap children with:
 
 ```tsx
 <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -514,16 +658,16 @@ Update `app/layout.tsx` to use `Poppins({ subsets: ["latin"], weight: ["400", "5
 </ThemeProvider>
 ```
 
-- [ ] **Step 7: Run tests and refactor without widening scope**
+- [ ] **Step 8: Run tests and refactor without widening scope**
 
 Run: `pnpm test -- components/theme-toggle.test.tsx`
 
 Expected: 2 tests PASS. Keep ThemeToggle on the Button export generated by shadcn CLI 4.21.0; do not replace Base UI.
 
-- [ ] **Step 8: Commit foundation**
+- [ ] **Step 9: Commit foundation**
 
 ```bash
-git add package.json pnpm-lock.yaml components.json lib/utils.ts vitest.config.mts vitest.setup.ts app/globals.css app/layout.tsx components/theme-provider.tsx components/theme-toggle.tsx components/theme-toggle.test.tsx components/ui/button.tsx components/ui/input.tsx components/ui/field.tsx components/ui/card.tsx components/ui/badge.tsx components/ui/skeleton.tsx components/ui/empty.tsx components/ui/sheet.tsx components/ui/sidebar.tsx components/ui/tooltip.tsx hooks/use-mobile.ts
+git add package.json pnpm-lock.yaml components.json lib/utils.ts vitest.config.mts vitest.setup.ts playwright.config.ts app/globals.css app/layout.tsx components/theme-provider.tsx components/theme-toggle.tsx components/theme-toggle.test.tsx tests/baseline-ui.spec.ts components/ui/button.tsx components/ui/input.tsx components/ui/field.tsx components/ui/card.tsx components/ui/badge.tsx components/ui/skeleton.tsx components/ui/empty.tsx components/ui/label.tsx components/ui/separator.tsx components/ui/sheet.tsx components/ui/sidebar.tsx components/ui/tooltip.tsx hooks/use-mobile.ts
 git commit -m "feat: tambahkan fondasi UI Ruvana"
 ```
 
@@ -589,6 +733,19 @@ it("meneruskan status required ke input berlabel", () => {
   expect(screen.getByRole("textbox", { name: "Nama" })).toBeRequired()
 })
 
+it("menyediakan API indikator wajib yang terlihat dan dapat diakses", () => {
+  render(
+    <Field>
+      <FieldLabel htmlFor="wajib" required>Nama</FieldLabel>
+      <Input id="wajib" required />
+    </Field>,
+  )
+  expect(screen.getByRole("textbox", { name: "Nama (wajib)" })).toBeRequired()
+  expect(screen.getByText("*", { selector: "span" })).toBeVisible()
+  expect(screen.getByText("*")).toHaveAttribute("aria-hidden", "true")
+  expect(screen.getByText("(wajib)", { selector: ".sr-only" })).toBeInTheDocument()
+})
+
 it("merender region card opsional tanpa membuat card interaktif", () => {
   render(<Card><CardHeader><CardTitle>Ringkasan</CardTitle></CardHeader><CardContent>Isi</CardContent><CardFooter>Aksi</CardFooter></Card>)
   expect(screen.getByText("Ringkasan")).toBeInTheDocument()
@@ -606,7 +763,7 @@ Expected: FAIL because Button has no `loading`/approved variants and styling/con
 
 In `button.tsx`, extend the generated props with `loading?: boolean`; derive `disabled={disabled || loading}`, `aria-busy={loading || undefined}`, and render `LoaderCircle` as decorative `animate-spin motion-reduce:animate-none` while retaining the label in an opacity-hidden span so dimensions and accessible name stay stable. Keep only approved variants and shadcn sizes; icon size must yield a 44×44 px control.
 
-In `field.tsx`/`input.tsx`, preserve Base UI/shadcn composition, style `[data-invalid]` and `aria-invalid` with destructive border plus a non-color cue, and keep label/help/error IDs caller-controlled as shown in the test. Do not add form-state or validation libraries.
+In `field.tsx`/`input.tsx`, preserve Base UI/shadcn composition, style `[data-invalid]` and `aria-invalid` with destructive border plus a non-color cue, and keep label/help/error IDs caller-controlled as shown in the test. Extend `FieldLabel` with the explicit `required?: boolean` API. When true, render a visible `*` marked `aria-hidden="true"` and adjacent visually-hidden text `(wajib)` so the accessible label becomes “Nama (wajib)”; the API must not rely on color alone and must not infer required state from an unrelated input. Do not add form-state or validation libraries.
 
 In `card.tsx`, retain generated exports `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, and `CardFooter`; use `rounded-card`, `p-6`, `border-border`, and `shadow-subtle`, and keep the root a non-interactive `div`.
 
@@ -705,14 +862,14 @@ git commit -m "feat: tambahkan primitive status dan empty state"
 - Modify: `hooks/use-mobile.ts`
 
 **Interfaces:**
-- Consumes: locked interfaces, Button, Sidebar/Sheet internals, ThemeToggle, Motion, Lucide, `usePathname`.
+- Consumes: locked interfaces, Button, Sidebar/Sheet internals, ThemeToggle, Motion, Lucide, `usePathname`, and the controllable `setMatchMedia` test helper.
 - Produces: `AppShell(props: AppShellProps)`, `AppSidebar`, and `MobileAppBar` with server-owned input data.
 
 **Blocked by:** Task 2 and Task 3.
 
 - [ ] **Step 1: Write failing shell and accessibility tests (RED)**
 
-Mock `next/navigation` to return `/reservasi`, import `axe` explicitly with `import { axe } from "vitest-axe"`, render a fixture with two labeled groups, and assert:
+Import `afterEach` from `vitest` and import `resetMatchMedia` plus `setMatchMedia` from `@/vitest.setup`; call `resetMatchMedia()` in `afterEach`. Mock `next/navigation` to return `/reservasi`, import `axe` explicitly with `import { axe } from "vitest-axe"`, render a fixture with two labeled groups, and assert the narrow contract:
 
 ```tsx
 expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).toHaveAttribute("aria-current", "page")
@@ -723,17 +880,23 @@ const accessibility = await axe(container)
 expect(accessibility.violations).toEqual([])
 ```
 
-Add user-event tests that open the drawer and find its dialog name “Navigasi utama”. Query enabled links, buttons, inputs, selects, and elements with non-negative `tabindex` inside the dialog; press Tab `focusableElements.length + 1` times and assert `dialog.contains(document.activeElement)` after every press, proving focus cannot escape. Then press Escape, verify closure, and verify focus returns to “Buka navigasi”. Open it again, click the “Reservasi” link, and assert the dialog closes. Add a rerender/pathname test proving active state moves without role filtering inside the shell.
+Add these separate viewport-state tests before implementation. Import the helpers with `import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"`; call `resetMatchMedia()` in `afterEach`. The desktop test must call `setMatchMedia("(max-width: 1023px)", false)`, assert the navigation is visible, assert “Buka navigasi” does not exist, dispatch both `new KeyboardEvent("keydown", { key: "b", ctrlKey: true })` and the equivalent `metaKey: true` event on `window`, and assert the navigation remains visible. The narrow test must call `setMatchMedia("(max-width: 1023px)", true)`, open the Sheet, and find its dialog name “Navigasi utama”. Query enabled links, buttons, inputs, selects, and elements with non-negative `tabindex` inside the dialog; press Tab `focusableElements.length + 1` times and assert `dialog.contains(document.activeElement)` after every press, proving focus cannot escape. Then press Escape, verify closure, and verify focus returns to “Buka navigasi”. Open it again, click the “Reservasi” link, and assert the dialog closes. Add a rerender/pathname test proving active state moves without role filtering inside the shell. The logout assertion must also verify an ordinary anchor with `href="/keluar"`, with no form action, mutation callback, or GET side effect.
 
 Create `lib/motion.test.ts` first with this reduced-motion contract:
 
 ```ts
+expect(getMotionTransition(null)).toEqual({
+  duration: 0.18,
+  ease: [0.22, 1, 0.36, 1],
+})
 expect(getMotionTransition(true)).toEqual({ duration: 0 })
 expect(getMotionTransition(false)).toEqual({
   duration: 0.18,
   ease: [0.22, 1, 0.36, 1],
 })
 ```
+
+In the same RED file add the drift-prevention test. Read `app/globals.css` with `readFileSync(new URL("../app/globals.css", import.meta.url), "utf8")` and assert it contains `--motion-duration-standard: ${motionTokens.cssDuration};` and `--motion-easing-standard: ${motionTokens.cssEasing};`. This test is the explicit synchronization guard between semantic CSS tokens and typed Motion equivalents; it must fail if either side changes independently.
 
 - [ ] **Step 2: Run focused test and observe RED**
 
@@ -743,21 +906,21 @@ Expected: FAIL because application-shell modules and `getMotionTransition` do no
 
 - [ ] **Step 3: Implement contracts and breakpoint (GREEN)**
 
-Create `types.ts` exactly from “Interfaces Locked for All Tasks”. In generated `hooks/use-mobile.ts`, set the media query boundary to `(max-width: 1023px)` so both tablet and mobile use the accessible Sheet path. In `components/ui/sidebar.tsx`, set desktop width to `15rem`, mobile width to `18rem`, use desktop classes beginning at `lg`, and configure the app sidebar with `collapsible="offcanvas"` only for narrow navigation—never render `SidebarRail` or use `collapsible="icon"`.
+Create `types.ts` exactly from “Interfaces Locked for All Tasks”. In generated `hooks/use-mobile.ts`, set the media query boundary to `(max-width: 1023px)` so both tablet and mobile use the accessible Sheet path. In `components/ui/sidebar.tsx`, set desktop width to `15rem`, mobile width to `18rem`, and use desktop classes beginning at `lg`. Remove the generated Ctrl/Cmd+B effect entirely: desktop sidebar state is permanently expanded and visible, `setOpen` is a no-op for desktop, and `toggleSidebar()` may only toggle `openMobile` when `isMobile` is true. Keep the provider’s `openMobile`/`setOpenMobile` state for the narrow Sheet. Evaluate the narrow Sheet branch before `collapsible="none"`; render the desktop branch as non-collapsible/permanently visible, and never render `SidebarRail` or use `collapsible="icon"`.
 
 Build grouped menu markup with semantic `<nav aria-label="Navigasi utama">`; each `SidebarMenuButton` renders a Next `Link`, receives `isActive`, `aria-current={active ? "page" : undefined}`, a Lucide icon with `aria-hidden`, and visible Indonesian label. The mobile renderer gets `setOpenMobile` from the generated sidebar context and calls `setOpenMobile(false)` after a navigation link is activated. Render brand in header and account name/role plus `LogOut` link in footer. Do not render search, version/team switchers, projects, submenus, or authorization conditions.
 
-Use `SidebarProvider`, desktop `AppSidebar`, a `<header>` app bar visible below `lg`, and `SidebarInset`/`main` for children. The app bar has a 44×44 “Buka navigasi” trigger and ThemeToggle. Place another ThemeToggle in the desktop sidebar footer. Ensure the generated mobile Sheet path contains a visually hidden Sheet title “Navigasi utama” so its dialog has an accessible name.
+Use `SidebarProvider`, desktop `AppSidebar`, a `<header>` app bar visible below `lg`, and `SidebarInset`/`main` for children. The app bar has a 44×44 “Buka navigasi” trigger wired to `setOpenMobile(true)` and ThemeToggle. Place another ThemeToggle in the desktop sidebar footer. Ensure the generated mobile Sheet path contains a visually hidden Sheet title “Navigasi utama” so its dialog has an accessible name. The sidebar logout control is an ordinary `Link href={logoutDestination}` to the safe destination page; it performs no session mutation.
 
 - [ ] **Step 4: Add restrained Motion without replacing Base UI state management**
 
-Create `lib/motion.ts` as the single source for motion duration/easing and export `getMotionTransition(reduceMotion: boolean)` with the exact tested return values. Do not duplicate those literals in CSS. Use `motion/react` only around the drawer navigation content, catalog outlet entrance, and active indicator. Let Base UI Sheet retain ownership of overlay, focus trap, Escape, inert background, and focus restoration. Read `useReducedMotion()` and call:
+Create `lib/motion.ts` with typed Motion equivalents and export `getMotionTransition(reduceMotion: boolean | null)`. It must reduce only when `reduceMotion === true`; both `false` and `null` return `{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }`, while `true` returns `{ duration: 0 }`. Export exactly `motionTokens = { durationSeconds: 0.18, ease: [0.22, 1, 0.36, 1] as const, cssDuration: "180ms", cssEasing: "cubic-bezier(0.22, 1, 0.36, 1)" } as const` for the drift test. Keep the synchronized semantic CSS tokens `--motion-duration-standard: 180ms` and `--motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1)` in `app/globals.css`; use those variables for CSS transitions rather than raw motion duration/easing values. Use `motion/react` only around the drawer navigation content, catalog outlet entrance, and active indicator. Let Base UI Sheet retain ownership of overlay, focus trap, Escape, inert background, and focus restoration. Read `useReducedMotion()` and call:
 
 ```tsx
 const transition = getMotionTransition(reduceMotion)
 ```
 
-For active navigation, render one decorative `motion.span` per visible navigation context using `layoutId="active-navigation-desktop"` or `layoutId="active-navigation-drawer"`, `aria-hidden="true"`, and no semantic information. Animate drawer navigation content from `{ opacity: 0, x: reduceMotion ? 0 : -8 }` to `{ opacity: 1, x: 0 }`; Base UI still controls the panel lifecycle. For outlet entrance, use `{ opacity: 0, y: reduceMotion ? 0 : 8 }` to `{ opacity: 1, y: 0 }`. Do not animate Button/Card/Badge/Field/Empty.
+For active navigation, render one decorative `motion.span` per visible navigation context using `layoutId="active-navigation-desktop"` or `layoutId="active-navigation-drawer"`, `aria-hidden="true"`, and no semantic information. Mark each animated wrapper with `data-motion-transform`. Animate drawer navigation content from `{ opacity: 0, x: reduceMotion === true ? 0 : -8 }` to `{ opacity: 1, x: 0 }`; Base UI still controls the panel lifecycle. For outlet entrance, use `{ opacity: 0, y: reduceMotion === true ? 0 : 8 }` to `{ opacity: 1, y: 0 }`. Do not animate Button/Card/Badge/Field/Empty. The rendered Playwright reduced-motion contract must observe every `[data-motion-transform]` node with computed `transform === "none"` after `page.emulateMedia({ reducedMotion: "reduce" })`.
 
 - [ ] **Step 5: Run shell tests and refactor**
 
@@ -799,7 +962,7 @@ Expected: FAIL because the existing Fase-0 page lacks the shell and catalog.
 
 - [ ] **Step 3: Build the minimum static catalog (GREEN)**
 
-Use static navigation groups with `LayoutDashboard`, `CalendarDays`, `Building2`, `ClipboardList`, and `Settings`; account `{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }`; and `logoutHref="/keluar"`. The content must start with a small “Pratinjau UI” eyebrow and `<h1>Baseline UI Ruvana</h1>`, then six regions with these exact section/heading pairs: `aria-labelledby="button-title"`/`id="button-title"`, `field-title`, `card-title`, `badge-title`, `skeleton-title`, and `empty-title`. The visible headings are respectively “Button”, “Field”, “Card”, “Badge”, “Skeleton”, and “Empty state”. Field examples use labels/help/error IDs; status badges include Indonesian text; Skeleton sits under a visible “Contoh pemuatan” label; Empty uses `Inbox` and an outline Button.
+Use static navigation groups with `LayoutDashboard`, `CalendarDays`, `Building2`, `ClipboardList`, and `Settings`; account `{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }`; and `logoutDestination="/keluar"`. The content must start with a small “Pratinjau UI” eyebrow and `<h1>Baseline UI Ruvana</h1>`, then six regions with these exact section/heading pairs: `aria-labelledby="button-title"`/`id="button-title"`, `field-title`, `card-title`, `badge-title`, `skeleton-title`, and `empty-title`. The visible headings are respectively “Button”, “Field”, “Card”, “Badge”, “Skeleton”, and “Empty state”. Field examples use `FieldLabel required` for the visible `*` plus accessible `(wajib)` indicator, labels/help/error IDs, and a matching `required` input; status badges include Indonesian text; Skeleton sits under a visible “Contoh pemuatan” label; Empty uses `Inbox` and an outline Button. The `/keluar` value is only a safe same-origin destination page rendered by the shell’s ordinary link; it is not a logout mutation endpoint.
 
 Keep this page synchronous and static. Do not add `"use client"`, event-backed fake mutations, fake statistics, facility data, auth controls, or role switchers.
 
@@ -821,10 +984,9 @@ git commit -m "feat: tampilkan katalog baseline UI"
 ### Task 6: Responsive, theme, contrast, and visual verification
 
 **Files:**
-- Create: `playwright.config.ts`
-- Create: `tests/baseline-ui.spec.ts`
+- Modify: `tests/baseline-ui.spec.ts` (behavior contracts were created and run RED in Task 1)
 - Create: `tests/baseline-ui.spec.ts-snapshots/*` (generated by Playwright for the project OS only)
-- Modify: none; Task 1 already adds the E2E script and dependencies.
+- Modify: none; Task 1 already adds `playwright.config.ts` and the E2E dependencies.
 
 **Interfaces:**
 - Consumes: completed `/` catalog and browser-visible shell contracts.
@@ -832,17 +994,14 @@ git commit -m "feat: tampilkan katalog baseline UI"
 
 **Blocked by:** Task 5.
 
-- [ ] **Step 1: Write browser tests before accepting screenshots (RED)**
+- [ ] **Step 1: Append visual-only acceptance tests after behavior contracts are GREEN**
 
-Create `playwright.config.ts` with `baseURL: "http://127.0.0.1:3000"`, Chromium project, `webServer.command: "pnpm dev"`, `webServer.url` matching baseURL, and `reuseExistingServer: !process.env.CI`.
-
-Create `tests/baseline-ui.spec.ts` with:
+Do not recreate `playwright.config.ts` or the behavior tests here. Task 1 created and ran those nonvisual contracts before the corresponding UI implementation. Add only `import AxeBuilder from "@axe-core/playwright"` to the existing import section of `tests/baseline-ui.spec.ts`; do not redeclare its existing `expect` or `test` imports. Append only this visual suite; screenshot assertions remain the final visual acceptance layer:
 
 ```ts
 import AxeBuilder from "@axe-core/playwright"
-import { expect, test } from "@playwright/test"
 
-test.describe("baseline UI", () => {
+test.describe("baseline UI visual acceptance", () => {
   for (const theme of ["light", "dark"] as const) {
     test(`desktop ${theme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme })
@@ -857,41 +1016,25 @@ test.describe("baseline UI", () => {
       await expect(page).toHaveScreenshot(`baseline-desktop-${theme}.png`, { fullPage: true })
     })
 
-    test(`drawer mobile ${theme} dapat dioperasikan dengan keyboard`, async ({ page }) => {
+    test(`drawer mobile ${theme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme })
       await page.setViewportSize({ width: 390, height: 844 })
       await page.goto("/")
       const trigger = page.getByRole("button", { name: "Buka navigasi" })
-      await trigger.focus()
-      await page.keyboard.press("Enter")
+      await trigger.click()
       await expect(page.getByRole("dialog", { name: "Navigasi utama" })).toBeVisible()
       await expect(page).toHaveScreenshot(`baseline-mobile-drawer-${theme}.png`, { fullPage: true })
-      await page.keyboard.press("Escape")
-      await expect(trigger).toBeFocused()
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-        ),
-      ).toBe(true)
     })
   }
 
-  test("pilihan tema mengalahkan sistem dan tersimpan", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light" })
-    await page.goto("/")
-    await page.getByRole("button", { name: "Gunakan tema gelap" }).first().click()
-    await expect(page.locator("html")).toHaveClass(/dark/)
-    await page.reload()
-    await expect(page.locator("html")).toHaveClass(/dark/)
-  })
-
-  test("tablet menggunakan app bar dan drawer", async ({ page }) => {
-    await page.setViewportSize({ width: 834, height: 1112 })
-    await page.goto("/")
-    await expect(page.getByRole("button", { name: "Buka navigasi" })).toBeVisible()
-    await expect(page.getByRole("dialog", { name: "Navigasi utama" })).toHaveCount(0)
-    await page.getByRole("button", { name: "Buka navigasi" }).click()
-    await expect(page.getByRole("dialog", { name: "Navigasi utama" })).toBeVisible()
+  test("tidak memiliki overflow horizontal pada breakpoint akhir", async ({ page }) => {
+    for (const width of [390, 834, 1280]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto("/")
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      ).toBe(true)
+    }
   })
 
   for (const deficiency of ["protanopia", "deuteranopia", "tritanopia"] as const) {
@@ -909,11 +1052,11 @@ test.describe("baseline UI", () => {
 })
 ```
 
-- [ ] **Step 2: Run E2E once and observe RED**
+- [ ] **Step 2: Run behavior contracts, then visual tests**
 
-Run: `pnpm exec playwright install chromium && pnpm test:e2e`
+Run `pnpm exec playwright test tests/baseline-ui.spec.ts --grep "behavior \(RED\)"` first; it must now PASS and must have been authored before the corresponding implementation in Task 1. Then run `pnpm exec playwright install chromium && pnpm exec playwright test tests/baseline-ui.spec.ts --grep "visual acceptance"`.
 
-Expected: FAIL because no approved screenshot baselines exist yet. Any functional or axe failure must be fixed before snapshots are accepted.
+Expected: the behavior command passes. The visual command fails only because approved screenshot baselines do not exist yet; any functional or axe failure must be fixed before snapshots are accepted.
 
 - [ ] **Step 3: Create reviewed baselines (GREEN)**
 
@@ -947,13 +1090,15 @@ Expected: every command exits 0. `next typegen` must precede TypeScript; the pro
 Review for spec compliance first, then code quality: no raw meaningful colors in components, no second icon family, no role filtering, no fake domain data, no icon rail/search/team/project/submenu features, no hydration warning, no lost focus, and no `.superpowers/` files staged.
 
 ```bash
-git add playwright.config.ts tests/baseline-ui.spec.ts tests/baseline-ui.spec.ts-snapshots package.json pnpm-lock.yaml
+git add tests/baseline-ui.spec.ts tests/baseline-ui.spec.ts-snapshots
 git commit -m "test: verifikasi baseline UI responsif"
 ```
 
+This final implementation commit stages only the Task 6 test assets. Do not restage `docs/superpowers/specs/`, this plan, or already-committed foundation files.
+
 ## Final Definition of Done
 
-- All six tasks have their RED result recorded before GREEN implementation.
+- All behavior RED contracts in Tasks 1–5 are authored and failing before their corresponding GREEN implementation; Task 6 adds only the final visual acceptance tests after those behavior contracts pass.
 - Unit/component tests cover the public primitive and shell contracts without large DOM snapshots.
 - Playwright proves mobile/tablet/desktop behavior, theme persistence, drawer keyboard flow, and reviewed light/dark screenshots.
 - Semantic contrast checks meet WCAG AA and state meaning survives color-vision simulation.
