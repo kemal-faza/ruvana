@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import AxeBuilder from "@axe-core/playwright"
 
 test.describe("baseline UI behavior (RED)", () => {
   test("pilihan tema mengalahkan sistem dan tersimpan", async ({ page }) => {
@@ -61,4 +62,65 @@ test.describe("baseline UI behavior (RED)", () => {
       )
       .toBe(true)
   })
+})
+
+test.describe("baseline UI visual acceptance", () => {
+  for (const theme of ["light", "dark"] as const) {
+    test(`desktop ${theme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto("/")
+      await expect(page.locator("html")).toHaveClass(new RegExp(theme))
+      await expect(page.getByRole("navigation", { name: "Navigasi utama" })).toBeVisible()
+      await expect(page.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeVisible()
+      await expect
+        .poll(() =>
+          page.locator("[data-motion-transform]").evaluateAll((nodes) =>
+            nodes.every(
+              (node) =>
+                getComputedStyle(node).opacity === "1" &&
+                getComputedStyle(node).transform === "none",
+            ),
+          ),
+        )
+        .toBe(true)
+      const accessibility = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze()
+      expect(accessibility.violations).toEqual([])
+      await expect(page).toHaveScreenshot(`baseline-desktop-${theme}.png`, { fullPage: true })
+    })
+
+    test(`drawer mobile ${theme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme })
+      await page.setViewportSize({ width: 390, height: 844 })
+      await page.goto("/")
+      const trigger = page.getByRole("button", { name: "Buka navigasi" })
+      await trigger.click()
+      await expect(page.getByRole("dialog", { name: "Navigasi utama" })).toBeVisible()
+      await expect(page).toHaveScreenshot(`baseline-mobile-drawer-${theme}.png`, { fullPage: true })
+    })
+  }
+
+  test("tidak memiliki overflow horizontal pada breakpoint akhir", async ({ page }) => {
+    for (const width of [390, 834, 1280]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto("/")
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      ).toBe(true)
+    }
+  })
+
+  for (const deficiency of ["protanopia", "deuteranopia", "tritanopia"] as const) {
+    test(`status tetap terbaca dengan ${deficiency}`, async ({ page }) => {
+      const session = await page.context().newCDPSession(page)
+      await session.send("Emulation.setEmulatedVisionDeficiency", { type: deficiency })
+      await page.goto("/")
+      const badges = page.getByRole("region", { name: "Badge" })
+      await expect(badges.getByText("Menunggu")).toBeVisible()
+      await expect(badges.getByText("Disetujui")).toBeVisible()
+      await expect(badges.getByText("Ditolak")).toBeVisible()
+      await expect(badges).toHaveScreenshot(`badge-${deficiency}.png`)
+    })
+  }
 })
