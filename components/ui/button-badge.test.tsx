@@ -13,7 +13,7 @@ import {
 
 describe("kontras hover aksi utama", () => {
   it("memakai token hover semantic pada Button utama", () => {
-    const classes = buttonVariants({ variant: "default" })
+    const classes = buttonVariants({ variant: "primary" })
 
     expect(classes).toContain("hover:bg-primary-hover")
     expect(classes).not.toContain("hover:bg-primary/80")
