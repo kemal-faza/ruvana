@@ -70,3 +70,4 @@ docker-compose.override.yml
 !docker/postgres-init/**/*.sql
 
 .codegraph/
+.worktrees/
