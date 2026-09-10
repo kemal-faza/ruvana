@@ -5,8 +5,13 @@ test.describe("baseline UI behavior (RED)", () => {
   test("pilihan tema mengalahkan sistem dan tersimpan", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" })
     await page.goto("/")
+    const sidebar = page.locator('[data-slot="sidebar"]').first()
+    const lightSidebarColor = await sidebar.evaluate((element) => getComputedStyle(element).backgroundColor)
     await page.getByRole("button", { name: "Gunakan tema gelap" }).first().click()
     await expect(page.locator("html")).toHaveClass(/dark/)
+    await expect
+      .poll(() => sidebar.evaluate((element) => getComputedStyle(element).backgroundColor))
+      .not.toBe(lightSidebarColor)
     await page.reload()
     await expect(page.locator("html")).toHaveClass(/dark/)
   })
@@ -15,7 +20,11 @@ test.describe("baseline UI behavior (RED)", () => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto("/")
     const navigation = page.getByRole("navigation", { name: "Navigasi utama" })
+    const sidebar = page.locator('[data-slot="sidebar"]').first()
     await expect(navigation).toBeVisible()
+    await expect
+      .poll(() => sidebar.evaluate((element) => element.getBoundingClientRect().height >= window.innerHeight))
+      .toBe(true)
     await expect(page.getByRole("button", { name: "Buka navigasi" })).toHaveCount(0)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
