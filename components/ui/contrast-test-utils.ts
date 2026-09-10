@@ -13,7 +13,13 @@ export function resolveCssToken(value: string, primitiveTokens: string) {
 
 export function parseOklch(value: string): Rgb {
   const match = value.match(/oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s*\)/)
-  if (!match) throw new Error(`Nilai token bukan OKLCH: ${value}`)
+  if (!match) {
+    const hex = value.match(/^#([\da-f]{3}|[\da-f]{6})$/i)?.[1]
+    if (!hex) throw new Error(`Nilai token bukan OKLCH atau hex: ${value}`)
+
+    const digits = hex.length === 3 ? hex.split("").map((digit) => digit + digit) : hex.match(/../g)!
+    return digits.map((channel) => Number.parseInt(channel, 16) / 255) as Rgb
+  }
 
   const lightness = Number(match[1]) / 100
   const chroma = Number(match[2])

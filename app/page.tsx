@@ -140,8 +140,8 @@ export default function Home() {
             <Card>
               <CardContent className="flex flex-wrap gap-2">
                 <Badge variant="pending">Menunggu</Badge>
-                <Badge variant="success">Berhasil</Badge>
-                <Badge variant="danger">Perlu perhatian</Badge>
+                <Badge variant="success">Disetujui</Badge>
+                <Badge variant="danger">Ditolak</Badge>
                 <Badge variant="info">Informasi</Badge>
                 <Badge variant="neutral">Netral</Badge>
               </CardContent>

@@ -22,7 +22,6 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       aria-label={label}
-      disabled={!mounted}
       onClick={() => setTheme(getNextTheme(resolvedTheme))}
     >
       {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
