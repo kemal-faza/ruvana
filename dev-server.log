@@ -1,0 +1,72 @@
+
+> ruvana@0.1.0 dev C:\ppka\ruvana
+> next dev
+
+▲ Next.js 16.3.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.110.104:3000
+- Environments: .env
+✓ Ready in 2.1s
+✓ Running next.config.ts took 160ms
+
+ GET /login 200 in 2.0s (next.js: 1358ms, application-code: 674ms)
+ GET /login 200 in 177ms (next.js: 28ms, application-code: 149ms)
+ GET /login 200 in 80ms (next.js: 10ms, application-code: 70ms)
+ GET /login 200 in 220ms (next.js: 114ms, application-code: 107ms)
+ GET /login 200 in 272ms (next.js: 38ms, application-code: 234ms)
+ GET /login 200 in 190ms (next.js: 30ms, application-code: 161ms)
+ GET /login 200 in 210ms (next.js: 37ms, application-code: 173ms)
+ GET /login 200 in 192ms (next.js: 30ms, application-code: 162ms)
+ GET /login 200 in 284ms (next.js: 41ms, application-code: 243ms)
+ GET /login 200 in 161ms (next.js: 25ms, application-code: 136ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/login" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <RootLayout>
+                        <html lang="id" className="poppins_42...">
+                          <body
+                            className="min-h-full flex flex-col"
+-                           __processed_1463a575-a042-4c27-8c93-6327dd38e626__="true"
+                          >
+                  ...
+ 
+ GET /login 200 in 149ms (next.js: 19ms, application-code: 130ms)
+ POST /login 200 in 718ms (next.js: 36ms, application-code: 682ms)
+  └─ ƒ login({"ok":false,"pesan":""}, {}) in 5ms app/login/actions.ts
+✓ Compiled in 1093ms
+ GET /login 200 in 317ms (next.js: 83ms, application-code: 234ms)
+ GET /login 200 in 317ms (next.js: 73ms, application-code: 244ms)
+ GET /login 200 in 283ms (next.js: 154ms, application-code: 129ms)
+ GET /login 200 in 208ms (next.js: 43ms, application-code: 165ms)
+ GET /login 200 in 95ms (next.js: 17ms, application-code: 79ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 238ms
+ GET /login 200 in 218ms (next.js: 40ms, application-code: 178ms)
+ GET /login 200 in 161ms (next.js: 17ms, application-code: 145ms)
+[?25h
+ ELIFECYCLE  Command failed with exit code 1.

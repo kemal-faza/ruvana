@@ -88,9 +88,7 @@ export default function LoginForm() {
           <Logo
             tone="light"
             withText
-            textColor="#fff"
-            sublabel="Reservasi dan Pelaporan Fasilitas Kampus"
-            size={48}
+            textColor="#1a1919"
           />
 
           {/* Bottom Branding */}
@@ -100,7 +98,7 @@ export default function LoginForm() {
                 margin: 0,
                 fontSize: 24,
                 fontWeight: 600,
-                color: "#fff",
+                color: "#f1ececfa",
                 letterSpacing: "-0.3px",
                 lineHeight: 1.35,
               }}

@@ -71,7 +71,7 @@ export async function login(
   } catch {
     return {
       ok: false,
-      pesan: "Gagal terhubung ke database. Coba lagi.",
+      pesan: "Gagal terhubung. Coba lagi.",
     };
   }
 
