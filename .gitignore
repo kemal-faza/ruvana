@@ -72,3 +72,5 @@ docker-compose.override.yml
 .codegraph/
 .worktrees/
 .superpowers/
+figma/
+docker/
