@@ -126,3 +126,13 @@ Prisma types from `generated/prisma`, never directly from `@prisma/client`.
 - Most of `docs/` is local-only. The tracked exceptions are `docs/PRD.md`,
   `docs/DESIGN.md`, `docs/superpowers/DECISION.md`, and `docs/api/openapi.yaml`.
 - Never commit `.env` or local database credentials.
+
+## Agent skills
+
+### Issue tracker
+
+This repo uses GitHub Pull Requests as its only work-tracking surface; it does not use GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout with root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
