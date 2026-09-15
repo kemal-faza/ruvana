@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import type { CSSProperties } from "react"
 import { usePathname } from "next/navigation"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 import {
   Building2,
   CalendarDays,
@@ -27,7 +28,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { getMotionTransition } from "@/lib/motion"
+import { useMotionPreference } from "@/components/motion/use-motion-preference"
 import type {
   NavigationGroup,
   NavigationItem,
@@ -66,8 +67,7 @@ function resolveIcon(icon: NavigationItem["icon"] | string) {
 function NavigationList({ navigation, onNavigate }: NavigationListProps) {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
-  const reduceMotion = useReducedMotion()
-  const transition = getMotionTransition(reduceMotion)
+  const motionPreference = useMotionPreference()
 
   const navigationMarkup = (
     <nav aria-label="Navigasi utama">
@@ -76,12 +76,16 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
           <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {group.items.map((item) => {
+              {group.items.map((item, index) => {
                 const active = isNavigationItemActive(pathname, item)
                 const Icon = resolveIcon(item.icon)
 
                 return (
-                  <SidebarMenuItem key={item.key}>
+                  <SidebarMenuItem
+                    key={item.key}
+                    className="motion-rise motion-rise-stagger motion-rise-stagger-functional"
+                    style={{ "--stagger-index": index } as CSSProperties}
+                  >
                     <SidebarMenuButton
                       isActive={active}
                       className="relative min-h-11 px-3 py-2"
@@ -97,8 +101,8 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
                         <motion.span
                           aria-hidden="true"
                           data-motion-reveal="true"
-                          layoutId={reduceMotion === true ? undefined : isMobile ? "active-navigation-drawer" : "active-navigation-desktop"}
-                          transition={transition}
+                          layoutId={motionPreference.reduceMotion ? undefined : isMobile ? "active-navigation-drawer" : "active-navigation-desktop"}
+                          transition={motionPreference.spring("snappy")}
                           className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-sidebar-primary motion-reduce:!transform-none"
                         />
                       )}
@@ -120,9 +124,13 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
   return (
     <motion.div
       data-motion-reveal="true"
-      initial={reduceMotion === true ? { opacity: 1 } : { opacity: 0, x: -8 }}
-      animate={reduceMotion === true ? { opacity: 1 } : { opacity: 1, x: 0 }}
-      transition={transition}
+      initial={
+        motionPreference.reduceMotion
+          ? { opacity: 1 }
+          : { opacity: 0, x: -motionPreference.distance("sm") }
+      }
+      animate={{ opacity: 1, x: 0 }}
+      transition={motionPreference.spring("bouncy")}
       className="min-w-0 motion-reduce:!transform-none"
     >
       {navigationMarkup}

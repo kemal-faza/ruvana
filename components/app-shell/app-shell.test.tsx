@@ -65,6 +65,17 @@ describe("AppShell", () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  it("memberi stagger CSS pada butir navigasi tanpa menyembunyikan konten", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    const { container } = renderFixture()
+
+    const staggerNodes = Array.from(
+      container.querySelectorAll<HTMLElement>(".motion-rise-stagger"),
+    )
+    expect(staggerNodes.length).toBeGreaterThan(0)
+    expect(staggerNodes.every((node) => node.style.getPropertyValue("--stagger-index") !== "")).toBe(true)
+  })
+
   it("menjaga sidebar desktop terbuka tanpa shortcut Ctrl atau Cmd+B", () => {
     setMatchMedia("(max-width: 1023px)", false)
     renderFixture()
