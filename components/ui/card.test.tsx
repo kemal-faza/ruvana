@@ -34,4 +34,13 @@ describe("kontrak Card", () => {
     )
     expect(screen.queryByRole("button")).not.toBeInTheDocument()
   })
+
+  it("menganimasikan hover lift dengan token motion tanpa mengubah struktur", () => {
+    render(<Card data-testid="card">Isi</Card>)
+
+    const card = screen.getByTestId("card")
+    expect(card).toHaveClass("duration-motion-expressive", "ease-motion-emphatic", "hover:-translate-y-0.5")
+    expect(card.className).toContain("transition-[transform,translate,box-shadow]")
+    expect(card).toHaveClass("motion-reduce:hover:translate-y-0")
+  })
 })
