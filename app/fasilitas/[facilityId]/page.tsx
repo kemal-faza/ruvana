@@ -1,8 +1,10 @@
+import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, MapPin, Users } from "lucide-react"
+import { ArrowLeft, MapPin, Package, Users } from "lucide-react"
 
-import { LABEL_TIPE_FASILITAS } from "@/config/labels"
+import { getFacilityPhoto } from "@/config/facility-photos"
+import { LABEL_SATUAN_KAPASITAS, LABEL_TIPE_FASILITAS } from "@/config/labels"
 import { Button } from "@/components/ui/button"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
 import { getPublicFacility } from "@/lib/services/facility-service"
@@ -34,6 +36,10 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
   const facility = await getPublicFacility(id)
   if (!facility) notFound()
 
+  const isAlat = facility.tipe === "alat"
+  const KapasitasIcon = isAlat ? Package : Users
+  const photo = getFacilityPhoto(facility.nama, facility.tipe)
+
   return (
     <div className="flex flex-col gap-6">
       <Button
@@ -45,6 +51,19 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
         <ArrowLeft aria-hidden="true" className="size-4" />
         Kembali ke daftar fasilitas
       </Button>
+
+      {photo && (
+        <div className="relative aspect-video w-full overflow-hidden rounded-card">
+          <Image
+            src={photo}
+            alt={facility.nama}
+            fill
+            sizes="(min-width: 1024px) 768px, 100vw"
+            className="object-cover"
+            priority
+          />
+        </div>
+      )}
 
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
@@ -63,10 +82,12 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
           </div>
         </div>
         <div className="flex items-start gap-2 rounded-card border border-border bg-card p-4">
-          <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <KapasitasIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div>
-            <dt className="text-sm text-muted-foreground">Kapasitas</dt>
-            <dd className="font-medium">{facility.kapasitas} orang</dd>
+            <dt className="text-sm text-muted-foreground">{isAlat ? "Jumlah" : "Kapasitas"}</dt>
+            <dd className="font-medium">
+              {facility.kapasitas} {LABEL_SATUAN_KAPASITAS[facility.tipe]}
+            </dd>
           </div>
         </div>
       </dl>

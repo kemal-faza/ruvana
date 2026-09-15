@@ -8,8 +8,16 @@ export const LABEL_TIPE_FASILITAS: Record<TipeFasilitas, string> = {
   lapangan: "Lapangan",
 };
 
+export const LABEL_SATUAN_KAPASITAS: Record<TipeFasilitas, string> = {
+  ruang_kelas: "orang",
+  aula: "orang",
+  laboratorium: "orang",
+  alat: "unit",
+  lapangan: "orang",
+};
+
 export const LABEL_STATUS_FASILITAS: Record<StatusFasilitas, string> = {
-  ACTIVE: "Aktif",
+  ACTIVE: "Tersedia",
   UNDER_MAINTENANCE: "Dalam Perbaikan",
   INACTIVE: "Nonaktif",
 };

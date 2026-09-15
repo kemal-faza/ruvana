@@ -23,7 +23,7 @@ describe("FacilityCard", () => {
 
     expect(screen.getByText("RK-101")).toBeInTheDocument()
     expect(screen.getByText("Ruang kelas")).toBeInTheDocument()
-    expect(screen.getByText("Aktif")).toBeInTheDocument()
+    expect(screen.getByText("Tersedia")).toBeInTheDocument()
     expect(screen.getByText("Gedung A Lt.1")).toBeInTheDocument()
     expect(screen.getByText("Kapasitas 40 orang")).toBeInTheDocument()
   })
