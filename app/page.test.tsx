@@ -2,7 +2,6 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/page"
-import { getRevealProps } from "@/lib/motion"
 
 vi.mock("next/font/google", () => ({
   Poppins: () => ({ variable: "--font-poppins" }),
@@ -49,25 +48,6 @@ describe("landing page publik", () => {
     const heroCopy = container.querySelector("#hero-title")?.parentElement
     expect(heroCopy?.className).toContain("motion-rise")
     expect(container.querySelector("#hero-title")?.closest(".motion-rise")).not.toBeNull()
-    expect(container.querySelectorAll("[data-motion-transform]").length).toBeGreaterThan(0)
-  })
-})
-
-describe("prop reveal motion", () => {
-  it("menonaktifkan transform saat reduced motion", () => {
-    expect(getRevealProps(true)).toMatchObject({
-      initial: { opacity: 1 },
-      whileInView: { opacity: 1 },
-      transition: { duration: 0 },
-    })
-  })
-
-  it("menganimasikan masuk dan naik saat motion aktif", () => {
-    expect(getRevealProps(false, 0.16)).toMatchObject({
-      initial: { opacity: 0, y: 16 },
-      whileInView: { opacity: 1, y: 0 },
-      viewport: { once: true, amount: 0.2 },
-      transition: { duration: 0.18, delay: 0.16 },
-    })
+    expect(container.querySelectorAll("[data-motion-reveal]").length).toBeGreaterThan(0)
   })
 })

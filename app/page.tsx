@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ArrowDown, ArrowRight, Building2, CalendarDays, Check, ClipboardCheck, DoorOpen, Leaf, Search, Wrench } from "lucide-react"
-import { Reveal } from "@/components/landing/reveal"
+import { Reveal } from "@/components/motion/reveal"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { buttonVariants } from "@/components/ui/button"
 
