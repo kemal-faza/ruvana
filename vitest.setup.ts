@@ -1,5 +1,23 @@
 import "@testing-library/jest-dom/vitest"
 
+// jsdom belum menyediakan IntersectionObserver; Motion memakainya untuk animasi viewport.
+class IntersectionObserverStub implements IntersectionObserver {
+  readonly root: Element | Document | null = null
+  readonly rootMargin = ""
+  readonly thresholds: ReadonlyArray<number> = []
+  disconnect() {}
+  observe() {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return []
+  }
+  unobserve() {}
+}
+
+Object.defineProperty(globalThis, "IntersectionObserver", {
+  writable: true,
+  value: IntersectionObserverStub,
+})
+
 const mediaState = new Map<string, boolean>()
 const mediaLists = new Map<string, Set<MediaQueryList>>()
 type MediaListener = (event: MediaQueryListEvent) => void

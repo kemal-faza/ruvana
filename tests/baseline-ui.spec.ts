@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright"
 test.describe("baseline UI behavior (RED)", () => {
   test("pilihan tema mengalahkan sistem dan tersimpan", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" })
-    await page.goto("/")
+    await page.goto("/baseline-ui")
     const sidebar = page.locator('[data-slot="sidebar"]').first()
     const lightSidebarColor = await sidebar.evaluate((element) => getComputedStyle(element).backgroundColor)
     await page.getByRole("button", { name: "Gunakan tema gelap" }).first().click()
@@ -18,7 +18,7 @@ test.describe("baseline UI behavior (RED)", () => {
 
   test("desktop selalu menampilkan sidebar dan Ctrl/Cmd+B tidak mengubahnya", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
-    await page.goto("/")
+    await page.goto("/baseline-ui")
     const navigation = page.getByRole("navigation", { name: "Navigasi utama" })
     const sidebar = page.locator('[data-slot="sidebar"]').first()
     await expect(navigation).toBeVisible()
@@ -37,7 +37,7 @@ test.describe("baseline UI behavior (RED)", () => {
   test("tablet dan mobile mempertahankan openMobile pada Sheet", async ({ page }) => {
     for (const width of [390, 834]) {
       await page.setViewportSize({ width, height: 900 })
-      await page.goto("/")
+      await page.goto("/baseline-ui")
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
       ).toBe(true)
@@ -60,7 +60,7 @@ test.describe("baseline UI behavior (RED)", () => {
 
   test("rendered transform nonaktif pada reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
-    await page.goto("/")
+    await page.goto("/baseline-ui")
     const motionNodes = page.locator("[data-motion-transform]")
     await expect(motionNodes).not.toHaveCount(0)
     await expect
@@ -77,7 +77,7 @@ test.describe("baseline UI visual acceptance", () => {
   for (const theme of ["light", "dark"] as const) {
     test(`desktop ${theme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme })
-      await page.goto("/")
+      await page.goto("/baseline-ui")
       await expect(page.locator("html")).toHaveClass(new RegExp(theme))
       await expect(page.getByRole("navigation", { name: "Navigasi utama" })).toBeVisible()
       await expect(page.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeVisible()
@@ -102,7 +102,7 @@ test.describe("baseline UI visual acceptance", () => {
     test(`drawer mobile ${theme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme })
       await page.setViewportSize({ width: 390, height: 844 })
-      await page.goto("/")
+      await page.goto("/baseline-ui")
       const trigger = page.getByRole("button", { name: "Buka navigasi" })
       await trigger.click()
       await expect(page.getByRole("dialog", { name: "Navigasi utama" })).toBeVisible()
@@ -113,7 +113,7 @@ test.describe("baseline UI visual acceptance", () => {
   test("tidak memiliki overflow horizontal pada breakpoint akhir", async ({ page }) => {
     for (const width of [390, 834, 1280]) {
       await page.setViewportSize({ width, height: 900 })
-      await page.goto("/")
+      await page.goto("/baseline-ui")
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
       ).toBe(true)
@@ -124,7 +124,7 @@ test.describe("baseline UI visual acceptance", () => {
     test(`status tetap terbaca dengan ${deficiency}`, async ({ page }) => {
       const session = await page.context().newCDPSession(page)
       await session.send("Emulation.setEmulatedVisionDeficiency", { type: deficiency })
-      await page.goto("/")
+      await page.goto("/baseline-ui")
       const badges = page.getByRole("region", { name: "Badge" })
       await expect(badges.getByText("Menunggu")).toBeVisible()
       await expect(badges.getByText("Disetujui")).toBeVisible()

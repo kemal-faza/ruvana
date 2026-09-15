@@ -10,7 +10,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Ruvana — Reservasi Fasilitas Kampus",
+  title: "ruvana",
   description: "Sistem reservasi & pelaporan fasilitas kampus (ruang kelas, aula, laboratorium, alat, lapangan).",
 };
 
@@ -22,6 +22,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <noscript>
+          <style>{`[data-motion-transform="true"]{opacity:1 !important;transform:none !important;}`}</style>
+        </noscript>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>

@@ -275,3 +275,15 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 3. Verifikasi kandidat melalui beberapa sinyal: layar **Ruvana Dashboard**, **Fasilitas**, **Reservasi**, dan **Laporan**, tipografi Poppins, serta warna fondasi `#F7F5EF`.
 4. Jika ada beberapa kandidat atau identitasnya tetap tidak pasti, tanyakan kepada maintainer; jangan menebak proyek yang berwenang.
 5. Jika prototype bertentangan dengan PRD atau kontrak ini, sumber yang lebih tinggi dalam **Tujuan dan otoritas** selalu menang.
+
+## Landing page publik
+
+- `/` memperkenalkan Ruvana dengan fokus reservasi dan pelaporan kerusakan sebagai manfaat pendukung.
+- Urutan konten: hero → manfaat utama → cara kerja → ajakan menjelajahi fasilitas → footer.
+- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
+- Hero memakai ilustrasi antarmuka fasilitas dan jadwal, dengan penanda bahwa informasi bukan ketersediaan aktual.
+- Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
+- Header publik, token visual yang sama, serta tema sistem dengan pengalih terang/gelap digunakan pada landing page.
+- Header publik memakai wordmark teks **ruvana** tanpa ikon, aksi **Jelajahi Fasilitas** yang sama dengan hero di samping pengalih tema, dan navigasi Beranda, Fasilitas, serta Cara kerja.
+- Landing page memakai motion singkat: hero muncul saat halaman dimuat, bagian berikutnya muncul saat masuk viewport, dan setiap animasi menghormati `prefers-reduced-motion`.
+- Katalog komponen dipertahankan sementara di `/baseline-ui` sebagai referensi pengembangan.

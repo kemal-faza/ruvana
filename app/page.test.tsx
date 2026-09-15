@@ -2,52 +2,72 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/page"
+import { getRevealProps } from "@/lib/motion"
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/",
+vi.mock("next/font/google", () => ({
+  Poppins: () => ({ variable: "--font-poppins" }),
 }))
+
+const { metadata } = await import("@/app/layout")
 
 afterEach(cleanup)
 
-describe("katalog baseline UI", () => {
-  it("menampilkan katalog Core 6 dan shell statis", () => {
-    render(<Home />)
+describe("judul halaman", () => {
+  it("memakai ruvana sebagai satu-satunya judul", () => {
+    expect(metadata.title).toBe("ruvana")
+  })
+})
 
-    expect(screen.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeInTheDocument()
-    expect(screen.getByText("Pratinjau UI")).toBeInTheDocument()
+describe("landing page publik", () => {
+  it("memakai wordmark teks tanpa logo daun di header", () => {
+    const { container } = render(<Home />)
 
-    for (const name of ["Button", "Field", "Card", "Badge", "Skeleton", "Empty state"]) {
-      expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument()
-    }
-
-    for (const name of ["Ringkasan", "Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
-      expect(screen.getAllByRole("link", { name }).length).toBeGreaterThan(0)
-    }
-
-    const input = screen.getByRole("textbox", { name: /nama contoh/i })
-    expect(input).toBeRequired()
-    expect(input).toHaveAttribute("aria-describedby", "contoh-nama-help contoh-nama-error")
-    expect(screen.getByText("Contoh pemuatan")).toBeInTheDocument()
-    expect(screen.getByText("Menunggu")).toBeInTheDocument()
-    expect(screen.getByText("Tidak ada contoh untuk ditampilkan.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Tambah contoh" })).toBeInTheDocument()
+    const brand = screen.getByRole("link", { name: "ruvana — Beranda" })
+    expect(brand).toHaveTextContent(/^ruvana$/)
+    expect(brand.querySelector("svg")).toBeNull()
+    expect(container.querySelector("header svg.lucide-leaf")).toBeNull()
   })
 
-  it("tidak menyisipkan data domain, statistik, atau kontrol peran", () => {
+  it("menempatkan CTA hero di header, bersebelahan dengan pengalih tema", () => {
     render(<Home />)
 
-    for (const text of [
-      "Ruang Sidang",
-      "Aula Utama",
-      "Budi Santoso",
-      "08.00",
-      "Kapasitas",
-      "Setujui reservasi",
-      "12 reservasi",
-    ]) {
-      expect(screen.queryByText(text, { exact: false })).not.toBeInTheDocument()
-    }
+    const headerCta = screen
+      .getAllByRole("link", { name: /Jelajahi Fasilitas/ })
+      .find((link) => link.closest("header"))
+    expect(headerCta).toHaveTextContent("Jelajahi Fasilitas")
 
-    expect(screen.queryByRole("button", { name: /admin|pengguna|ganti peran/i })).not.toBeInTheDocument()
+    const headerActions = headerCta?.parentElement
+    expect(headerActions?.querySelector("a[href='/fasilitas']")).toBe(headerCta)
+    expect(headerActions?.querySelector("button[aria-label^='Gunakan tema']")).not.toBeNull()
+
+    expect(screen.getAllByRole("link", { name: /Jelajahi Fasilitas/ })).toHaveLength(3)
+  })
+
+  it("menganimasikan hero lewat CSS dan bagian lain lewat reveal motion", () => {
+    const { container } = render(<Home />)
+
+    const heroCopy = container.querySelector("#hero-title")?.parentElement
+    expect(heroCopy?.className).toContain("motion-rise")
+    expect(container.querySelector("#hero-title")?.closest(".motion-rise")).not.toBeNull()
+    expect(container.querySelectorAll("[data-motion-transform]").length).toBeGreaterThan(0)
+  })
+})
+
+describe("prop reveal motion", () => {
+  it("menonaktifkan transform saat reduced motion", () => {
+    expect(getRevealProps(true)).toMatchObject({
+      initial: { opacity: 1 },
+      whileInView: { opacity: 1 },
+      transition: { duration: 0 },
+    })
+  })
+
+  it("menganimasikan masuk dan naik saat motion aktif", () => {
+    expect(getRevealProps(false, 0.16)).toMatchObject({
+      initial: { opacity: 0, y: 16 },
+      whileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, amount: 0.2 },
+      transition: { duration: 0.18, delay: 0.16 },
+    })
   })
 })

@@ -15,3 +15,28 @@ export function getMotionTransition(reduceMotion: boolean | null) {
     ease: motionTokens.ease,
   }
 }
+
+export const revealViewport = { once: true, amount: 0.2 } as const
+
+function withDelay(reduceMotion: boolean | null, delay: number) {
+  const transition = getMotionTransition(reduceMotion)
+  return reduceMotion === true ? transition : { ...transition, delay }
+}
+
+export function getRevealProps(reduceMotion: boolean | null, delay = 0) {
+  if (reduceMotion === true) {
+    return {
+      initial: { opacity: 1 },
+      whileInView: { opacity: 1 },
+      viewport: revealViewport,
+      transition: withDelay(reduceMotion, delay),
+    }
+  }
+
+  return {
+    initial: { opacity: 0, y: 16 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: revealViewport,
+    transition: withDelay(reduceMotion, delay),
+  }
+}

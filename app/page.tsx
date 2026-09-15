@@ -1,189 +1,89 @@
-import {
-  Building2,
-  CalendarDays,
-  ClipboardList,
-  Inbox,
-  LayoutDashboard,
-  Settings,
-} from "lucide-react"
+import Link from "next/link"
+import { ArrowDown, ArrowRight, Building2, CalendarDays, Check, ClipboardCheck, DoorOpen, Leaf, Search, Wrench } from "lucide-react"
+import { Reveal } from "@/components/landing/reveal"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { buttonVariants } from "@/components/ui/button"
 
-import { AppShell } from "@/components/app-shell/app-shell"
-import type { NavigationGroup } from "@/components/app-shell/types"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-
-const navigation: readonly NavigationGroup[] = [
-  {
-    key: "utama",
-    label: "Utama",
-    items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
-      { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
-      { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },
-    ],
-  },
-  {
-    key: "sistem",
-    label: "Sistem",
-    items: [{ key: "pengaturan", label: "Pengaturan", href: "/pengaturan", icon: Settings }],
-  },
+const benefits = [
+  { icon: Search, title: "Temukan tempat yang tepat", description: "Kenali fasilitas kampus dan lihat ketersediaannya sebelum merencanakan kegiatan." },
+  { icon: CalendarDays, title: "Ajukan dengan lebih terarah", description: "Pilih fasilitas dan jadwal, ajukan reservasi, lalu pantau keputusan petugas." },
+  { icon: Wrench, title: "Ikut merawat fasilitas", description: "Laporkan kerusakan beserta foto dan pantau perkembangan penanganannya." },
 ]
+const steps = [
+  { title: "Jelajahi fasilitas", description: "Lihat fasilitas dan ketersediaan jadwal tanpa perlu masuk." },
+  { title: "Siapkan akunmu", description: "Daftar dan tunggu verifikasi admin sebelum masuk untuk mengajukan reservasi." },
+  { title: "Ajukan dan pantau", description: "Pilih jadwal sesuai kebutuhan. Reservasi berlaku setelah disetujui petugas." },
+]
+const primaryLink = buttonVariants({ className: "min-h-12 gap-3 px-6 text-sm" })
+const headerLink = buttonVariants({ className: "min-h-11 gap-2 px-4 text-sm" })
 
 export default function Home() {
   return (
-    <AppShell
-      navigation={navigation}
-      account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
-      logoutDestination="/keluar"
-    >
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 sm:p-6 lg:p-8">
-        <header className="flex flex-col gap-3">
-          <p className="text-sm font-medium tracking-wide text-primary">Pratinjau UI</p>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            Baseline UI Ruvana
-          </h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Katalog komponen dasar untuk menjaga bahasa visual Ruvana tetap konsisten.
-          </p>
-        </header>
-
-        <div className="grid min-w-0 gap-6 md:grid-cols-2">
-          <section aria-labelledby="button-title" className="min-w-0 space-y-4">
-            <h2 id="button-title" className="font-heading text-xl font-semibold">
-              Button
-            </h2>
-            <Card>
-              <CardContent className="flex flex-wrap gap-3">
-                <Button>Primary</Button>
-                <Button variant="secondary">Secondary</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
-                <Button variant="danger">Danger</Button>
-                <Button loading>Memuat</Button>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section aria-labelledby="field-title" className="min-w-0 space-y-4">
-            <h2 id="field-title" className="font-heading text-xl font-semibold">
-              Field
-            </h2>
-            <Card>
-              <CardContent>
-                <Field>
-                  <FieldLabel htmlFor="contoh-nama" required>
-                    Nama contoh
-                  </FieldLabel>
-                  <Input
-                    id="contoh-nama"
-                    aria-describedby="contoh-nama-help contoh-nama-error"
-                    aria-invalid="true"
-                    required
-                    placeholder="Ketik nilai"
-                  />
-                  <FieldDescription id="contoh-nama-help">
-                    Bantuan singkat untuk mengisi field.
-                  </FieldDescription>
-                  <FieldError id="contoh-nama-error">Contoh pesan kesalahan.</FieldError>
-                </Field>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section aria-labelledby="card-title" className="min-w-0 space-y-4">
-            <h2 id="card-title" className="font-heading text-xl font-semibold">
-              Card
-            </h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Ringkasan komponen</CardTitle>
-                <CardDescription>Struktur konten dengan header dan footer.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Konten utama ditempatkan di area ini.</p>
-              </CardContent>
-              <CardFooter>
-                <Badge variant="success">Siap</Badge>
-              </CardFooter>
-            </Card>
-          </section>
-
-          <section aria-labelledby="badge-title" className="min-w-0 space-y-4">
-            <h2 id="badge-title" className="font-heading text-xl font-semibold">
-              Badge
-            </h2>
-            <Card>
-              <CardContent className="flex flex-wrap gap-2">
-                <Badge variant="pending">Menunggu</Badge>
-                <Badge variant="success">Disetujui</Badge>
-                <Badge variant="danger">Ditolak</Badge>
-                <Badge variant="info">Informasi</Badge>
-                <Badge variant="neutral">Netral</Badge>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section aria-labelledby="skeleton-title" className="min-w-0 space-y-4">
-            <h2 id="skeleton-title" className="font-heading text-xl font-semibold">
-              Skeleton
-            </h2>
-            <Card>
-              <CardContent className="space-y-3">
-                <p className="text-sm font-medium">Contoh pemuatan</p>
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          </section>
-
-          <section aria-labelledby="empty-title" className="min-w-0 space-y-4">
-            <h2 id="empty-title" className="font-heading text-xl font-semibold">
-              Empty state
-            </h2>
-            <Card>
-              <CardContent className="p-0">
-                <Empty className="min-h-56 border-0">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <Inbox aria-hidden="true" />
-                    </EmptyMedia>
-                    <EmptyTitle>Belum ada contoh</EmptyTitle>
-                    <EmptyDescription>Tidak ada contoh untuk ditampilkan.</EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <Button variant="outline">Tambah contoh</Button>
-                  </EmptyContent>
-                </Empty>
-              </CardContent>
-            </Card>
-          </section>
+    <>
+      <a href="#konten" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-control focus:bg-card focus:p-4">Lewati ke konten</a>
+      <header className="border-b border-border">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-4 sm:px-8">
+          <Link href="/" aria-label="ruvana — Beranda" className="flex min-h-11 items-center text-xl font-semibold tracking-tight">ruvana</Link>
+          <nav aria-label="Navigasi utama" className="order-3 flex w-full items-center justify-center gap-6 text-sm sm:order-none sm:w-auto">
+            <Link href="/" aria-current="page" className="flex min-h-11 items-center font-medium text-primary">Beranda</Link>
+            <Link href="/fasilitas" className="flex min-h-11 items-center hover:text-primary">Fasilitas</Link>
+            <a href="#cara-kerja" className="flex min-h-11 items-center hover:text-primary">Cara kerja</a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/fasilitas" className={headerLink}>Jelajahi Fasilitas<ArrowRight aria-hidden="true" /></Link>
+            <ThemeToggle />
+          </div>
         </div>
+      </header>
+      <main id="konten">
+        <section aria-labelledby="hero-title" className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-2 lg:gap-16 lg:py-28">
+          <div className="motion-rise min-w-0">
+            <p className="mb-6 flex items-center gap-2 text-sm font-medium text-primary"><span className="h-px w-8 bg-primary" />Ruang untuk setiap rencana</p>
+            <h1 id="hero-title" className="max-w-xl text-4xl leading-[1.15] font-semibold tracking-tight sm:text-5xl lg:text-6xl">Kenali fasilitas kampus,<br /><span className="text-primary">rencanakan kegiatanmu.</span></h1>
+            <p className="mt-6 max-w-lg text-base leading-8 text-muted-foreground">Dari ruang belajar hingga tempat berkegiatan. Ruvana membantu kamu menemukan fasilitas, mengajukan reservasi, dan ikut menjaga fasilitas kampus dalam satu tempat.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Link href="/fasilitas" className={primaryLink}>Jelajahi Fasilitas<ArrowRight aria-hidden="true" /></Link>
+              <a href="#cara-kerja" className="inline-flex min-h-12 items-center gap-2 px-2 text-sm font-medium">Kenali cara kerjanya<ArrowDown className="size-4" aria-hidden="true" /></a>
+            </div>
+            <p className="mt-5 text-xs leading-6 text-muted-foreground">Lihat fasilitas dan jadwal tanpa perlu masuk.</p>
+          </div>
+          <div className="motion-rise motion-rise-delayed min-w-0">
+            <figure className="relative rounded-3xl border border-border bg-primary-subdued p-5 sm:p-8">
+              <div className="mb-6 flex items-center justify-between text-primary-subdued-foreground"><span className="flex items-center gap-2 text-sm font-medium"><Building2 className="size-4" aria-hidden="true" />Fasilitas kampus</span><span className="rounded-full border border-current px-3 py-1 text-xs">Ilustrasi</span></div>
+              <div className="rounded-card border border-border bg-card p-5 text-card-foreground shadow-subtle sm:p-6">
+                <div className="mb-5 flex h-36 items-center justify-center rounded-xl bg-muted" aria-hidden="true"><DoorOpen className="size-24 stroke-1 text-primary" /><div className="ml-5 grid grid-cols-2 gap-3"><span className="h-9 w-9 rounded-md border-2 border-primary/40" /><span className="h-9 w-9 rounded-md border-2 border-primary/40" /><span className="h-9 w-9 rounded-md border-2 border-primary/40" /><span className="h-9 w-9 rounded-md border-2 border-primary/40" /></div></div>
+                <p className="text-xs text-muted-foreground">Ruang untuk bertukar ide</p>
+                <p className="mt-1 text-xl font-semibold">Ruang kelas</p>
+                <div className="my-5 border-t border-border" />
+                <div className="flex items-center gap-2 text-sm font-medium"><CalendarDays className="size-4 text-primary" aria-hidden="true" />Kenali ketersediaan jadwal</div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span className="rounded-control bg-success-subdued px-2 py-3 text-success-subdued-foreground">Tersedia</span><span className="rounded-control bg-muted px-2 py-3 text-muted-foreground">Terisi</span><span className="rounded-control bg-success-subdued px-2 py-3 text-success-subdued-foreground">Tersedia</span></div>
+              </div>
+              <div className="relative mt-4 flex items-center gap-3 rounded-card border border-border bg-card p-4 text-card-foreground shadow-subtle sm:ml-10"><span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-subdued text-primary-subdued-foreground"><ClipboardCheck className="size-5" aria-hidden="true" /></span><div><p className="text-sm font-medium">Rencana lebih tertata</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Ajukan, lalu pantau status reservasimu.</p></div></div>
+              <figcaption className="mt-5 text-center text-xs leading-5 text-primary-subdued-foreground">Ilustrasi alur Ruvana, bukan ketersediaan aktual.</figcaption>
+            </figure>
+          </div>
+        </section>
+        <section aria-labelledby="benefits-title" className="border-y border-border bg-card">
+          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+            <Reveal><div className="mb-10 max-w-2xl"><p className="mb-3 text-sm font-medium text-primary">Kenalan dengan Ruvana</p><h2 id="benefits-title" className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">Kegiatan terencana.<br />Fasilitas terjaga.</h2><p className="mt-4 leading-7 text-muted-foreground">Satu tempat untuk kebutuhan fasilitas kampus, dari mencari ruang hingga melaporkan hal yang perlu diperbaiki.</p></div></Reveal>
+            <div className="grid gap-6 md:grid-cols-3">{benefits.map(({ icon: Icon, title, description }, index) => (
+              <Reveal key={title} delay={index * 0.08} className="h-full">
+                <article className="h-full rounded-card border border-border bg-background p-6 sm:p-8">
+                  <div className="mb-8 flex items-center justify-between"><span className="flex size-12 items-center justify-center rounded-xl bg-primary-subdued text-primary-subdued-foreground"><Icon className="size-5" aria-hidden="true" /></span><span className="text-xs text-muted-foreground">0{index + 1}</span></div>
+                  <h3 className="text-lg font-semibold">{title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-muted-foreground">{description}</p>
+                </article>
+              </Reveal>
+            ))}</div>
+          </div>
+        </section>
+        <section id="cara-kerja" aria-labelledby="steps-title" className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1fr_1.2fr] lg:gap-24">
+          <Reveal><div><p className="mb-3 text-sm font-medium text-primary">Dari rencana menjadi kegiatan</p><h2 id="steps-title" className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">Mulai dengan<br />langkah sederhana.</h2><p className="mt-5 max-w-md leading-7 text-muted-foreground">Sudah punya rencana? Cari fasilitas yang sesuai, lalu siapkan pengajuanmu.</p><p className="mt-6 flex items-start gap-2 text-sm leading-6 text-primary"><Check className="mt-1 size-4 shrink-0" aria-hidden="true" />Ketersediaan dapat dilihat oleh siapa saja.</p></div></Reveal>
+          <Reveal delay={0.08}><ol className="space-y-8">{steps.map(({ title, description }, index) => <li key={title} className="flex gap-5"><span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-sm font-medium text-primary">0{index + 1}</span><div className="border-b border-border pb-7"><h3 className="text-lg font-semibold">{title}</h3><p className="mt-2 text-sm leading-7 text-muted-foreground">{description}</p></div></li>)}</ol></Reveal>
+        </section>
+        <section aria-labelledby="cta-title" className="mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24"><Reveal><div className="rounded-3xl bg-primary-subdued px-6 py-12 text-center text-primary-subdued-foreground sm:p-16"><Leaf className="mx-auto mb-5 size-7" aria-hidden="true" /><h2 id="cta-title" className="text-3xl font-semibold tracking-tight sm:text-4xl">Ada rencana di kampus?</h2><p className="mx-auto mt-4 max-w-lg text-sm leading-7">Temukan fasilitas yang cocok untuk langkah berikutnya.<br className="hidden sm:block" /> Mulai dari melihat pilihan yang tersedia.</p><Link href="/fasilitas" className={`${primaryLink} mt-7`}>Jelajahi Fasilitas<ArrowRight aria-hidden="true" /></Link></div></Reveal></section>
       </main>
-    </AppShell>
+      <footer className="border-t border-border"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 py-8 text-sm sm:flex-row sm:items-center sm:px-8"><Link href="/" className="inline-flex min-h-11 items-center text-lg font-semibold">ruvana</Link><p className="text-muted-foreground">Ruang bersama, tanggung jawab bersama.</p><a href="#konten" className="inline-flex min-h-11 items-center text-muted-foreground hover:text-primary">Kembali ke atas ↑</a></div></footer>
+    </>
   )
 }

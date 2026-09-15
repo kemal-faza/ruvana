@@ -252,6 +252,26 @@
   }
 }
 
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dipakai untuk animasi masuk di atas fold: berjalan sebelum hidrasi dan tanpa JavaScript. */
+.motion-rise {
+  animation: motion-rise var(--motion-duration-standard) var(--motion-easing-standard) both;
+}
+
+.motion-rise-delayed {
+  animation-delay: 120ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
