@@ -302,6 +302,21 @@
   animation: motion-rise var(--motion-duration-expressive) var(--motion-easing-emphatic) both;
 }
 
+/* Entrance fade murni opacity. Dipakai permukaan yang boleh muncul di mana saja
+   (mis. Empty) karena opacity tidak memperluas area overflow seperti transform. */
+@keyframes motion-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.motion-fade-expressive {
+  animation: motion-fade-in var(--motion-duration-expressive) var(--motion-easing-emphatic) both;
+}
+
 /* Entrance scale untuk ilustrasi hero. Berakhir di keadaan diam (transform: none). */
 @keyframes motion-scale-in {
   from {

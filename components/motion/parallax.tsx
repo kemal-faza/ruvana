@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, useScroll, useTransform } from "motion/react"
-import { useRef } from "react"
+import { useRef, useSyncExternalStore } from "react"
 
 import { useMotionPreference } from "@/components/motion/use-motion-preference"
 import type { MotionDistanceToken } from "@/lib/motion"
@@ -45,6 +45,18 @@ export function Parallax({
     target: ref,
     offset: ["start end", "end start"],
   })
+  // Transform hanya dipasang setelah mount. Saat SSR, `useReducedMotion` belum
+  // membaca preferensi sistem, sehingga nilai transform ikut ter-render ke HTML
+  // dan tidak pernah dipatch ulang saat hidrasi (React melaporkan hydration
+  // mismatch dan membiarkan inline style lama). `useSyncExternalStore` memberi
+  // jawaban server `false` dan klien `true` tanpa cascading render, sehingga node
+  // ambient tetap `transform: none` saat reduced motion.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
+
   const range = getParallaxRange(
     motionPreference.reduceMotion,
     speed,
@@ -52,12 +64,14 @@ export function Parallax({
   )
   const value = useTransform(scrollYProgress, [0, 1], [range.from, range.to], { clamp })
 
+  const active = mounted && !motionPreference.reduceMotion
+
   return (
     <motion.div
       ref={ref}
       data-motion-ambient="true"
       className={cn("min-w-0", className)}
-      style={motionPreference.reduceMotion ? undefined : axis === "y" ? { y: value } : { x: value }}
+      style={active ? (axis === "y" ? { y: value } : { x: value }) : undefined}
     >
       {children}
     </motion.div>

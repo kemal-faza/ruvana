@@ -27,6 +27,7 @@ describe("lapisan CSS motion Plan C", () => {
 
     expect(css).toContain(".motion-rise-expressive {")
     expect(css).toContain(".motion-rise-scale {")
+    expect(css).toContain(".motion-fade-expressive {")
     expect(css).toContain(".motion-rise-stagger {")
     expect(css).toContain(
       "animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-expressive)) * var(--stagger-index, 0));",
