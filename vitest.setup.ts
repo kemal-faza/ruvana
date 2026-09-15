@@ -18,6 +18,19 @@ Object.defineProperty(globalThis, "IntersectionObserver", {
   value: IntersectionObserverStub,
 })
 
+// ResizeObserver belum ada di jsdom. Motion memakainya untuk mengukur elemen
+// saat mengamati ukuran; stub ini menjaga komponen berbasis ukuran tetap aman.
+class ResizeObserverStub implements ResizeObserver {
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+}
+
+Object.defineProperty(globalThis, "ResizeObserver", {
+  writable: true,
+  value: ResizeObserverStub,
+})
+
 const mediaState = new Map<string, boolean>()
 const mediaLists = new Map<string, Set<MediaQueryList>>()
 type MediaListener = (event: MediaQueryListEvent) => void
