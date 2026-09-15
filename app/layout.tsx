@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { MotionProvider } from "@/components/motion/motion-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <style>{`[data-motion-transform="true"]{opacity:1 !important;transform:none !important;}`}</style>
         </noscript>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
+          <MotionProvider>{children}</MotionProvider>
         </ThemeProvider>
       </body>
     </html>
