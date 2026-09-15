@@ -109,9 +109,7 @@ Dua syarat berikut mengikat seluruh motion, tanpa pengecualian:
 1. Saat `prefers-reduced-motion: reduce`, seluruh motion berhenti dan setiap elemen langsung berada pada keadaan akhirnya.
 2. Animasi hanya boleh menganimasikan `transform` dan `opacity`; properti yang memicu layout tidak boleh dianimasikan.
 
-Gradasi tonal halus, termasuk yang dianimasikan (mis. `sweep` dan `shimmer`), boleh dipakai pada permukaan dekoratif maupun pada kontrol. Jumlah node ambient dibatasi maksimal dua per halaman. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
-
-Gradasi kuat tidak boleh digunakan. Gradasi tonal halus boleh dipakai pada permukaan dekoratif maupun pada kontrol; aturan lengkapnya ada di **Motion dan gradasi**. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna.
+Gradasi kuat tidak boleh digunakan. Gradasi tonal halus, termasuk yang dianimasikan (mis. `sweep` dan `shimmer`), boleh dipakai pada permukaan dekoratif maupun pada kontrol. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Jumlah node ambient dibatasi maksimal dua per halaman. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
 
 ## Tata letak dan navigasi
 
