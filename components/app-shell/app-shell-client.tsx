@@ -25,7 +25,7 @@ export function AppShellClient({ navigation, account, logoutDestination, childre
       <SidebarInset>
         <MobileAppBar />
         <motion.div
-          data-motion-transform="true"
+          data-motion-reveal="true"
           initial={reduceMotion === true ? { opacity: 1 } : { opacity: 0, y: 8 }}
           animate={reduceMotion === true ? { opacity: 1 } : { opacity: 1, y: 0 }}
           transition={transition}

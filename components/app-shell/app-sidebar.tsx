@@ -96,7 +96,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
                       {active && (
                         <motion.span
                           aria-hidden="true"
-                          data-motion-transform="true"
+                          data-motion-reveal="true"
                           layoutId={reduceMotion === true ? undefined : isMobile ? "active-navigation-drawer" : "active-navigation-desktop"}
                           transition={transition}
                           className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-sidebar-primary motion-reduce:!transform-none"
@@ -119,7 +119,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
 
   return (
     <motion.div
-      data-motion-transform="true"
+      data-motion-reveal="true"
       initial={reduceMotion === true ? { opacity: 1 } : { opacity: 0, x: -8 }}
       animate={reduceMotion === true ? { opacity: 1 } : { opacity: 1, x: 0 }}
       transition={transition}

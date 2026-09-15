@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <noscript>
-          <style>{`[data-motion-transform="true"]{opacity:1 !important;transform:none !important;}`}</style>
+          <style>{`[data-motion-reveal="true"],[data-motion-ambient="true"]{opacity:1 !important;transform:none !important;}`}</style>
         </noscript>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <MotionProvider>{children}</MotionProvider>

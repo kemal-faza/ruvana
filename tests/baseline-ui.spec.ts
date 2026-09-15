@@ -58,14 +58,40 @@ test.describe("baseline UI behavior (RED)", () => {
     }
   })
 
-  test("rendered transform nonaktif pada reduced motion", async ({ page }) => {
+  test("seluruh motion berhenti pada reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
-    await page.goto("/baseline-ui")
-    const motionNodes = page.locator("[data-motion-transform]")
-    await expect(motionNodes).not.toHaveCount(0)
+
+    for (const route of ["/baseline-ui", "/"]) {
+      await page.goto(route)
+
+      const revealNodes = page.locator("[data-motion-reveal]")
+
+      await expect(revealNodes).not.toHaveCount(0)
+      await expect
+        .poll(() =>
+          revealNodes.evaluateAll((nodes) =>
+            nodes.every(
+              (node) =>
+                getComputedStyle(node).opacity === "1" &&
+                getComputedStyle(node).transform === "none",
+            ),
+          ),
+        )
+        .toBe(true)
+    }
+  })
+
+  // Node ambient baru terpasang di landing page pada Plan C. Test ini menjadi
+  // bermakna saat itu; sampai sekarang count-nya nol di semua route.
+  test("seluruh node ambient berhenti pada reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    await page.goto("/")
+
+    const ambientNodes = page.locator("[data-motion-ambient]")
+
     await expect
       .poll(() =>
-        motionNodes.evaluateAll((nodes) =>
+        ambientNodes.evaluateAll((nodes) =>
           nodes.every((node) => getComputedStyle(node).transform === "none"),
         ),
       )
@@ -83,7 +109,7 @@ test.describe("baseline UI visual acceptance", () => {
       await expect(page.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeVisible()
       await expect
         .poll(() =>
-          page.locator("[data-motion-transform]").evaluateAll((nodes) =>
+          page.locator("[data-motion-reveal]").evaluateAll((nodes) =>
             nodes.every(
               (node) =>
                 getComputedStyle(node).opacity === "1" &&
