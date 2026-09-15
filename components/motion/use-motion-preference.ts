@@ -44,11 +44,11 @@ export function useMotionPreference(): MotionPreference {
 
   return {
     reduceMotion,
-    duration: (token = "expressive") => (reduceMotion ? 0 : motionDurations[token]),
+    duration: (token = "standard") => (reduceMotion ? 0 : motionDurations[token]),
     easing: (token = "emphatic") => motionEasings[token],
     spring: (token = "gentle") =>
       reduceMotion ? { duration: 0 } : { type: "spring", ...motionSprings[token] },
-    distance: (token = "md") => (reduceMotion ? 0 : motionDistances[token]),
+    distance: (token = "sm") => (reduceMotion ? 0 : motionDistances[token]),
     transition: (options = {}) => {
       if (reduceMotion) return { duration: 0 }
 
@@ -57,7 +57,7 @@ export function useMotionPreference(): MotionPreference {
         ease?: readonly [number, number, number, number]
         delay?: number
       } = {
-        duration: motionDurations[options.duration ?? "expressive"],
+        duration: motionDurations[options.duration ?? "standard"],
         ease: motionEasings[options.ease ?? "emphatic"],
       }
 

@@ -10,17 +10,17 @@ vi.mock("motion/react", () => ({
 import { useMotionPreference } from "@/components/motion/use-motion-preference"
 
 describe("useMotionPreference", () => {
-  it("memakai token ekspresif sebagai default saat motion aktif", () => {
+  it("memakai token tenang sebagai default saat motion aktif", () => {
     motionState.reduceMotion = false
     const { result } = renderHook(() => useMotionPreference())
 
     expect(result.current.reduceMotion).toBe(false)
-    expect(result.current.duration()).toBe(0.42)
-    expect(result.current.distance()).toBe(28)
+    expect(result.current.duration()).toBe(0.18)
+    expect(result.current.distance()).toBe(16)
     expect(result.current.easing()).toEqual([0.16, 1, 0.3, 1])
-    expect(result.current.spring()).toEqual({ type: "spring", stiffness: 120, damping: 18 })
+    expect(result.current.spring()).toEqual({ type: "spring", stiffness: 120, damping: 22 })
     expect(result.current.transition({ delay: 0.09 })).toEqual({
-      duration: 0.42,
+      duration: 0.18,
       ease: [0.16, 1, 0.3, 1],
       delay: 0.09,
     })
@@ -34,7 +34,6 @@ describe("useMotionPreference", () => {
     expect(result.current.duration("standard")).toBe(0.18)
     expect(result.current.duration("cinematic")).toBe(0.62)
     expect(result.current.distance("lg")).toBe(48)
-    expect(result.current.spring("bouncy")).toEqual({ type: "spring", stiffness: 420, damping: 14 })
     expect(result.current.transition({ duration: "standard", ease: "exit" })).toEqual({
       duration: 0.18,
       ease: [0.4, 0, 1, 1],
@@ -46,7 +45,7 @@ describe("useMotionPreference", () => {
     const { result } = renderHook(() => useMotionPreference())
 
     expect(result.current.reduceMotion).toBe(false)
-    expect(result.current.duration()).toBe(0.42)
+    expect(result.current.duration()).toBe(0.18)
   })
 
   it("kolaps ke keadaan akhir instan saat reduce", () => {

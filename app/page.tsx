@@ -79,7 +79,7 @@ export default function Home() {
         <section aria-labelledby="benefits-title" className="border-y border-border bg-card">
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
             <Parallax speed={-0.2} axis="y" distance="sm"><Reveal><div className="mb-10 max-w-2xl"><p className="mb-3 text-sm font-medium text-primary">Kenalan dengan Ruvana</p><h2 id="benefits-title" className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">Kegiatan terencana.<br />Fasilitas terjaga.</h2><p className="mt-4 leading-7 text-muted-foreground">Satu tempat untuk kebutuhan fasilitas kampus, dari mencari ruang hingga melaporkan hal yang perlu diperbaiki.</p></div></Reveal></Parallax>
-            <StaggerGroup stagger="expressive" className="grid gap-6 md:grid-cols-3">{benefits.map(({ icon: Icon, title, description }, index) => (
+            <StaggerGroup stagger="functional" className="grid gap-6 md:grid-cols-3">{benefits.map(({ icon: Icon, title, description }, index) => (
               <StaggerItem key={title} className="h-full">
                 <article className="h-full rounded-card border border-border bg-background p-6 sm:p-8">
                   <div className="mb-8 flex items-center justify-between"><span className="flex size-12 items-center justify-center rounded-xl bg-primary-subdued text-primary-subdued-foreground"><Icon className="size-5" aria-hidden="true" /></span><span className="text-xs text-muted-foreground">0{index + 1}</span></div>

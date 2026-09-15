@@ -67,8 +67,8 @@ export function MagneticHover({
   const maxRadius = motionPreference.distance(radius)
   const targetX = useMotionValue(0)
   const targetY = useMotionValue(0)
-  const x = useSpring(targetX, motionPreference.spring("snappy"))
-  const y = useSpring(targetY, motionPreference.spring("snappy"))
+  const x = useSpring(targetX, motionPreference.spring("gentle"))
+  const y = useSpring(targetY, motionPreference.spring("gentle"))
 
   function reset() {
     targetX.set(0)

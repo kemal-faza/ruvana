@@ -19,9 +19,7 @@ export const motionEasings = {
 } as const
 
 export const motionSprings = {
-  gentle: { stiffness: 120, damping: 18 },
-  snappy: { stiffness: 320, damping: 26 },
-  bouncy: { stiffness: 420, damping: 14 },
+  gentle: { stiffness: 120, damping: 22 },
 } as const
 
 export const motionDistances = {
@@ -34,11 +32,6 @@ export const motionDistances = {
 export const motionStagger = {
   expressive: 0.09,
   functional: 0.04,
-} as const
-
-export const motionAmbient = {
-  minSeconds: 6,
-  maxSeconds: 12,
 } as const
 
 // Cermin CSS dari tabel di atas. Nilai di sini diuji terhadap tabel angka

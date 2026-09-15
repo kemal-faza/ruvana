@@ -39,7 +39,7 @@ describe("kontrak Card", () => {
     render(<Card data-testid="card">Isi</Card>)
 
     const card = screen.getByTestId("card")
-    expect(card).toHaveClass("duration-motion-expressive", "ease-motion-emphatic", "hover:-translate-y-0.5")
+    expect(card).toHaveClass("duration-motion-standard", "ease-motion-emphatic", "hover:-translate-y-0.5")
     expect(card.className).toContain("transition-[transform,translate,box-shadow]")
     expect(card).toHaveClass("motion-reduce:hover:translate-y-0")
   })

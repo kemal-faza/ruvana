@@ -102,7 +102,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
                           aria-hidden="true"
                           data-motion-reveal="true"
                           layoutId={motionPreference.reduceMotion ? undefined : isMobile ? "active-navigation-drawer" : "active-navigation-desktop"}
-                          transition={motionPreference.spring("snappy")}
+                          transition={motionPreference.spring("gentle")}
                           className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-sidebar-primary motion-reduce:!transform-none"
                         />
                       )}
@@ -130,7 +130,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
           : { opacity: 0, x: -motionPreference.distance("sm") }
       }
       animate={{ opacity: 1, x: 0 }}
-      transition={motionPreference.spring("bouncy")}
+      transition={motionPreference.spring("gentle")}
       className="min-w-0 motion-reduce:!transform-none"
     >
       {navigationMarkup}

@@ -54,7 +54,7 @@ interface StaggerGroupProps {
 export function StaggerGroup({
   children,
   as = "div",
-  stagger = "expressive",
+  stagger = "functional",
   delayChildren = 0,
   className,
 }: StaggerGroupProps) {
@@ -88,7 +88,7 @@ interface StaggerItemProps {
 export function StaggerItem({
   children,
   as = "div",
-  distance = "md",
+  distance = "sm",
   className,
 }: StaggerItemProps) {
   const motionPreference = useMotionPreference()

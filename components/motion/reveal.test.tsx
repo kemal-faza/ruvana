@@ -66,12 +66,12 @@ describe("Reveal", () => {
 
   it("merutekan prop spring ke token spring, bukan ke durasi", () => {
     render(
-      <Reveal spring="snappy">
+      <Reveal spring="gentle">
         <p>Hero dengan spring</p>
       </Reveal>,
     )
 
-    expect(motionState.springTokens).toEqual(["snappy"])
+    expect(motionState.springTokens).toEqual(["gentle"])
   })
 
   it("tidak memakai spring ketika prop spring tidak diisi", () => {
