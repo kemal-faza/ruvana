@@ -20,7 +20,7 @@ Otoritas runtime: keputusan peran, kepemilikan, otorisasi, konflik, dan state do
 
 - **Hangat:** gunakan ivory, permukaan putih, dan aksen alami; hindari kesan steril.
 - **Tenang:** jaga hierarki dan ruang tetap terukur; gerak tidak boleh mengacaukan keterbacaan.
-- **Hidup:** motion ekspresif dan berlapis dipakai untuk membuat pengalaman terasa hidup; antusiasme adalah bagian dari produk, bukan dekorasi yang menumpang.
+- **Tenang dan responsif:** motion hanya muncul sebagai respons terhadap interaksi atau posisi — entrance saat elemen masuk viewport, umpan balik hover/focus/active, dan transisi perubahan state. Tidak ada animasi yang berjalan sendiri saat halaman diam.
 - **Mudah didekati:** bahasa langsung dan pola yang dapat diprediksi harus membantu pengguna menyelesaikan tugas.
 - **Tepercaya:** tampilkan status, dampak, dan kesalahan secara jujur; jangan menyembunyikan konsekuensi.
 - **Jelas:** setiap halaman memiliki tujuan, aksi utama, dan konteks yang mudah dipindai.
@@ -89,27 +89,26 @@ Gunakan 700 hanya untuk metrik atau display yang benar-benar perlu penekanan. Ju
 | Radius | `radius-card` 16–24 px; `radius-control` 8–12 px |
 | Bayangan | `shadow-subtle: 0 2px 8px rgba(0,0,0,0.04)`; gunakan untuk menunjukkan kedalaman |
 | Ikon | Satu keluarga outline konsisten, seperti Lucide, umumnya 16–20 px |
-| Motion | Ekspresif dan berlapis; token di bagian Motion dan gradasi di bawah |
+| Motion | Responsif terhadap interaksi, tanpa animasi idle |
 
 #### Motion dan gradasi
 
-Motion adalah bagian utama pengalaman Ruvana, bukan hiasan tambahan. Token berikut adalah satu-satunya sumber nilai motion.
+Motion adalah bahasa umpan balik, bukan lapisan dekorasi. Setiap motion harus punya pemicu interaksi; motion yang berjalan tanpa pemicu dilarang. Token berikut adalah satu-satunya sumber nilai motion.
 
 | Kelompok | Token | Nilai |
 |---|---|---|
 | Durasi | `micro` / `standard` / `expressive` / `cinematic` | 120 ms / 180 ms / 420 ms / 620 ms |
 | Easing | `standard` / `emphatic` / `exit` | `cubic-bezier(0.22, 1, 0.36, 1)` / `cubic-bezier(0.16, 1, 0.3, 1)` / `cubic-bezier(0.4, 0, 1, 1)` |
-| Spring | `gentle` / `snappy` / `bouncy` | `{120, 18}` / `{320, 26}` / `{420, 14}` |
+| Spring | `gentle` | `{120, 22}` |
 | Jarak | `xs` / `sm` / `md` / `lg` | 8 / 16 / 28 / 48 px |
 | Stagger | `expressive` / `functional` | 90 ms / 40 ms |
-| Ambient | durasi loop | 6–12 detik |
 
 Dua syarat berikut mengikat seluruh motion, tanpa pengecualian:
 
 1. Saat `prefers-reduced-motion: reduce`, seluruh motion berhenti dan setiap elemen langsung berada pada keadaan akhirnya.
 2. Animasi hanya boleh menganimasikan `transform` dan `opacity`; properti yang memicu layout tidak boleh dianimasikan.
 
-Gradasi kuat tidak boleh digunakan. Gradasi tonal halus, termasuk yang dianimasikan (mis. `sweep` dan `shimmer`), boleh dipakai pada permukaan dekoratif maupun pada kontrol. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Jumlah node motion berkelanjutan (`data-motion-ambient`, termasuk `Parallax`) dibatasi maksimal empat per halaman, dan maksimal dua di antaranya boleh berloop tak terbatas (`Ambient`). Gradasi hanya boleh dipakai sebagai lapisan dekoratif; teks tetap berada di atas permukaan solid bertoken. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
+Gradasi kuat tidak boleh digunakan. Gradasi tonal halus boleh dipakai pada permukaan dekoratif maupun kontrol; gradasi beranimasi hanya diizinkan untuk indikator loading (`skeleton` shimmer), dan gradien dekoratif yang bergerak (`sweep`) dihapus. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Tidak ada node motion yang berloop tak terbatas. `Parallax` yang terikat scroll masih diizinkan (maksimal empat per halaman, penanda `data-motion-ambient`); `Ambient` dan pola loop dekoratif dihapus dari sistem. Gradasi hanya boleh dipakai sebagai lapisan dekoratif; teks tetap berada di atas permukaan solid bertoken. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
 
 ## Tata letak dan navigasi
 
@@ -307,5 +306,5 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Header publik, token visual yang sama, serta tema sistem dengan pengalih terang/gelap digunakan pada landing page.
 - Header publik memakai wordmark teks **ruvana** tanpa ikon, aksi **Jelajahi Fasilitas** yang sama dengan hero di samping pengalih tema, dan navigasi Beranda, Fasilitas, serta Cara kerja.
-- Landing page memakai motion ekspresif dan berlapis: hero muncul lewat stagger CSS yang berjalan sebelum hidrasi, bagian berikutnya muncul saat masuk viewport lewat primitif motion bersama, dan setiap animasi menghormati `prefers-reduced-motion`.
+- Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.
 - Katalog komponen dipertahankan sementara di `/baseline-ui` sebagai referensi pengembangan.
