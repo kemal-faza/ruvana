@@ -61,16 +61,36 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --radius-control: 0.625rem;
   --radius-card: 1.25rem;
+  --duration-motion-micro: var(--motion-duration-micro);
   --duration-motion-standard: var(--motion-duration-standard);
+  --duration-motion-expressive: var(--motion-duration-expressive);
+  --duration-motion-cinematic: var(--motion-duration-cinematic);
   --ease-motion-standard: var(--motion-easing-standard);
+  --ease-motion-emphatic: var(--motion-easing-emphatic);
+  --ease-motion-exit: var(--motion-easing-exit);
+  --spacing-motion-xs: var(--motion-distance-xs);
+  --spacing-motion-sm: var(--motion-distance-sm);
+  --spacing-motion-md: var(--motion-distance-md);
+  --spacing-motion-lg: var(--motion-distance-lg);
   --shadow-subtle: 0 2px 8px rgb(0 0 0 / 0.04);
 }
 
 :root {
   --black: oklch(0% 0 0);
   --white: oklch(100% 0 0);
+  --motion-duration-micro: 120ms;
   --motion-duration-standard: 180ms;
+  --motion-duration-expressive: 420ms;
+  --motion-duration-cinematic: 620ms;
   --motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-easing-emphatic: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-easing-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-distance-xs: 0.5rem;
+  --motion-distance-sm: 1rem;
+  --motion-distance-md: 1.75rem;
+  --motion-distance-lg: 3rem;
+  --motion-stagger-expressive: 90ms;
+  --motion-stagger-functional: 40ms;
   --spacing-page-mobile: 1rem;
   --spacing-page-tablet: 1.75rem;
   --spacing-page-desktop: 2rem;
