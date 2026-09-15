@@ -81,14 +81,14 @@ test.describe("baseline UI behavior (RED)", () => {
     }
   })
 
-  // Node ambient baru terpasang di landing page pada Plan C. Test ini menjadi
-  // bermakna saat itu; sampai sekarang count-nya nol di semua route.
   test("seluruh node ambient berhenti pada reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
     await page.goto("/")
 
     const ambientNodes = page.locator("[data-motion-ambient]")
 
+    // Landing page sekarang memasang node ambient, jadi test ini tidak lagi vakum.
+    await expect(ambientNodes).not.toHaveCount(0)
     await expect
       .poll(() =>
         ambientNodes.evaluateAll((nodes) =>
@@ -100,6 +100,25 @@ test.describe("baseline UI behavior (RED)", () => {
 })
 
 test.describe("baseline UI visual acceptance", () => {
+  // Node entrance berbasis Motion berakhir diam (`opacity: 1`, `transform: none`).
+  // Menunggu mereka settle penting sebelum screenshot: transform selama entrance
+  // ikut memperluas area overflow, sehingga fullPage bisa berbeda tinggi bila
+  // diambil di tengah animasi. Entrance CSS murni (mis. `.motion-fade-expressive`)
+  // tidak dihitung di sini karena transform-nya tetap `matrix(...)`, bukan `none`.
+  async function waitForMotionToSettle(page: import("@playwright/test").Page) {
+    await expect
+      .poll(() =>
+        page.locator("[data-motion-reveal]").evaluateAll((nodes) =>
+          nodes.every(
+            (node) =>
+              getComputedStyle(node).opacity === "1" &&
+              getComputedStyle(node).transform === "none",
+          ),
+        ),
+      )
+      .toBe(true)
+  }
+
   for (const theme of ["light", "dark"] as const) {
     test(`desktop ${theme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme })
@@ -107,17 +126,7 @@ test.describe("baseline UI visual acceptance", () => {
       await expect(page.locator("html")).toHaveClass(new RegExp(theme))
       await expect(page.getByRole("navigation", { name: "Navigasi utama" })).toBeVisible()
       await expect(page.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeVisible()
-      await expect
-        .poll(() =>
-          page.locator("[data-motion-reveal]").evaluateAll((nodes) =>
-            nodes.every(
-              (node) =>
-                getComputedStyle(node).opacity === "1" &&
-                getComputedStyle(node).transform === "none",
-            ),
-          ),
-        )
-        .toBe(true)
+      await waitForMotionToSettle(page)
       const accessibility = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
         .analyze()
@@ -129,20 +138,24 @@ test.describe("baseline UI visual acceptance", () => {
       await page.emulateMedia({ colorScheme: theme })
       await page.setViewportSize({ width: 390, height: 844 })
       await page.goto("/baseline-ui")
+      await waitForMotionToSettle(page)
       const trigger = page.getByRole("button", { name: "Buka navigasi" })
       await trigger.click()
       await expect(page.getByRole("dialog", { name: "Navigasi utama" })).toBeVisible()
+      await waitForMotionToSettle(page)
       await expect(page).toHaveScreenshot(`baseline-mobile-drawer-${theme}.png`, { fullPage: true })
     })
   }
 
   test("tidak memiliki overflow horizontal pada breakpoint akhir", async ({ page }) => {
-    for (const width of [390, 834, 1280]) {
-      await page.setViewportSize({ width, height: 900 })
-      await page.goto("/baseline-ui")
-      expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
-      ).toBe(true)
+    for (const route of ["/baseline-ui", "/"]) {
+      for (const width of [390, 834, 1280]) {
+        await page.setViewportSize({ width, height: 900 })
+        await page.goto(route)
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+        ).toBe(true)
+      }
     }
   })
 
