@@ -61,10 +61,10 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --radius-control: 0.625rem;
   --radius-card: 1.25rem;
-  --duration-motion-micro: var(--motion-duration-micro);
-  --duration-motion-standard: var(--motion-duration-standard);
-  --duration-motion-expressive: var(--motion-duration-expressive);
-  --duration-motion-cinematic: var(--motion-duration-cinematic);
+  --transition-duration-motion-micro: var(--motion-duration-micro);
+  --transition-duration-motion-standard: var(--motion-duration-standard);
+  --transition-duration-motion-expressive: var(--motion-duration-expressive);
+  --transition-duration-motion-cinematic: var(--motion-duration-cinematic);
   --ease-motion-standard: var(--motion-easing-standard);
   --ease-motion-emphatic: var(--motion-easing-emphatic);
   --ease-motion-exit: var(--motion-easing-exit);
@@ -297,6 +297,38 @@
   animation-delay: 120ms;
 }
 
+/* Entrance ekspresif untuk permukaan yang masuk saat mount. */
+.motion-rise-expressive {
+  animation: motion-rise var(--motion-duration-expressive) var(--motion-easing-emphatic) both;
+}
+
+/* Entrance scale untuk ilustrasi hero. Berakhir di keadaan diam (transform: none). */
+@keyframes motion-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.motion-rise-scale {
+  animation-name: motion-scale-in;
+}
+
+/* Stagger entrance di atas fold. Berjalan murni CSS sebelum hidrasi; elemen
+   menyetel --stagger-index dan delay dihitung dari token stagger. Varian
+   functional dipakai chrome aplikasi (40 ms), default dipakai landing page. */
+.motion-rise-stagger {
+  animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-expressive)) * var(--stagger-index, 0));
+}
+
+.motion-rise-stagger-functional {
+  --motion-stagger-step: var(--motion-stagger-functional);
+}
+
 /* Loop ambient. Setiap keyframe dimulai dan berakhir di keadaan diam agar
    frame terakhir tidak menahan transform saat reduced motion. */
 @keyframes ambient-float {
@@ -381,6 +413,29 @@
   animation: ambient-shimmer var(--ambient-duration) var(--motion-easing-standard) infinite;
 }
 
+/* Shimmer skeleton. Berakhir di posisi netral agar frame terakhir tidak
+   meninggalkan sorotan di tengah saat reduced motion mematikan animasi. */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--foreground) 12%, transparent) 50%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  animation: skeleton-shimmer var(--motion-duration-expressive) linear infinite;
+}
+
 .theme-transition::view-transition-old(root),
 .theme-transition::view-transition-new(root) {
   mix-blend-mode: normal;
@@ -388,7 +443,7 @@
 }
 
 .theme-transition::view-transition-new(root) {
-  animation: theme-slide-down 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: theme-slide-down var(--motion-duration-cinematic) var(--motion-easing-standard) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
