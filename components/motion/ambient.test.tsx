@@ -43,4 +43,12 @@ describe("Ambient", () => {
     expect(node?.className).toContain("ambient-strong")
     expect(node?.className).toContain("rounded-3xl")
   })
+
+  it("boleh dirender tanpa anak sebagai lapisan dekoratif", () => {
+    const { container } = render(<Ambient pattern="sweep" intensity="medium" />)
+
+    const node = container.querySelector("[data-motion-ambient]")
+    expect(node).not.toBeNull()
+    expect(node).toHaveClass("ambient-sweep", "ambient-medium")
+  })
 })

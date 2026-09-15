@@ -4,7 +4,7 @@ export type AmbientPattern = "float" | "drift" | "sweep" | "shimmer"
 export type AmbientIntensity = "subtle" | "medium" | "strong"
 
 interface AmbientProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   pattern?: AmbientPattern
   intensity?: AmbientIntensity
   className?: string

@@ -1,7 +1,5 @@
 "use client"
 
-import { motion } from "motion/react"
-
 import { motionTags, type MotionTag } from "@/components/motion/motion-tags"
 import { useMotionPreference } from "@/components/motion/use-motion-preference"
 import { motionStagger, type MotionDistanceToken, type MotionStaggerToken } from "@/lib/motion"
@@ -42,6 +40,7 @@ export function getStaggerItemVariants(
 
 interface StaggerGroupProps {
   children: React.ReactNode
+  as?: MotionTag
   stagger?: MotionStaggerToken
   delayChildren?: number
   className?: string
@@ -49,18 +48,21 @@ interface StaggerGroupProps {
 
 /**
  * Orkestrator. Tidak memakai penanda kontrak karena tidak menganimasikan
- * propertinya sendiri; penanda melekat pada tiap StaggerItem.
+ * propertinya sendiri; penanda melekat pada tiap StaggerItem. `as` dipakai
+ * ketika struktur semantik induk menuntut tag tertentu (mis. `ol`).
  */
 export function StaggerGroup({
   children,
+  as = "div",
   stagger = "expressive",
   delayChildren = 0,
   className,
 }: StaggerGroupProps) {
   const motionPreference = useMotionPreference()
+  const Component = motionTags[as]
 
   return (
-    <motion.div
+    <Component
       className={cn("min-w-0", className)}
       initial="hidden"
       whileInView="visible"
@@ -72,7 +74,7 @@ export function StaggerGroup({
       )}
     >
       {children}
-    </motion.div>
+    </Component>
   )
 }
 

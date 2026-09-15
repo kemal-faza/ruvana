@@ -42,12 +42,31 @@ describe("landing page publik", () => {
     expect(screen.getAllByRole("link", { name: /Jelajahi Fasilitas/ })).toHaveLength(3)
   })
 
-  it("menganimasikan hero lewat CSS dan bagian lain lewat reveal motion", () => {
+  it("menjalankan entrance hero sebagai stagger CSS dan bagian lain lewat reveal motion", () => {
     const { container } = render(<Home />)
 
-    const heroCopy = container.querySelector("#hero-title")?.parentElement
-    expect(heroCopy?.className).toContain("motion-rise")
-    expect(container.querySelector("#hero-title")?.closest(".motion-rise")).not.toBeNull()
+    const heroTitle = container.querySelector("#hero-title")
+    expect(heroTitle?.className).toContain("motion-rise")
+    expect(heroTitle?.className).toContain("motion-rise-stagger")
+
+    const staggerOrder = Array.from(
+      container.querySelectorAll<HTMLElement>(".motion-rise-stagger"),
+    ).map((node) => Number(node.style.getPropertyValue("--stagger-index")))
+
+    expect(staggerOrder.length).toBeGreaterThanOrEqual(4)
+    expect(staggerOrder).toEqual([...staggerOrder].sort((left, right) => left - right))
+    expect(new Set(staggerOrder).size).toBe(staggerOrder.length)
+
     expect(container.querySelectorAll("[data-motion-reveal]").length).toBeGreaterThan(0)
+  })
+
+  it("membatasi node motion berkelanjutan dan loop ambient per halaman", () => {
+    const { container } = render(<Home />)
+
+    const ambientNodes = container.querySelectorAll("[data-motion-ambient]")
+    expect(ambientNodes.length).toBeGreaterThan(0)
+    expect(ambientNodes.length).toBeLessThanOrEqual(4)
+
+    expect(container.querySelectorAll(".ambient").length).toBeLessThanOrEqual(2)
   })
 })

@@ -45,6 +45,18 @@ describe("StaggerGroup dan StaggerItem", () => {
     expect(screen.getByText("Butir satu").closest("[data-motion-reveal]")).not.toBeNull()
     expect(screen.getByText("Butir dua").closest("li")).not.toBeNull()
   })
+
+  it("merender tag orkestrator sesuai prop as", () => {
+    render(
+      <StaggerGroup as="ol">
+        <StaggerItem as="li">
+          <p>Butir terurut</p>
+        </StaggerItem>
+      </StaggerGroup>,
+    )
+
+    expect(screen.getByText("Butir terurut").closest("ol")).not.toBeNull()
+  })
 })
 
 describe("getStaggerGroupVariants", () => {
