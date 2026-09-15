@@ -109,7 +109,7 @@ Dua syarat berikut mengikat seluruh motion, tanpa pengecualian:
 1. Saat `prefers-reduced-motion: reduce`, seluruh motion berhenti dan setiap elemen langsung berada pada keadaan akhirnya.
 2. Animasi hanya boleh menganimasikan `transform` dan `opacity`; properti yang memicu layout tidak boleh dianimasikan.
 
-Gradasi kuat tidak boleh digunakan. Gradasi tonal halus, termasuk yang dianimasikan (mis. `sweep` dan `shimmer`), boleh dipakai pada permukaan dekoratif maupun pada kontrol. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Jumlah node ambient dibatasi maksimal dua per halaman. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
+Gradasi kuat tidak boleh digunakan. Gradasi tonal halus, termasuk yang dianimasikan (mis. `sweep` dan `shimmer`), boleh dipakai pada permukaan dekoratif maupun pada kontrol. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Jumlah node motion berkelanjutan (`data-motion-ambient`, termasuk `Parallax`) dibatasi maksimal empat per halaman, dan maksimal dua di antaranya boleh berloop tak terbatas (`Ambient`). Gradasi hanya boleh dipakai sebagai lapisan dekoratif; teks tetap berada di atas permukaan solid bertoken. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
 
 ## Tata letak dan navigasi
 
@@ -307,5 +307,5 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Header publik, token visual yang sama, serta tema sistem dengan pengalih terang/gelap digunakan pada landing page.
 - Header publik memakai wordmark teks **ruvana** tanpa ikon, aksi **Jelajahi Fasilitas** yang sama dengan hero di samping pengalih tema, dan navigasi Beranda, Fasilitas, serta Cara kerja.
-- Landing page memakai motion singkat: hero muncul saat halaman dimuat, bagian berikutnya muncul saat masuk viewport, dan setiap animasi menghormati `prefers-reduced-motion`.
+- Landing page memakai motion ekspresif dan berlapis: hero muncul lewat stagger CSS yang berjalan sebelum hidrasi, bagian berikutnya muncul saat masuk viewport lewat primitif motion bersama, dan setiap animasi menghormati `prefers-reduced-motion`.
 - Katalog komponen dipertahankan sementara di `/baseline-ui` sebagai referensi pengembangan.
