@@ -87,7 +87,7 @@ test.describe("baseline UI behavior (RED)", () => {
 
     const ambientNodes = page.locator("[data-motion-ambient]")
 
-    // Landing page sekarang memasang node ambient, jadi test ini tidak lagi vakum.
+    // Landing page masih memasang node ambient lewat Parallax, jadi test ini tidak vakum.
     await expect(ambientNodes).not.toHaveCount(0)
     await expect
       .poll(() =>

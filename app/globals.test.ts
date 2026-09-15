@@ -22,15 +22,14 @@ describe("lapisan CSS motion Plan C", () => {
     expect(css).not.toContain("--duration-motion-expressive:")
   })
 
-  it("menyediakan stagger hero murni CSS dari token stagger", () => {
+  it("menyediakan entrance CSS dan stagger CSS dari token", () => {
     const css = readCss()
 
-    expect(css).toContain(".motion-rise-expressive {")
     expect(css).toContain(".motion-rise-scale {")
     expect(css).toContain(".motion-fade-expressive {")
     expect(css).toContain(".motion-rise-stagger {")
     expect(css).toContain(
-      "animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-expressive)) * var(--stagger-index, 0));",
+      "animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-functional)) * var(--stagger-index, 0));",
     )
     expect(css).toContain(".motion-rise-stagger-functional {")
     expect(css).toContain("--motion-stagger-step: var(--motion-stagger-functional);")

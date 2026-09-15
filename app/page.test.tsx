@@ -60,13 +60,13 @@ describe("landing page publik", () => {
     expect(container.querySelectorAll("[data-motion-reveal]").length).toBeGreaterThan(0)
   })
 
-  it("membatasi node motion berkelanjutan dan loop ambient per halaman", () => {
+  it("membatasi node motion berkelanjutan dan tidak menyisakan loop idle", () => {
     const { container } = render(<Home />)
 
     const ambientNodes = container.querySelectorAll("[data-motion-ambient]")
     expect(ambientNodes.length).toBeGreaterThan(0)
     expect(ambientNodes.length).toBeLessThanOrEqual(4)
 
-    expect(container.querySelectorAll(".ambient").length).toBeLessThanOrEqual(2)
+    expect(container.querySelectorAll(".ambient").length).toBe(0)
   })
 })

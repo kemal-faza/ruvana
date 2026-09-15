@@ -297,11 +297,6 @@
   animation-delay: 120ms;
 }
 
-/* Entrance ekspresif untuk permukaan yang masuk saat mount. */
-.motion-rise-expressive {
-  animation: motion-rise var(--motion-duration-expressive) var(--motion-easing-emphatic) both;
-}
-
 /* Entrance fade murni opacity. Dipakai permukaan yang boleh muncul di mana saja
    (mis. Empty) karena opacity tidak memperluas area overflow seperti transform. */
 @keyframes motion-fade-in {
@@ -337,95 +332,11 @@
    menyetel --stagger-index dan delay dihitung dari token stagger. Varian
    functional dipakai chrome aplikasi (40 ms), default dipakai landing page. */
 .motion-rise-stagger {
-  animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-expressive)) * var(--stagger-index, 0));
+  animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-functional)) * var(--stagger-index, 0));
 }
 
 .motion-rise-stagger-functional {
   --motion-stagger-step: var(--motion-stagger-functional);
-}
-
-/* Loop ambient. Setiap keyframe dimulai dan berakhir di keadaan diam agar
-   frame terakhir tidak menahan transform saat reduced motion. */
-@keyframes ambient-float {
-  0%,
-  100% {
-    transform: none;
-  }
-  50% {
-    transform: translateY(calc(var(--ambient-distance) * -1));
-  }
-}
-
-@keyframes ambient-drift {
-  0%,
-  100% {
-    transform: none;
-  }
-  50% {
-    transform: translateX(var(--ambient-distance));
-  }
-}
-
-@keyframes ambient-sweep {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes ambient-shimmer {
-  0%,
-  100% {
-    background-position: -150% 0;
-  }
-  50% {
-    background-position: 250% 0;
-  }
-}
-
-.ambient {
-  --ambient-distance: 0.25rem;
-  --ambient-duration: 10s;
-}
-
-.ambient-subtle {
-  --ambient-distance: 0.25rem;
-  --ambient-duration: 10s;
-}
-
-.ambient-medium {
-  --ambient-distance: 0.5rem;
-  --ambient-duration: 8s;
-}
-
-.ambient-strong {
-  --ambient-distance: 0.75rem;
-  --ambient-duration: 6s;
-}
-
-.ambient-float {
-  animation: ambient-float var(--ambient-duration) var(--motion-easing-standard) infinite;
-}
-
-.ambient-drift {
-  animation: ambient-drift var(--ambient-duration) var(--motion-easing-standard) infinite;
-}
-
-.ambient-sweep,
-.ambient-shimmer {
-  background-repeat: no-repeat;
-  background-size: 200% 100%;
-}
-
-.ambient-sweep {
-  animation: ambient-sweep var(--ambient-duration) var(--motion-easing-standard) infinite;
-}
-
-.ambient-shimmer {
-  animation: ambient-shimmer var(--ambient-duration) var(--motion-easing-standard) infinite;
 }
 
 /* Shimmer skeleton. Berakhir di posisi netral agar frame terakhir tidak
