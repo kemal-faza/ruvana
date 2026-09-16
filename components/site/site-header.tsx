@@ -20,7 +20,7 @@ interface SiteHeaderProps {
 export function SiteHeader({ current }: SiteHeaderProps) {
   return (
     <header className="border-b border-border">
-      <div className="mx-auto flex h-[72px] w-full max-w-[1256px] items-center justify-between gap-3 px-4 sm:h-[84px] sm:gap-7 sm:px-7">
+      <div className="mx-auto flex h-header w-full max-w-shell items-center justify-between gap-3 px-4 sm:h-header-lg sm:gap-7 sm:px-7">
         <Link
           href="/"
           aria-label="Ruvana — beranda"
@@ -31,7 +31,7 @@ export function SiteHeader({ current }: SiteHeaderProps) {
 
         <nav
           aria-label="Navigasi utama"
-          className="hidden items-center gap-4 text-[13px] text-muted-foreground min-[701px]:flex min-[901px]:gap-7"
+          className="hidden items-center gap-4 text-caption text-muted-foreground md:flex lg:gap-7"
         >
           {navItems.map(({ label, href, section }) => (
             <Link
@@ -51,7 +51,7 @@ export function SiteHeader({ current }: SiteHeaderProps) {
             href="/masuk"
             className={cn(
               buttonVariants({ variant: "ghost" }),
-              "hidden min-h-11 px-4 text-muted-foreground min-[701px]:inline-flex",
+              "hidden min-h-11 px-4 text-muted-foreground md:inline-flex",
             )}
           >
             Masuk
