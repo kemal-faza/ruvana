@@ -50,6 +50,16 @@ const users: AdminUserRow[] = [
 
 const ringkasan = { total: 4, aktif: 1, pending: 1, dinonaktifkan: 1 }
 
+const banyakPengguna: AdminUserRow[] = Array.from({ length: 12 }, (_, index) => ({
+  id: 100 + index,
+  nama: `Pengguna ${String(index + 1).padStart(2, "0")}`,
+  email: `pengguna${index + 1}@kampus.ac.id`,
+  role: "pengguna",
+  status: "ACTIVE",
+  waktuDaftar: new Date(`2026-09-${String(index + 1).padStart(2, "0")}T08:00:00+07:00`),
+  waktuVerifikasi: null,
+}))
+
 function renderFixture() {
   return render(<AdminUsers users={users} ringkasan={ringkasan} />)
 }
@@ -97,5 +107,62 @@ describe("AdminUsers (kelola akun)", () => {
     expect(within(dialog).getByLabelText(/password awal/i)).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/role/i)).toBeInTheDocument()
     expect(within(dialog).getByRole("button", { name: "Buat akun" })).toBeInTheDocument()
+  })
+
+  it("mengurutkan berdasarkan nama menaik lalu menurun", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+
+    const tombolUrut = screen.getByRole("button", { name: /urutkan berdasarkan pengguna/i })
+    await user.click(tombolUrut)
+
+    let baris = within(screen.getByRole("table")).getAllByRole("row")
+    expect(baris[1]).toHaveTextContent("Ayu Pratama")
+
+    await user.click(tombolUrut)
+
+    baris = within(screen.getByRole("table")).getAllByRole("row")
+    expect(baris[1]).toHaveTextContent("Dedi Kurnia")
+  })
+
+  it("memfilter tabel saat kartu ringkasan diklik dan melepas saat diklik lagi", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+
+    const kartuAktif = screen.getByRole("button", { name: "Aktif1" })
+    expect(kartuAktif).toHaveAttribute("aria-pressed", "false")
+
+    await user.click(kartuAktif)
+
+    expect(kartuAktif).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByText("Menampilkan 1 dari 4 akun.")).toBeInTheDocument()
+    expect(screen.getByText("Ayu Pratama")).toBeInTheDocument()
+    expect(screen.queryByText("Budi Santoso")).not.toBeInTheDocument()
+
+    await user.click(kartuAktif)
+
+    expect(kartuAktif).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByText("Menampilkan 4 dari 4 akun.")).toBeInTheDocument()
+  })
+
+  it("membagi daftar menjadi beberapa halaman", async () => {
+    const user = userEvent.setup()
+    render(
+      <AdminUsers
+        users={banyakPengguna}
+        ringkasan={{ total: 12, aktif: 12, pending: 0, dinonaktifkan: 0 }}
+      />,
+    )
+
+    expect(screen.getByText("Menampilkan 12 dari 12 akun.")).toBeInTheDocument()
+    expect(screen.getByText("Halaman 1 dari 2")).toBeInTheDocument()
+    expect(screen.getByText("Pengguna 10")).toBeInTheDocument()
+    expect(screen.queryByText("Pengguna 11")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Berikutnya" }))
+
+    expect(screen.getByText("Halaman 2 dari 2")).toBeInTheDocument()
+    expect(screen.getByText("Pengguna 11")).toBeInTheDocument()
+    expect(screen.queryByText("Pengguna 01")).not.toBeInTheDocument()
   })
 })

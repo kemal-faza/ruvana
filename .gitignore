@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
 
 # next.js
 /.next/
@@ -70,3 +72,7 @@ docker-compose.override.yml
 !docker/postgres-init/**/*.sql
 
 .codegraph/
+.worktrees/
+.superpowers/
+figma/
+docker/

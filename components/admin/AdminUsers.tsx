@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { Search, UserPlus, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Search, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 
 import { buatAkun } from "@/app/admin/pengguna/actions";
 import { Badge } from "@/components/ui/badge";
@@ -39,11 +39,41 @@ const STATUS_CONFIG = {
 } as const;
 
 const RINGKASAN_ITEM = [
-  { key: "total", label: "Total akun", dot: "bg-primary" },
-  { key: "aktif", label: "Aktif", dot: "bg-success" },
-  { key: "pending", label: "Menunggu verifikasi", dot: "bg-warning" },
-  { key: "dinonaktifkan", label: "Dinonaktifkan", dot: "bg-muted-foreground" },
+  { key: "total", label: "Total akun", status: "", icon: Users },
+  { key: "aktif", label: "Aktif", status: "ACTIVE", icon: UserCheck },
+  { key: "pending", label: "Menunggu verifikasi", status: "PENDING", icon: Clock },
+  { key: "dinonaktifkan", label: "Dinonaktifkan", status: "DISABLED", icon: UserX },
 ] as const;
+
+const JUMLAH_PER_HALAMAN = 10;
+
+type KunciUrut = "nama" | "waktuDaftar";
+type ArahUrut = "naik" | "turun";
+
+function TombolUrut({
+  label,
+  aktif,
+  arah,
+  onToggle,
+}: {
+  label: string;
+  aktif: boolean;
+  arah: ArahUrut;
+  onToggle: () => void;
+}) {
+  const Ikon = aktif ? (arah === "naik" ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={`Urutkan berdasarkan ${label}`}
+      className="inline-flex min-h-11 items-center gap-1 rounded font-medium uppercase hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+    >
+      {label}
+      <Ikon aria-hidden="true" className="size-3.5" />
+    </button>
+  );
+}
 
 function fmtTanggal(date: Date) {
   return new Intl.DateTimeFormat("id-ID", {
@@ -73,6 +103,9 @@ export default function AdminUsers({
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [sheetTerbuka, setSheetTerbuka] = useState(false);
+  const [kunciUrut, setKunciUrut] = useState<KunciUrut | null>(null);
+  const [arahUrut, setArahUrut] = useState<ArahUrut>("naik");
+  const [halaman, setHalaman] = useState(1);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -85,6 +118,36 @@ export default function AdminUsers({
         (!statusFilter || u.status === statusFilter),
     );
   }, [users, search, roleFilter, statusFilter]);
+
+  function toggleUrut(kunci: KunciUrut) {
+    if (kunciUrut === kunci) {
+      setArahUrut((arah) => (arah === "naik" ? "turun" : "naik"));
+    } else {
+      setKunciUrut(kunci);
+      setArahUrut("naik");
+    }
+    setHalaman(1);
+  }
+
+  const terurut = useMemo(() => {
+    if (!kunciUrut) return filtered;
+    const penyalin = [...filtered];
+    penyalin.sort((a, b) => {
+      const pembanding =
+        kunciUrut === "nama"
+          ? a.nama.localeCompare(b.nama, "id")
+          : a.waktuDaftar.getTime() - b.waktuDaftar.getTime();
+      return arahUrut === "naik" ? pembanding : -pembanding;
+    });
+    return penyalin;
+  }, [filtered, kunciUrut, arahUrut]);
+
+  const totalHalaman = Math.max(1, Math.ceil(terurut.length / JUMLAH_PER_HALAMAN));
+  const halamanAktif = Math.min(halaman, totalHalaman);
+  const barisHalaman = terurut.slice(
+    (halamanAktif - 1) * JUMLAH_PER_HALAMAN,
+    halamanAktif * JUMLAH_PER_HALAMAN,
+  );
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
@@ -104,17 +167,29 @@ export default function AdminUsers({
       </header>
 
       <section aria-label="Ringkasan akun" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {RINGKASAN_ITEM.map((item) => (
-          <Card key={item.key} size="sm">
-            <CardContent>
-              <p className="text-2xl font-bold tabular-nums">{ringkasan[item.key]}</p>
-              <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                <span aria-hidden="true" className={`size-2 rounded-sm ${item.dot}`} />
+        {RINGKASAN_ITEM.map((item) => {
+          const aktif = statusFilter === item.status;
+          const Ikon = item.icon;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => {
+                setStatusFilter(aktif ? "" : item.status);
+                setHalaman(1);
+              }}
+              aria-pressed={aktif}
+              title={aktif ? `Hapus filter ${item.label}` : `Tampilkan hanya ${item.label}`}
+              className={`flex min-h-16 flex-col justify-center gap-1 rounded-card border bg-card p-4 text-left text-sm text-card-foreground shadow-subtle transition-all hover:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none ${aktif ? "border-ring ring-2 ring-ring/40" : "border-border"}`}
+            >
+              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Ikon aria-hidden="true" className="size-4" />
                 {item.label}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+              </span>
+              <span className="text-2xl font-bold tabular-nums">{ringkasan[item.key]}</span>
+            </button>
+          );
+        })}
       </section>
 
       <section aria-label="Pencarian dan filter pengguna">
@@ -129,7 +204,10 @@ export default function AdminUsers({
                 id="cari-pengguna"
                 type="search"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setHalaman(1);
+                }}
                 placeholder="Cari nama atau email..."
                 aria-label="Cari nama atau email"
                 className="pl-9"
@@ -139,7 +217,10 @@ export default function AdminUsers({
               <span className="sr-only">Filter role</span>
               <select
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value);
+                  setHalaman(1);
+                }}
                 aria-label="Filter role"
                 className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
@@ -155,7 +236,10 @@ export default function AdminUsers({
               <span className="sr-only">Filter status</span>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setHalaman(1);
+                }}
                 aria-label="Filter status"
                 className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
@@ -177,12 +261,28 @@ export default function AdminUsers({
       <section aria-label="Daftar pengguna">
         <Card className="gap-0 overflow-hidden p-0">
           {filtered.length > 0 ? (
+            <>
             <div className="overflow-x-auto">
               <table className="w-full min-w-160 text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Pengguna
+                    <th
+                      scope="col"
+                      aria-sort={
+                        kunciUrut === "nama"
+                          ? arahUrut === "naik"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                      className="px-4 py-1 font-medium"
+                    >
+                      <TombolUrut
+                        label="Pengguna"
+                        aktif={kunciUrut === "nama"}
+                        arah={arahUrut}
+                        onToggle={() => toggleUrut("nama")}
+                      />
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium">
                       Role
@@ -190,13 +290,28 @@ export default function AdminUsers({
                     <th scope="col" className="px-4 py-3 font-medium">
                       Status
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Terdaftar
+                    <th
+                      scope="col"
+                      aria-sort={
+                        kunciUrut === "waktuDaftar"
+                          ? arahUrut === "naik"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                      className="px-4 py-1 font-medium"
+                    >
+                      <TombolUrut
+                        label="Terdaftar"
+                        aktif={kunciUrut === "waktuDaftar"}
+                        arah={arahUrut}
+                        onToggle={() => toggleUrut("waktuDaftar")}
+                      />
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((u) => {
+                  {barisHalaman.map((u) => {
                     const status = STATUS_CONFIG[u.status as keyof typeof STATUS_CONFIG];
                     return (
                       <tr
@@ -238,6 +353,35 @@ export default function AdminUsers({
                 </tbody>
               </table>
             </div>
+            {totalHalaman > 1 && (
+              <nav
+                aria-label="Pagination"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3"
+              >
+                <p className="text-xs text-muted-foreground">
+                  Halaman {halamanAktif} dari {totalHalaman}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={halamanAktif <= 1}
+                    onClick={() => setHalaman(halamanAktif - 1)}
+                  >
+                    Sebelumnya
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={halamanAktif >= totalHalaman}
+                    onClick={() => setHalaman(halamanAktif + 1)}
+                  >
+                    Berikutnya
+                  </Button>
+                </div>
+              </nav>
+            )}
+            </>
           ) : (
             <Empty>
               <EmptyHeader>
