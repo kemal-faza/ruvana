@@ -1,193 +1,382 @@
 "use client";
 
-import { useMemo, useState, useActionState } from "react";
-import { Search, X, UserPlus } from "lucide-react";
+import { useActionState, useMemo, useState } from "react";
+import { Search, UserPlus, Users } from "lucide-react";
+
 import { buatAkun } from "@/app/admin/pengguna/actions";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import type { AdminUserRow, RingkasanAkun } from "@/lib/admin/users";
 
-const C = { bg: "#F7F5EF", surface: "#FFFFFF", primary: "#6F7F3B", secondary: "#D9A441", accent: "#E89B45", text: "#252525", muted: "#77746D", border: "#E5E2D9", soft: "#F1F0EA" };
+const ROLE_LABEL: Record<AdminUserRow["role"], string> = {
+  pengguna: "Pengguna",
+  petugas: "Petugas",
+  admin: "Admin",
+};
 
-const ROLE_LABEL = { pengguna: "Pengguna", petugas: "Petugas", admin: "Admin" };
-const STATUS_LABEL: Record<string, string> = { PENDING: "Pending", ACTIVE: "Aktif", REJECTED: "Ditolak", DISABLED: "Dinonaktifkan" };
-const STATUS_COLOR: Record<string, string> = { PENDING: "#8A5A10", ACTIVE: "#4A5A28", REJECTED: "#B2531E", DISABLED: "#6A6460" };
+const STATUS_CONFIG = {
+  PENDING: { label: "Menunggu Verifikasi", variant: "pending" },
+  ACTIVE: { label: "Aktif", variant: "success" },
+  REJECTED: { label: "Ditolak", variant: "danger" },
+  DISABLED: { label: "Dinonaktifkan", variant: "neutral" },
+} as const;
 
-function ringkasanChip({ label, value, bg }: { label: string; value: number; bg: string }) {
-  return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 18, padding: "16px 20px", minWidth: 160 }}>
-      <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>{value}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, marginTop: 4 }}>
-        <span style={{ width: 8, height: 8, borderRadius: 3, background: bg }} />
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return <span style={{ color: STATUS_COLOR[status] || C.muted, fontSize: 12, fontWeight: 600 }}>{STATUS_LABEL[status] || status}</span>;
-}
+const RINGKASAN_ITEM = [
+  { key: "total", label: "Total akun", dot: "bg-primary" },
+  { key: "aktif", label: "Aktif", dot: "bg-success" },
+  { key: "pending", label: "Menunggu verifikasi", dot: "bg-warning" },
+  { key: "dinonaktifkan", label: "Dinonaktifkan", dot: "bg-muted-foreground" },
+] as const;
 
 function fmtTanggal(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 }
 
-export default function AdminUsers({ users, ringkasan }: { users: AdminUserRow[]; ringkasan: RingkasanAkun }) {
+function inisial(nama: string) {
+  return nama
+    .split(" ")
+    .map((kata) => kata[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+export default function AdminUsers({
+  users,
+  ringkasan,
+}: {
+  users: AdminUserRow[];
+  ringkasan: RingkasanAkun;
+}) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [showModal, setShowModal] = useState(false);
+  const [sheetTerbuka, setSheetTerbuka] = useState(false);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return users.filter(u =>
-      (u.nama.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
-      (!roleFilter || u.role === roleFilter) &&
-      (!statusFilter || u.status === statusFilter)
+    const q = search.trim().toLowerCase();
+    return users.filter(
+      (u) =>
+        (q === "" ||
+          u.nama.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q)) &&
+        (!roleFilter || u.role === roleFilter) &&
+        (!statusFilter || u.status === statusFilter),
     );
   }, [users, search, roleFilter, statusFilter]);
 
   return (
-    <div style={{ flex: 1, background: C.bg, overflowY: "auto", height: "100%" }}>
-      <div style={{ padding: "28px 32px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+    <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.text }}>Manajemen Pengguna</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: C.muted }}>Buat akun petugas dan pengguna secara langsung.</p>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Manajemen pengguna
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Buat akun petugas dan pengguna secara langsung.
+          </p>
         </div>
-        <button onClick={() => setShowModal(true)} style={{ display: "flex", alignItems: "center", gap: 8, background: C.primary, color: "#fff", border: "none", borderRadius: 12, padding: "10px 18px", fontSize: 13, fontWeight: 600, fontFamily: "Poppins, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(111,127,59,0.3)" }}>
-          <UserPlus size={16} /> Tambah Petugas / Pengguna
-        </button>
-      </div>
+        <Button type="button" onClick={() => setSheetTerbuka(true)}>
+          <UserPlus aria-hidden="true" />
+          <span>Tambah petugas / pengguna</span>
+        </Button>
+      </header>
 
-      <div style={{ padding: "20px 32px 0", display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {ringkasanChip({ label: "Total Akun", value: ringkasan.total, bg: C.accent })}
-        {ringkasanChip({ label: "Aktif", value: ringkasan.aktif, bg: C.primary })}
-        {ringkasanChip({ label: "Pending", value: ringkasan.pending, bg: C.secondary })}
-        {ringkasanChip({ label: "Dinonaktifkan", value: ringkasan.dinonaktifkan, bg: "#B2ACA4" })}
-      </div>
+      <section aria-label="Ringkasan akun" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {RINGKASAN_ITEM.map((item) => (
+          <Card key={item.key} size="sm">
+            <CardContent>
+              <p className="text-2xl font-bold tabular-nums">{ringkasan[item.key]}</p>
+              <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                <span aria-hidden="true" className={`size-2 rounded-sm ${item.dot}`} />
+                {item.label}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
 
-      <div style={{ padding: "20px 32px 0", display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "9px 14px", flex: 1, minWidth: 220 }}>
-          <Search size={15} color={C.muted} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama atau email..." style={{ border: "none", outline: "none", fontSize: 13, fontFamily: "Poppins, sans-serif", background: "transparent", width: "100%", color: C.text }} />
-        </div>
-        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ padding: "9px 14px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.surface, fontSize: 13, fontFamily: "Poppins, sans-serif", color: C.text, cursor: "pointer" }}>
-          <option value="">Semua Role</option>
-          {Object.entries(ROLE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: "9px 14px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.surface, fontSize: 13, fontFamily: "Poppins, sans-serif", color: C.text, cursor: "pointer" }}>
-          <option value="">Semua Status</option>
-          {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-      </div>
+      <section aria-label="Pencarian dan filter pengguna">
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                id="cari-pengguna"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari nama atau email..."
+                aria-label="Cari nama atau email"
+                className="pl-9"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="sr-only">Filter role</span>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                aria-label="Filter role"
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="">Semua role</option>
+                {Object.entries(ROLE_LABEL).map(([nilai, label]) => (
+                  <option key={nilai} value={nilai}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="sr-only">Filter status</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter status"
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="">Semua status</option>
+                {Object.entries(STATUS_CONFIG).map(([nilai, config]) => (
+                  <option key={nilai} value={nilai}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </CardContent>
+        </Card>
+        <p aria-live="polite" className="mt-2 text-xs text-muted-foreground">
+          Menampilkan {filtered.length} dari {users.length} akun.
+        </p>
+      </section>
 
-      <div style={{ padding: "20px 32px 40px" }}>
-        <div style={{ background: C.surface, borderRadius: 20, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: C.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                <th style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}` }}>Pengguna</th>
-                <th style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}` }}>Role</th>
-                <th style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}` }}>Status</th>
-                <th style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}` }}>Terdaftar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(u => (
-                <tr key={u.id} style={{ borderBottom: `1px solid ${C.soft}` }}>
-                  <td style={{ padding: "12px 18px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #EDF0E4, #DCE4C8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#4A5A28", flexShrink: 0 }}>
-                        {u.nama.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, color: C.text }}>{u.nama}</div>
-                        <div style={{ fontSize: 12, color: C.muted }}>{u.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 18px" }}>
-                    <span style={{ background: C.soft, color: C.text, fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20 }}>{ROLE_LABEL[u.role] || u.role}</span>
-                  </td>
-                  <td style={{ padding: "12px 18px" }}><StatusBadge status={u.status} /></td>
-                  <td style={{ padding: "12px 18px", color: C.muted, fontSize: 12 }}>{fmtTanggal(u.waktuDaftar)}</td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={4} style={{ padding: "30px", textAlign: "center", color: C.muted }}>Tidak ada pengguna yang cocok.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <section aria-label="Daftar pengguna">
+        <Card className="gap-0 overflow-hidden p-0">
+          {filtered.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-160 text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Pengguna
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Role
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Status
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Terdaftar
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((u) => {
+                    const status = STATUS_CONFIG[u.status as keyof typeof STATUS_CONFIG];
+                    return (
+                      <tr
+                        key={u.id}
+                        className="border-b border-border/60 transition-colors last:border-0 hover:bg-muted/50"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <span
+                              aria-hidden="true"
+                              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-subdued text-xs font-semibold text-primary-subdued-foreground"
+                            >
+                              {inisial(u.nama)}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium">{u.nama}</span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {u.email}
+                              </span>
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant="neutral">{ROLE_LABEL[u.role] ?? u.role}</Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          {status ? (
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                          ) : (
+                            <Badge variant="neutral">{u.status}</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">
+                          {fmtTanggal(u.waktuDaftar)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Users aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>Tidak ada pengguna yang cocok</EmptyTitle>
+                <EmptyDescription>
+                  Ubah kata kunci atau filter untuk melihat akun lain.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </Card>
+      </section>
 
-      {showModal && (
-        <CreateAccountModal onClose={() => setShowModal(false)} />
-      )}
+      <SheetBuatAkun terbuka={sheetTerbuka} onTerbukaChange={setSheetTerbuka} />
     </div>
   );
 }
 
-function CreateAccountModal({ onClose }: { onClose: () => void }) {
+function SheetBuatAkun({
+  terbuka,
+  onTerbukaChange,
+}: {
+  terbuka: boolean;
+  onTerbukaChange: (terbuka: boolean) => void;
+}) {
   const [state, action, pending] = useActionState(buatAkun, { ok: false, pesan: "" });
-  const role = state.fieldErrors?.role;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(40,40,35,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }} onClick={onClose}>
-      <div style={{ background: C.surface, borderRadius: 20, width: "100%", maxWidth: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.25)", padding: "24px 26px" }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: C.text }}>Buat Akun Baru</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, padding: 4 }}><X size={18} /></button>
-        </div>
-        <form action={action} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Nama Lengkap" error={state.fieldErrors?.nama}>
-            <input name="nama" placeholder="cth. Andi Wijaya" style={inputStyle} />
+    <Sheet open={terbuka} onOpenChange={onTerbukaChange}>
+      <SheetContent side="right">
+        <SheetHeader>
+          <SheetTitle>Buat akun baru</SheetTitle>
+          <SheetDescription>
+            Akun petugas dan pengguna yang dibuat admin langsung berstatus aktif.
+          </SheetDescription>
+        </SheetHeader>
+        <form action={action} className="flex flex-col gap-4 px-4 pb-4">
+          <Field>
+            <FieldLabel htmlFor="buat-nama" required>
+              Nama lengkap
+            </FieldLabel>
+            <Input
+              id="buat-nama"
+              name="nama"
+              placeholder="cth. Andi Wijaya"
+              autoComplete="name"
+              required
+              minLength={3}
+              aria-invalid={state.fieldErrors?.nama ? true : undefined}
+              aria-describedby={state.fieldErrors?.nama ? "buat-nama-error" : undefined}
+            />
+            {state.fieldErrors?.nama && (
+              <FieldError id="buat-nama-error">{state.fieldErrors.nama[0]}</FieldError>
+            )}
           </Field>
-          <Field label="Email" error={state.fieldErrors?.email}>
-            <input name="email" type="email" placeholder="nama@email.com" style={inputStyle} />
+          <Field>
+            <FieldLabel htmlFor="buat-email" required>
+              Email
+            </FieldLabel>
+            <Input
+              id="buat-email"
+              name="email"
+              type="email"
+              placeholder="nama@email.com"
+              autoComplete="email"
+              required
+              aria-invalid={state.fieldErrors?.email ? true : undefined}
+              aria-describedby={state.fieldErrors?.email ? "buat-email-error" : undefined}
+            />
+            {state.fieldErrors?.email && (
+              <FieldError id="buat-email-error">{state.fieldErrors.email[0]}</FieldError>
+            )}
           </Field>
-          <Field label="Password Awal" error={state.fieldErrors?.password}>
-            <input name="password" type="password" placeholder="Min. 8 karakter, huruf & angka" style={inputStyle} />
+          <Field>
+            <FieldLabel htmlFor="buat-password" required>
+              Password awal
+            </FieldLabel>
+            <Input
+              id="buat-password"
+              name="password"
+              type="password"
+              placeholder="Min. 8 karakter, huruf & angka"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              aria-invalid={state.fieldErrors?.password ? true : undefined}
+              aria-describedby={
+                state.fieldErrors?.password ? "buat-password-error" : undefined
+              }
+            />
+            {state.fieldErrors?.password && (
+              <FieldError id="buat-password-error">
+                {state.fieldErrors.password[0]}
+              </FieldError>
+            )}
           </Field>
-          <Field label="Role" error={role}>
-            <select name="role" style={{ ...inputStyle, cursor: "pointer" }} defaultValue="">
-              <option value="" disabled>Pilih role</option>
+          <Field>
+            <FieldLabel htmlFor="buat-role" required>
+              Role
+            </FieldLabel>
+            <select
+              id="buat-role"
+              name="role"
+              required
+              defaultValue=""
+              aria-invalid={state.fieldErrors?.role ? true : undefined}
+              aria-describedby={state.fieldErrors?.role ? "buat-role-error" : undefined}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <option value="" disabled>
+                Pilih role
+              </option>
               <option value="petugas">Petugas</option>
               <option value="pengguna">Pengguna</option>
             </select>
+            {state.fieldErrors?.role && (
+              <FieldError id="buat-role-error">{state.fieldErrors.role[0]}</FieldError>
+            )}
           </Field>
           {state.pesan && (
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: state.ok ? C.primary : "#B2531E", background: state.ok ? "#EDF0E4" : "#FBEAE5", padding: "9px 12px", borderRadius: 10 }}>{state.pesan}</div>
+            <p
+              role={state.ok ? "status" : "alert"}
+              className={
+                state.ok
+                  ? "rounded-lg bg-success-subdued px-3 py-2 text-xs font-medium text-success-subdued-foreground"
+                  : "rounded-lg bg-destructive-subdued px-3 py-2 text-xs font-medium text-destructive-subdued-foreground"
+              }
+            >
+              {state.pesan}
+            </p>
           )}
-          <button type="submit" disabled={pending} style={{ marginTop: 4, background: C.primary, color: "#fff", border: "none", borderRadius: 12, padding: "12px 0", fontSize: 14, fontWeight: 600, fontFamily: "Poppins, sans-serif", cursor: "pointer", opacity: pending ? 0.6 : 1 }}>
-            {pending ? "Menyimpan..." : "Buat Akun"}
-          </button>
+          <Button type="submit" loading={pending}>
+            Buat akun
+          </Button>
         </form>
-      </div>
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 13px",
-  borderRadius: 10,
-  border: `1px solid ${C.border}`,
-  fontSize: 13,
-  fontFamily: "Poppins, sans-serif",
-  background: C.bg,
-  color: C.text,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-function Field({ label, error, children }: { label: string; error?: string[]; children: React.ReactNode }) {
-  return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{label}</span>
-      {children}
-      {error && error.length > 0 && <span style={{ fontSize: 11.5, color: "#B2531E" }}>{error[0]}</span>}
-    </label>
+      </SheetContent>
+    </Sheet>
   );
 }

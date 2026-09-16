@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import Sidebar from "@/components/admin/Sidebar";
+
+import AdminSidebar from "@/components/admin/Sidebar";
+import { MobileAppBar } from "@/components/app-shell/mobile-app-bar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { requireAdmin } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -11,15 +14,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin();
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        overflow: "hidden",
-      }}
-    >
-      <Sidebar admin={admin} />
-      {children}
-    </div>
+    <SidebarProvider>
+      <AdminSidebar admin={admin} />
+      <SidebarInset>
+        <MobileAppBar />
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
