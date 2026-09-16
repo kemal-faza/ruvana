@@ -1,12 +1,12 @@
 "use client"
 
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 
 import { AppSidebar } from "@/components/app-shell/app-sidebar"
 import { MobileAppBar } from "@/components/app-shell/mobile-app-bar"
 import type { SerializableNavigationGroup, ShellAccount } from "@/components/app-shell/types"
+import { useMotionPreference } from "@/components/motion/use-motion-preference"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { getMotionTransition } from "@/lib/motion"
 
 interface AppShellClientProps {
   navigation: readonly SerializableNavigationGroup[]
@@ -16,8 +16,7 @@ interface AppShellClientProps {
 }
 
 export function AppShellClient({ navigation, account, logoutDestination, children }: AppShellClientProps) {
-  const reduceMotion = useReducedMotion()
-  const transition = getMotionTransition(reduceMotion)
+  const motionPreference = useMotionPreference()
 
   return (
     <SidebarProvider>
@@ -25,10 +24,14 @@ export function AppShellClient({ navigation, account, logoutDestination, childre
       <SidebarInset>
         <MobileAppBar />
         <motion.div
-          data-motion-transform="true"
-          initial={reduceMotion === true ? { opacity: 1 } : { opacity: 0, y: 8 }}
-          animate={reduceMotion === true ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          transition={transition}
+          data-motion-reveal="true"
+          initial={
+            motionPreference.reduceMotion
+              ? { opacity: 1 }
+              : { opacity: 0, y: motionPreference.distance("sm") }
+          }
+          animate={{ opacity: 1, y: 0 }}
+          transition={motionPreference.spring("gentle")}
           className="min-w-0 flex-1 motion-reduce:!transform-none"
         >
           {children}
