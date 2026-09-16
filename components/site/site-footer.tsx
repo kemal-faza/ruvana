@@ -38,10 +38,9 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="flex flex-col gap-2 pt-4 text-xs text-muted-foreground sm:flex-row sm:justify-between">
-          <span>© 2026 Ruvana. Semua kemungkinan, dimulai di kampus.</span>
-          <span className="opacity-80">Foto: Unsplash</span>
-        </div>
+        <p className="pt-4 text-xs text-muted-foreground">
+          © 2026 Ruvana. Semua kemungkinan, dimulai di kampus.
+        </p>
       </div>
     </footer>
   )

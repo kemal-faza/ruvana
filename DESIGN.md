@@ -326,7 +326,7 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
 - Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
-- Kartu foto memakai aset lokal `public/ruvana-lab2.jpg` dengan atribusi Unsplash. Prototype dan aset mentah di `output/` tidak di-commit.
+- Kartu foto memakai aset lokal `public/ruvana-lab2.jpg`. Prototype dan aset mentah di `output/` tidak di-commit.
 - Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.
 - Katalog komponen dipertahankan sementara di `/baseline-ui` sebagai referensi pengembangan.

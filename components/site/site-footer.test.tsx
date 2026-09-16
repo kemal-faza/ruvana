@@ -32,10 +32,10 @@ describe("SiteFooter", () => {
     }
   })
 
-  it("mencantumkan atribusi foto dan tagline", () => {
+  it("mencantumkan tagline tanpa atribusi foto", () => {
     render(<SiteFooter />)
 
     expect(screen.getByText("Ruang bersama, kegiatan lebih bermakna.")).toBeVisible()
-    expect(screen.getByText("Foto: Unsplash")).toBeVisible()
+    expect(screen.queryByText("Foto: Unsplash")).not.toBeInTheDocument()
   })
 })
