@@ -58,6 +58,21 @@ test.describe("baseline UI behavior (RED)", () => {
     }
   })
 
+  test("membuka select pencarian tidak mengunci scroll halaman", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto("/")
+
+    await page.locator('[data-slot="select-trigger"]').click()
+    await expect(page.locator('[data-slot="select-content"]')).toBeVisible()
+
+    // Base UI modal menulis `overflow: hidden` ke scroller viewport; pada landing page
+    // itu menghilangkan scrollbar dan mengubah tipografi berbasis `vw`.
+    expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden")
+
+    await page.keyboard.press("Escape")
+    await expect(page.locator('[data-slot="select-content"]')).toBeHidden()
+  })
+
   test("seluruh motion berhenti pada reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
 

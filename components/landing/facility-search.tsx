@@ -12,12 +12,12 @@ import {
 import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
 import { cn } from "@/lib/utils"
 
-// "Pilih fasilitas" ikut jadi item agar filter tipe bisa dikosongkan lagi,
-// sama seperti `<option value="">` pada select native sebelumnya.
-const tipeOptions: { value: string | null; label: string }[] = [
-  { value: null, label: "Pilih fasilitas" },
-  ...TIPE_FASILITAS.map((tipe) => ({ value: tipe, label: TIPE_FASILITAS_LABEL[tipe] })),
-]
+// Placeholder "Pilih fasilitas" ditampilkan lewat `SelectValue` di trigger, bukan
+// sebagai item, supaya tidak ikut terpilih sebagai tipe.
+const tipeOptions: { value: string; label: string }[] = TIPE_FASILITAS.map((tipe) => ({
+  value: tipe,
+  label: TIPE_FASILITAS_LABEL[tipe],
+}))
 
 // Kontrol di dalam field memakai `outline-none`, jadi indikator fokus dipindahkan
 // ke pembungkusnya: satu ring menandai seluruh kontrol gabungan saat fokus masuk.
@@ -52,7 +52,10 @@ export function FacilitySearch() {
 
         <div data-slot="search-field" className={fieldClass}>
           <span aria-hidden="true">⌘</span>
-          <Select name="tipe" items={tipeOptions}>
+          {/* `modal={false}` mencegah Base UI mengunci scroll halaman. Kunci itu menulis
+              `overflow: hidden` ke scroller viewport sehingga scrollbar hilang, dan karena
+              tipografi landing page memakai `vw`, ukuran font ikut berubah. */}
+          <Select name="tipe" items={tipeOptions} modal={false}>
             <SelectTrigger
               aria-label="Pilih tipe fasilitas"
               className="h-auto min-h-12 w-full border-0 bg-transparent p-0 text-xs text-foreground focus-visible:border-0 focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent dark:hover:bg-transparent"
@@ -62,7 +65,7 @@ export function FacilitySearch() {
             <SelectContent align="start" alignItemWithTrigger={false}>
               <SelectGroup>
                 {tipeOptions.map((tipe) => (
-                  <SelectItem key={tipe.value ?? "semua"} value={tipe.value}>
+                  <SelectItem key={tipe.value} value={tipe.value}>
                     {tipe.label}
                   </SelectItem>
                 ))}

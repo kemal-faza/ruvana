@@ -28,13 +28,16 @@ describe("FacilitySearch", () => {
     expect(container.querySelector('input[name="tipe"]')).toHaveValue("aula")
   })
 
-  it("menyediakan opsi tipe fasilitas berlabel Indonesia", async () => {
+  it("menampilkan placeholder di trigger tanpa menjadikannya opsi terpilih", async () => {
     const user = userEvent.setup()
     render(<FacilitySearch />)
 
-    await user.click(screen.getByRole("combobox", { name: "Pilih tipe fasilitas" }))
+    const trigger = screen.getByRole("combobox", { name: "Pilih tipe fasilitas" })
+    expect(trigger).toHaveTextContent("Pilih fasilitas")
 
-    expect(await screen.findByRole("option", { name: "Pilih fasilitas" })).toBeInTheDocument()
+    await user.click(trigger)
+
+    expect(screen.queryByRole("option", { name: "Pilih fasilitas" })).not.toBeInTheDocument()
     for (const label of Object.values(TIPE_FASILITAS_LABEL)) {
       expect(screen.getByRole("option", { name: label })).toBeInTheDocument()
     }
