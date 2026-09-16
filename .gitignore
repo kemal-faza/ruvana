@@ -74,13 +74,11 @@ docker-compose.override.yml
 # --- pengecualian agar template & migrasi ikut ter-commit ---
 !.env.example
 !prisma/migrations/**/*.sql
-!docker/postgres-init/**/*.sql
 
 .codegraph/
 .worktrees/
 .superpowers/
 figma/
-docker/
 
 output/
 .vitest/
