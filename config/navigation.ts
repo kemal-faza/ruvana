@@ -4,6 +4,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   Settings,
+  SwatchBook,
 } from "lucide-react"
 
 import type { NavigationGroup, ShellAccount } from "@/components/app-shell/types"
@@ -22,7 +23,10 @@ export const navigation: readonly NavigationGroup[] = [
   {
     key: "sistem",
     label: "Sistem",
-    items: [{ key: "pengaturan", label: "Pengaturan", href: "/pengaturan", icon: Settings }],
+    items: [
+      { key: "baseline-ui", label: "Baseline UI", href: "/baseline-ui", icon: SwatchBook },
+      { key: "pengaturan", label: "Pengaturan", href: "/pengaturan", icon: Settings },
+    ],
   },
 ]
 

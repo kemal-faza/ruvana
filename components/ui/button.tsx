@@ -3,8 +3,12 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { LoaderCircle } from "lucide-react"
 
+// Panah penanda arah bergeser saat tombol di-hover atau di-fokus keyboard.
+// Penandanya `data-motion-icon`, bukan `data-icon`, supaya padding varian size
+// Button (`has-data-[icon=inline-end]`) tidak ikut berubah. Durasi, easing, dan
+// jarak hanya diambil dari token motion.
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,translate,opacity] duration-motion-standard ease-motion-emphatic outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_[data-motion-icon=inline-end]]:transition-transform [&_[data-motion-icon=inline-end]]:duration-motion-micro [&_[data-motion-icon=inline-end]]:ease-motion-standard [&_[data-motion-icon=inline-end]]:group-hover/button:translate-x-motion-xs [&_[data-motion-icon=inline-end]]:group-focus-visible/button:translate-x-motion-xs",
   {
     variants: {
       variant: {

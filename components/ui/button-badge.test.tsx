@@ -32,7 +32,10 @@ describe("kontras hover aksi utama", () => {
     const secondRoot = css.indexOf(":root", firstRoot + 1)
     const primitiveTokens = css.slice(firstRoot, secondRoot)
     const lightTokens = css.slice(secondRoot, css.indexOf(".dark", secondRoot))
-    const darkTokens = css.slice(css.indexOf(".dark"), css.indexOf("@layer base"))
+    const darkTokens = css.slice(
+      css.indexOf(".dark", secondRoot),
+      css.indexOf("@layer base"),
+    )
 
     const lightRatio = contrastRatio(
       resolveCssToken(readCssToken(lightTokens, "primary-hover-foreground"), primitiveTokens),

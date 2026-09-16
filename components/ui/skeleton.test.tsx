@@ -12,9 +12,10 @@ describe("Skeleton", () => {
     expect(screen.getByTestId("skeleton")).toHaveAttribute("aria-hidden", "true")
   })
 
-  it("mematikan pulse saat reduced motion aktif", () => {
+  it("memakai shimmer bertoken dan mematikannya saat reduced motion aktif", () => {
     render(<Skeleton data-testid="skeleton" />)
 
-    expect(screen.getByTestId("skeleton")).toHaveClass("animate-pulse", "motion-reduce:animate-none")
+    expect(screen.getByTestId("skeleton")).toHaveClass("skeleton-shimmer", "motion-reduce:animate-none")
+    expect(screen.getByTestId("skeleton")).not.toHaveClass("animate-pulse")
   })
 })

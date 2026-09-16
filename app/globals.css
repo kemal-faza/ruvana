@@ -36,6 +36,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-brand-olive: var(--brand-olive);
+  --color-accent-gold: var(--accent-gold);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-subdued: var(--success-subdued);
@@ -64,17 +66,37 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --radius-control: 0.625rem;
-  --radius-card: 1.25rem;
-  --duration-motion-standard: var(--motion-duration-standard);
+  --radius-card: 1.375rem;
+  --transition-duration-motion-micro: var(--motion-duration-micro);
+  --transition-duration-motion-standard: var(--motion-duration-standard);
+  --transition-duration-motion-expressive: var(--motion-duration-expressive);
+  --transition-duration-motion-cinematic: var(--motion-duration-cinematic);
   --ease-motion-standard: var(--motion-easing-standard);
-  --shadow-subtle: 0 2px 8px rgb(0 0 0 / 0.04);
+  --ease-motion-emphatic: var(--motion-easing-emphatic);
+  --ease-motion-exit: var(--motion-easing-exit);
+  --spacing-motion-xs: var(--motion-distance-xs);
+  --spacing-motion-sm: var(--motion-distance-sm);
+  --spacing-motion-md: var(--motion-distance-md);
+  --spacing-motion-lg: var(--motion-distance-lg);
+  --shadow-subtle: var(--elevation-subtle);
 }
 
 :root {
   --black: oklch(0% 0 0);
   --white: oklch(100% 0 0);
+  --motion-duration-micro: 120ms;
   --motion-duration-standard: 180ms;
+  --motion-duration-expressive: 420ms;
+  --motion-duration-cinematic: 620ms;
   --motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-easing-emphatic: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-easing-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-distance-xs: 0.5rem;
+  --motion-distance-sm: 1rem;
+  --motion-distance-md: 1.75rem;
+  --motion-distance-lg: 3rem;
+  --motion-stagger-expressive: 90ms;
+  --motion-stagger-functional: 40ms;
   --spacing-page-mobile: 1rem;
   --spacing-page-tablet: 1.75rem;
   --spacing-page-desktop: 2rem;
@@ -150,29 +172,29 @@
   --popover: #ffffff;
   --popover-foreground: #252525;
   --primary: #526222;
-  --primary-foreground: #edf1e2;
+  --primary-foreground: #ffffff;
   --primary-hover: #435204;
   --primary-hover-foreground: #edf1e2;
   --primary-subdued: #edf1e2;
   --primary-subdued-foreground: #435204;
-  --secondary: #f1f0ea;
+  --secondary: #F1F0EA;
   --secondary-foreground: #3c3a36;
-  --muted: #f1f0ea;
+  --muted: #F1F0EA;
   --muted-foreground: #5f5d57;
-  --accent: #f1f0ea;
+  --accent: #F1F0EA;
   --accent-foreground: #3c3a36;
   --success: #3a753e;
   --success-foreground: #f2f7f2;
-  --success-subdued: #e7f4ec;
-  --success-subdued-foreground: #1f5c3a;
+  --success-subdued: #E7F4EC;
+  --success-subdued-foreground: #1F5C3A;
   --destructive: #8d3632;
   --destructive-foreground: #fcf3f2;
-  --destructive-subdued: #fdecec;
-  --destructive-subdued-foreground: #9b1c1c;
+  --destructive-subdued: #ffe8e6;
+  --destructive-subdued-foreground: #772120;
   --warning: #cc9e5c;
   --warning-foreground: #3c1700;
-  --warning-subdued: #fff3d6;
-  --warning-subdued-foreground: #6b4700;
+  --warning-subdued: #FFF3D6;
+  --warning-subdued-foreground: #6B4700;
   --status-info-surface: #e0f2fe;
   --status-info-text: #075985;
   --status-neutral-surface: #f1f0ea;
@@ -180,51 +202,65 @@
   --border: #e5e2d9;
   --input: #e5e2d9;
   --ring: #526222;
-  --sidebar: #1a1e14;
-  --sidebar-foreground: #f4f2eb;
-  --sidebar-primary: #6f7f3b;
-  --sidebar-primary-foreground: #f4f2eb;
-  --sidebar-accent: #262c1a;
-  --sidebar-accent-foreground: #f4f2eb;
-  --sidebar-border: #2a3020;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #252525;
+  --sidebar-primary: #526222;
+  --sidebar-primary-foreground: #edf1e2;
+  --sidebar-accent: #edf1e2;
+  --sidebar-accent-foreground: #252525;
+  --sidebar-border: #e5e2d9;
   --sidebar-ring: #526222;
+  --brand-olive: #6F7F3B;
+  --accent-gold: #D9A441;
+  --elevation-subtle: 0 2px 8px rgb(0 0 0 / 0.04);
 }
 
 .dark {
   color-scheme: dark;
-  --background: #181715;
-  --foreground: #f4f2eb;
-  --card: #252525;
-  --card-foreground: #f4f2eb;
-  --popover: #252525;
-  --popover-foreground: #f4f2eb;
-  --primary: #9eb06c;
-  --primary-foreground: #0b1300;
-  --primary-hover: #bbcc8f;
-  --primary-hover-foreground: #0b1300;
+  --background: #1A1E14;
+  --foreground: #F7F5EF;
+  --card: #282C25;
+  --card-foreground: #F7F5EF;
+  --popover: #282C25;
+  --popover-foreground: #F7F5EF;
+  --primary: #D2E297;
+  --primary-foreground: #282C25;
+  --primary-hover: #AABB75;
+  --primary-hover-foreground: #282C25;
   --primary-subdued: #303d00;
   --primary-subdued-foreground: #e1eacf;
-  --secondary: #3c3a36;
-  --secondary-foreground: #f1eee8;
-  --muted: #3c3a36;
-  --muted-foreground: #e5e2d9;
-  --accent: #3c3a36;
-  --accent-foreground: #f1eee8;
+  --secondary: #32372D;
+  --secondary-foreground: #F7F5EF;
+  --muted: #32372D;
+  --muted-foreground: #C4C5BC;
+  --accent: #32372D;
+  --accent-foreground: #F7F5EF;
   --success: #82bd84;
   --success-foreground: #001900;
-  --success-subdued: #002800;
-  --success-subdued-foreground: #d7eed7;
+  --success-subdued: #214A35;
+  --success-subdued-foreground: #D8F1DF;
   --destructive: #dd817a;
   --destructive-foreground: #310000;
   --destructive-subdued: #410000;
   --destructive-subdued-foreground: #ffd9d4;
   --warning: #eabd7d;
   --warning-foreground: #270500;
-  --warning-subdued: #3c1700;
-  --warning-subdued-foreground: #fcead1;
-  --border: #3c3a36;
-  --input: #5f5d57;
-  --ring: #9eb06c;
+  --warning-subdued: #624913;
+  --warning-subdued-foreground: #FFE7A8;
+  --border: #454A3E;
+  --input: #454A3E;
+  --ring: #AABB75;
+  --brand-olive: #AABB75;
+  --accent-gold: #E4B65A;
+  --elevation-subtle: 0 2px 10px rgb(0 0 0 / 0.18);
+  --sidebar: #1A1E14;
+  --sidebar-foreground: #F7F5EF;
+  --sidebar-primary: #D2E297;
+  --sidebar-primary-foreground: #282C25;
+  --sidebar-accent: #32372D;
+  --sidebar-accent-foreground: #F7F5EF;
+  --sidebar-border: #454A3E;
+  --sidebar-ring: #AABB75;
 }
 
 @layer base {
@@ -234,6 +270,7 @@
 
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -252,6 +289,106 @@
   }
 }
 
+@keyframes theme-slide-down {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0); }
+}
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dipakai untuk animasi masuk di atas fold: berjalan sebelum hidrasi dan tanpa JavaScript. */
+.motion-rise {
+  animation: motion-rise var(--motion-duration-standard) var(--motion-easing-standard) both;
+}
+
+.motion-rise-delayed {
+  animation-delay: 120ms;
+}
+
+/* Entrance fade murni opacity. Dipakai permukaan yang boleh muncul di mana saja
+   (mis. Empty) karena opacity tidak memperluas area overflow seperti transform. */
+@keyframes motion-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.motion-fade-expressive {
+  animation: motion-fade-in var(--motion-duration-expressive) var(--motion-easing-emphatic) both;
+}
+
+/* Entrance scale untuk ilustrasi hero. Berakhir di keadaan diam (transform: none). */
+@keyframes motion-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.motion-rise-scale {
+  animation-name: motion-scale-in;
+}
+
+/* Stagger entrance di atas fold. Berjalan murni CSS sebelum hidrasi; elemen
+   menyetel --stagger-index dan delay dihitung dari token stagger. Varian
+   functional dipakai chrome aplikasi (40 ms), default dipakai landing page. */
+.motion-rise-stagger {
+  animation-delay: calc(var(--motion-stagger-step, var(--motion-stagger-functional)) * var(--stagger-index, 0));
+}
+
+.motion-rise-stagger-functional {
+  --motion-stagger-step: var(--motion-stagger-functional);
+}
+
+/* Shimmer skeleton. Berakhir di posisi netral agar frame terakhir tidak
+   meninggalkan sorotan di tengah saat reduced motion mematikan animasi. */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--foreground) 12%, transparent) 50%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  animation: skeleton-shimmer var(--motion-duration-expressive) linear infinite;
+}
+
+.theme-transition::view-transition-old(root),
+.theme-transition::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation: none;
+}
+
+.theme-transition::view-transition-new(root) {
+  animation: theme-slide-down var(--motion-duration-cinematic) var(--motion-easing-standard) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -260,5 +397,7 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Tanpa ini animasi dengan fill-mode non-none menahan frame terakhirnya. */
+    animation-name: none !important;
   }
 }

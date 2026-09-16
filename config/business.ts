@@ -27,3 +27,12 @@ export const STATUS_RESERVASI = [
 export const STATUS_LAPORAN = ["NEW", "IN_PROGRESS", "RESOLVED", "REJECTED"] as const;
 export const STATUS_FASILITAS = ["ACTIVE", "UNDER_MAINTENANCE", "INACTIVE"] as const;
 export const TIPE_FASILITAS = ["ruang_kelas", "aula", "laboratorium", "alat", "lapangan"] as const;
+
+// Label Indonesia untuk tipe fasilitas; nilai enum tetap bahasa Inggris-teknis.
+export const TIPE_FASILITAS_LABEL: Record<(typeof TIPE_FASILITAS)[number], string> = {
+  ruang_kelas: "Ruang kelas",
+  aula: "Aula",
+  laboratorium: "Laboratorium",
+  alat: "Alat",
+  lapangan: "Lapangan",
+}
