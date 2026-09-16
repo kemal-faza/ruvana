@@ -318,11 +318,15 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 ## Landing page publik
 
 - `/` memperkenalkan Ruvana dengan fokus reservasi dan pelaporan kerusakan sebagai manfaat pendukung.
-- Urutan konten: hero → manfaat utama → cara kerja → ajakan menjelajahi fasilitas → footer.
+- Urutan konten: hero → pencarian fasilitas → manfaat utama → cara kerja → ajakan menjelajahi fasilitas → footer.
+- Hero memakai ringkasan aktivitas pengguna dan kartu foto ruang kampus, dengan penanda
+  "Ilustrasi tampilan Ruvana, bukan ketersediaan aktual."
+- Section pencarian fasilitas adalah pintu masuk `/fasilitas`: form `GET` dengan parameter
+  `tipe` (nilai dari `TIPE_FASILITAS`) dan `tanggal`, memakai label `TIPE_FASILITAS_LABEL`.
 - CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
-- Hero memakai ilustrasi antarmuka fasilitas dan jadwal, dengan penanda bahwa informasi bukan ketersediaan aktual.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
-- Header publik, token visual yang sama, serta tema sistem dengan pengalih terang/gelap digunakan pada landing page.
-- Header publik memakai wordmark teks **ruvana** tanpa ikon, aksi **Jelajahi Fasilitas** yang sama dengan hero di samping pengalih tema, dan navigasi Beranda, Fasilitas, serta Cara kerja.
+- Header publik memakai wordmark `RUVANA` dengan brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Kartu foto memakai aset lokal `public/ruvana-lab2.jpg` dengan atribusi Unsplash. Prototype dan aset mentah di `output/` tidak di-commit.
+- Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.
 - Katalog komponen dipertahankan sementara di `/baseline-ui` sebagai referensi pengembangan.
