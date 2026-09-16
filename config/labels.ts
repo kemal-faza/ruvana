@@ -27,3 +27,9 @@ export const BADGE_STATUS_FASILITAS: Record<StatusFasilitas, "success" | "pendin
   UNDER_MAINTENANCE: "pending",
   INACTIVE: "neutral",
 };
+
+export const LABEL_STATUS_SLOT = {
+  available: "Tersedia",
+  blockedApproved: "Tidak tersedia",
+  blockedMaintenance: "Tidak tersedia (perbaikan)",
+} as const;

@@ -1,16 +1,23 @@
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, MapPin, Package, Users } from "lucide-react"
+import { ArrowLeft, CalendarDays, MapPin, Package, Users } from "lucide-react"
 
 import { getFacilityPhoto } from "@/config/facility-photos"
 import { LABEL_SATUAN_KAPASITAS, LABEL_TIPE_FASILITAS } from "@/config/labels"
 import { Button } from "@/components/ui/button"
+import { AvailabilityDateForm } from "@/components/facilities/availability-date-form"
+import { AvailabilityGrid } from "@/components/facilities/availability-grid"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
 import { getPublicFacility } from "@/lib/services/facility-service"
+import { getFacilityAvailability } from "@/lib/services/availability-service"
+import { parseCalendarDate, todayJakarta } from "@/lib/time/jakarta"
+
+export const dynamic = "force-dynamic"
 
 interface FasilitasDetailPageProps {
   params: Promise<{ facilityId: string }>
+  searchParams: Promise<{ date?: string }>
 }
 
 function parseId(raw: string): number | null {
@@ -28,7 +35,7 @@ export async function generateMetadata({ params }: FasilitasDetailPageProps) {
   return { title: facility ? `${facility.nama} — Ruvana` : "Fasilitas tidak ditemukan — Ruvana" }
 }
 
-export default async function FasilitasDetailPage({ params }: FasilitasDetailPageProps) {
+export default async function FasilitasDetailPage({ params, searchParams }: FasilitasDetailPageProps) {
   const { facilityId } = await params
   const id = parseId(facilityId)
   if (id === null) notFound()
@@ -39,6 +46,11 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = getFacilityPhoto(facility.nama, facility.tipe)
+
+  const today = todayJakarta()
+  const { date: rawDate } = await searchParams
+  const date = rawDate && parseCalendarDate(rawDate) ? rawDate : today
+  const availability = await getFacilityAvailability(id, date)
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,6 +110,15 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
           <p className="text-muted-foreground">{facility.deskripsi}</p>
         </div>
       )}
+
+      <div className="flex flex-col gap-4">
+        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+          <CalendarDays aria-hidden="true" className="size-5" />
+          Ketersediaan slot
+        </h2>
+        <AvailabilityDateForm facilityId={id} date={date} today={today} />
+        {availability && <AvailabilityGrid slots={availability.slots} />}
+      </div>
     </div>
   )
 }
