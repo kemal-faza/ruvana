@@ -168,7 +168,7 @@ export function AppSidebar({ navigation, account, logoutDestination }: AppSideba
         <Link
           href={logoutDestination}
           onClick={() => setOpenMobile(false)}
-          className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none"
+          className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <LogOut aria-hidden="true" className="size-4 shrink-0" />
           <span>Keluar</span>

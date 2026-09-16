@@ -62,6 +62,8 @@ describe("AppShell", () => {
     const logout = screen.getAllByRole("link", { name: "Keluar" })[0]
     expect(logout).toHaveAttribute("href", "/keluar")
     expect(logout).not.toHaveAttribute("type")
+    // Link tetap dapat fokus; jangan matikan outline tanpa indikator pengganti.
+    expect(logout.className).not.toMatch(/outline-none/)
     expect((await axe(container)).violations).toEqual([])
   })
 
