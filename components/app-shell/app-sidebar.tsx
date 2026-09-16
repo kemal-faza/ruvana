@@ -142,7 +142,7 @@ export function AppSidebar({ navigation, account, logoutDestination }: AppSideba
   const { setOpenMobile } = useSidebar()
 
   return (
-    <Sidebar collapsible="none">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link
           href="/"
