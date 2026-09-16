@@ -6,12 +6,12 @@ import { SiteHeader } from "@/components/site/site-header"
 afterEach(cleanup)
 
 describe("SiteHeader", () => {
-  it("merender wordmark RUVANA dengan brand mark dekoratif", () => {
+  it("merender wordmark ruvana tanpa brand mark", () => {
     render(<SiteHeader />)
 
     const brand = screen.getByRole("link", { name: "Ruvana — beranda" })
-    expect(brand).toHaveTextContent("RUVANA")
-    expect(brand.querySelector("span[aria-hidden='true']")).not.toBeNull()
+    expect(brand).toHaveTextContent("ruvana")
+    expect(brand.querySelector("span[aria-hidden='true']")).toBeNull()
   })
 
   it("menautkan navigasi utama ke rute dan anchor jadwal", () => {

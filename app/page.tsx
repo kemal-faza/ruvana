@@ -10,6 +10,7 @@ import { StaggerGroup, StaggerItem } from "@/components/motion/stagger-group"
 import { SiteFooter } from "@/components/site/site-footer"
 import { SiteHeader } from "@/components/site/site-header"
 import { buttonVariants } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 
 const SHELL = "mx-auto w-full max-w-[1256px] px-4 sm:px-7"
 const primaryLink = buttonVariants({ className: "min-h-11 gap-2.5 px-4 text-sm" })
@@ -105,13 +106,6 @@ export default function Home() {
                 </a>
               </div>
 
-              <p
-                className="motion-rise motion-rise-stagger mt-[34px] flex items-center gap-2.5 text-xs text-muted-foreground sm:mt-[52px]"
-                style={staggerStyle(4)}
-              >
-                <span aria-hidden="true" className="size-[7px] rounded-full bg-accent-gold" />
-                Akun terverifikasi, persetujuan petugas
-              </p>
             </div>
 
             <Parallax speed={0.2} axis="y" distance="sm" className="min-w-0">
@@ -138,20 +132,22 @@ export default function Home() {
             </div>
           </Reveal>
 
-          <StaggerGroup stagger="functional" className="grid grid-cols-1 gap-0 min-[701px]:grid-cols-2 min-[701px]:gap-6">
+          <StaggerGroup stagger="functional" className="grid grid-cols-1 gap-5 min-[701px]:grid-cols-2 min-[701px]:gap-6">
             {benefits.map(({ icon: Icon, title, description }) => (
               <StaggerItem key={title} className="h-full">
-                <article className="grid grid-cols-[48px_1fr] gap-5 border-t border-border py-[22px] min-[701px]:py-[26px]">
-                  <span className="grid size-11 place-items-center rounded-[13px] border border-border bg-card text-brand-olive">
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
-                  <div>
+                <Card className="relative h-full justify-end gap-3">
+                  <Icon
+                    aria-hidden="true"
+                    strokeWidth={1.25}
+                    className="pointer-events-none absolute -right-4 -bottom-5 size-32 text-brand-olive/10"
+                  />
+                  <div className="relative">
                     <h3 className="mb-2 text-[17px] font-semibold tracking-[-0.03em]">{title}</h3>
                     <p className="max-w-[390px] text-[13px] leading-[1.65] text-muted-foreground">
                       {description}
                     </p>
                   </div>
-                </article>
+                </Card>
               </StaggerItem>
             ))}
           </StaggerGroup>

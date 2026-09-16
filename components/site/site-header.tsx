@@ -24,15 +24,9 @@ export function SiteHeader({ current }: SiteHeaderProps) {
         <Link
           href="/"
           aria-label="Ruvana — beranda"
-          className="inline-flex items-center gap-3 text-lg font-semibold tracking-tight sm:text-xl"
+          className="inline-flex items-center text-lg font-semibold tracking-tight sm:text-xl"
         >
-          <span
-            aria-hidden="true"
-            className="grid size-7 place-items-center rounded-[9px] bg-brand-olive text-xs text-card"
-          >
-            R
-          </span>
-          RUVANA
+          ruvana
         </Link>
 
         <nav

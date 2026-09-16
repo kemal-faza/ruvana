@@ -10,7 +10,8 @@ describe("SiteFooter", () => {
     render(<SiteFooter />)
 
     const brand = screen.getByRole("link", { name: "Ruvana — beranda, footer" })
-    expect(brand).toHaveTextContent("RUVANA")
+    expect(brand).toHaveTextContent("ruvana")
+    expect(brand.querySelector("span[aria-hidden='true']")).toBeNull()
     expect(screen.queryByRole("link", { name: "Ruvana — beranda" })).toBeNull()
   })
 

@@ -319,13 +319,13 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 
 - `/` memperkenalkan Ruvana dengan fokus reservasi dan pelaporan kerusakan sebagai manfaat pendukung.
 - Urutan konten: hero → pencarian fasilitas → manfaat utama → cara kerja → ajakan menjelajahi fasilitas → footer.
-- Hero memakai ringkasan aktivitas pengguna dan kartu foto ruang kampus, dengan penanda
-  "Ilustrasi tampilan Ruvana, bukan ketersediaan aktual."
+- Hero memakai mockup dashboard aplikasi horizontal (sidebar menu peran pengguna dan ringkasan aktivitas) serta kartu foto ruang kampus horizontal.
 - Section pencarian fasilitas adalah pintu masuk `/fasilitas`: form `GET` dengan parameter
   `tipe` (nilai dari `TIPE_FASILITAS`) dan `tanggal`, memakai label `TIPE_FASILITAS_LABEL`.
 - CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
-- Header publik memakai wordmark `RUVANA` dengan brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
+- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
 - Kartu foto memakai aset lokal `public/ruvana-lab2.jpg` dengan atribusi Unsplash. Prototype dan aset mentah di `output/` tidak di-commit.
 - Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.

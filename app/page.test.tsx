@@ -27,15 +27,32 @@ describe("judul halaman", () => {
 })
 
 describe("landing page publik", () => {
-  it("memakai wordmark RUVANA dengan brand mark di header dan nama berbeda di footer", () => {
+  it("memakai wordmark ruvana tanpa brand mark di header dan footer", () => {
     render(<Home />)
 
     const headerBrand = screen.getByRole("link", { name: "Ruvana — beranda" })
-    expect(headerBrand).toHaveTextContent("RUVANA")
-    expect(headerBrand.querySelector("span[aria-hidden='true']")).not.toBeNull()
+    expect(headerBrand).toHaveTextContent("ruvana")
+    expect(headerBrand.querySelector("span[aria-hidden='true']")).toBeNull()
 
     const footerBrand = screen.getByRole("link", { name: "Ruvana — beranda, footer" })
-    expect(footerBrand).toHaveTextContent("RUVANA")
+    expect(footerBrand).toHaveTextContent("ruvana")
+  })
+
+  it("membungkus setiap manfaat dalam card dengan ikon dekoratif sebagai latar", () => {
+    const { container } = render(<Home />)
+
+    const benefitsSection = container.querySelector("#benefits-title")?.closest("section")
+    expect(benefitsSection).not.toBeNull()
+
+    const cards = benefitsSection?.querySelectorAll("[data-slot='card']")
+    expect(cards).toHaveLength(2)
+
+    for (const card of cards ?? []) {
+      expect(card.querySelector("svg[aria-hidden='true']")).not.toBeNull()
+    }
+
+    expect(screen.getByText("Reservasi lebih terarah")).toBeInTheDocument()
+    expect(screen.getByText("Laporkan kerusakan")).toBeInTheDocument()
   })
 
   it("menempatkan pengalih tema, Masuk, dan Daftar di aksi header", () => {
@@ -106,13 +123,5 @@ describe("landing page publik", () => {
     expect(ambientNodes.length).toBeLessThanOrEqual(4)
 
     expect(container.querySelectorAll(".ambient").length).toBe(0)
-  })
-
-  it("menyatakan visual hero bukan ketersediaan aktual", () => {
-    render(<Home />)
-
-    expect(
-      screen.getByText("Ilustrasi tampilan Ruvana, bukan ketersediaan aktual."),
-    ).toBeVisible()
   })
 })

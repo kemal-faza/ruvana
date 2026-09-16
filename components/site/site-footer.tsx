@@ -17,15 +17,9 @@ export function SiteFooter() {
             <Link
               href="/"
               aria-label="Ruvana — beranda, footer"
-              className="inline-flex items-center gap-3 text-lg font-semibold tracking-tight"
+              className="inline-flex items-center text-lg font-semibold tracking-tight"
             >
-              <span
-                aria-hidden="true"
-                className="grid size-7 place-items-center rounded-[9px] bg-brand-olive text-xs text-card"
-              >
-                R
-              </span>
-              RUVANA
+              ruvana
             </Link>
             <p className="mt-3 text-xs text-muted-foreground">
               Ruang bersama, kegiatan lebih bermakna.
