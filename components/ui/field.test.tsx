@@ -60,6 +60,6 @@ describe("kontrak Field dan Input", () => {
     )
 
     expect(screen.getByRole("textbox")).toHaveClass("aria-invalid:border-dashed")
-    expect(screen.getByRole("group")).toHaveClass("data-[invalid]:border-l-2")
+    expect(screen.getByRole("group")).toHaveClass("data-invalid:border-l-2")
   })
 })

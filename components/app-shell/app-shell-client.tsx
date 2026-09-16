@@ -32,7 +32,7 @@ export function AppShellClient({ navigation, account, logoutDestination, childre
           }
           animate={{ opacity: 1, y: 0 }}
           transition={motionPreference.spring("gentle")}
-          className="min-w-0 flex-1 motion-reduce:!transform-none"
+          className="min-w-0 flex-1 motion-reduce:transform-none!"
         >
           {children}
         </motion.div>
