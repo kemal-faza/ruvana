@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseFacilityId, parsePublicListQuery } from "./facility-query";
+import { parseAvailabilityDate, parseFacilityId, parsePublicListQuery } from "./facility-query";
 
 describe("parsePublicListQuery", () => {
   it("memakai default page=1 dan perPage=20 ketika tidak ada parameter", () => {
@@ -61,5 +61,35 @@ describe("parseFacilityId", () => {
 
   it("menolak id nol atau negatif", () => {
     expect(parseFacilityId("0").ok).toBe(false);
+  });
+});
+
+describe("parseAvailabilityDate", () => {
+  it("menerima tanggal kalender yang valid", () => {
+    expect(parseAvailabilityDate("2026-09-15")).toEqual({ ok: true, value: "2026-09-15" });
+  });
+
+  it("menolak ketika date tidak dikirim", () => {
+    const result = parseAvailabilityDate(null);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors[0]).toMatchObject({ field: "date", code: "REQUIRED" });
+    }
+  });
+
+  it("menolak format yang salah", () => {
+    const result = parseAvailabilityDate("15-09-2026");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors[0]).toMatchObject({ field: "date", code: "INVALID_DATE" });
+    }
+  });
+
+  it("menolak tanggal kalender yang tidak ada", () => {
+    const result = parseAvailabilityDate("2026-02-30");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors[0]).toMatchObject({ field: "date", code: "INVALID_DATE" });
+    }
   });
 });

@@ -1,4 +1,5 @@
 import type { ProblemFieldError } from "@/lib/http/problem";
+import { parseCalendarDate } from "@/lib/time/jakarta";
 
 export interface PublicListQuery {
   page: number;
@@ -45,6 +46,24 @@ export function parsePublicListQuery(searchParams: URLSearchParams): ParseResult
       perPage: perPage ?? 20,
     },
   };
+}
+
+export function parseAvailabilityDate(raw: string | null): ParseResult<string> {
+  if (raw === null) {
+    return {
+      ok: false,
+      errors: [{ field: "date", code: "REQUIRED", message: "date wajib diisi (format YYYY-MM-DD)" }],
+    };
+  }
+
+  if (!parseCalendarDate(raw)) {
+    return {
+      ok: false,
+      errors: [{ field: "date", code: "INVALID_DATE", message: "date harus tanggal kalender valid berformat YYYY-MM-DD" }],
+    };
+  }
+
+  return { ok: true, value: raw };
 }
 
 export function parseFacilityId(raw: string): ParseResult<number> {
