@@ -53,6 +53,24 @@ Gunakan token semantik, bukan nilai mentah yang tersebar di komponen.
 
 `color-text-muted-brand` dipertahankan sebagai fondasi brand; gunakan `color-text-muted` untuk metadata normal-size, termasuk 12 px, agar tetap terbaca.
 
+**Pengecualian teks aksen merek.** `color-action-brand` pada palet gelap
+(`--brand-olive`: `#6F7F3B` light / `#AABB75` dark) boleh dipakai untuk ikon dekoratif
+dan teks aksen merek. Rasio `#6F7F3B` terhadap kanvas adalah 4.03:1, di bawah 4.5:1,
+sehingga pemakaiannya ditinjau visual manual dan dilarang untuk teks isi, metadata
+penting, tautan, indikator fokus, serta satu-satunya batas kontrol.
+
+**Logotype.** Wordmark dan brand mark dikecualikan dari syarat kontras teks sesuai
+definisi WCAG 1.4.3.
+
+**Permukaan kontrol.** `color-action-strong` (`#526222`) dengan teks putih mencapai
+6.71:1 dan menjadi permukaan aksi interaktif. Hover di tema terang tetap memakai
+`#435204` dan tidak boleh memakai `color-action-brand`, karena brand olive tidak
+mencapai 4.5:1 untuk teks normal.
+
+**Prototype nonnormatif.** Prototype landing memakai outline fokus gold `#D9A441`
+(2.06:1 terhadap kanvas) dan metadata 10–11 px; keduanya tidak diadopsi karena
+melanggar aturan fokus serta `type-metadata` di dokumen ini.
+
 Nilai palette mentah tidak boleh dipakai langsung untuk teks, tautan, indikator fokus, penanda chart bermakna, atau satu-satunya batas kontrol. Target WCAG 2.2 AA: minimal 4.5:1 untuk teks normal, 3:1 untuk teks besar dan UI nonteks atau indikator fokus; gunakan token semantik yang sesuai.
 
 ### Token status semantik
@@ -61,8 +79,8 @@ Setiap pasangan teks dan permukaan berikut harus dipakai bersama; rasionya memen
 
 | Makna | Token teks | Token permukaan | Pemetaan warna |
 |---|---|---|---|
-| Pending / warning | `color-status-pending-text` | `color-status-pending-surface` | `#6B4700` pada `#FFF3D6` |
-| Success | `color-status-success-text` | `color-status-success-surface` | `#1F5C3A` pada `#E7F4EC` |
+| Pending / warning | `color-status-pending-text` | `color-status-pending-surface` | `#6B4700` pada `#FFF3D6` (light); `#FFE7A8` pada `#624913` (dark) |
+| Success | `color-status-success-text` | `color-status-success-surface` | `#1F5C3A` pada `#E7F4EC` (light); `#D8F1DF` pada `#214A35` (dark) |
 | Error / danger | `color-status-danger-text` | `color-status-danger-surface` | `#9B1C1C` pada `#FDECEC` |
 | Info / in-progress | `color-status-info-text` | `color-status-info-surface` | `#075985` pada `#E0F2FE` |
 | Neutral | `color-status-neutral-text` | `color-status-neutral-surface` | `#4A4A46` pada `#F1F0EA` |
@@ -87,7 +105,7 @@ Gunakan 700 hanya untuk metrik atau display yang benar-benar perlu penekanan. Ju
 |---|---|
 | Spasi | `space-page` 28–32 px desktop; `space-card` 18–24 px; gap berulang 8–24 px |
 | Radius | `radius-card` 16–24 px; `radius-control` 8–12 px |
-| Bayangan | `shadow-subtle: 0 2px 8px rgba(0,0,0,0.04)`; gunakan untuk menunjukkan kedalaman |
+| Bayangan | `shadow-subtle`: `0 2px 8px rgba(0,0,0,0.04)` light dan `0 2px 10px rgba(0,0,0,0.18)` dark; gunakan untuk menunjukkan kedalaman |
 | Ikon | Satu keluarga outline konsisten, seperti Lucide, umumnya 16–20 px |
 | Motion | Responsif terhadap interaksi, tanpa animasi idle |
 
