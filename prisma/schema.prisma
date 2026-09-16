@@ -124,3 +124,19 @@ model Report {
 
   @@map("reports")
 }
+
+model IdempotencyKey {
+  id           String   @id @default(uuid())
+  key          String
+  principalId  Int
+  scope        String
+  requestHash  String
+  responseStatus Int?
+  responseBody Json?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@unique([key, principalId, scope])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}

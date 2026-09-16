@@ -1,0 +1,228 @@
+import { prisma } from "@/lib/prisma";
+import type { ProblemFieldError } from "@/lib/http/problem";
+import type { ReservationCreateInput } from "@/lib/validation/reservation";
+import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta, generateAllSlots } from "@/lib/time/reservation-time";
+
+export type ServiceError =
+  | { type: "validation"; errors: ProblemFieldError[] }
+  | { type: "not_found"; message: string }
+  | { type: "facility_unavailable"; message: string }
+  | { type: "conflict"; message: string; availability: unknown };
+
+export interface ReservationResult {
+  id: number;
+  facility: {
+    id: number;
+    nama: string;
+    tipe: string;
+    lokasi: string;
+    kapasitas: number;
+    deskripsi: string | null;
+    status: string;
+  };
+  date: string;
+  timezone: string;
+  startTime: string;
+  endTime: string;
+  startsAt: string;
+  endsAt: string;
+  tujuanPenggunaan: string;
+  status: string;
+  alasan: string | null;
+  submittedAt: string;
+  processedAt: string | null;
+  processedBy: null;
+}
+
+function toReservationResponse(row: {
+  id: number;
+  tanggal: Date;
+  startTime: Date;
+  endTime: Date;
+  tujuanPenggunaan: string;
+  status: string;
+  alasan: string | null;
+  createdAt: Date;
+  waktuDiproses: Date | null;
+  facility: { id: number; nama: string; tipe: string; lokasi: string; kapasitas: number; deskripsi: string | null; status: string };
+}): ReservationResult {
+  return {
+    id: row.id,
+    facility: {
+      id: row.facility.id,
+      nama: row.facility.nama,
+      tipe: row.facility.tipe,
+      lokasi: row.facility.lokasi,
+      kapasitas: row.facility.kapasitas,
+      deskripsi: row.facility.deskripsi,
+      status: row.facility.status,
+    },
+    date: formatDateAsiaJakarta(row.tanggal),
+    timezone: "Asia/Jakarta",
+    startTime: formatTimeAsiaJakarta(row.startTime),
+    endTime: formatTimeAsiaJakarta(row.endTime),
+    startsAt: row.startTime.toISOString(),
+    endsAt: row.endTime.toISOString(),
+    tujuanPenggunaan: row.tujuanPenggunaan,
+    status: row.status,
+    alasan: row.alasan,
+    submittedAt: row.createdAt.toISOString(),
+    processedAt: row.waktuDiproses ? row.waktuDiproses.toISOString() : null,
+    processedBy: null,
+  };
+}
+
+function buildAvailabilityResponse(
+  facilityId: number,
+  date: string,
+  approvedRanges: Array<{ startTime: Date; endTime: Date }>,
+) {
+  const allSlots = generateAllSlots();
+  const slots = allSlots.map((slot) => {
+    const slotStart = asiaJakartaToUtc(date, slot.startTime);
+    const slotEnd = asiaJakartaToUtc(date, slot.endTime);
+    const blocked = approvedRanges.some((r) => r.startTime < slotEnd && r.endTime > slotStart);
+    return {
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      available: !blocked,
+      blockedBy: blocked ? "APPROVED" : null,
+    };
+  });
+  return {
+    facilityId,
+    date,
+    timezone: "Asia/Jakarta",
+    slots,
+  };
+}
+
+export async function createReservationService(
+  userId: number,
+  input: ReservationCreateInput,
+  now: Date = new Date(),
+): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: ServiceError }> {
+  const startsAt = asiaJakartaToUtc(input.date, input.startTime);
+  const endsAt = asiaJakartaToUtc(input.date, input.endTime);
+  const tanggal = asiaJakartaToUtc(input.date, "00:00");
+
+  // Validasi tanggal/slot lampau: menolak jika startsAt <= now
+  if (startsAt.getTime() <= now.getTime()) {
+    return {
+      ok: false,
+      error: {
+        type: "validation",
+        errors: [
+          {
+            field: "date",
+            code: "DATE_IN_PAST",
+            message: "Tanggal atau slot sudah lewat dan tidak dapat direservasi",
+          },
+        ],
+      },
+    };
+  }
+
+  // Validasi urutan waktu sudah dilakukan di parse, tapi double-check untuk transaksi
+  if (endsAt.getTime() <= startsAt.getTime()) {
+    return {
+      ok: false,
+      error: {
+        type: "validation",
+        errors: [{ field: "endTime", code: "END_BEFORE_START", message: "endTime harus setelah startTime" }],
+      },
+    };
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Row lock di tabel facilities untuk mencegah race approval conflict
+      await tx.$queryRaw`SELECT id FROM "facilities" WHERE id = ${input.facilityId} FOR UPDATE`;
+      const facility = await tx.facility.findUnique({ where: { id: input.facilityId } });
+
+      if (!facility) {
+        throw { kind: "not_found" as const };
+      }
+      if (facility.status !== "ACTIVE") {
+        throw { kind: "facility_unavailable" as const, status: facility.status };
+      }
+
+      // Cek bentrok dengan APPROVED (hanya APPROVED yang memblokir)
+      const overlapping = await tx.reservation.findMany({
+        where: {
+          facilityId: input.facilityId,
+          status: "APPROVED",
+          startTime: { lt: endsAt },
+          endTime: { gt: startsAt },
+        },
+        select: { id: true, startTime: true, endTime: true },
+      });
+
+      if (overlapping.length > 0) {
+        // Ambil semua APPROVED pada tanggal tersebut untuk build availability terbaru
+        const approvedOnDate = await tx.reservation.findMany({
+          where: {
+            facilityId: input.facilityId,
+            status: "APPROVED",
+            tanggal: { gte: tanggal, lt: new Date(tanggal.getTime() + 24 * 60 * 60 * 1000) },
+          },
+          select: { startTime: true, endTime: true },
+        });
+        // Sertakan juga rentang yang baru ditemukan jika belum ada
+        const availability = buildAvailabilityResponse(input.facilityId, input.date, approvedOnDate);
+        throw { kind: "conflict" as const, availability };
+      }
+
+      const created = await tx.reservation.create({
+        data: {
+          userId,
+          facilityId: input.facilityId,
+          tanggal,
+          startTime: startsAt,
+          endTime: endsAt,
+          tujuanPenggunaan: input.tujuanPenggunaan,
+          status: "PENDING",
+        },
+        include: { facility: true },
+      });
+
+      return created;
+    });
+
+    const response = toReservationResponse(result as unknown as Parameters<typeof toReservationResponse>[0]);
+    return { ok: true, data: response };
+  } catch (e: unknown) {
+    const err = e as Record<string, unknown>;
+    if (err && typeof err === "object" && "kind" in err) {
+      if ((err as { kind: string }).kind === "not_found") {
+        return { ok: false, error: { type: "not_found", message: "Fasilitas tidak ditemukan" } };
+      }
+      if ((err as { kind: string }).kind === "facility_unavailable") {
+        return {
+          ok: false,
+          error: {
+            type: "validation",
+            errors: [
+              {
+                field: "facilityId",
+                code: "FACILITY_UNAVAILABLE",
+                message: "Fasilitas tidak tersedia untuk reservasi",
+              },
+            ],
+          },
+        };
+      }
+      if ((err as { kind: string }).kind === "conflict") {
+        const av = (err as { availability: unknown }).availability;
+        return {
+          ok: false,
+          error: { type: "conflict", message: "Slot bertabrakan dengan reservasi yang telah disetujui.", availability: av },
+        };
+      }
+    }
+    throw e;
+  }
+}
+
+// Ekspor helper untuk test
+export { buildAvailabilityResponse, toReservationResponse };
