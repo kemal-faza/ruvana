@@ -14,6 +14,10 @@ import { Card } from "@/components/ui/card"
 
 const SHELL = "mx-auto w-full max-w-[1256px] px-4 sm:px-7"
 const primaryLink = buttonVariants({ className: "min-h-11 gap-2.5 px-4 text-sm" })
+const quietLink = buttonVariants({
+  variant: "ghost",
+  className: "min-h-11 gap-2.5 px-4 text-sm text-muted-foreground",
+})
 
 function staggerStyle(index: number) {
   return { "--stagger-index": index } as CSSProperties
@@ -97,13 +101,10 @@ export default function Home() {
                   Jelajahi Fasilitas
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
                 </Link>
-                <a
-                  href="#cara-kerja"
-                  className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-                >
+                <Link href="#cara-kerja" className={quietLink}>
                   Lihat cara kerja
-                  <span aria-hidden="true">→</span>
-                </a>
+                  <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
+                </Link>
               </div>
 
             </div>
