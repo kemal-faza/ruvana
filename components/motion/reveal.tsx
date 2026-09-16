@@ -90,7 +90,7 @@ export function Reveal({
   return (
     <Component
       data-motion-reveal="true"
-      className={cn("min-w-0 motion-reduce:!transform-none", className)}
+      className={cn("min-w-0 motion-reduce:transform-none!", className)}
       initial={targets.initial}
       whileInView={targets.whileInView}
       viewport={revealViewportOptions}

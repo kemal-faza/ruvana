@@ -391,9 +391,9 @@ database production. D-008 mengikuti keputusan final tersebut.
 
 Jika terdapat perbedaan informasi, gunakan urutan berikut:
 
-1. `TASK.md` untuk acceptance rule modul dan `docs/PRD.md` untuk requirement
-   produk serta resolusi konflik; resolusi eksplisit yang lebih baru menggantikan
-   nilai lama yang dinyatakan konflik;
+1. `docs/PRD.md` untuk scope, acceptance criteria, requirement produk, serta
+   resolusi konflik; resolusi eksplisit yang lebih baru menggantikan nilai lama
+   yang dinyatakan konflik;
 2. source code dan konfigurasi aktif untuk keadaan implementasi;
 3. `AGENTS.md` untuk aturan repository dan petunjuk environment;
 4. dokumen ini untuk alasan, scope, konsekuensi, dan riwayat keputusan.

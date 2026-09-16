@@ -1,5 +1,5 @@
 // Kontrak interface "status fasilitas berubah" — didefinisikan sekali di Fase 0.
-// Modul 3 (TASK 3.7) = listener terhadap perubahan ini; Modul 4 (TASK 4.4) = pemicu.
+// Modul 3 (RES-09) = listener terhadap perubahan ini; Modul 4 (REP-04) = pemicu.
 // Tujuan: modul 3 & 4 bisa maju paralel tanpa saling menunggu implementasi.
 
 import type { StatusFasilitas } from "../generated/prisma/enums";
