@@ -3,51 +3,126 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/page"
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/",
+vi.mock("next/font/google", () => ({
+  Poppins: () => ({ variable: "--font-poppins" }),
 }))
+
+// jsdom tidak menjalankan optimizer gambar Next.js; mock hanya memverifikasi
+// src/alt yang kita kirim. Integrasi nyata diperiksa `pnpm build` dan Playwright.
+vi.mock("next/image", () => ({
+  default: ({ src, alt, className }: { src: string; alt: string; className?: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} className={className} />
+  ),
+}))
+
+const { metadata } = await import("@/app/layout")
 
 afterEach(cleanup)
 
-describe("katalog baseline UI", () => {
-  it("menampilkan katalog Core 6 dan shell statis", () => {
+describe("judul halaman", () => {
+  it("memakai ruvana sebagai satu-satunya judul", () => {
+    expect(metadata.title).toBe("ruvana")
+  })
+})
+
+describe("landing page publik", () => {
+  it("memakai wordmark ruvana tanpa brand mark di header dan footer", () => {
     render(<Home />)
 
-    expect(screen.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeInTheDocument()
-    expect(screen.getByText("Pratinjau UI")).toBeInTheDocument()
+    const headerBrand = screen.getByRole("link", { name: "Ruvana — beranda" })
+    expect(headerBrand).toHaveTextContent("ruvana")
+    expect(headerBrand.querySelector("span[aria-hidden='true']")).toBeNull()
 
-    for (const name of ["Button", "Field", "Card", "Badge", "Skeleton", "Empty state"]) {
-      expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument()
-    }
-
-    for (const name of ["Ringkasan", "Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
-      expect(screen.getAllByRole("link", { name }).length).toBeGreaterThan(0)
-    }
-
-    const input = screen.getByRole("textbox", { name: /nama contoh/i })
-    expect(input).toBeRequired()
-    expect(input).toHaveAttribute("aria-describedby", "contoh-nama-help contoh-nama-error")
-    expect(screen.getByText("Contoh pemuatan")).toBeInTheDocument()
-    expect(screen.getByText("Menunggu")).toBeInTheDocument()
-    expect(screen.getByText("Tidak ada contoh untuk ditampilkan.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Tambah contoh" })).toBeInTheDocument()
+    const footerBrand = screen.getByRole("link", { name: "Ruvana — beranda, footer" })
+    expect(footerBrand).toHaveTextContent("ruvana")
   })
 
-  it("tidak menyisipkan data domain, statistik, atau kontrol peran", () => {
-    render(<Home />)
+  it("membungkus setiap manfaat dalam card dengan ikon dekoratif sebagai latar", () => {
+    const { container } = render(<Home />)
 
-    for (const text of [
-      "Ruang Sidang",
-      "Aula Utama",
-      "Budi Santoso",
-      "08.00",
-      "Kapasitas",
-      "Setujui reservasi",
-      "12 reservasi",
-    ]) {
-      expect(screen.queryByText(text, { exact: false })).not.toBeInTheDocument()
+    const benefitsSection = container.querySelector("#benefits-title")?.closest("section")
+    expect(benefitsSection).not.toBeNull()
+
+    const cards = benefitsSection?.querySelectorAll("[data-slot='card']")
+    expect(cards).toHaveLength(2)
+
+    for (const card of cards ?? []) {
+      expect(card.querySelector("svg[aria-hidden='true']")).not.toBeNull()
     }
 
-    expect(screen.queryByRole("button", { name: /admin|pengguna|ganti peran/i })).not.toBeInTheDocument()
+    expect(screen.getByText("Reservasi lebih terarah")).toBeInTheDocument()
+    expect(screen.getByText("Laporkan kerusakan")).toBeInTheDocument()
+  })
+
+  it("menempatkan pengalih tema, Masuk, dan Daftar di aksi header", () => {
+    const { container } = render(<Home />)
+
+    const header = container.querySelector("header")
+    expect(header).not.toBeNull()
+    expect(header?.querySelector("button[aria-label^='Gunakan tema']")).not.toBeNull()
+    expect(header?.querySelector("a[href='/masuk']")).toHaveTextContent("Masuk")
+    expect(header?.querySelector("a[href='/daftar']")).toHaveTextContent("Daftar")
+  })
+
+  it("menandai Beranda sebagai lokasi aktif dan menautkan navigasi utama", () => {
+    render(<Home />)
+
+    const nav = screen.getByRole("navigation", { name: "Navigasi utama" })
+    expect(nav.querySelector("a[href='/']")).toHaveAttribute("aria-current", "page")
+    expect(nav.querySelector("a[href='/fasilitas']")).toHaveTextContent("Fasilitas")
+    expect(nav.querySelector("a[href='#jadwal']")).toHaveTextContent("Jadwal")
+  })
+
+  it("mengarahkan setiap CTA Jelajahi Fasilitas ke rute fasilitas", () => {
+    render(<Home />)
+
+    const ctas = screen.getAllByRole("link", { name: /Jelajahi Fasilitas/ })
+    expect(ctas).toHaveLength(2)
+    for (const cta of ctas) {
+      expect(cta).toHaveAttribute("href", "/fasilitas")
+    }
+  })
+
+  it("mengirim form pencarian fasilitas dengan kontrol bertoken", () => {
+    const { container } = render(<Home />)
+
+    const form = container.querySelector("form")
+    expect(form).toHaveAttribute("method", "get")
+    expect(form).toHaveAttribute("action", "/fasilitas")
+
+    expect(screen.getByLabelText("Pilih tipe fasilitas")).toBeInTheDocument()
+    expect(container.querySelector('input[name="tipe"]')).not.toBeNull()
+    expect(screen.getByLabelText("Pilih tanggal")).toBeInTheDocument()
+    expect(container.querySelector('input[name="tanggal"]')).not.toBeNull()
+    expect(screen.getByRole("button", { name: /Jelajahi/ })).toHaveAttribute("type", "submit")
+  })
+
+  it("menjalankan entrance hero sebagai stagger CSS dan bagian lain lewat reveal motion", () => {
+    const { container } = render(<Home />)
+
+    const heroTitle = container.querySelector("#hero-title")
+    expect(heroTitle?.className).toContain("motion-rise")
+    expect(heroTitle?.className).toContain("motion-rise-stagger")
+
+    const staggerOrder = Array.from(
+      container.querySelectorAll<HTMLElement>(".motion-rise-stagger"),
+    ).map((node) => Number(node.style.getPropertyValue("--stagger-index")))
+
+    expect(staggerOrder.length).toBeGreaterThanOrEqual(4)
+    expect(staggerOrder).toEqual([...staggerOrder].sort((left, right) => left - right))
+    expect(new Set(staggerOrder).size).toBe(staggerOrder.length)
+
+    expect(container.querySelectorAll("[data-motion-reveal]").length).toBeGreaterThan(0)
+  })
+
+  it("membatasi node motion berkelanjutan dan tidak menyisakan loop idle", () => {
+    const { container } = render(<Home />)
+
+    const ambientNodes = container.querySelectorAll("[data-motion-ambient]")
+    expect(ambientNodes.length).toBeGreaterThan(0)
+    expect(ambientNodes.length).toBeLessThanOrEqual(4)
+
+    expect(container.querySelectorAll(".ambient").length).toBe(0)
   })
 })

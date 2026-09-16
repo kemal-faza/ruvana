@@ -19,11 +19,12 @@ Otoritas runtime: keputusan peran, kepemilikan, otorisasi, konflik, dan state do
 ## Prinsip desain
 
 - **Hangat:** gunakan ivory, permukaan putih, dan aksen alami; hindari kesan steril.
-- **Tenang:** jaga hierarki, ruang, dan animasi tetap terukur.
+- **Tenang:** jaga hierarki dan ruang tetap terukur; gerak tidak boleh mengacaukan keterbacaan.
+- **Tenang dan responsif:** motion hanya muncul sebagai respons terhadap interaksi atau posisi — entrance saat elemen masuk viewport, umpan balik hover/focus/active, dan transisi perubahan state. Tidak ada animasi yang berjalan sendiri saat halaman diam.
 - **Mudah didekati:** bahasa langsung dan pola yang dapat diprediksi harus membantu pengguna menyelesaikan tugas.
 - **Tepercaya:** tampilkan status, dampak, dan kesalahan secara jujur; jangan menyembunyikan konsekuensi.
 - **Jelas:** setiap halaman memiliki tujuan, aksi utama, dan konteks yang mudah dipindai.
-- **Terkendali:** hindari dekorasi, gradasi kuat, dan variasi komponen yang tidak memiliki alasan.
+- **Terkendali:** hindari variasi komponen yang tidak memiliki alasan; ekspresi visual dan gradasi diatur oleh aturan Motion serta gradasi di bagian Fondasi.
 
 ## Fondasi
 
@@ -48,9 +49,27 @@ Gunakan token semantik, bukan nilai mentah yang tersebar di komponen.
 | `color-subtle` | `#F1F0EA` | Latar sekunder |
 | `color-shell-dark` | `#1A1E14` | Pengecualian untuk shell navigasi gelap |
 
-`color-action-brand` tetap menjadi fondasi merek. Jika teks tombol di atasnya tidak mencapai WCAG 2.2 AA, gunakan `color-action-strong` untuk interaksi; jangan menurunkan standar kontras.
+`color-action-brand` tetap menjadi fondasi merek. Jika teks tombol di atasnya tidak mencapai WCAG 2.2 AA, gunakan `color-action-strong` untuk interaksi. Pengecualian: sesuai keputusan gradasi di bagian Motion dan gradasi, permukaan kontrol boleh memakai gradasi sehingga rasio kontras per-piksel tidak dijamin; tanggung jawab jaminan kontras berpindah ke peninjauan visual manual, bukan ke token.
 
 `color-text-muted-brand` dipertahankan sebagai fondasi brand; gunakan `color-text-muted` untuk metadata normal-size, termasuk 12 px, agar tetap terbaca.
+
+**Pengecualian teks aksen merek.** `color-action-brand` pada palet gelap
+(`--brand-olive`: `#6F7F3B` light / `#AABB75` dark) boleh dipakai untuk ikon dekoratif
+dan teks aksen merek. Rasio `#6F7F3B` terhadap kanvas adalah 4.03:1, di bawah 4.5:1,
+sehingga pemakaiannya ditinjau visual manual dan dilarang untuk teks isi, metadata
+penting, tautan, indikator fokus, serta satu-satunya batas kontrol.
+
+**Logotype.** Wordmark dan brand mark dikecualikan dari syarat kontras teks sesuai
+definisi WCAG 1.4.3.
+
+**Permukaan kontrol.** `color-action-strong` (`#526222`) dengan teks putih mencapai
+6.71:1 dan menjadi permukaan aksi interaktif. Hover di tema terang tetap memakai
+`#435204` dan tidak boleh memakai `color-action-brand`, karena brand olive tidak
+mencapai 4.5:1 untuk teks normal.
+
+**Prototype nonnormatif.** Prototype landing memakai outline fokus gold `#D9A441`
+(2.06:1 terhadap kanvas) dan metadata 10–11 px; keduanya tidak diadopsi karena
+melanggar aturan fokus serta `type-metadata` di dokumen ini.
 
 Nilai palette mentah tidak boleh dipakai langsung untuk teks, tautan, indikator fokus, penanda chart bermakna, atau satu-satunya batas kontrol. Target WCAG 2.2 AA: minimal 4.5:1 untuk teks normal, 3:1 untuk teks besar dan UI nonteks atau indikator fokus; gunakan token semantik yang sesuai.
 
@@ -60,8 +79,8 @@ Setiap pasangan teks dan permukaan berikut harus dipakai bersama; rasionya memen
 
 | Makna | Token teks | Token permukaan | Pemetaan warna |
 |---|---|---|---|
-| Pending / warning | `color-status-pending-text` | `color-status-pending-surface` | `#6B4700` pada `#FFF3D6` |
-| Success | `color-status-success-text` | `color-status-success-surface` | `#1F5C3A` pada `#E7F4EC` |
+| Pending / warning | `color-status-pending-text` | `color-status-pending-surface` | `#6B4700` pada `#FFF3D6` (light); `#FFE7A8` pada `#624913` (dark) |
+| Success | `color-status-success-text` | `color-status-success-surface` | `#1F5C3A` pada `#E7F4EC` (light); `#D8F1DF` pada `#214A35` (dark) |
 | Error / danger | `color-status-danger-text` | `color-status-danger-surface` | `#9B1C1C` pada `#FDECEC` |
 | Info / in-progress | `color-status-info-text` | `color-status-info-surface` | `#075985` pada `#E0F2FE` |
 | Neutral | `color-status-neutral-text` | `color-status-neutral-surface` | `#4A4A46` pada `#F1F0EA` |
@@ -86,11 +105,28 @@ Gunakan 700 hanya untuk metrik atau display yang benar-benar perlu penekanan. Ju
 |---|---|
 | Spasi | `space-page` 28–32 px desktop; `space-card` 18–24 px; gap berulang 8–24 px |
 | Radius | `radius-card` 16–24 px; `radius-control` 8–12 px |
-| Bayangan | `shadow-subtle: 0 2px 8px rgba(0,0,0,0.04)`; gunakan untuk menunjukkan kedalaman |
+| Bayangan | `shadow-subtle`: `0 2px 8px rgba(0,0,0,0.04)` light dan `0 2px 10px rgba(0,0,0,0.18)` dark; gunakan untuk menunjukkan kedalaman |
 | Ikon | Satu keluarga outline konsisten, seperti Lucide, umumnya 16–20 px |
-| Motion | Singkat, tenang, dan informatif |
+| Motion | Responsif terhadap interaksi, tanpa animasi idle |
 
-Gradasi kuat tidak boleh digunakan. Gradasi tonal halus hanya boleh muncul pada satu area highlight noninteraktif, bukan sebagai treatment kontrol.
+#### Motion dan gradasi
+
+Motion adalah bahasa umpan balik, bukan lapisan dekorasi. Setiap motion harus punya pemicu interaksi; motion yang berjalan tanpa pemicu dilarang. Token berikut adalah satu-satunya sumber nilai motion.
+
+| Kelompok | Token | Nilai |
+|---|---|---|
+| Durasi | `micro` / `standard` / `expressive` / `cinematic` | 120 ms / 180 ms / 420 ms / 620 ms |
+| Easing | `standard` / `emphatic` / `exit` | `cubic-bezier(0.22, 1, 0.36, 1)` / `cubic-bezier(0.16, 1, 0.3, 1)` / `cubic-bezier(0.4, 0, 1, 1)` |
+| Spring | `gentle` | `{120, 22}` |
+| Jarak | `xs` / `sm` / `md` / `lg` | 8 / 16 / 28 / 48 px |
+| Stagger | `expressive` / `functional` | 90 ms / 40 ms |
+
+Dua syarat berikut mengikat seluruh motion, tanpa pengecualian:
+
+1. Saat `prefers-reduced-motion: reduce`, seluruh motion berhenti dan setiap elemen langsung berada pada keadaan akhirnya.
+2. Animasi hanya boleh menganimasikan `transform` dan `opacity`; properti yang memicu layout tidak boleh dianimasikan.
+
+Gradasi kuat tidak boleh digunakan. Gradasi tonal halus boleh dipakai pada permukaan dekoratif maupun kontrol; gradasi beranimasi hanya diizinkan untuk indikator loading (`skeleton` shimmer), dan gradien dekoratif yang bergerak (`sweep`) dihapus. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Tidak ada node motion yang berloop tak terbatas. `Parallax` yang terikat scroll masih diizinkan (maksimal empat per halaman, penanda `data-motion-ambient`); `Ambient` dan pola loop dekoratif dihapus dari sistem. Gradasi hanya boleh dipakai sebagai lapisan dekoratif; teks tetap berada di atas permukaan solid bertoken. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
 
 ## Tata letak dan navigasi
 
@@ -215,13 +251,16 @@ Setiap error harus menyatakan apa yang terjadi dan cara memulihkannya dengan bah
 
 Target produk adalah **WCAG 2.2 AA**.
 
+Catatan cakupan: jaminan AA untuk teks di atas permukaan kontrol **tidak berlaku** selama permukaan tersebut memakai gradasi, karena rasio menjadi per-piksel dan tidak dapat dijamin oleh token. Kontras pada permukaan bergradasi ditinjau secara visual, bukan lewat pengujian pasangan token.
+
 - [ ] Semua fungsi bekerja dengan keyboard, urutan fokus logis, dan indikator focus-visible yang jelas.
 - [ ] Gunakan landmark yang benar dan heading berurutan.
 - [ ] Setiap input memiliki label terprogram; kontrol icon-only memiliki accessible name.
 - [ ] Status mengikuti aturan nonwarna di **Fondasi**; error, chart, dan state slot juga menyediakan cue nonwarna berupa teks, pola, label, bentuk, atau ikon.
 - [ ] Perubahan asinkron yang relevan diumumkan melalui live region.
 - [ ] Dialog menjebak fokus; drawer mobile mengelola fokus dan membuat latar belakang inert.
-- [ ] Motion menghormati `prefers-reduced-motion`; ini adalah aturan aksesibilitas otoritatif.
+- [ ] Motion menghormati `prefers-reduced-motion`; ini adalah aturan aksesibilitas otoritatif. Saat reduce, setiap animasi dan transisi berhenti dan elemen langsung berada pada keadaan akhirnya, termasuk animasi berbasis CSS.
+- [ ] Tidak ada animasi yang menghalangi interaksi keyboard, menutupi indikator fokus, atau memindahkan target sentuh hingga di bawah 44 × 44 px.
 - [ ] Target sentuh minimal 44 × 44 px.
 - [ ] Root dokumen menetapkan `lang="id"`.
 
@@ -275,3 +314,19 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 3. Verifikasi kandidat melalui beberapa sinyal: layar **Ruvana Dashboard**, **Fasilitas**, **Reservasi**, dan **Laporan**, tipografi Poppins, serta warna fondasi `#F7F5EF`.
 4. Jika ada beberapa kandidat atau identitasnya tetap tidak pasti, tanyakan kepada maintainer; jangan menebak proyek yang berwenang.
 5. Jika prototype bertentangan dengan PRD atau kontrak ini, sumber yang lebih tinggi dalam **Tujuan dan otoritas** selalu menang.
+
+## Landing page publik
+
+- `/` memperkenalkan Ruvana dengan fokus reservasi dan pelaporan kerusakan sebagai manfaat pendukung.
+- Urutan konten: hero → pencarian fasilitas → manfaat utama → cara kerja → ajakan menjelajahi fasilitas → footer.
+- Hero memakai mockup dashboard aplikasi horizontal (sidebar menu peran pengguna dan ringkasan aktivitas) serta kartu foto ruang kampus horizontal.
+- Section pencarian fasilitas adalah pintu masuk `/fasilitas`: form `GET` dengan parameter
+  `tipe` (nilai dari `TIPE_FASILITAS`) dan `tanggal`, memakai label `TIPE_FASILITAS_LABEL`.
+- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
+- Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
+- Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
+- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Kartu foto memakai aset lokal `public/ruvana-lab2.jpg`. Prototype dan aset mentah di `output/` tidak di-commit.
+- Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
+- Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.
+- Katalog komponen dipertahankan sementara di `/baseline-ui` sebagai referensi pengembangan.
