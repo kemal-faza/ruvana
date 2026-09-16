@@ -4,9 +4,9 @@ Terima kasih sudah berkontribusi ke Ruvana. Panduan ini menjelaskan alur kerja
 Git dan GitHub yang digunakan tim, mulai dari menyiapkan repository sampai
 mengirim pull request (PR).
 
-Aturan tugas pada `TASK.md` dan aturan teknis pada `AGENTS.md` tetap menjadi
-sumber utama. Jika panduan ini berbeda dengan keduanya, ikuti aturan yang lebih
-spesifik dan terbaru.
+Aturan produk pada `docs/PRD.md`, aturan desain pada `docs/DESIGN.md`, dan aturan
+teknis pada `AGENTS.md` tetap menjadi sumber utama. Jika panduan ini berbeda
+dengan ketiganya, ikuti aturan yang lebih spesifik dan terbaru.
 
 ## Daftar Isi
 
@@ -20,6 +20,7 @@ spesifik dan terbaru.
 - [Aturan Implementasi Ruvana](#aturan-implementasi-ruvana)
 - [Meninjau dan Men-stage Perubahan](#meninjau-dan-men-stage-perubahan)
 - [Menulis Commit](#menulis-commit)
+- [Menjalankan Tes](#menjalankan-tes)
 - [Menjalankan Verifikasi Lokal](#menjalankan-verifikasi-lokal)
 - [Menyinkronkan Branch Sebelum Push](#menyinkronkan-branch-sebelum-push)
 - [Push dan Pull Request](#push-dan-pull-request)
@@ -32,7 +33,7 @@ spesifik dan terbaru.
 
 ## Sebelum Mulai
 
-1. Baca `TASK.md` untuk memahami modul, acceptance criteria, dan dependensi
+1. Baca `docs/PRD.md` untuk memahami modul, acceptance criteria, dan dependensi
    antarmodul.
 2. Koordinasikan task dengan anggota tim agar tidak ada dua orang mengubah area
    yang sama tanpa sengaja.
@@ -234,23 +235,26 @@ terkirim menjadi aman. Rotasi tetap wajib.
 
 ## Memilih Task dan Menyinkronkan `main`
 
-Pilih task berdasarkan pembagian modul dan urutan dependensi di `TASK.md`.
-Gunakan identitas `TASK Mx.y`, acceptance criteria, dan dependensi pada task
-tersebut sebagai batas perubahan. Ringkasan urutan pengerjaannya:
+Pilih task berdasarkan pembagian modul, urutan dependensi, dan acceptance criteria
+di `docs/PRD.md`. Gunakan ID requirement (`IAM-01`, `FAC-02`, `RES-06`, dan
+seterusnya) sebagai identitas task sekaligus batas perubahan. Pembagian pemilik
+ada pada bagian Ownership Tim, urutan milestone pada bagian Urutan Milestone, dan
+pemetaan user story ke requirement pada bagian Traceability 17 User Story.
+Ringkasan urutan pengerjaannya:
 
-1. **Fase 1:** Modul 1 Authentication & Access Control (pemilik D) dan Modul 2
-   Facility & Discovery (pemilik A) dikerjakan paralel setelah fondasi Fase 0.
-2. **Fase 2:** Modul 3 Reservation (pemilik B) dan Modul 4 Reporting &
-   Maintenance (pemilik C) dikerjakan paralel setelah login dan role Modul 1
+1. **Fase 1:** Modul 1 Authentication & Access Control (Developer 1) dan Modul 2
+   Facility & Discovery (Developer 2) dikerjakan paralel setelah fondasi Fase 0.
+2. **Fase 2:** Modul 3 Reservation (Developer 3) dan Modul 4 Reporting &
+   Maintenance (Developer 4) dikerjakan paralel setelah login dan role Modul 1
    tersedia. Task tertentu tetap mengikuti dependensi Modul 2 yang tercantum
-   pada `TASK.md`.
-3. **Fase 3:** Modul 5 Admin & Analytics (pemilik D) dikerjakan setelah role
+   pada `docs/PRD.md`.
+3. **Fase 3:** Modul 5 Admin & Analytics (PM) dikerjakan setelah role
    admin serta data Modul 2, 3, dan 4 tersedia.
 4. **Fase 4:** Orchestrator dan semua anggota melakukan integrasi lintas modul,
    pengujian menyeluruh, dokumentasi, dan aset presentasi.
 
-Modul 4 `TASK 4.4` menjadi pemicu perubahan status fasilitas, sedangkan Modul 3
-`TASK 3.7` menjadi listener pembatalan reservasi. Pemilik kedua modul wajib
+Modul 4 `REP-04` menjadi pemicu perubahan status fasilitas, sedangkan Modul 3
+`RES-09` menjadi listener pembatalan reservasi. Pemilik kedua modul wajib
 menyepakati dan memakai kontrak di `lib/facility-status-contract.ts`; keduanya
 dapat dikerjakan paralel tanpa menyalin implementasi satu sama lain.
 
@@ -433,6 +437,44 @@ git commit -m "fix(reservasi): periksa konflik saat approval" \
   -m "Pemeriksaan ulang mencegah dua reservasi pending disetujui untuk slot yang sama."
 ```
 
+## Menjalankan Tes
+
+Repository memakai dua runner dengan pembagian yang tegas: nama file dan
+direktori menentukan runner-nya.
+
+| Jenis | Runner | Lokasi | Penamaan |
+| --- | --- | --- | --- |
+| Unit & integrasi | Vitest (jsdom) | co-located, di sebelah file yang diuji | `*.test.ts` / `*.test.tsx` |
+| End-to-end | Playwright | `e2e/` | `*.spec.ts` |
+
+**Unit & integrasi.** Letakkan file tes di samping modul yang diuji, misalnya
+`components/ui/button.test.tsx` untuk `components/ui/button.tsx`. Import modul
+lewat alias `@/` supaya lokasinya tidak berpengaruh. Konfigurasi ada di
+`vitest.config.mts` dengan setup bersama di `vitest.setup.ts`.
+
+```bash
+pnpm test          # sekali jalan (dipakai CI)
+pnpm test:watch    # mode watch saat mengembangkan
+```
+
+**End-to-end.** Seluruh spec Playwright berada di `e2e/`. Snapshot visual
+disimpan di `e2e/<nama-file-spec>-snapshots/` — misalnya
+`e2e/baseline-ui.spec.ts-snapshots/` untuk `e2e/baseline-ui.spec.ts` — dan harus
+ikut bila spec dipindahkan atau diganti nama. Konfigurasi ada di
+`playwright.config.ts`; runner menyalakan dev server sendiri di
+`http://127.0.0.1:3000`.
+
+```bash
+pnpm test:e2e                          # seluruh spec
+pnpm exec playwright test --list       # daftar spec tanpa menjalankan
+pnpm exec playwright test -u           # perbarui snapshot secara sengaja
+```
+
+Jangan mencampur keduanya: file `.spec.ts` di luar `e2e/` akan dicoba dijalankan
+Vitest, dan file `.test.ts` di dalam `e2e/` akan diabaikan Vitest namun dicoba
+dijalankan Playwright. Direktori adalah pemisah yang sebenarnya, jadi jaga
+`e2e/` tetap khusus Playwright.
+
 ## Menjalankan Verifikasi Lokal
 
 Jalankan pemeriksaan dalam urutan yang sama dengan CI:
@@ -443,6 +485,7 @@ pnpm lint
 pnpm check:banned
 pnpm exec next typegen
 pnpm exec tsc --noEmit
+pnpm test
 pnpm build
 ```
 
@@ -686,7 +729,7 @@ kasus berbeda dan mengikuti bagian
 ### Sebelum commit
 
 - [ ] Perubahan hanya mencakup satu tujuan logis.
-- [ ] Aturan task di `TASK.md` sudah terpenuhi.
+- [ ] Acceptance criteria di `docs/PRD.md` sudah terpenuhi.
 - [ ] Model, Controller, View, dan config tetap terpisah.
 - [ ] Validasi, error handling, akses, dan keamanan tidak dilewati.
 - [ ] Tidak ada secret, `.env`, generated files, atau debug log.
@@ -741,5 +784,5 @@ kasus berbeda dan mengikuti bagian
 
 - [Git & GitHub 101](https://github.com/Doctor3131/ppk-pertemuan-1/blob/main/git%20%26%20github%20101.md)
 - [`README.md`](README.md)
-- [`TASK.md`](TASK.md)
+- [`docs/PRD.md`](docs/PRD.md)
 - [`AGENTS.md`](AGENTS.md)

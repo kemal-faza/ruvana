@@ -60,6 +60,15 @@ jobs:
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
+      # Test suite unit vitest (36 file co-located, 154 tes). Urutan ini
+      # mengikuti docs/PRD.md: "... TypeScript, test suite, dan build".
+      # DATABASE_URL dummy disediakan agar konsisten dengan step lain;
+      # seluruh tes ini mem-mock lapisan DB dan tidak menyentuh PostgreSQL.
+      - name: Test suite
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
+
       - name: Build
         run: pnpm build
         env:

@@ -13,9 +13,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 Single-package campus facility reservation app built with Next.js 16 App Router,
 React 19, Prisma 7, PostgreSQL 16, Tailwind CSS v4, and pnpm 10.
 
-The repository is still a Fase-0 foundation: `app/` contains only the landing
-shell. Read the relevant module in `TASK.md` before implementation. Its acceptance
-rules override older Fase-0 notes under `docs/superpowers/`.
+`docs/PRD.md` is the source of truth for scope, behavior, business rules, and
+acceptance criteria; `docs/DESIGN.md` governs visual and interaction decisions.
+Read the relevant section there before implementation. The repository has moved
+past the Fase-0 shell: `app/` now contains the landing page and facility
+discovery routes. PRD acceptance criteria override older Fase-0 notes under
+`docs/superpowers/`.
 
 ## Setup
 
@@ -70,12 +73,16 @@ pnpm lint
 pnpm check:banned
 pnpm exec next typegen
 pnpm exec tsc --noEmit
+pnpm test
 pnpm build
 ```
 
 - `next typegen` must precede `tsc`; `app/layout.tsx` uses generated `LayoutProps`.
 - `pnpm build` regenerates Prisma Client but does not replace the explicit typecheck.
-- There is currently no test framework or test suite.
+- Unit tests are vitest and co-located as `*.test.ts(x)` next to the file under
+  test; they are excluded from `next build` output. `pnpm test` runs them once
+  (CI mode). End-to-end tests are Playwright, live in `e2e/*.spec.ts`, and are
+  not part of CI yet — run them with `pnpm test:e2e`.
 - CI uses Node 22, pnpm 10.30.2, and `pnpm install --frozen-lockfile`.
 - Husky checks staged files with `scripts/check-banned-words.sh --staged`;
   `pnpm check:banned` scans the repository.
