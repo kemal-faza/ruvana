@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { FacilitySearch } from "@/components/landing/facility-search"
@@ -15,13 +16,25 @@ describe("FacilitySearch", () => {
     expect(form).toHaveAttribute("action", "/fasilitas")
   })
 
-  it("menyediakan opsi tipe fasilitas berlabel Indonesia", () => {
+  it("mengirim tipe terpilih lewat field bernama tipe", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<FacilitySearch />)
+
+    expect(container.querySelector('input[name="tipe"]')).toHaveValue("")
+
+    await user.click(screen.getByRole("combobox", { name: "Pilih tipe fasilitas" }))
+    await user.click(await screen.findByRole("option", { name: TIPE_FASILITAS_LABEL.aula }))
+
+    expect(container.querySelector('input[name="tipe"]')).toHaveValue("aula")
+  })
+
+  it("menyediakan opsi tipe fasilitas berlabel Indonesia", async () => {
+    const user = userEvent.setup()
     render(<FacilitySearch />)
 
-    const select = screen.getByLabelText("Pilih tipe fasilitas")
-    expect(select).toHaveAttribute("name", "tipe")
-    expect(screen.getByRole("option", { name: "Pilih fasilitas" })).toHaveValue("")
+    await user.click(screen.getByRole("combobox", { name: "Pilih tipe fasilitas" }))
 
+    expect(await screen.findByRole("option", { name: "Pilih fasilitas" })).toBeInTheDocument()
     for (const label of Object.values(TIPE_FASILITAS_LABEL)) {
       expect(screen.getByRole("option", { name: label })).toBeInTheDocument()
     }
@@ -44,7 +57,7 @@ describe("FacilitySearch", () => {
   it("menampilkan indikator fokus lewat pembungkus field", () => {
     const { container } = render(<FacilitySearch />)
 
-    const fields = container.querySelectorAll("label")
+    const fields = container.querySelectorAll('[data-slot="search-field"]')
     expect(fields).toHaveLength(2)
 
     for (const field of fields) {

@@ -1,6 +1,23 @@
+import { ArrowRight } from "lucide-react"
+
 import { buttonVariants } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
 import { cn } from "@/lib/utils"
+
+// "Pilih fasilitas" ikut jadi item agar filter tipe bisa dikosongkan lagi,
+// sama seperti `<option value="">` pada select native sebelumnya.
+const tipeOptions: { value: string | null; label: string }[] = [
+  { value: null, label: "Pilih fasilitas" },
+  ...TIPE_FASILITAS.map((tipe) => ({ value: tipe, label: TIPE_FASILITAS_LABEL[tipe] })),
+]
 
 // Kontrol di dalam field memakai `outline-none`, jadi indikator fokus dipindahkan
 // ke pembungkusnya: satu ring menandai seluruh kontrol gabungan saat fokus masuk.
@@ -33,23 +50,28 @@ export function FacilitySearch() {
           </small>
         </h2>
 
-        <label className={fieldClass}>
+        <div data-slot="search-field" className={fieldClass}>
           <span aria-hidden="true">⌘</span>
-          <select
-            name="tipe"
-            aria-label="Pilih tipe fasilitas"
-            className="w-full bg-transparent text-xs text-foreground outline-none"
-          >
-            <option value="">Pilih fasilitas</option>
-            {TIPE_FASILITAS.map((tipe) => (
-              <option key={tipe} value={tipe}>
-                {TIPE_FASILITAS_LABEL[tipe]}
-              </option>
-            ))}
-          </select>
-        </label>
+          <Select name="tipe" items={tipeOptions}>
+            <SelectTrigger
+              aria-label="Pilih tipe fasilitas"
+              className="h-auto min-h-12 w-full border-0 bg-transparent p-0 text-xs text-foreground focus-visible:border-0 focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent dark:hover:bg-transparent"
+            >
+              <SelectValue placeholder="Pilih fasilitas" />
+            </SelectTrigger>
+            <SelectContent align="start" alignItemWithTrigger={false}>
+              <SelectGroup>
+                {tipeOptions.map((tipe) => (
+                  <SelectItem key={tipe.value ?? "semua"} value={tipe.value}>
+                    {tipe.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <label className={fieldClass}>
+        <label data-slot="search-field" className={fieldClass}>
           <span aria-hidden="true">◷</span>
           <input
             type="date"
@@ -67,7 +89,7 @@ export function FacilitySearch() {
           )}
         >
           Jelajahi
-          <span aria-hidden="true">↗</span>
+          <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
         </button>
       </form>
     </section>

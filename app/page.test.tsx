@@ -2,7 +2,6 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/page"
-import { TIPE_FASILITAS_LABEL } from "@/config/business"
 
 vi.mock("next/font/google", () => ({
   Poppins: () => ({ variable: "--font-poppins" }),
@@ -68,20 +67,17 @@ describe("landing page publik", () => {
     }
   })
 
-  it("mengirim form pencarian dengan seluruh tipe fasilitas berlabel Indonesia", () => {
+  it("mengirim form pencarian fasilitas dengan kontrol bertoken", () => {
     const { container } = render(<Home />)
 
     const form = container.querySelector("form")
     expect(form).toHaveAttribute("method", "get")
     expect(form).toHaveAttribute("action", "/fasilitas")
 
-    expect(screen.getByLabelText("Pilih tipe fasilitas")).toHaveAttribute("name", "tipe")
+    expect(screen.getByLabelText("Pilih tipe fasilitas")).toBeInTheDocument()
+    expect(container.querySelector('input[name="tipe"]')).not.toBeNull()
     expect(screen.getByLabelText("Pilih tanggal")).toHaveAttribute("name", "tanggal")
     expect(screen.getByRole("button", { name: /Jelajahi/ })).toHaveAttribute("type", "submit")
-
-    for (const label of Object.values(TIPE_FASILITAS_LABEL)) {
-      expect(screen.getByRole("option", { name: label })).toBeInTheDocument()
-    }
   })
 
   it("menjalankan entrance hero sebagai stagger CSS dan bagian lain lewat reveal motion", () => {
