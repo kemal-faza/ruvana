@@ -439,15 +439,8 @@ git commit -m "fix(reservasi): periksa konflik saat approval" \
 
 ## Menjalankan Tes
 
-Repository memakai dua runner dengan pembagian yang tegas: nama file dan
-direktori menentukan runner-nya.
-
-| Jenis | Runner | Lokasi | Penamaan |
-| --- | --- | --- | --- |
-| Unit & integrasi | Vitest (jsdom) | co-located, di sebelah file yang diuji | `*.test.ts` / `*.test.tsx` |
-| End-to-end | Playwright | `e2e/` | `*.spec.ts` |
-
-**Unit & integrasi.** Letakkan file tes di samping modul yang diuji, misalnya
+Tes unit dan integrasi memakai Vitest dengan environment jsdom, dan diletakkan
+**co-located**: file tes berada di samping modul yang diuji, misalnya
 `components/ui/button.test.tsx` untuk `components/ui/button.tsx`. Import modul
 lewat alias `@/` supaya lokasinya tidak berpengaruh. Konfigurasi ada di
 `vitest.config.mts` dengan setup bersama di `vitest.setup.ts`.
@@ -457,23 +450,16 @@ pnpm test          # sekali jalan (dipakai CI)
 pnpm test:watch    # mode watch saat mengembangkan
 ```
 
-**End-to-end.** Seluruh spec Playwright berada di `e2e/`. Snapshot visual
-disimpan di `e2e/<nama-file-spec>-snapshots/` — misalnya
-`e2e/baseline-ui.spec.ts-snapshots/` untuk `e2e/baseline-ui.spec.ts` — dan harus
-ikut bila spec dipindahkan atau diganti nama. Konfigurasi ada di
-`playwright.config.ts`; runner menyalakan dev server sendiri di
-`http://127.0.0.1:3000`.
+Gunakan penamaan `*.test.ts` / `*.test.tsx`. Pemeriksaan aksesibilitas memakai
+`vitest-axe`, misalnya pada `components/app-shell/app-shell.test.tsx`.
 
-```bash
-pnpm test:e2e                          # seluruh spec
-pnpm exec playwright test --list       # daftar spec tanpa menjalankan
-pnpm exec playwright test -u           # perbarui snapshot secara sengaja
-```
-
-Jangan mencampur keduanya: file `.spec.ts` di luar `e2e/` akan dicoba dijalankan
-Vitest, dan file `.test.ts` di dalam `e2e/` akan diabaikan Vitest namun dicoba
-dijalankan Playwright. Direktori adalah pemisah yang sebenarnya, jadi jaga
-`e2e/` tetap khusus Playwright.
+Pemeriksaan browser sungguhan (Playwright) belum ada. Suite lama di `tests/`
+hanya menguji halaman showcase `/baseline-ui` dan tidak pernah dijalankan CI,
+sehingga baseline-nya membusuk tanpa terdeteksi. Tambahkan kembali e2e ketika
+rute produk yang stabil sudah cukup banyak — saat itu, tulislah spec terhadap
+alur produk (fasilitas, reservasi, approval), bukan halaman showcase. Paket
+`@playwright/test` masih terpasang karena dipakai `pnpm measure:motion`
+(`scripts/measure-motion-frames.mjs`) untuk mengukur budget biaya frame motion.
 
 ## Menjalankan Verifikasi Lokal
 

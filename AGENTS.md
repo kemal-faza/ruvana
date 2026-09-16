@@ -81,8 +81,12 @@ pnpm build
 - `pnpm build` regenerates Prisma Client but does not replace the explicit typecheck.
 - Unit tests are vitest and co-located as `*.test.ts(x)` next to the file under
   test; they are excluded from `next build` output. `pnpm test` runs them once
-  (CI mode). End-to-end tests are Playwright, live in `e2e/*.spec.ts`, and are
-  not part of CI yet — run them with `pnpm test:e2e`.
+  (CI mode). Accessibility checks use `vitest-axe`.
+- There is no browser end-to-end suite. The old Playwright suite only covered the
+  `/baseline-ui` showcase page, was never run by CI, and its visual baselines
+  rotted; it was removed. Reintroduce e2e against product flows when they exist.
+  `@playwright/test` remains installed because `pnpm measure:motion`
+  (`scripts/measure-motion-frames.mjs`) uses its bundled chromium.
 - CI uses Node 22, pnpm 10.30.2, and `pnpm install --frozen-lockfile`.
 - Husky checks staged files with `scripts/check-banned-words.sh --staged`;
   `pnpm check:banned` scans the repository.
