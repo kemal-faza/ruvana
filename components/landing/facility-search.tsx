@@ -1,7 +1,7 @@
-import { ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button"
-import { DatePicker } from "@/components/ui/date-picker"
+import { buttonVariants } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -9,21 +9,23 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business";
+import { cn } from "@/lib/utils";
 
 // Placeholder "Pilih fasilitas" ditampilkan lewat `SelectValue` di trigger, bukan
 // sebagai item, supaya tidak ikut terpilih sebagai tipe.
-const tipeOptions: { value: string; label: string }[] = TIPE_FASILITAS.map((tipe) => ({
-  value: tipe,
-  label: TIPE_FASILITAS_LABEL[tipe],
-}))
+const tipeOptions: { value: string; label: string }[] = TIPE_FASILITAS.map(
+  (tipe) => ({
+    value: tipe,
+    label: TIPE_FASILITAS_LABEL[tipe],
+  }),
+);
 
 // Kontrol di dalam field memakai `outline-none`, jadi indikator fokus dipindahkan
 // ke pembungkusnya: satu ring menandai seluruh kontrol gabungan saat fokus masuk.
 const fieldClass =
-  "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 max-[700px]:px-2.5"
+  "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 max-[700px]:px-2.5";
 
 export function FacilitySearch() {
   return (
@@ -59,7 +61,7 @@ export function FacilitySearch() {
           <Select name="tipe" items={tipeOptions} modal={false}>
             <SelectTrigger
               aria-label="Pilih tipe fasilitas"
-              className="h-auto min-h-12 w-full border-0 bg-transparent p-0 text-xs text-foreground focus-visible:border-0 focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent dark:hover:bg-transparent"
+              className="h-auto min-h-12 w-full border-0 bg-transparent p-0 text-xs text-foreground focus-visible:border-0 focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent dark:hover:bg-transparent cursor-pointer"
             >
               <SelectValue placeholder="Pilih fasilitas" />
             </SelectTrigger>
@@ -83,13 +85,17 @@ export function FacilitySearch() {
           type="submit"
           className={cn(
             buttonVariants(),
-            "min-h-12 gap-2 px-5 max-[900px]:col-span-2 max-[900px]:w-full",
+            "min-h-12 gap-2 px-5 max-[900px]:col-span-2 max-[900px]:w-full cursor-pointer",
           )}
         >
           Jelajahi
-          <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
+          <ArrowRight
+            aria-hidden="true"
+            data-motion-icon="inline-end"
+            className="size-5"
+          />
         </button>
       </form>
     </section>
-  )
+  );
 }

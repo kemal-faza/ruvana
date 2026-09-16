@@ -43,7 +43,7 @@ export function DatePicker({
             buttonVariants({ variant: "ghost" }),
             // Trigger menumpang pembungkus field, jadi indikator fokus dan latar
             // hover/expanded milik varian ghost dinetralkan — sama seperti Select.
-            "h-auto min-h-12 w-full justify-start gap-2 px-0 text-xs font-normal text-foreground",
+            "h-auto min-h-12 w-full cursor-pointer justify-start gap-2 px-0 text-xs font-normal text-foreground",
             "hover:bg-transparent dark:hover:bg-transparent aria-expanded:bg-transparent",
             "focus-visible:border-0 focus-visible:ring-0",
             "data-[empty=true]:text-muted-foreground",
