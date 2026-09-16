@@ -101,10 +101,10 @@ export default function Home() {
                   Jelajahi Fasilitas
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
                 </Link>
-                <Link href="#cara-kerja" className={quietLink}>
+                <a href="#cara-kerja" className={quietLink}>
                   Lihat cara kerja
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
-                </Link>
+                </a>
               </div>
 
             </div>

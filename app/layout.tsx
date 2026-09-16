@@ -19,6 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="id"
+      data-scroll-behavior="smooth"
       className={`${poppins.variable} h-full antialiased`}
       suppressHydrationWarning
     >

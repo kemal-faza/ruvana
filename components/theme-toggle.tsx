@@ -46,6 +46,7 @@ export function ThemeToggle() {
       size="icon"
       aria-label={label}
       disabled={transitioning}
+      className="cursor-pointer"
       onClick={toggleTheme}
     >
       {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
