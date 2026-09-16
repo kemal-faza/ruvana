@@ -1,14 +1,6 @@
-import {
-  Building2,
-  CalendarDays,
-  ClipboardList,
-  Inbox,
-  LayoutDashboard,
-  Settings,
-} from "lucide-react"
+import { Inbox } from "lucide-react"
 
 import { AppShell } from "@/components/app-shell/app-shell"
-import type { NavigationGroup } from "@/components/app-shell/types"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -35,31 +27,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-
-const navigation: readonly NavigationGroup[] = [
-  {
-    key: "utama",
-    label: "Utama",
-    items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/baseline-ui", icon: LayoutDashboard },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
-      { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
-      { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },
-    ],
-  },
-  {
-    key: "sistem",
-    label: "Sistem",
-    items: [{ key: "pengaturan", label: "Pengaturan", href: "/pengaturan", icon: Settings }],
-  },
-]
+import { navigation, shellAccount, shellLogoutDestination } from "@/config/navigation"
 
 export default function Home() {
   return (
     <AppShell
       navigation={navigation}
-      account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
-      logoutDestination="/keluar"
+      account={shellAccount}
+      logoutDestination={shellLogoutDestination}
     >
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-3">

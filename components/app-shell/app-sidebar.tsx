@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  SwatchBook,
 } from "lucide-react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -58,6 +59,7 @@ const iconRegistry = {
   ClipboardList,
   LayoutDashboard,
   Settings,
+  SwatchBook,
 } as const
 
 function resolveIcon(icon: NavigationItem["icon"] | string) {
