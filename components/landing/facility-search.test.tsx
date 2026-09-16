@@ -40,4 +40,17 @@ describe("FacilitySearch", () => {
 
     expect(screen.getByRole("button", { name: /Jelajahi/ })).toHaveAttribute("type", "submit")
   })
+
+  it("menampilkan indikator fokus lewat pembungkus field", () => {
+    const { container } = render(<FacilitySearch />)
+
+    const fields = container.querySelectorAll("label")
+    expect(fields).toHaveLength(2)
+
+    for (const field of fields) {
+      expect(field.className).toContain("focus-within:border-ring")
+      expect(field.className).toContain("focus-within:ring-3")
+      expect(field.className).toContain("focus-within:ring-ring/50")
+    }
+  })
 })

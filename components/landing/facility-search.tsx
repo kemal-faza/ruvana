@@ -2,8 +2,10 @@ import { buttonVariants } from "@/components/ui/button"
 import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
 import { cn } from "@/lib/utils"
 
+// Kontrol di dalam field memakai `outline-none`, jadi indikator fokus dipindahkan
+// ke pembungkusnya: satu ring menandai seluruh kontrol gabungan saat fokus masuk.
 const fieldClass =
-  "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground max-[700px]:px-2.5"
+  "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 max-[700px]:px-2.5"
 
 export function FacilitySearch() {
   return (
