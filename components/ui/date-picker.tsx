@@ -20,6 +20,8 @@ interface DatePickerProps {
   "aria-label": string
   placeholder?: string
   className?: string
+  defaultDate?: Date
+  disabled?: React.ComponentProps<typeof Calendar>["disabled"]
 }
 
 export function DatePicker({
@@ -27,8 +29,10 @@ export function DatePicker({
   "aria-label": ariaLabel,
   placeholder = "Pilih tanggal",
   className,
+  defaultDate,
+  disabled = { before: startOfToday() },
 }: DatePickerProps) {
-  const [date, setDate] = React.useState<Date>()
+  const [date, setDate] = React.useState<Date | undefined>(defaultDate)
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -60,7 +64,7 @@ export function DatePicker({
             mode="single"
             selected={date}
             defaultMonth={date}
-            disabled={{ before: startOfToday() }}
+            disabled={disabled}
             locale={localeId}
             autoFocus
             className="[--cell-size:--spacing(9)]"
