@@ -10,6 +10,11 @@
 !.yarn/releases
 !.yarn/versions
 
+# pnpm satu-satunya package manager (lihat "packageManager" di package.json).
+# Lockfile npm/yarn jangan dibuat — CI memakai pnpm install --frozen-lockfile.
+package-lock.json
+yarn.lock
+
 # testing
 /coverage
 /test-results/
