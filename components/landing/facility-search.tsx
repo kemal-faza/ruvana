@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Select,
   SelectContent,
@@ -74,15 +75,9 @@ export function FacilitySearch() {
           </Select>
         </div>
 
-        <label data-slot="search-field" className={fieldClass}>
-          <span aria-hidden="true">◷</span>
-          <input
-            type="date"
-            name="tanggal"
-            aria-label="Pilih tanggal"
-            className="w-full bg-transparent text-xs text-foreground outline-none"
-          />
-        </label>
+        <div data-slot="search-field" className={fieldClass}>
+          <DatePicker name="tanggal" aria-label="Pilih tanggal" />
+        </div>
 
         <button
           type="submit"

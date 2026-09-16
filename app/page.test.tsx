@@ -93,7 +93,8 @@ describe("landing page publik", () => {
 
     expect(screen.getByLabelText("Pilih tipe fasilitas")).toBeInTheDocument()
     expect(container.querySelector('input[name="tipe"]')).not.toBeNull()
-    expect(screen.getByLabelText("Pilih tanggal")).toHaveAttribute("name", "tanggal")
+    expect(screen.getByLabelText("Pilih tanggal")).toBeInTheDocument()
+    expect(container.querySelector('input[name="tanggal"]')).not.toBeNull()
     expect(screen.getByRole("button", { name: /Jelajahi/ })).toHaveAttribute("type", "submit")
   })
 

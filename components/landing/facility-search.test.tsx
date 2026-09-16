@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { format, startOfToday } from "date-fns"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { FacilitySearch } from "@/components/landing/facility-search"
@@ -43,12 +44,27 @@ describe("FacilitySearch", () => {
     }
   })
 
-  it("memberi label terprogram pada input tanggal", () => {
-    render(<FacilitySearch />)
+  it("memberi label terprogram pada pemilih tanggal", () => {
+    const { container } = render(<FacilitySearch />)
 
-    const date = screen.getByLabelText("Pilih tanggal")
-    expect(date).toHaveAttribute("name", "tanggal")
-    expect(date).toHaveAttribute("type", "date")
+    expect(screen.getByLabelText("Pilih tanggal")).toHaveTextContent("Pilih tanggal")
+    expect(container.querySelector('input[name="tanggal"]')).toHaveAttribute("type", "hidden")
+  })
+
+  it("mengisi field tanggal dengan format ISO saat hari dipilih", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<FacilitySearch />)
+
+    const today = startOfToday()
+    const iso = format(today, "yyyy-MM-dd")
+
+    await user.click(screen.getByLabelText("Pilih tanggal"))
+
+    const dayButton = document.querySelector<HTMLButtonElement>(`td[data-day="${iso}"] button`)
+    expect(dayButton).not.toBeNull()
+    await user.click(dayButton as HTMLButtonElement)
+
+    expect(container.querySelector('input[name="tanggal"]')).toHaveValue(iso)
   })
 
   it("menjadikan tombol Jelajahi sebagai submit form", () => {
