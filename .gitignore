@@ -76,3 +76,6 @@ docker-compose.override.yml
 .superpowers/
 figma/
 docker/
+
+output/
+.vitest/
