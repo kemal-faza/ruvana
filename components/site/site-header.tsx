@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -63,7 +64,7 @@ export function SiteHeader({ current }: SiteHeaderProps) {
           </Link>
           <Link href="/daftar" className={cn(buttonVariants(), "min-h-11 gap-2 px-3 sm:px-4")}>
             Daftar
-            <span aria-hidden="true">↗</span>
+            <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
           </Link>
         </div>
       </div>

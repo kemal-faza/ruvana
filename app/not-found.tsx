@@ -17,7 +17,10 @@ export default function NotFound() {
       <p className="text-sm font-medium text-primary">Halaman tidak ditemukan</p>
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Alamat ini tidak tersedia.</h1>
       <p className="max-w-md leading-7 text-muted-foreground">Periksa kembali tautannya, atau kembali ke beranda untuk mulai menjelajahi fasilitas kampus.</p>
-      <Link href="/" className={buttonVariants({ className: "min-h-12 gap-2 px-6 text-sm" })}>Kembali ke beranda<ArrowRight aria-hidden="true" /></Link>
+      <Link href="/" className={buttonVariants({ className: "min-h-12 gap-2 px-6 text-sm" })}>
+        Kembali ke beranda
+        <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
+      </Link>
     </main>
   )
 }

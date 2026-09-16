@@ -1,4 +1,4 @@
-import { CalendarDays, Wrench } from "lucide-react"
+import { ArrowRight, CalendarDays, Wrench } from "lucide-react"
 import Link from "next/link"
 import type { CSSProperties } from "react"
 
@@ -94,9 +94,7 @@ export default function Home() {
               >
                 <Link href="/fasilitas" className={primaryLink}>
                   Jelajahi Fasilitas
-                  <span aria-hidden="true" className="text-[17px] leading-none">
-                    ↗
-                  </span>
+                  <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
                 </Link>
                 <a
                   href="#cara-kerja"
@@ -126,7 +124,7 @@ export default function Home() {
 
         <section aria-labelledby="benefits-title" className={`${SHELL} pt-[92px] sm:pt-32`}>
           <Reveal>
-            <div className="mb-[30px] flex flex-col gap-3 min-[701px]:flex-row min-[701px]:items-end min-[701px]:justify-between min-[701px]:gap-[30px] sm:mb-[42px]">
+            <div className="mb-[30px] flex flex-col gap-3 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between min-[701px]:gap-[30px] sm:mb-[42px]">
               <h2
                 id="benefits-title"
                 className="max-w-[600px] text-[clamp(27px,3.5vw,44px)] leading-[1.15] font-semibold tracking-[-0.05em]"
@@ -165,7 +163,7 @@ export default function Home() {
           className={`${SHELL} pt-[92px] sm:pt-32`}
         >
           <Reveal>
-            <div className="mb-[30px] flex flex-col gap-3 min-[701px]:flex-row min-[701px]:items-end min-[701px]:justify-between min-[701px]:gap-[30px] sm:mb-[42px]">
+            <div className="mb-[30px] flex flex-col gap-3 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between min-[701px]:gap-[30px] sm:mb-[42px]">
               <h2
                 id="steps-title"
                 className="max-w-[600px] text-[clamp(27px,3.5vw,44px)] leading-[1.15] font-semibold tracking-[-0.05em]"
@@ -204,30 +202,22 @@ export default function Home() {
 
         <section id="jadwal" aria-labelledby="closing-title" className={`${SHELL} pt-[92px] sm:pt-32`}>
           <Reveal from="scale">
-            <div className="flex flex-col items-start justify-between gap-9 rounded-card border border-border bg-muted px-6 py-7 min-[701px]:flex-row min-[701px]:items-center min-[701px]:px-12 min-[701px]:py-[42px]">
-              <div className="max-w-[420px]">
+            <div className="flex flex-col items-start gap-9 rounded-card border border-border bg-muted px-6 py-7 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between min-[701px]:gap-10 min-[701px]:px-12 min-[701px]:py-[42px]">
+              <div className="max-w-[560px]">
                 <h2
                   id="closing-title"
-                  className="mb-2 max-w-[600px] text-[clamp(25px,3.2vw,40px)] leading-[1.17] font-semibold tracking-[-0.05em]"
+                  className="mb-2 text-[clamp(25px,3.2vw,40px)] leading-[1.17] font-semibold tracking-[-0.05em]"
                 >
                   Mulai dari ruang yang tepat.
                 </h2>
-                <p className="mb-[18px] text-[13px] text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   Lihat fasilitas kampus dan siapkan kegiatanmu.
                 </p>
-                <Link href="/fasilitas" className={primaryLink}>
-                  Jelajahi Fasilitas
-                  <span aria-hidden="true" className="text-[17px] leading-none">
-                    ↗
-                  </span>
-                </Link>
               </div>
-              <div
-                aria-hidden="true"
-                className="grid size-[130px] place-items-center rounded-full border border-border text-[42px] text-brand-olive"
-              >
-                ↗
-              </div>
+              <Link href="/fasilitas" className={primaryLink}>
+                Jelajahi Fasilitas
+                <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
+              </Link>
             </div>
           </Reveal>
         </section>
