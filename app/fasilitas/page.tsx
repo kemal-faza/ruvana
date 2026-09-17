@@ -1,10 +1,25 @@
+import type { Metadata } from "next"
+
 import { FacilityList } from "@/components/facilities/facility-list"
 import { listPublicFacilities } from "@/lib/services/facility-service"
 
 export const dynamic = "force-dynamic"
 
-export const metadata = {
-  title: "Fasilitas — Ruvana",
+const description =
+  "Lihat fasilitas kampus yang tersedia lengkap dengan lokasi, kapasitas, dan status terkini."
+
+export const metadata: Metadata = {
+  title: "ruvana",
+  description,
+  alternates: {
+    canonical: "/fasilitas",
+  },
+  openGraph: {
+    type: "website",
+    title: "ruvana",
+    description,
+    url: "/fasilitas",
+  },
 }
 
 export default async function FasilitasPage() {
