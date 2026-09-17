@@ -1,13 +1,15 @@
 import Image from "next/image"
 import Link from "next/link"
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { cache } from "react"
 import { ArrowLeft, MapPin, Package, Users } from "lucide-react"
 
 import { getFacilityPhoto } from "@/config/facility-photos"
 import { LABEL_SATUAN_KAPASITAS, LABEL_TIPE_FASILITAS } from "@/config/labels"
 import { Button } from "@/components/ui/button"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
-import { getPublicFacility } from "@/lib/services/facility-service"
+import { getPublicFacility, type PublicFacility } from "@/lib/services/facility-service"
 
 interface FasilitasDetailPageProps {
   params: Promise<{ facilityId: string }>
@@ -19,13 +21,42 @@ function parseId(raw: string): number | null {
   return id >= 1 ? id : null
 }
 
-export async function generateMetadata({ params }: FasilitasDetailPageProps) {
+// React `cache` membagikan hasil query dalam satu request, sehingga
+// `generateMetadata` dan halaman tidak mengambil fasilitas dua kali.
+const getFacility = cache((id: number) => getPublicFacility(id))
+
+function buildDescription(facility: PublicFacility): string {
+  const deskripsi = facility.deskripsi?.trim()
+  if (deskripsi) return deskripsi
+
+  const satuan = LABEL_SATUAN_KAPASITAS[facility.tipe]
+  const kapasitasLabel = facility.tipe === "alat" ? "jumlah" : "kapasitas"
+  return `${LABEL_TIPE_FASILITAS[facility.tipe]} di ${facility.lokasi} dengan ${kapasitasLabel} ${facility.kapasitas} ${satuan}.`
+}
+
+export async function generateMetadata({ params }: FasilitasDetailPageProps): Promise<Metadata> {
   const { facilityId } = await params
   const id = parseId(facilityId)
-  if (id === null) return { title: "Fasilitas tidak ditemukan — Ruvana" }
+  if (id === null) return {}
 
-  const facility = await getPublicFacility(id)
-  return { title: facility ? `${facility.nama} — Ruvana` : "Fasilitas tidak ditemukan — Ruvana" }
+  const facility = await getFacility(id)
+  if (!facility) return {}
+
+  const description = buildDescription(facility)
+  const path = `/fasilitas/${facility.id}`
+
+  return {
+    description,
+    alternates: {
+      canonical: path,
+    },
+    openGraph: {
+      type: "article",
+      title: "ruvana",
+      description,
+      url: path,
+    },
+  }
 }
 
 export default async function FasilitasDetailPage({ params }: FasilitasDetailPageProps) {
@@ -33,7 +64,7 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
   const id = parseId(facilityId)
   if (id === null) notFound()
 
-  const facility = await getPublicFacility(id)
+  const facility = await getFacility(id)
   if (!facility) notFound()
 
   const isAlat = facility.tipe === "alat"
