@@ -54,7 +54,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
         {facility.deskripsi && <p className="line-clamp-2">{facility.deskripsi}</p>}
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="mt-auto">
         <Button
           variant="outline"
           className="min-h-11 w-full"
