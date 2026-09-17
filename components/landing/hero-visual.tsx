@@ -16,7 +16,7 @@ function DashboardMockup() {
   return (
     <div className="flex h-full">
       <aside className="w-[29%] shrink-0 border-r border-border bg-muted/70 p-[5%]">
-        <p className="mb-[18%] text-[clamp(8px,1.1vw,14px)] font-semibold tracking-tight">
+        <p className="mb-[18%] text-mockup-wordmark font-semibold tracking-tight">
           ruvana
         </p>
         <ul className="space-y-[7%]">
@@ -24,7 +24,7 @@ function DashboardMockup() {
             <li
               key={item}
               className={cn(
-                "flex items-center gap-[7%] rounded-md px-[7%] py-[6%] text-[clamp(5px,0.72vw,10px)] whitespace-nowrap text-muted-foreground",
+                "flex items-center gap-[7%] rounded-md px-[7%] py-[6%] text-mockup-nav whitespace-nowrap text-muted-foreground",
                 index === 0 && "bg-primary-subdued text-primary-subdued-foreground",
               )}
             >
@@ -45,8 +45,8 @@ function DashboardMockup() {
         </div>
 
         <div className="mb-[7%] grid grid-cols-2 gap-[4%]">
-          <span className="block aspect-[2/1] rounded-control border border-border bg-muted/75" />
-          <span className="block aspect-[2/1] rounded-control border border-border bg-muted/75" />
+          <span className="block aspect-2/1 rounded-control border border-border bg-muted/75" />
+          <span className="block aspect-2/1 rounded-control border border-border bg-muted/75" />
         </div>
 
         <div className="space-y-[4%] border-t border-border pt-[6%]">
@@ -63,24 +63,24 @@ export function HeroVisual({ className }: HeroVisualProps) {
   return (
     <div
       className={cn(
-        "relative mx-auto aspect-[3/2] w-full max-w-[680px]",
-        "max-[700px]:mt-10 max-[700px]:max-w-[560px]",
+        "relative mx-auto aspect-3/2 w-full max-w-hero",
+        "max-md:mt-10 max-md:max-w-wide",
         className,
       )}
     >
       <figure
         data-mockup-card="fasilitas"
-        className="absolute top-[3%] right-[2%] z-[1] aspect-video w-[84%] rotate-[8deg] overflow-hidden rounded-card border border-border bg-card shadow-subtle"
+        className="absolute top-[3%] right-[2%] z-1 aspect-video w-[84%] rotate-[8deg] overflow-hidden rounded-card border border-border bg-card shadow-subtle"
       >
         <Image
           src="/ruvana-lab2.jpg"
           alt="Peralatan laboratorium di atas meja kerja"
           fill
           priority
-          sizes="(max-width: 700px) 82vw, (max-width: 1256px) 42vw, 560px"
-          className="scale-[1.08] object-cover blur-[1.25px] [filter:saturate(.82)_contrast(.92)]"
+          sizes="(max-width: 767px) 82vw, (max-width: 1256px) 42vw, 560px"
+          className="scale-[1.08] object-cover blur-soft filter-[saturate(.82)_contrast(.92)]"
         />
-        <figcaption className="absolute top-[7%] left-[4%] rounded-control border border-border/80 bg-card/90 px-[4%] py-[2%] text-[clamp(7px,0.85vw,11px)] font-medium backdrop-blur-sm">
+        <figcaption className="absolute top-[7%] left-[4%] rounded-control border border-border/80 bg-card/90 px-[4%] py-[2%] text-mockup-badge font-medium backdrop-blur-sm">
           Laboratorium
         </figcaption>
       </figure>
@@ -88,7 +88,7 @@ export function HeroVisual({ className }: HeroVisualProps) {
       <article
         aria-label="Mockup dashboard Ruvana"
         data-mockup-card="dashboard"
-        className="absolute bottom-[2%] left-[2%] z-[2] aspect-video w-[84%] rotate-[-0.8deg] overflow-hidden rounded-card border border-border bg-card shadow-subtle"
+        className="absolute bottom-[2%] left-[2%] z-2 aspect-video w-[84%] rotate-[-0.8deg] overflow-hidden rounded-card border border-border bg-card shadow-subtle"
       >
         <DashboardMockup />
       </article>

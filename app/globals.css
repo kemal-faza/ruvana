@@ -81,6 +81,74 @@
   --shadow-subtle: var(--elevation-subtle);
 }
 
+/* Token desain landing dan chrome publik. Nilai sengaja disimpan apa adanya
+   (tanpa normalisasi) supaya tinggi/lebar yang sudah ditinjau visual tidak berubah.
+   Pakai utility hasil token ini, bukan nilai mentah seperti `pt-[92px]`. */
+@theme {
+  /* Lebar kontainer konten */
+  --container-shell: 1256px;
+  --container-hero: 680px;
+  --container-heading: 600px;
+  --container-wide: 560px;
+  --container-title: 520px;
+  --container-lede: 480px;
+  --container-copy: 390px;
+  --container-support: 370px;
+  --container-step: 250px;
+
+  /* Ritme vertikal landing */
+  --spacing-hero-top: 62px;
+  --spacing-hero-top-lg: 94px;
+  --spacing-section-top: 92px;
+  --spacing-section-top-lg: 128px;
+  --spacing-search-top-lg: 72px;
+  --spacing-footer-top-lg: 84px;
+
+  /* Jarak blok dan grid landing */
+  --spacing-block-xs: 18px;
+  --spacing-block-sm: 25px;
+  --spacing-block: 30px;
+  --spacing-block-lg: 42px;
+  --spacing-hero-gap: 38px;
+  --spacing-hero-gap-lg: 50px;
+
+  /* Dimensi chrome publik */
+  --spacing-header: 72px;
+  --spacing-header-lg: 84px;
+  --spacing-eyebrow-rule: 34px;
+  --spacing-search-inset: 9px;
+
+  /* Tipografi landing. Ukuran mengikuti tabel Tipografi DESIGN.md.
+     Line-height dibundel ke token teks agar pasangan ukuran dan leading tidak
+     terpisah dan tidak memicu saran shorthand ukuran-pangkat-leading. */
+  --text-caption: 13px;
+  --text-copy: 13px;
+  --text-copy--line-height: 1.65;
+  --text-body: 17px;
+  --text-lede: 15px;
+  --text-lede--line-height: 1.7;
+  --text-lede-lg: 17px;
+  --text-lede-lg--line-height: 1.75;
+  --text-display: clamp(40px, 4.4vw, 58px);
+  --text-display--line-height: 1.08;
+  --text-display-md: clamp(27px, 3.5vw, 44px);
+  --text-display-md--line-height: 1.15;
+  --text-display-sm: clamp(25px, 3.2vw, 40px);
+  --text-display-sm--line-height: 1.17;
+  --text-mockup-wordmark: clamp(8px, 1.1vw, 14px);
+  --text-mockup-nav: clamp(5px, 0.72vw, 10px);
+  --text-mockup-badge: clamp(7px, 0.85vw, 11px);
+  --tracking-display: -0.055em;
+  --tracking-heading: -0.05em;
+  --tracking-subtitle: -0.035em;
+  --tracking-title: -0.03em;
+  --tracking-eyebrow: 0.08em;
+  --tracking-label: 0.06em;
+
+  /* Dekorasi */
+  --blur-soft: 1.25px;
+}
+
 :root {
   --black: oklch(0% 0 0);
   --white: oklch(100% 0 0);

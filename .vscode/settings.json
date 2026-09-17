@@ -1,0 +1,6 @@
+{
+  // Diagnostic ini dijaga oleh eslint-plugin-better-tailwindcss
+  // (better-tailwindcss/enforce-canonical-classes) supaya ikut gagal di CI.
+  // Dimatikan di editor agar tidak lapor dobel.
+  "tailwindCSS.lint.suggestCanonicalClasses": "ignore"
+}

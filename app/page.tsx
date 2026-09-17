@@ -12,7 +12,7 @@ import { SiteHeader } from "@/components/site/site-header"
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
-const SHELL = "mx-auto w-full max-w-[1256px] px-4 sm:px-7"
+const SHELL = "mx-auto w-full max-w-shell px-4 sm:px-7"
 const primaryLink = buttonVariants({ className: "min-h-11 gap-2.5 px-4 text-sm" })
 const quietLink = buttonVariants({
   variant: "ghost",
@@ -66,27 +66,27 @@ export default function Home() {
       <SiteHeader current="beranda" />
 
       <main id="konten">
-        <section aria-labelledby="hero-title" className={`${SHELL} pt-[62px] sm:pt-[94px]`}>
-          <div className="grid items-center gap-[38px] min-[701px]:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] min-[701px]:gap-[50px]">
+        <section aria-labelledby="hero-title" className={`${SHELL} pt-hero-top sm:pt-hero-top-lg`}>
+          <div className="grid items-center gap-hero-gap md:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] md:gap-hero-gap-lg">
             <div className="min-w-0">
               <p
-                className="motion-rise motion-rise-stagger mb-5 flex items-center gap-3 text-xs font-semibold tracking-[0.08em] text-brand-olive uppercase"
+                className="motion-rise motion-rise-stagger mb-5 flex items-center gap-3 text-xs font-semibold tracking-eyebrow text-brand-olive uppercase"
                 style={staggerStyle(0)}
               >
                 Ruang kampus, lebih terarah
-                <span aria-hidden="true" className="h-px w-[34px] bg-brand-olive" />
+                <span aria-hidden="true" className="h-px w-eyebrow-rule bg-brand-olive" />
               </p>
 
               <h1
                 id="hero-title"
-                className="motion-rise motion-rise-stagger mb-6 max-w-[520px] text-[clamp(40px,4.4vw,58px)] leading-[1.08] font-semibold tracking-[-0.055em]"
+                className="motion-rise motion-rise-stagger mb-6 max-w-title text-display font-semibold tracking-display"
                 style={staggerStyle(1)}
               >
                 Setiap kegiatan punya ruangnya.
               </h1>
 
               <p
-                className="motion-rise motion-rise-stagger mb-8 max-w-[480px] text-[15px] leading-[1.7] text-muted-foreground sm:text-[17px] sm:leading-[1.75]"
+                className="motion-rise motion-rise-stagger mb-8 max-w-lede text-lede text-muted-foreground sm:text-lede-lg"
                 style={staggerStyle(2)}
               >
                 Temukan fasilitas kampus, pilih jadwal yang sesuai, lalu ajukan reservasi dari
@@ -117,23 +117,23 @@ export default function Home() {
 
         <FacilitySearch />
 
-        <section aria-labelledby="benefits-title" className={`${SHELL} pt-[92px] sm:pt-32`}>
+        <section aria-labelledby="benefits-title" className={`${SHELL} pt-section-top sm:pt-section-top-lg`}>
           <Reveal>
-            <div className="mb-[30px] flex flex-col gap-3 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between min-[701px]:gap-[30px] sm:mb-[42px]">
+            <div className="mb-block flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-block sm:mb-block-lg">
               <h2
                 id="benefits-title"
-                className="max-w-[600px] text-[clamp(27px,3.5vw,44px)] leading-[1.15] font-semibold tracking-[-0.05em]"
+                className="max-w-heading text-display-md font-semibold tracking-heading"
               >
                 Satu tempat untuk reservasi dan kepedulian.
               </h2>
-              <p className="max-w-[370px] text-sm text-muted-foreground">
+              <p className="max-w-support text-sm text-muted-foreground">
                 Ruvana membantu kegiatan berjalan teratur sekaligus menjaga fasilitas tetap
                 nyaman dipakai bersama.
               </p>
             </div>
           </Reveal>
 
-          <StaggerGroup stagger="functional" className="grid grid-cols-1 gap-5 min-[701px]:grid-cols-2 min-[701px]:gap-6">
+          <StaggerGroup stagger="functional" className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
             {benefits.map(({ icon: Icon, title, description }) => (
               <StaggerItem key={title} className="h-full">
                 <Card className="relative h-full justify-end gap-3">
@@ -143,8 +143,8 @@ export default function Home() {
                     className="pointer-events-none absolute -right-4 -bottom-5 size-32 text-brand-olive/10"
                   />
                   <div className="relative">
-                    <h3 className="mb-2 text-[17px] font-semibold tracking-[-0.03em]">{title}</h3>
-                    <p className="max-w-[390px] text-[13px] leading-[1.65] text-muted-foreground">
+                    <h3 className="mb-2 text-body font-semibold tracking-title">{title}</h3>
+                    <p className="max-w-copy text-copy text-muted-foreground">
                       {description}
                     </p>
                   </div>
@@ -157,17 +157,17 @@ export default function Home() {
         <section
           id="cara-kerja"
           aria-labelledby="steps-title"
-          className={`${SHELL} pt-[92px] sm:pt-32`}
+          className={`${SHELL} pt-section-top sm:pt-section-top-lg`}
         >
           <Reveal>
-            <div className="mb-[30px] flex flex-col gap-3 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between min-[701px]:gap-[30px] sm:mb-[42px]">
+            <div className="mb-block flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-block sm:mb-block-lg">
               <h2
                 id="steps-title"
-                className="max-w-[600px] text-[clamp(27px,3.5vw,44px)] leading-[1.15] font-semibold tracking-[-0.05em]"
+                className="max-w-heading text-display-md font-semibold tracking-heading"
               >
                 Dari rencana, jadi kegiatan.
               </h2>
-              <p className="max-w-[370px] text-sm text-muted-foreground">
+              <p className="max-w-support text-sm text-muted-foreground">
                 Alur yang sederhana untuk menemukan ruang dan ikut menjaganya.
               </p>
             </div>
@@ -177,19 +177,19 @@ export default function Home() {
             <StaggerGroup
               as="ol"
               stagger="functional"
-              className="grid grid-cols-1 gap-6 min-[701px]:grid-cols-3 min-[701px]:gap-8"
+              className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8"
             >
               {steps.map(({ title, description }, index) => (
                 <StaggerItem key={title} as="li">
-                  <article className="border-t border-border pt-[18px]">
-                    <p className="text-[13px] font-semibold tracking-[0.06em] text-brand-olive">
+                  <article className="border-t border-border pt-block-xs">
+                    <p className="text-caption font-semibold tracking-label text-brand-olive">
                       {String(index + 1).padStart(2, "0")}
                     </p>
                     <div aria-hidden="true" className="my-6 h-px w-full bg-border" />
-                    <h3 className="mb-2 text-lg font-semibold tracking-[-0.035em] min-[701px]:mt-[42px] max-[700px]:mt-[25px]">
+                    <h3 className="mb-2 text-lg font-semibold tracking-subtitle md:mt-block-lg max-md:mt-block-sm">
                       {title}
                     </h3>
-                    <p className="max-w-[250px] text-[13px] text-muted-foreground">{description}</p>
+                    <p className="max-w-step text-caption text-muted-foreground">{description}</p>
                   </article>
                 </StaggerItem>
               ))}
@@ -197,17 +197,17 @@ export default function Home() {
           </Reveal>
         </section>
 
-        <section id="jadwal" aria-labelledby="closing-title" className={`${SHELL} pt-[92px] sm:pt-32`}>
+        <section id="jadwal" aria-labelledby="closing-title" className={`${SHELL} pt-section-top sm:pt-section-top-lg`}>
           <Reveal from="scale">
-            <div className="flex flex-col items-start gap-9 rounded-card border border-border bg-muted px-6 py-7 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between min-[701px]:gap-10 min-[701px]:px-12 min-[701px]:py-[42px]">
-              <div className="max-w-[560px]">
+            <div className="flex flex-col items-start gap-9 rounded-card border border-border bg-muted px-6 py-7 md:flex-row md:items-center md:justify-between md:gap-10 md:px-12 md:py-block-lg">
+              <div className="max-w-wide">
                 <h2
                   id="closing-title"
-                  className="mb-2 text-[clamp(25px,3.2vw,40px)] leading-[1.17] font-semibold tracking-[-0.05em]"
+                  className="mb-2 text-display-sm font-semibold tracking-heading"
                 >
                   Mulai dari ruang yang tepat.
                 </h2>
-                <p className="text-[13px] text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Lihat fasilitas kampus dan siapkan kegiatanmu.
                 </p>
               </div>
