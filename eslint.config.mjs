@@ -1,5 +1,6 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import betterTailwindcss from "eslint-plugin-better-tailwindcss";
+import { getDefaultSelectors } from "eslint-plugin-better-tailwindcss/defaults";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
@@ -16,6 +17,13 @@ const eslintConfig = defineConfig([
       "better-tailwindcss": {
         entryPoint: "app/globals.css",
         rootFontSize: 16,
+        // Selector bawaan hanya menjaring variabel bernama `classNames?`,
+        // `classes`, atau `styles?`. Konstanta kelas di proyek ini bernama
+        // `SHELL` dan `fieldClass`, jadi ditambahkan eksplisit.
+        selectors: [
+          ...getDefaultSelectors(),
+          { kind: "variable", name: "^(SHELL|fieldClass)$", match: [{ type: "strings" }] },
+        ],
       },
     },
     rules: {

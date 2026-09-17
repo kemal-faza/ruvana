@@ -6,6 +6,10 @@ import { buttonVariants } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "ruvana",
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function NotFound() {
