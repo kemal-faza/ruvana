@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export type FacilityOption = { id: number; nama: string; lokasi: string };
 
@@ -173,7 +173,12 @@ export function ReservationForm({ facilities }: { facilities?: FacilityOption[] 
             <FieldLabel>Fasilitas</FieldLabel>
             <Select value={facilityId} onValueChange={(v) => { if (v) setFacilityId(v); }}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih fasilitas" />
+                <SelectValue placeholder="Pilih fasilitas">
+                  {(value: string) => {
+                    const match = displayFacilities.find((f) => String(f.id) === value);
+                    return match ? `${match.nama} — ${match.lokasi}` : "Pilih fasilitas";
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {displayFacilities.map((f) => (
