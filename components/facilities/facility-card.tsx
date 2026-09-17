@@ -11,9 +11,11 @@ import type { PublicFacility } from "@/lib/services/facility-service"
 
 interface FacilityCardProps {
   facility: PublicFacility
+  /** Muat foto segera; pakai untuk card pertama yang berpotensi jadi LCP. */
+  eager?: boolean
 }
 
-export function FacilityCard({ facility }: FacilityCardProps) {
+export function FacilityCard({ facility, eager = false }: FacilityCardProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = getFacilityPhoto(facility.nama, facility.tipe)
@@ -27,6 +29,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
             alt={facility.nama}
             fill
             sizes="(min-width: 1024px) 33vw, 100vw"
+            loading={eager ? "eager" : "lazy"}
             className="object-cover"
           />
         </div>
