@@ -90,8 +90,8 @@ export default async function FasilitasDetailPage({ params }: FasilitasDetailPag
             alt={facility.nama}
             fill
             sizes="(min-width: 1024px) 768px, 100vw"
+            loading="eager"
             className="object-cover"
-            priority
           />
         </div>
       )}

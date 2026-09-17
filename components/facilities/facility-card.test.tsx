@@ -35,6 +35,18 @@ describe("FacilityCard", () => {
     expect(link).toHaveAttribute("href", "/fasilitas/1")
   })
 
+  it("memuat foto secara eager saat diminta agar cepat menjadi LCP", () => {
+    const { container } = render(<FacilityCard facility={facility} eager />)
+
+    expect(container.querySelector("img")).toHaveAttribute("loading", "eager")
+  })
+
+  it("menunda foto card berikutnya dengan lazy loading", () => {
+    const { container } = render(<FacilityCard facility={facility} />)
+
+    expect(container.querySelector("img")).toHaveAttribute("loading", "lazy")
+  })
+
   it("menempelkan footer tombol ke dasar card", () => {
     render(<FacilityCard facility={facility} />)
 
