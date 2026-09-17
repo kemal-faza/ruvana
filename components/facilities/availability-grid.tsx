@@ -34,7 +34,7 @@ export function AvailabilityGrid({ slots }: AvailabilityGridProps) {
             <li key={slot.startTime}>
               <div
                 aria-disabled={!slot.available}
-                className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border px-2 py-2 text-center ${
+                className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border p-2 text-center ${
                   slot.available
                     ? "border-transparent bg-success-subdued text-success-subdued-foreground"
                     : "border-border bg-muted text-muted-foreground"
