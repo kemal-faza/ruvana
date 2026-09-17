@@ -45,6 +45,8 @@ describe("FacilityCard", () => {
     const { container } = render(<FacilityCard facility={facility} />)
 
     expect(container.querySelector("img")).toHaveAttribute("loading", "lazy")
+  })
+
   it("menempelkan footer tombol ke dasar card", () => {
     render(<FacilityCard facility={facility} />)
 
