@@ -20,7 +20,7 @@ function parseIsoDateLocal(iso: string): Date {
 export function AvailabilityDateForm({ facilityId, date, today }: AvailabilityDateFormProps) {
   return (
     <form method="get" className="flex flex-wrap items-end gap-3">
-      <div className="flex w-full max-w-56 flex-col gap-1.5">
+      <div className="flex min-w-40 flex-1 flex-col gap-1.5">
         <FieldTitle>Tanggal</FieldTitle>
         <div className="flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
           <DatePicker
@@ -33,7 +33,7 @@ export function AvailabilityDateForm({ facilityId, date, today }: AvailabilityDa
         </div>
       </div>
 
-      <Button type="submit" className="min-h-12">
+      <Button type="submit" className="min-h-12 shrink-0">
         Tampilkan
       </Button>
 
@@ -41,7 +41,7 @@ export function AvailabilityDateForm({ facilityId, date, today }: AvailabilityDa
         <Button
           type="button"
           variant="outline"
-          className="min-h-12"
+          className="min-h-12 shrink-0"
           nativeButton={false}
           render={<Link href={`/fasilitas/${facilityId}?date=${today}`} />}
         >
