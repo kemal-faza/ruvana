@@ -35,6 +35,17 @@ describe("FacilityCard", () => {
     expect(link).toHaveAttribute("href", "/fasilitas/1")
   })
 
+  it("menempelkan footer tombol ke dasar card", () => {
+    render(<FacilityCard facility={facility} />)
+
+    const footer = screen
+      .getByRole("button", { name: /lihat detail/i })
+      .closest("[data-slot='card-footer']")
+
+    expect(footer).not.toBeNull()
+    expect(footer).toHaveClass("mt-auto")
+  })
+
   it("tidak menampilkan data reservasi atau identitas pemesan", () => {
     render(<FacilityCard facility={facility} />)
 
