@@ -1,0 +1,43 @@
+# Normalisasi line ending agar perilaku konsisten di Linux, macOS, dan Windows.
+#
+# Latar belakang: `core.autocrlf=true` (umum di Windows) mengubah LF di index
+# menjadi CRLF di working tree. Untuk script shell itu fatal — bash membaca
+# CRLF sebagai karakter, sehingga `set -u` dan `usage() { ... }` gagal
+# di-parse dan pre-commit hook selalu menolak commit.
+#
+# Aturan di bawah memaksa checkout LF di semua platform. File binary dideteksi
+# otomatis oleh `text=auto` dan tidak diubah.
+
+# Default: teks apa pun memakai LF.
+* text=auto eol=lf
+
+# Script shell dan git hook wajib LF — CRLF membuatnya tidak dapat dieksekusi.
+*.sh text eol=lf
+.husky/* text eol=lf
+
+# Konfigurasi dan source code memakai LF.
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mts text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+
+# File binary tidak boleh diubah Git.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+
+# Script Windows tetap memakai CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

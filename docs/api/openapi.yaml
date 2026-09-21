@@ -1,0 +1,3317 @@
+openapi: 3.1.2
+info:
+  title: Kontrak HTTP Ruvana
+  version: 1.0.0
+  description: |
+    Kontrak HTTP untuk aplikasi reservasi dan pelaporan fasilitas kampus Ruvana.
+    Semua tanggal kalender bisnis dimaknai dalam zona waktu Asia/Jakarta.
+    Semua instant pada respons menggunakan UTC dan wajib berakhiran Z. Operasi
+    yang memakai sesi memuat user terbaru dan hanya menerima akun berstatus
+     ACTIVE. Akun non-ACTIVE selalu menghasilkan 401 generik; hanya principal
+     ACTIVE dengan role yang tidak diterima yang menghasilkan 403. Authorization
+     selalu dievaluasi sebelum lookup atau replay idempotensi. Untuk operasi yang
+     mendeklarasikan Idempotency-Key, urutannya wajib ketat: authenticate ->
+     verifikasi akun ACTIVE dan otorisasi role -> verifikasi ownership bila
+     berlaku -> validasi Origin -> lookup/storage idempotensi -> operasi bisnis.
+     Field lifecycle nullable pada Reservation, Report, dan
+    Analytics selalu dikirim dengan nilai null ketika belum berlaku; field lain
+    tidak boleh berganti antara omission dan null. Request field opsional boleh
+    dihilangkan; nilai null hanya diterima bila schema menyatakannya dan berarti
+    mengosongkan nilai (misalnya FacilityUpdateRequest.deskripsi). Origin wajib
+    hadir tepat satu kali dan dibandingkan dengan scheme+host+port secara exact
+     terhadap allowlist konfigurasi; missing, malformed, null, dan multiple Origin
+    values selalu ditolak. Idempotency berlaku hanya untuk operasi yang
+    mendeklarasikan header tersebut, yaitu mutasi dengan body:
+    createReservation, cancelMyReservation, createReportUploadIntent,
+    finalizeReport, rejectReservation, cancelReservationByOfficer,
+    resolveStaffReport, rejectStaffReport, updateFacilityOperationalStatus,
+    createAdminManagedUser, createFacility, dan updateFacility. Identity adalah
+    authenticated principal + method/operation + canonical path parameters +
+    relevant query + canonical body. Hanya hasil deterministik yang secara
+    eksplisit didokumentasikan oleh operasi tersebut yang boleh disimpan atau
+    di-replay; 401 dan 403 tidak pernah disimpan atau di-replay, dan Origin yang
+    ditolak tidak mengonsumsi atau meracuni key sehingga request CSRF yang telah
+    dikoreksi dapat diproses. Hasil sukses 200/201/204 dan 4xx deterministik
+    yang didokumentasikan dapat disimpan; 5xx, 429, 502, dan 503 tidak disimpan.
+    Key/payload sama menunggu dan mengembalikan hasil pertama, payload berbeda
+    menghasilkan 409, dan scope path mencegah replay lintas resource.
+  contact:
+    name: Tim Ruvana
+  license:
+    name: Dokumentasi proyek internal Ruvana
+    identifier: NOASSERTION
+servers:
+  - url: https://{appHost}
+    description: Host aplikasi dari konfigurasi deployment; default aman bukan hostname produksi.
+    variables:
+      appHost:
+        default: app.example.invalid
+        description: Host deployment yang diizinkan oleh konfigurasi; production wajib mengganti nilai ini.
+  - url: http://127.0.0.1:3000
+    description: Lokal
+tags:
+  - name: Authentication
+    description: Registrasi dan sesi pengguna.
+  - name: Facilities
+    description: Discovery fasilitas dan ketersediaan publik.
+  - name: Reservations
+    description: Reservasi milik pengguna.
+  - name: Reports
+    description: Upload foto dan laporan kerusakan milik pengguna.
+  - name: Staff
+    description: Antrean operasional dan transisi petugas.
+  - name: Administration
+    description: Pengelolaan akun dan fasilitas oleh admin.
+  - name: Analytics
+    description: Dashboard rekap dan ekspor admin.
+security:
+  - cookieAuth: []
+paths:
+  /api/auth/register:
+    post:
+      operationId: registerUser
+      tags: [Authentication]
+      summary: Mendaftarkan akun pengguna
+      description: Membuat akun role pengguna berstatus PENDING. Email dinormalisasi dan password tidak pernah dikembalikan. Origin yang hilang, malformed, null, atau dikirim lebih dari sekali ditolak.
+      x-requirement-ids: [IAM-01, IAM-03]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              nama: Siti Aminah
+              email: siti.aminah@example.com
+              password: RahasiaKuat123!
+      responses:
+        '201':
+          description: Akun PENDING berhasil dibuat; respons PII tidak boleh di-cache.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserResponse'
+              example:
+                user:
+                  id: 42
+                  nama: Siti Aminah
+                  email: siti.aminah@example.com
+                  role: pengguna
+                  status: PENDING
+                  waktuDaftar: '2026-09-09T03:15:00Z'
+                  waktuVerifikasi: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '409':
+          description: Email telah digunakan.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://app.example.invalid/problems/email-already-used
+                title: Konflik data
+                status: 409
+                detail: Email tersebut sudah terdaftar.
+                instance: /api/auth/register
+                code: EMAIL_ALREADY_USED
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/login:
+    post:
+      operationId: loginUser
+      tags: [Authentication]
+      summary: Memulai sesi pengguna
+      description: Hanya akun ACTIVE yang dapat login. Semua kegagalan kredensial, email tidak ada, dan status akun memakai respons generik 401. Kegagalan dihitung atomik per IP dan email ternormalisasi, maksimum 10 dalam 15 menit. Origin yang hilang, malformed, null, atau dikirim lebih dari sekali ditolak.
+      x-requirement-ids: [IAM-02, IAM-03]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+            example:
+              email: siti.aminah@example.com
+              password: RahasiaKuat123!
+      responses:
+        '200':
+          description: Sesi persisten berhasil dibuat. Server mengirim cookie HttpOnly, SameSite=Lax, Secure di production, Path=/, expiry, dan kontrak renewal bounded yang dikonfigurasi implementasi. Respons PII tidak boleh di-cache.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SessionCookie'
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+              example:
+                user:
+                  id: 42
+                  nama: Siti Aminah
+                  email: siti.aminah@example.com
+                  role: pengguna
+                  status: ACTIVE
+                  waktuDaftar: '2026-09-01T02:00:00Z'
+                  waktuVerifikasi: '2026-09-02T04:00:00Z'
+                expiresAt: '2026-09-16T03:15:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Kredensial atau status akun tidak valid; respons tidak membedakan penyebab.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://app.example.invalid/problems/invalid-credentials
+                title: Autentikasi gagal
+                status: 401
+                detail: Email atau password tidak valid.
+                instance: /api/auth/login
+                code: INVALID_CREDENTIALS
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '429':
+          $ref: '#/components/responses/LoginRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [Authentication]
+      summary: Mengakhiri sesi pengguna
+      description: Role yang diterima tepat pengguna, petugas, atau admin, semuanya wajib ACTIVE; user terbaru wajib dimuat sebelum sesi persisten di server diakhiri dan cookie sesi dihapus. Respons tidak boleh di-cache.
+      x-requirement-ids: [IAM-02, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '204':
+          description: Sesi diakhiri dan cookie dihapus dengan Max-Age=0 serta expiry lampau; respons tidak boleh di-cache.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ExpiredSessionCookie'
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [Authentication]
+      summary: Membaca pengguna sesi saat ini
+      description: Sesi dengan role pengguna, petugas, atau admin yang berstatus ACTIVE dapat membaca user terbaru; sesi hilang, kedaluwarsa, atau akun selain ACTIVE menghasilkan 401 generik. Respons PII tidak boleh di-cache.
+      x-requirement-ids: [IAM-03]
+      security:
+        - cookieAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: User aman tanpa password hash atau rahasia sesi; respons tidak boleh di-cache.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+               schema: { $ref: '#/components/schemas/AuthUserResponse' }
+               example:
+                 user:
+                  id: 7
+                  nama: Budi Santoso
+                  email: budi@example.com
+                  role: petugas
+                  status: ACTIVE
+                  waktuDaftar: '2026-08-20T02:00:00Z'
+                  waktuVerifikasi: '2026-08-20T03:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/facilities:
+    get:
+      operationId: listPublicFacilities
+      tags: [Facilities]
+      summary: Menampilkan daftar fasilitas publik
+      description: Mengembalikan fasilitas ACTIVE dan UNDER_MAINTENANCE tanpa actor atau waktu perubahan status. Filter search, type, location, dan minCapacity digabungkan dengan logika AND. Urutan default id ASC.
+      x-requirement-ids: [FAC-01, FAC-03, FAC-04]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/FacilityTypeQuery'
+        - $ref: '#/components/parameters/PublicLocation'
+        - $ref: '#/components/parameters/MinCapacity'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: >-
+            Halaman fasilitas publik, termasuk keadaan kosong yang valid.
+            Freshness policy bersifat no-store: server mengirim
+            Cache-Control: no-store dan client wajib refetch list, detail, dan
+            availability setelah menerima hasil mutasi status fasilitas.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicFacilityCollection' }
+              example:
+                items:
+                  - id: 1
+                    nama: RK-101
+                    tipe: ruang_kelas
+                    lokasi: Gedung A Lt.1
+                    kapasitas: 40
+                    deskripsi: Ruang kelas standar ber-AC
+                    status: ACTIVE
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/facilities/{facilityId}:
+    get:
+      operationId: getPublicFacility
+      tags: [Facilities]
+      summary: Menampilkan detail fasilitas publik
+      description: Fasilitas INACTIVE dimasking sebagai not found yang sama dengan identifier yang tidak ada. Respons publik tidak pernah memuat actor atau waktu perubahan status.
+      x-requirement-ids: [FAC-01, FAC-04]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+      responses:
+        '200':
+          description: >-
+            Detail fasilitas publik. Freshness policy bersifat no-store: server
+            mengirim Cache-Control: no-store dan client wajib refetch setelah
+            menerima hasil mutasi status fasilitas.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicFacility' }
+              example:
+                id: 3
+                nama: Aula Utama
+                tipe: aula
+                lokasi: Gedung Serbaguna
+                kapasitas: 300
+                deskripsi: Aula serbaguna dengan panggung
+                status: UNDER_MAINTENANCE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/facilities/{facilityId}/availability:
+    get:
+      operationId: getFacilityAvailability
+      tags: [Facilities]
+      summary: Memeriksa ketersediaan slot fasilitas
+      description: >-
+        Mengembalikan tepat 26 slot untuk tanggal kalender Asia/Jakarta. Reservasi
+        PENDING tidak memblokir; maintenance membuat seluruh slot tidak tersedia.
+        Pemesan dan tujuan tidak pernah dibocorkan. Fasilitas INACTIVE dimasking
+        persis seperti fasilitas yang tidak ada: status 404, payload NotFound yang
+        identik, dan kebijakan timing yang identik tanpa side-channel.
+      x-requirement-ids: [FAC-02, FAC-04]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/Date'
+      responses:
+        '200':
+          description: >-
+            Grid 26 slot lokal untuk tanggal yang dipilih. Freshness policy
+            bersifat no-store: server mengirim Cache-Control: no-store dan
+            client wajib refetch setelah menerima hasil mutasi status fasilitas.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvailabilityResponse' }
+              example:
+                facilityId: 1
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                slots:
+                  - startTime: '07:00'
+                    endTime: '07:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '07:30'
+                    endTime: '08:00'
+                    available: false
+                    blockedBy: APPROVED
+                  - startTime: '08:00'
+                    endTime: '08:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '08:30'
+                    endTime: '09:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '09:00'
+                    endTime: '09:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '09:30'
+                    endTime: '10:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '10:00'
+                    endTime: '10:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '10:30'
+                    endTime: '11:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '11:00'
+                    endTime: '11:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '11:30'
+                    endTime: '12:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '12:00'
+                    endTime: '12:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '12:30'
+                    endTime: '13:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '13:00'
+                    endTime: '13:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '13:30'
+                    endTime: '14:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '14:00'
+                    endTime: '14:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '14:30'
+                    endTime: '15:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '15:00'
+                    endTime: '15:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '15:30'
+                    endTime: '16:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '16:00'
+                    endTime: '16:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '16:30'
+                    endTime: '17:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '17:00'
+                    endTime: '17:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '17:30'
+                    endTime: '18:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '18:00'
+                    endTime: '18:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '18:30'
+                    endTime: '19:00'
+                    available: true
+                    blockedBy: null
+                  - startTime: '19:00'
+                    endTime: '19:30'
+                    available: true
+                    blockedBy: null
+                  - startTime: '19:30'
+                    endTime: '20:00'
+                    available: true
+                    blockedBy: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reservations:
+    get:
+      operationId: listMyReservations
+      tags: [Reservations]
+      summary: Menampilkan riwayat reservasi pengguna
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima dan hanya reservasi miliknya yang dikembalikan. Akun non-ACTIVE menghasilkan 401 generik; principal ACTIVE dengan role berbeda menghasilkan 403. Urutan deterministik createdAt DESC lalu id DESC. Expiry target dijalankan sebelum operasi terkait.
+      x-requirement-ids: [RES-03, RES-08, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationStatusQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Riwayat reservasi, termasuk keadaan kosong.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReservationCollection' }
+              example:
+                items:
+                  - id: 91
+                    facility:
+                      id: 1
+                      nama: RK-101
+                      tipe: ruang_kelas
+                      lokasi: Gedung A Lt.1
+                      kapasitas: 40
+                      deskripsi: Ruang kelas standar ber-AC
+                      status: ACTIVE
+                    date: '2026-09-15'
+                    timezone: Asia/Jakarta
+                    startTime: '09:00'
+                    endTime: '10:00'
+                    startsAt: '2026-09-15T02:00:00Z'
+                    endsAt: '2026-09-15T03:00:00Z'
+                    tujuanPenggunaan: Diskusi kelompok
+                    status: APPROVED
+                    alasan: null
+                    submittedAt: '2026-09-09T03:00:00Z'
+                    processedAt: '2026-09-09T04:00:00Z'
+                    processedBy: { id: 7, nama: Petugas Ruvana, role: petugas }
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createReservation
+      tags: [Reservations]
+      summary: Mengajukan reservasi fasilitas
+      description: Hanya role=pengguna dengan status=ACTIVE yang dapat membuat satu reservasi PENDING; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. date, startTime, dan endTime adalah waktu lokal Asia/Jakarta; slot harus berurutan pada kelipatan 30 menit dalam 07:00–20:00. Tanggal lampau, slot yang sudah mulai, fasilitas tidak tersedia, dan konflik APPROVED ditolak. PENDING lain tidak dianggap konflik. Relasi endTime > startTime dan pemeriksaan current server time tetap wajib di server.
+      x-requirement-ids: [RES-01, RES-02, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReservationCreateRequest' }
+            example:
+              facilityId: 1
+              date: '2026-09-15'
+              startTime: '09:00'
+              endTime: '10:00'
+              tujuanPenggunaan: Diskusi kelompok
+      responses:
+        '201':
+          description: Reservasi PENDING dibuat; submittedAt dan instant UTC dibuat server.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+              example:
+                id: 92
+                facility:
+                  id: 1
+                  nama: RK-101
+                  tipe: ruang_kelas
+                  lokasi: Gedung A Lt.1
+                  kapasitas: 40
+                  deskripsi: Ruang kelas standar ber-AC
+                  status: ACTIVE
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                startTime: '09:00'
+                endTime: '10:00'
+                startsAt: '2026-09-15T02:00:00Z'
+                endsAt: '2026-09-15T03:00:00Z'
+                tujuanPenggunaan: Diskusi kelompok
+                status: PENDING
+                alasan: null
+                submittedAt: '2026-09-09T03:20:00Z'
+                processedAt: null
+                processedBy: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/OriginRejected'
+        '409':
+          description: Alternatif tertutup untuk overlap/approval, transisi reservasi basi, atau idempotency mismatch.
+          content:
+            application/problem+json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ReservationConflictProblem'
+                  - $ref: '#/components/schemas/ReservationTransitionProblem'
+                  - $ref: '#/components/schemas/IdempotencyConflictProblem'
+              examples:
+                overlap:
+                  value:
+                    type: https://app.example.invalid/problems/reservation-overlap
+                    title: Reservasi bertabrakan
+                    status: 409
+                    detail: Slot bertabrakan dengan reservasi yang telah disetujui.
+                    instance: /api/reservations
+                    code: RESERVATION_OVERLAP
+                    availability:
+                      facilityId: 1
+                      date: '2026-09-15'
+                      timezone: Asia/Jakarta
+                      slots:
+                        - { startTime: '07:00', endTime: '07:30', available: true, blockedBy: null }
+                        - { startTime: '07:30', endTime: '08:00', available: true, blockedBy: null }
+                        - { startTime: '08:00', endTime: '08:30', available: true, blockedBy: null }
+                        - { startTime: '08:30', endTime: '09:00', available: true, blockedBy: null }
+                        - { startTime: '09:00', endTime: '09:30', available: false, blockedBy: APPROVED }
+                        - { startTime: '09:30', endTime: '10:00', available: false, blockedBy: APPROVED }
+                        - { startTime: '10:00', endTime: '10:30', available: true, blockedBy: null }
+                        - { startTime: '10:30', endTime: '11:00', available: true, blockedBy: null }
+                        - { startTime: '11:00', endTime: '11:30', available: true, blockedBy: null }
+                        - { startTime: '11:30', endTime: '12:00', available: true, blockedBy: null }
+                        - { startTime: '12:00', endTime: '12:30', available: true, blockedBy: null }
+                        - { startTime: '12:30', endTime: '13:00', available: true, blockedBy: null }
+                        - { startTime: '13:00', endTime: '13:30', available: true, blockedBy: null }
+                        - { startTime: '13:30', endTime: '14:00', available: true, blockedBy: null }
+                        - { startTime: '14:00', endTime: '14:30', available: true, blockedBy: null }
+                        - { startTime: '14:30', endTime: '15:00', available: true, blockedBy: null }
+                        - { startTime: '15:00', endTime: '15:30', available: true, blockedBy: null }
+                        - { startTime: '15:30', endTime: '16:00', available: true, blockedBy: null }
+                        - { startTime: '16:00', endTime: '16:30', available: true, blockedBy: null }
+                        - { startTime: '16:30', endTime: '17:00', available: true, blockedBy: null }
+                        - { startTime: '17:00', endTime: '17:30', available: true, blockedBy: null }
+                        - { startTime: '17:30', endTime: '18:00', available: true, blockedBy: null }
+                        - { startTime: '18:00', endTime: '18:30', available: true, blockedBy: null }
+                        - { startTime: '18:30', endTime: '19:00', available: true, blockedBy: null }
+                        - { startTime: '19:00', endTime: '19:30', available: true, blockedBy: null }
+                        - { startTime: '19:30', endTime: '20:00', available: true, blockedBy: null }
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reservations/{reservationId}:
+    get:
+      operationId: getMyReservation
+      tags: [Reservations]
+      summary: Menampilkan detail reservasi pengguna
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Ownership diverifikasi server dan reservasi user lain dimasking sebagai 404. Expiry idempoten target dijalankan sebelum evaluasi.
+      x-requirement-ids: [RES-03, RES-08, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Detail reservasi milik user aktif.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+              example:
+                id: 91
+                facility:
+                  id: 1
+                  nama: RK-101
+                  tipe: ruang_kelas
+                  lokasi: Gedung A Lt.1
+                  kapasitas: 40
+                  deskripsi: Ruang kelas standar ber-AC
+                  status: ACTIVE
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                startTime: '09:00'
+                endTime: '10:00'
+                startsAt: '2026-09-15T02:00:00Z'
+                endsAt: '2026-09-15T03:00:00Z'
+                tujuanPenggunaan: Diskusi kelompok
+                status: EXPIRED
+                alasan: Reservasi kedaluwarsa sebelum diproses.
+                submittedAt: '2026-09-09T03:00:00Z'
+                processedAt: '2026-09-15T02:00:01Z'
+                processedBy: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reservations/{reservationId}/cancel:
+    post:
+      operationId: cancelMyReservation
+      tags: [Reservations]
+      summary: Membatalkan reservasi milik pengguna
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Reservasi milik user lain dimasking sebagai 404. Pemilik dapat membatalkan PENDING atau APPROVED tepat sampai H−24 jam, yaitu startsAt - serverNow >= 24 jam. Expiry dijalankan dahulu; status terminal atau aksi berulang tidak menimbulkan efek tambahan.
+      x-requirement-ids: [RES-04, RES-08, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonRequest' }
+            example: { alasan: Jadwal kegiatan berubah. }
+      responses:
+        '200':
+          description: Reservasi berubah menjadi CANCELLED_BY_USER.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+              example:
+                id: 91
+                facility:
+                  id: 1
+                  nama: RK-101
+                  tipe: ruang_kelas
+                  lokasi: Gedung A Lt.1
+                  kapasitas: 40
+                  deskripsi: Ruang kelas standar ber-AC
+                  status: ACTIVE
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                startTime: '09:00'
+                endTime: '10:00'
+                startsAt: '2026-09-15T02:00:00Z'
+                endsAt: '2026-09-15T03:00:00Z'
+                tujuanPenggunaan: Diskusi kelompok
+                status: CANCELLED_BY_USER
+                alasan: Jadwal kegiatan berubah.
+                submittedAt: '2026-09-09T03:00:00Z'
+                processedAt: '2026-09-10T03:00:00Z'
+                processedBy: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/OriginRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409': { $ref: '#/components/responses/ReservationActionConflict' }
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/report-uploads:
+    post:
+      operationId: createReportUploadIntent
+      tags: [Reports]
+      summary: Menerbitkan intent upload foto laporan
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Menerbitkan presigned upload ke private Vercel Blob. Upload dibatasi MIME image/jpeg, image/png, atau image/webp, ukuran maksimum 5 MiB, pathname acak terikat owner, method PUT, header wajib, dan masa berlaku maksimum 10 menit. Rate limit durable atomik adalah 20 per user per jam dan 60 per IP per jam.
+      x-requirement-ids: [REP-01, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportUploadRequest' }
+            example:
+              fileName: panel-listrik.png
+              contentType: image/png
+              size: 245760
+      responses:
+        '201':
+          description: Intent upload privat berhasil diterbitkan.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadIntent' }
+              example:
+                uploadId: 0f8fad5b-d9cb-469f-a165-70867728950e
+                pathname: reports/42/8b7c2d1e-panel-listrik.png
+                uploadUrl: https://blob.vercel-storage.com/upload/signed-token
+                method: PUT
+                requiredHeaders: { content-type: image/png }
+                expiresAt: '2026-09-09T03:25:00Z'
+                maximumSizeInBytes: 5242880
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/OriginRejected'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '429':
+          $ref: '#/components/responses/UploadRateLimited'
+        '502':
+          $ref: '#/components/responses/BlobFailure'
+        '503':
+          $ref: '#/components/responses/UploadQuotaExhausted'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports:
+    get:
+      operationId: listMyReports
+      tags: [Reports]
+      summary: Menampilkan riwayat laporan pengguna
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Hanya laporan milik user aktif yang dikembalikan, diurutkan createdAt DESC lalu id DESC. Foto hanya berupa metadata aman; URL private diterbitkan melalui operasi photo-url setelah pemeriksaan akses.
+      x-requirement-ids: [REP-02, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportStatusQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Riwayat laporan, termasuk keadaan kosong.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportCollection' }
+              example:
+                items:
+                  - id: 15
+                    facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
+                    kategori: Listrik
+                    deskripsi: Lampu sisi kanan tidak menyala.
+                    foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                    status: NEW
+                    catatanResolusi: null
+                    ditanganiOleh: null
+                    createdAt: '2026-09-09T03:30:00Z'
+                    processedAt: null
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: finalizeReport
+      tags: [Reports]
+      summary: Memfinalisasi laporan kerusakan
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Upload intent milik user lain atau intent yang tidak ditemukan dimasking sebagai 404. Urutan Blob wajib authenticate -> lock/load intent -> verify owner -> verify unconsumed -> inspect (private store/pathname, size, MIME, dan magic bytes). Jangan menghapus apa pun pada owner mismatch atau consumed replay. Hanya objek caller-owned unconsumed yang boleh dihapus setelah validasi atau transaksi gagal. Intent kedaluwarsa dibersihkan dengan menghapus orphan object dan record intent. Pembuatan report dan konsumsi intent bersifat tepat satu kali; quota provider menghasilkan 503 tanpa laporan parsial.
+      x-requirement-ids: [REP-01, REP-02, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportCreateRequest' }
+            example:
+              uploadId: 0f8fad5b-d9cb-469f-a165-70867728950e
+              facilityId: 1
+              kategori: Listrik
+              deskripsi: Lampu sisi kanan tidak menyala.
+      responses:
+        '201':
+          description: Laporan NEW dibuat setelah foto tervalidasi.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+               schema: { $ref: '#/components/schemas/Report' }
+               example:
+                id: 15
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
+                kategori: Listrik
+                deskripsi: Lampu sisi kanan tidak menyala.
+                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                status: NEW
+                catatanResolusi: null
+                ditanganiOleh: null
+                createdAt: '2026-09-09T03:35:00Z'
+                processedAt: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/OriginRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Intent sudah dipakai atau idempotency key berbeda payload.
+          content:
+            application/problem+json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ReportFinalizationConflictProblem'
+                  - $ref: '#/components/schemas/IdempotencyConflictProblem'
+              example:
+                type: https://app.example.invalid/problems/upload-already-finalized
+                title: Upload sudah digunakan
+                status: 409
+                detail: Upload intent tidak dapat dipakai lebih dari satu kali.
+                instance: /api/reports
+                code: UPLOAD_ALREADY_FINALIZED
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '502':
+          $ref: '#/components/responses/BlobFailure'
+        '503':
+          $ref: '#/components/responses/UploadQuotaExhausted'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/{reportId}:
+    get:
+      operationId: getMyReport
+      tags: [Reports]
+      summary: Menampilkan detail laporan pengguna
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Ownership dimasking sebagai 404. Detail memuat metadata foto aman, bukan URL private permanen; gunakan photo-url untuk signed read URL sementara.
+      x-requirement-ids: [REP-02, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Detail laporan milik user aktif.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+              example:
+                id: 15
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
+                kategori: Listrik
+                deskripsi: Lampu sisi kanan tidak menyala.
+                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                status: RESOLVED
+                catatanResolusi: Lampu diganti dan diuji.
+                ditanganiOleh: { id: 7, nama: Petugas Ruvana, role: petugas }
+                createdAt: '2026-09-09T03:35:00Z'
+                processedAt: '2026-09-10T06:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/{reportId}/photo-url:
+    post:
+      operationId: createMyReportPhotoUrl
+      tags: [Reports]
+      summary: Menerbitkan URL foto laporan sementara
+      description: Hanya role=pengguna dengan status=ACTIVE yang diterima untuk operasi owner ini; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Report user lain dimasking sebagai 404. Signed read URL hanya diterbitkan setelah akses owner diverifikasi dan berlaku paling lama 5 menit. URL bersifat sementara dan tidak dikembalikan pada resource laporan.
+      x-requirement-ids: [REP-02, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: URL baca signed sementara.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhotoUrlResponse' }
+              example:
+                url: https://blob.vercel-storage.com/reports/42/8b7c2d1e-panel-listrik.png?token=temporary
+                expiresAt: '2026-09-09T03:40:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/OriginRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '502':
+          $ref: '#/components/responses/BlobFailure'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/staff/reservations:
+    get:
+      operationId: listStaffReservations
+      tags: [Staff]
+      summary: Menampilkan antrean reservasi petugas
+      description: Role yang diterima tepat petugas atau admin, wajib ACTIVE. Role lain menghasilkan 403. Expiry idempoten dijalankan sebelum query. Hanya PENDING yang belum expired, dengan urutan FIFO submittedAt ASC lalu id ASC.
+      x-requirement-ids: [RES-05, RES-08, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Antrean reservasi aktif.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffReservationCollection' }
+              example:
+                items:
+                  - id: 92
+                    facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+                    pemohon: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-01T02:00:00Z', waktuVerifikasi: '2026-09-02T04:00:00Z' }
+                    date: '2026-09-15'
+                    timezone: Asia/Jakarta
+                    startTime: '09:00'
+                    endTime: '10:00'
+                    startsAt: '2026-09-15T02:00:00Z'
+                    endsAt: '2026-09-15T03:00:00Z'
+                    tujuanPenggunaan: Diskusi kelompok
+                    status: PENDING
+                    alasan: null
+                    submittedAt: '2026-09-09T03:20:00Z'
+                    processedAt: null
+                    processedBy: null
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/staff/reservations/{reservationId}/approve:
+    post:
+      operationId: approveReservation
+      tags: [Staff]
+      summary: Menyetujui reservasi secara atomik
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Hanya PENDING yang belum expired. Approval melakukan final conflict check atomik; jika konflik muncul tidak ada perubahan dan respons membawa availability terbaru. Aktor serta waktu proses dibuat server tepat satu kali.
+      x-requirement-ids: [RES-06, RES-08, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: Reservasi terbaru berstatus APPROVED.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+              example:
+                id: 92
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                startTime: '09:00'
+                endTime: '10:00'
+                startsAt: '2026-09-15T02:00:00Z'
+                endsAt: '2026-09-15T03:00:00Z'
+                tujuanPenggunaan: Diskusi kelompok
+                status: APPROVED
+                alasan: null
+                submittedAt: '2026-09-09T03:20:00Z'
+                processedAt: '2026-09-09T04:00:00Z'
+                processedBy: { id: 7, nama: Petugas Ruvana, role: petugas }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ReservationApprovalConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/staff/reservations/{reservationId}/reject:
+    post:
+      operationId: rejectReservation
+      tags: [Staff]
+      summary: Menolak reservasi petugas
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Hanya reservasi PENDING yang belum expired dapat ditolak. Alasan wajib, aktor dan waktu proses dicatat server.
+      x-requirement-ids: [RES-06, RES-08, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonRequest' }
+            example: { alasan: Tidak memenuhi kebutuhan kapasitas. }
+      responses:
+        '200':
+          description: Reservasi terbaru berstatus REJECTED.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+              example:
+                id: 92
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                startTime: '09:00'
+                endTime: '10:00'
+                startsAt: '2026-09-15T02:00:00Z'
+                endsAt: '2026-09-15T03:00:00Z'
+                tujuanPenggunaan: Diskusi kelompok
+                status: REJECTED
+                alasan: Tidak memenuhi kebutuhan kapasitas.
+                submittedAt: '2026-09-09T03:20:00Z'
+                processedAt: '2026-09-09T04:00:00Z'
+                processedBy: { id: 7, nama: Petugas Ruvana, role: petugas }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ReservationActionConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/reservations/{reservationId}/cancel:
+    post:
+      operationId: cancelReservationByOfficer
+      tags: [Staff]
+      summary: Membatalkan reservasi secara mendesak
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Hanya APPROVED yang dapat diubah menjadi CANCELLED_BY_OFFICER. Alasan, aktor, dan waktu dicatat. Pemrosesan idempoten.
+      x-requirement-ids: [RES-07, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonRequest' }
+            example: { alasan: Gedung ditutup untuk kegiatan darurat. }
+      responses:
+        '200':
+          description: Reservasi terbaru berstatus CANCELLED_BY_OFFICER.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+              example:
+                id: 91
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
+                date: '2026-09-15'
+                timezone: Asia/Jakarta
+                startTime: '09:00'
+                endTime: '10:00'
+                startsAt: '2026-09-15T02:00:00Z'
+                endsAt: '2026-09-15T03:00:00Z'
+                tujuanPenggunaan: Diskusi kelompok
+                status: CANCELLED_BY_OFFICER
+                alasan: Gedung ditutup untuk kegiatan darurat.
+                submittedAt: '2026-09-09T03:00:00Z'
+                processedAt: '2026-09-10T03:00:00Z'
+                processedBy: { id: 7, nama: Petugas Ruvana, role: petugas }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ReservationActionConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/reports:
+    get:
+      operationId: listStaffReports
+      tags: [Staff]
+      summary: Menampilkan antrean laporan petugas
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. queue=intake hanya berisi NEW; queue=work berisi NEW dan IN_PROGRESS. Hasil dipaginasi dan diurutkan createdAt ASC lalu id ASC.
+      x-requirement-ids: [REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportQueue'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Antrean laporan sesuai queue.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffReportCollection' }
+              example:
+                items:
+                  - id: 15
+                    facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+                    pelapor: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-01T02:00:00Z', waktuVerifikasi: '2026-09-02T04:00:00Z' }
+                    kategori: Listrik
+                    deskripsi: Lampu sisi kanan tidak menyala.
+                    foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                    status: NEW
+                    catatanResolusi: null
+                    ditanganiOleh: null
+                    createdAt: '2026-09-09T03:35:00Z'
+                    processedAt: null
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/staff/reports/{reportId}:
+    get:
+      operationId: getStaffReport
+      tags: [Staff]
+      summary: Menampilkan detail operasional laporan
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Identifier yang tidak ada dimasking sebagai 404; URL foto private permanen tidak dikembalikan.
+      x-requirement-ids: [REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Detail operasional laporan.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+               schema: { $ref: '#/components/schemas/StaffReport' }
+               example:
+                id: 15
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+                pelapor: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-01T02:00:00Z', waktuVerifikasi: '2026-09-02T04:00:00Z' }
+                kategori: Listrik
+                deskripsi: Lampu sisi kanan tidak menyala.
+                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                status: IN_PROGRESS
+                catatanResolusi: null
+                ditanganiOleh: { id: 7, nama: Petugas Ruvana, role: petugas }
+                createdAt: '2026-09-09T03:35:00Z'
+                processedAt: '2026-09-09T05:00:00Z'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/reports/{reportId}/start:
+    post:
+      operationId: startStaffReport
+      tags: [Staff]
+      summary: Memulai penanganan laporan
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Transisi satu arah NEW ke IN_PROGRESS. Dalam satu transaksi atomik, status, handling actor, dan server processing timestamp disimpan bersama; transisi lain ditolak tanpa perubahan.
+      x-requirement-ids: [REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: Laporan terbaru berstatus IN_PROGRESS.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+               schema: { $ref: '#/components/schemas/StaffReport' }
+               example:
+                id: 15
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+                pelapor: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-01T02:00:00Z', waktuVerifikasi: '2026-09-02T04:00:00Z' }
+                kategori: Listrik
+                deskripsi: Lampu sisi kanan tidak menyala.
+                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                status: IN_PROGRESS
+                catatanResolusi: null
+                ditanganiOleh: { id: 7, nama: Petugas Ruvana, role: petugas }
+                createdAt: '2026-09-09T03:35:00Z'
+                processedAt: '2026-09-09T05:00:00Z'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ReportStartTransitionConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/reports/{reportId}/resolve:
+    post:
+      operationId: resolveStaffReport
+      tags: [Staff]
+      summary: Menyelesaikan laporan kerusakan
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Hanya IN_PROGRESS yang dapat menjadi RESOLVED. catatanResolusi wajib. Dalam satu transaksi atomik, status, handling actor, resolution note, dan server processing timestamp disimpan bersama.
+      x-requirement-ids: [REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolutionRequest' }
+            example: { catatanResolusi: Lampu diganti dan diuji. }
+      responses:
+        '200':
+          description: Laporan terbaru berstatus RESOLVED.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+               schema: { $ref: '#/components/schemas/StaffReport' }
+               example:
+                id: 15
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+                pelapor: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-01T02:00:00Z', waktuVerifikasi: '2026-09-02T04:00:00Z' }
+                kategori: Listrik
+                deskripsi: Lampu sisi kanan tidak menyala.
+                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                status: RESOLVED
+                catatanResolusi: Lampu diganti dan diuji.
+                ditanganiOleh: { id: 7, nama: Petugas Ruvana, role: petugas }
+                createdAt: '2026-09-09T03:35:00Z'
+                processedAt: '2026-09-10T06:00:00Z'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ReportTransitionConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/reports/{reportId}/reject:
+    post:
+      operationId: rejectStaffReport
+      tags: [Staff]
+      summary: Menolak laporan kerusakan
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. NEW atau IN_PROGRESS dapat menjadi REJECTED. catatanResolusi wajib. Dalam satu transaksi atomik, status, handling actor, resolution note, dan server processing timestamp disimpan bersama; status terminal tidak dapat dibuka kembali.
+      x-requirement-ids: [REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolutionRequest' }
+            example: { catatanResolusi: Laporan tidak dapat diverifikasi di lokasi. }
+      responses:
+        '200':
+          description: Laporan terbaru berstatus REJECTED.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffReport' }
+              example:
+                id: 15
+                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+                pelapor: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-01T02:00:00Z', waktuVerifikasi: '2026-09-02T04:00:00Z' }
+                kategori: Listrik
+                deskripsi: Lampu sisi kanan tidak menyala.
+                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
+                status: REJECTED
+                catatanResolusi: Laporan tidak dapat diverifikasi di lokasi.
+                ditanganiOleh: { id: 7, nama: Petugas Ruvana, role: petugas }
+                createdAt: '2026-09-09T03:35:00Z'
+                processedAt: '2026-09-10T06:00:00Z'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ReportTransitionConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/reports/{reportId}/photo-url:
+    post:
+      operationId: createStaffReportPhotoUrl
+      tags: [Staff]
+      summary: Menerbitkan URL foto laporan untuk petugas
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Petugas/admin yang berwenang dapat memperoleh signed read URL paling lama 5 menit setelah ownership role check. URL private permanen tidak disimpan di respons laporan.
+      x-requirement-ids: [REP-02, REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: URL baca signed sementara.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhotoUrlResponse' }
+              example:
+                url: https://blob.vercel-storage.com/reports/42/8b7c2d1e-panel-listrik.png?token=temporary
+                expiresAt: '2026-09-09T03:40:00Z'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '502': { $ref: '#/components/responses/BlobFailure' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/staff/facilities/{facilityId}/status:
+    patch:
+      operationId: updateFacilityOperationalStatus
+      tags: [Staff]
+      summary: Mengubah status operasional fasilitas
+      description: >-
+        Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun
+        non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role
+        berbeda menghasilkan 403. Jalur petugas/admin ini hanya menerima matriks
+        ACTIVE -> UNDER_MAINTENANCE dan UNDER_MAINTENANCE -> ACTIVE; INACTIVE
+        tidak pernah menjadi asal atau tujuan. Hanya destination UNDER_MAINTENANCE
+        yang memanggil REP-04/RES-09 dalam satu transaksi PostgreSQL all-or-nothing:
+        simpan status, actor terbaru, dan satu statusChangedAt server bersama, lalu
+        batalkan tepat reservasi APPROVED pada facility ini dengan startsAt >
+        statusChangedAt dan alasan user-visible otomatis. Retry idempotent; reservation
+         lampau dan facility lain terlindungi. Kegagalan salah satu efek me-roll back
+         seluruh perubahan; kembali ke ACTIVE menghitung ulang availability dari
+         APPROVED terkini. Untuk setiap perubahan status, sebelum mengembalikan 200
+         server wajib invalidate seluruh representasi public list/detail/availability
+         yang terdampak; client wajib refetch representasi tersebut.
+      x-requirement-ids: [REP-04, RES-09, FAC-04, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StaffFacilityStatusRequest' }
+            example: { status: UNDER_MAINTENANCE }
+      responses:
+        '200':
+          description: Fasilitas terbaru setelah seluruh efek maintenance tersimpan konsisten; seluruh representasi public list/detail/availability yang terdampak telah di-invalidate sebelum 200 dikembalikan.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Facility' }
+              example:
+                id: 1
+                nama: RK-101
+                tipe: ruang_kelas
+                lokasi: Gedung A Lt.1
+                kapasitas: 40
+                deskripsi: Ruang kelas standar ber-AC
+                status: UNDER_MAINTENANCE
+                statusChangedAt: '2026-09-09T05:00:00Z'
+                statusChangedBy: { id: 7, nama: Petugas Ruvana, role: petugas }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/FacilityTransitionConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [Administration]
+      summary: Mencari dan memfilter akun pengguna
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Mendukung pencarian identitas/email, role, status, dan pagination deterministik id ASC; password hash dan kredensial sesi tidak pernah dikembalikan.
+      x-requirement-ids: [IAM-07, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/RoleQuery'
+        - $ref: '#/components/parameters/AccountStatusQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Daftar akun aman.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserCollection' }
+              example:
+                items:
+                  - id: 42
+                    nama: Siti Aminah
+                    email: siti.aminah@example.com
+                    role: pengguna
+                    status: PENDING
+                    waktuDaftar: '2026-09-09T03:15:00Z'
+                    waktuVerifikasi: null
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      operationId: createAdminManagedUser
+      tags: [Administration]
+      summary: Membuat akun aktif oleh admin
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin dapat membuat akun pengguna atau petugas yang langsung ACTIVE. Current admin dicatat sebagai creator pada record akun. Petugas tidak memiliki jalur registrasi mandiri; email harus unik dan password di-hash server.
+      x-requirement-ids: [IAM-04, IAM-05, IAM-03]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminCreateUserRequest' }
+            example:
+              nama: Andi Wijaya
+              email: andi.wijaya@example.com
+              password: RahasiaPetugas123!
+              role: petugas
+      responses:
+        '201':
+          description: Akun ACTIVE berhasil dibuat tanpa data rahasia.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthUserResponse' }
+              example:
+                user:
+                  id: 44
+                  nama: Andi Wijaya
+                  email: andi.wijaya@example.com
+                  role: petugas
+                  status: ACTIVE
+                  waktuDaftar: '2026-09-09T06:00:00Z'
+                  waktuVerifikasi: '2026-09-09T06:00:00Z'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '409': { $ref: '#/components/responses/AdminUserMutationConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/users/{userId}/approve:
+    post:
+      operationId: approvePendingUser
+      tags: [Administration]
+      summary: Menyetujui pendaftaran pengguna
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin hanya dapat mengubah PENDING menjadi ACTIVE dan mencatat waktu verifikasi. Status selain PENDING ditolak tanpa perubahan.
+      x-requirement-ids: [IAM-01, IAM-06, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '200':
+          description: User terbaru berstatus ACTIVE.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SafeUser' }
+              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: '2026-09-09T06:10:00Z' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/users/{userId}/reject:
+    post:
+      operationId: rejectPendingUser
+      tags: [Administration]
+      summary: Menolak pendaftaran pengguna
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin hanya dapat mengubah PENDING menjadi REJECTED; status yang sudah diproses ditolak secara aman.
+      x-requirement-ids: [IAM-01, IAM-06, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '200':
+          description: User terbaru berstatus REJECTED.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SafeUser' }
+              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: REJECTED, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: null }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/users/{userId}/disable:
+    post:
+      operationId: disableUser
+      tags: [Administration]
+      summary: Menonaktifkan akun pengguna
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin mengubah ACTIVE menjadi DISABLED. Sesi akun yang dinonaktifkan tidak dapat dipakai atau diperbarui.
+      x-requirement-ids: [IAM-07, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '200':
+          description: User terbaru berstatus DISABLED.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SafeUser' }
+              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: DISABLED, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: '2026-09-09T06:10:00Z' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/users/{userId}/enable:
+    post:
+      operationId: enableUser
+      tags: [Administration]
+      summary: Mengaktifkan kembali akun pengguna
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin hanya dapat mengubah DISABLED menjadi ACTIVE tanpa mengubah role atau histori akun.
+      x-requirement-ids: [IAM-07, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '200':
+          description: User terbaru berstatus ACTIVE.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SafeUser' }
+              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: '2026-09-09T06:10:00Z' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/facilities:
+    get:
+      operationId: listAdminFacilities
+      tags: [Administration]
+      summary: Menampilkan seluruh fasilitas admin
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin dapat melihat ACTIVE, UNDER_MAINTENANCE, dan INACTIVE. Urutan deterministik id ASC.
+      x-requirement-ids: [FAC-05, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/FacilityTypeQuery'
+        - $ref: '#/components/parameters/AdminLocation'
+        - $ref: '#/components/parameters/FacilityStatusQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Daftar fasilitas administrasi.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FacilityCollection' }
+              example:
+                items: [{ id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }]
+                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      operationId: createFacility
+      tags: [Administration]
+      summary: Membuat fasilitas
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin membuat fasilitas baru. Nama harus unik, kapasitas positif, dan histori tidak dapat dihapus secara fisik.
+      x-requirement-ids: [FAC-05, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FacilityCreateRequest' }
+            example: { nama: Studio Musik, tipe: aula, lokasi: Gedung C Lt.1, kapasitas: 80, deskripsi: Ruang latihan musik. }
+      responses:
+        '201':
+          description: Fasilitas berhasil dibuat.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Facility' }
+              example: { id: 9, nama: Studio Musik, tipe: aula, lokasi: Gedung C Lt.1, kapasitas: 80, deskripsi: Ruang latihan musik., status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '409': { $ref: '#/components/responses/FacilityMutationConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/facilities/{facilityId}:
+    get:
+      operationId: getAdminFacility
+      tags: [Administration]
+      summary: Menampilkan detail fasilitas admin
+      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin dapat melihat status dan metadata fasilitas termasuk INACTIVE.
+      x-requirement-ids: [FAC-05, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+      responses:
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '200':
+          description: Detail fasilitas administrasi.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Facility' }
+              example: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    patch:
+      operationId: updateFacility
+      tags: [Administration]
+      summary: Memperbarui atau menonaktifkan fasilitas
+      description: >-
+          Hanya role admin dengan status ACTIVE yang diterima; akun dengan status selain
+          ACTIVE selalu menghasilkan 401 generik, sedangkan principal ACTIVE dengan role
+          berbeda menghasilkan 403. Matriks transisi admin yang valid tepat:
+          ACTIVE -> UNDER_MAINTENANCE, UNDER_MAINTENANCE -> ACTIVE, ACTIVE -> INACTIVE,
+          INACTIVE -> ACTIVE, dan UNDER_MAINTENANCE -> INACTIVE; transisi lain ditolak.
+          Petugas hanya boleh ACTIVE <-> UNDER_MAINTENANCE dan tidak pernah boleh
+          menangani INACTIVE. Hanya destination UNDER_MAINTENANCE yang memanggil
+          REP-04/RES-09 dengan transaksi atomik yang sama: statusChangedBy adalah admin
+          terbaru, statusChangedAt adalah satu timestamp server bersama, tepat reservasi
+          APPROVED pada facility ini dengan startsAt > statusChangedAt dibatalkan dengan
+          alasan otomatis yang terlihat user. Retry idempotent, reservation lampau/facility
+          lain terlindungi, rollback berlaku bila efek gagal, dan destination ACTIVE
+           menghitung ulang availability dari APPROVED terkini. Untuk setiap perubahan
+           status, sebelum mengembalikan 200 server wajib invalidate seluruh representasi
+           public list/detail/availability yang terdampak; client wajib refetch representasi
+           tersebut. Minimal satu field wajib dikirim; tidak ada operasi DELETE dan nama
+           tetap unik.
+      x-requirement-ids: [FAC-05, FAC-04, REP-04, RES-09, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FacilityUpdateRequest' }
+            example: { deskripsi: Ruang kelas standar dengan proyektor baru. }
+      responses:
+        '200':
+          description: >-
+            Fasilitas terbaru; seluruh representasi public list/detail/availability
+            yang terdampak telah di-invalidate sebelum 200 dikembalikan bila status
+            berubah.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Facility' }
+              example: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar dengan proyektor baru., status: ACTIVE, statusChangedAt: null, statusChangedBy: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/FacilityMutationConflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      tags: [Analytics]
+      summary: Menampilkan dashboard analitik
+      description: >-
+        Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE
+        menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda
+        menghasilkan 403. Admin wajib mengirim rentang tanggal inklusif dalam Asia/Jakarta dengan
+        dateFrom <= dateTo. Server memakai rentang UTC setengah-terbuka dari 00:00
+        awal sampai 00:00 sehari setelah dateTo. Location dinormalisasi dengan trim
+        dan case-fold lalu dicocokkan exact secara case-insensitive; location kosong
+         berarti seluruh lokasi. Dashboard dan export memakai population setiap fasilitas
+         yang cocok: ACTIVE, UNDER_MAINTENANCE, dan INACTIVE semuanya termasuk dalam
+         denominator. Frekuensi kerusakan sama dengan laporan yang createdAt-nya berada
+         dalam effective range dan dikelompokkan berdasarkan fasilitas, kategori, dan status.
+         Numerator hanya menit APPROVED; denominator = setiap fasilitas yang cocok dengan
+         location ternormalisasi × jumlah hari × 780 menit. Keterbatasan historis: populasi
+         fasilitas memakai katalog/status saat perhitungan dan tidak merekonstruksi riwayat
+         status fasilitas.
+      x-requirement-ids: [ANA-01, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - $ref: '#/components/parameters/AnalyticsLocation'
+      responses:
+        '200':
+          description: Rekap analitik; keadaan tanpa data tetap berisi nilai nol dan metodologi.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Analytics' }
+              example:
+                filter: { dateFrom: '2026-09-01', dateTo: '2026-09-30', location: Gedung A }
+                timezone: Asia/Jakarta
+                effectiveRange: { from: '2026-08-31T17:00:00Z', until: '2026-09-30T17:00:00Z' }
+                generatedAt: '2026-10-01T02:00:00Z'
+                occupancy: { numeratorMinutes: 1560, denominatorMinutes: 23400, percentage: 6.6667 }
+                damageGroups:
+                  - facilityId: 1
+                    facilityName: RK-101
+                    kategori: Listrik
+                    status: RESOLVED
+                    count: 2
+                methodology: { operatingMinutesPerDay: 780, approvedOnly: true, maintenanceExcludedFromDenominator: false, damageCountedFrom: createdAt }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/analytics/export:
+    get:
+      operationId: exportAdminAnalytics
+      tags: [Analytics]
+      summary: Mengekspor rekap analitik
+      description: >-
+        Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE
+        menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda
+        menghasilkan 403. Menggunakan dataset dan filter efektif yang sama persis dengan dashboard,
+        termasuk setiap fasilitas yang cocok, termasuk ACTIVE, UNDER_MAINTENANCE,
+        dan INACTIVE, normalized case-insensitive exact location match, effective UTC range,
+        numerator, denominator, damage groups, dan methodology. File wajib memuat
+        period dateFrom/dateTo, requested serta effective location/filter, generatedAt,
+        methodology, dan dataset yang sama. Mapping tepat: format=csv -> text/csv dan
+        ekstensi .csv; format=xlsx -> application/vnd.openxmlformats-officedocument
+        .spreadsheetml.sheet dan ekstensi .xlsx; format=pdf -> application/pdf dan
+        ekstensi .pdf. CSV/XLSX menetralkan nilai cell yang diawali =, +, -, @, tab,
+        atau carriage return dengan prefix apostrophe sebelum serialisasi. PDF memakai
+        text encoding UTF-8/font yang aman serta escaping backslash, parentheses, dan
+        control bytes; input diperlakukan sebagai data, bukan markup/kode. Ekspor
+        kosong tetap memiliki header, periode, filter, generatedAt, metodologi, dan
+        file valid. Content-Disposition memuat rentang tanggal.
+      x-requirement-ids: [ANA-02, ANA-01, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - $ref: '#/components/parameters/AnalyticsLocation'
+        - $ref: '#/components/parameters/ExportFormat'
+      responses:
+        '200':
+          description: File ekspor valid dengan dataset yang konsisten terhadap dashboard.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ExportContentDisposition'
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            text/csv:
+              schema: { type: string, format: binary }
+              example: |
+                section,field,value
+                period,dateFrom,2026-09-01
+                period,dateTo,2026-09-30
+                period,effectiveFrom,2026-08-31T17:00:00Z
+                period,effectiveUntil,2026-09-30T17:00:00Z
+                filter,requestedLocation,Gedung A
+                filter,normalizedLocation,gedung a
+                filter,effectiveLocation,gedung a
+                filter,locationMatch,exact case-insensitive
+                filter,effectiveDateFrom,2026-08-31T17:00:00Z
+                filter,effectiveDateUntil,2026-09-30T17:00:00Z
+                metadata,timezone,Asia/Jakarta
+                metadata,generatedAt,2026-10-01T02:00:00Z
+                methodology,operatingMinutesPerDay,780
+                methodology,approvedOnly,true
+                methodology,maintenanceExcludedFromDenominator,false
+                methodology,damageCountedFrom,createdAt
+                section,Occupancy dataset,
+                recordType,facilityId,facilityName,facilityStatus,numeratorMinutes,denominatorMinutes,percentage
+                facility,1,RK-101,ACTIVE,1560,23400,6.6667
+                total,,,,1560,23400,6.6667
+                section,Damage frequency dataset,
+                facilityId,facilityName,kategori,status,count
+                1,RK-101,Listrik,RESOLVED,2
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: ruvana_session
+      description: Cookie sesi persisten HttpOnly, SameSite=Lax, Secure di production, Path=/, dengan expiry server dan lifetime bounded yang dikonfigurasi implementasi (durasi tidak ditetapkan oleh kontrak ini).
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      description: >-
+        Header harus hadir tepat satu kali. Server menolak missing, malformed,
+        nilai literal null, dan multiple Origin values dengan 403
+        CSRF_ORIGIN_REJECTED. Nilai yang valid dibandingkan tanpa normalisasi
+        terhadap allowlist menggunakan exact scheme+host+port; path, query,
+        fragment, dan wildcard tidak diterima.
+      schema: { type: string, format: uri, maxLength: 2048 }
+      example: https://app.example.invalid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        UUID untuk operasi yang mendeklarasikan header ini, dengan identity
+        authenticated principal + HTTP method/operation ID + canonical path
+        parameters + relevant query + canonical body; retensi 24 jam. Urutan
+        wajib adalah authenticate -> verifikasi akun ACTIVE dan otorisasi role
+        -> verifikasi ownership bila berlaku -> validasi Origin ->
+        idempotency lookup/storage -> operasi bisnis. Key/payload sama menunggu
+        request pertama lalu mengembalikan status/body yang sama; payload berbeda
+        menghasilkan 409 IDEMPOTENCY_KEY_REUSED. Request bersamaan dengan identity
+        sama hanya menjalankan satu efek. Hanya hasil deterministik yang
+        didokumentasikan oleh operasi yang boleh dipersist atau di-replay; 401,
+        403, dan Origin yang ditolak tidak pernah dipersist atau di-replay, serta
+        tidak mengonsumsi key. Status 200, 201, 204, dan 4xx deterministik yang
+        didokumentasikan dapat dipersist; 5xx, 429, 502, dan 503 tidak dipersist.
+        Canonical path binding mencegah replay lintas resource.
+      schema: { type: string, format: uuid }
+      example: 2c1f4a3e-7e71-4d5c-9f1c-0f0d9e5f1a11
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Nomor halaman, dimulai dari 1.
+      schema: { type: integer, minimum: 1, default: 1 }
+      example: 1
+    PerPage:
+      name: perPage
+      in: query
+      required: false
+      description: Jumlah item per halaman.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      example: 20
+    Search:
+      name: search
+      in: query
+      required: false
+      description: Kata kunci pencarian.
+      schema: { type: string, minLength: 1, maxLength: 200 }
+      example: lab
+    PublicLocation:
+      name: location
+      in: query
+      required: false
+      description: Filter discovery fasilitas publik. Nilai dinormalisasi dengan trim dan Unicode-aware casefold, lalu dicocokkan substring secara case-insensitive pada lokasi tersimpan.
+      schema: { type: string, minLength: 1, maxLength: 200 }
+      example: Gedung A
+    AdminLocation:
+      name: location
+      in: query
+      required: false
+      description: Filter fasilitas admin. Nilai dinormalisasi dengan trim dan Unicode-aware casefold, lalu dicocokkan substring secara case-insensitive pada lokasi tersimpan.
+      schema: { type: string, minLength: 1, maxLength: 200 }
+      example: Gedung A
+    AnalyticsLocation:
+      name: location
+      in: query
+      required: false
+      description: Filter analytics opsional. Nilai dinormalisasi dengan trim dan Unicode-aware casefold, lalu dicocokkan exact secara case-insensitive; omission atau null berarti semua lokasi.
+      schema: { type: [string, 'null'], maxLength: 200 }
+      example: Gedung A
+    MinCapacity:
+      name: minCapacity
+      in: query
+      required: false
+      description: Kapasitas minimum positif.
+      schema: { type: integer, minimum: 1 }
+      example: 30
+    FacilityTypeQuery:
+      name: type
+      in: query
+      required: false
+      description: Filter tipe fasilitas.
+      schema: { $ref: '#/components/schemas/FacilityType' }
+      example: laboratorium
+    FacilityStatusQuery:
+      name: status
+      in: query
+      required: false
+      description: Filter status fasilitas admin.
+      schema: { $ref: '#/components/schemas/FacilityStatus' }
+      example: INACTIVE
+    ReservationStatusQuery:
+      name: status
+      in: query
+      required: false
+      description: Filter status reservasi milik user.
+      schema: { $ref: '#/components/schemas/ReservationStatus' }
+      example: APPROVED
+    ReportStatusQuery:
+      name: status
+      in: query
+      required: false
+      description: Filter status laporan milik user.
+      schema: { $ref: '#/components/schemas/ReportStatus' }
+      example: NEW
+    ReportQueue:
+      name: queue
+      in: query
+      required: true
+      description: intake hanya NEW; work mencakup NEW dan IN_PROGRESS.
+      schema: { type: string, enum: [intake, work] }
+      example: work
+    RoleQuery:
+      name: role
+      in: query
+      required: false
+      schema: { $ref: '#/components/schemas/Role' }
+      example: petugas
+    AccountStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema: { $ref: '#/components/schemas/AccountStatus' }
+      example: PENDING
+    Date:
+      name: date
+      in: query
+      required: true
+      description: Tanggal kalender Asia/Jakarta dalam YYYY-MM-DD.
+      schema: { type: string, format: date }
+      example: '2026-09-15'
+    DateFrom:
+      name: dateFrom
+      in: query
+      required: true
+      description: Batas awal inklusif kalender Asia/Jakarta.
+      schema: { type: string, format: date }
+      example: '2026-09-01'
+    DateTo:
+      name: dateTo
+      in: query
+      required: true
+      description: Batas akhir inklusif kalender Asia/Jakarta; harus tidak sebelum dateFrom.
+      schema: { type: string, format: date }
+      example: '2026-09-30'
+    ExportFormat:
+      name: format
+      in: query
+      required: true
+      description: Format file ekspor.
+      schema: { type: string, enum: [csv, xlsx, pdf] }
+      example: csv
+    FacilityId:
+      name: facilityId
+      in: path
+      required: true
+      description: Identifier fasilitas positif.
+      schema: { type: integer, minimum: 1 }
+      example: 1
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      description: Identifier reservasi positif.
+      schema: { type: integer, minimum: 1 }
+      example: 91
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      description: Identifier laporan positif.
+      schema: { type: integer, minimum: 1 }
+      example: 15
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Identifier user positif.
+      schema: { type: integer, minimum: 1 }
+      example: 42
+  headers:
+    SessionCookie:
+      description: Cookie ruvana_session yang HttpOnly, SameSite=Lax, Secure di production, Path=/ dan memiliki expiry dengan lifetime bounded yang dikonfigurasi implementasi (durasi tidak ditetapkan oleh kontrak ini).
+      schema: { type: string }
+    ExpiredSessionCookie:
+      description: Cookie ruvana_session yang dihapus dengan Max-Age=0 dan expiry lampau.
+      schema: { type: string }
+    NoStore:
+      description: Respons tidak boleh disimpan oleh browser, proxy, atau CDN.
+      schema:
+        type: string
+        const: no-store
+    RetryAfter:
+      description: Jumlah detik minimum sebelum request boleh dicoba lagi.
+      schema: { type: integer, minimum: 1 }
+      example: 900
+    ExportContentDisposition:
+      description: Attachment filename memuat dateFrom dan dateTo.
+      schema: { type: string }
+      example: attachment; filename="ruvana-analytics-2026-09-01-2026-09-30.csv"
+  responses:
+    BadRequest:
+      description: JSON atau parameter query/path malformed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/bad-request
+            title: Permintaan tidak valid
+            status: 400
+            detail: JSON atau parameter tidak dapat diproses.
+            instance: /api/resource
+            code: BAD_REQUEST
+    Unauthorized:
+      description: Sesi hilang, tidak valid, kedaluwarsa, atau user tidak ACTIVE. Respons tidak membocorkan penyebab akun.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/unauthorized
+            title: Autentikasi diperlukan
+            status: 401
+            detail: Sesi tidak valid atau akun tidak aktif.
+            instance: /api/protected
+            code: UNAUTHORIZED
+    OriginRejected:
+      $ref: '#/components/responses/MutationForbidden'
+    Forbidden:
+      description: ACTIVE principal dengan role yang tidak diterima untuk operasi ini menerima 403 non-CSRF dengan code FORBIDDEN.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ForbiddenProblem' }
+          example:
+            type: https://app.example.invalid/problems/forbidden
+            title: Akses ditolak
+            status: 403
+            detail: Role akun tidak berwenang menjalankan operasi ini.
+            instance: /api/protected
+            code: FORBIDDEN
+    MutationForbidden:
+      description: >-
+        Semua mutation 403 mencakup dua penyebab yang sengaja dibedakan oleh
+         code: FORBIDDEN untuk role atau kewenangan yang tidak mencukupi,
+        dan CSRF_ORIGIN_REJECTED untuk Origin missing, malformed, null, multiple,
+        atau tidak cocok. Origin comparison memakai exact scheme+host+port
+        terhadap allowlist.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/MutationForbiddenProblem' }
+          examples:
+            forbidden:
+              value:
+                type: https://app.example.invalid/problems/forbidden
+                title: Akses ditolak
+                status: 403
+                detail: Role akun tidak berwenang menjalankan operasi ini.
+                instance: /api/protected
+                code: FORBIDDEN
+            csrf:
+              value:
+                type: https://app.example.invalid/problems/csrf-origin-rejected
+                title: Permintaan ditolak
+                status: 403
+                detail: Origin permintaan tidak diizinkan.
+                instance: /api/protected
+                code: CSRF_ORIGIN_REJECTED
+    NotFound:
+      description: Resource tidak ada atau ownership/private resource dimasking.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/not-found
+            title: Resource tidak ditemukan
+            status: 404
+            detail: Resource yang diminta tidak ditemukan.
+            instance: /api/resource/1
+            code: NOT_FOUND
+    IdempotencyConflict:
+      description: >-
+        Payload berbeda memakai identity yang sama. Identity mencakup authenticated
+        principal, HTTP method/operation ID, canonical path parameters, relevant
+        query, dan canonical body; retensi 24 jam. Authorization role/status dan
+        ownership diperiksa sebelum lookup atau replay.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/IdempotencyConflictProblem' }
+          examples:
+            reservation:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/reservations
+                code: IDEMPOTENCY_KEY_REUSED
+            reportUpload:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/report-uploads
+                code: IDEMPOTENCY_KEY_REUSED
+    ReservationApprovalConflict:
+      description: Alternatif tertutup untuk konflik availability atau transisi reservasi stale saat approval.
+      content:
+        application/problem+json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/ReservationConflictProblem'
+              - $ref: '#/components/schemas/ReservationTransitionProblem'
+          examples:
+            approvalConflict:
+              value:
+                type: https://app.example.invalid/problems/approval-conflict
+                title: Persetujuan reservasi bertabrakan
+                status: 409
+                detail: Slot reservasi telah disetujui untuk reservasi lain.
+                instance: /api/staff/reservations/92/approve
+                code: APPROVAL_CONFLICT
+                availability:
+                  facilityId: 1
+                  date: '2026-09-15'
+                  timezone: Asia/Jakarta
+                  slots:
+                    - { startTime: '07:00', endTime: '07:30', available: true, blockedBy: null }
+                    - { startTime: '07:30', endTime: '08:00', available: true, blockedBy: null }
+                    - { startTime: '08:00', endTime: '08:30', available: true, blockedBy: null }
+                    - { startTime: '08:30', endTime: '09:00', available: true, blockedBy: null }
+                    - { startTime: '09:00', endTime: '09:30', available: false, blockedBy: APPROVED }
+                    - { startTime: '09:30', endTime: '10:00', available: false, blockedBy: APPROVED }
+                    - { startTime: '10:00', endTime: '10:30', available: true, blockedBy: null }
+                    - { startTime: '10:30', endTime: '11:00', available: true, blockedBy: null }
+                    - { startTime: '11:00', endTime: '11:30', available: true, blockedBy: null }
+                    - { startTime: '11:30', endTime: '12:00', available: true, blockedBy: null }
+                    - { startTime: '12:00', endTime: '12:30', available: true, blockedBy: null }
+                    - { startTime: '12:30', endTime: '13:00', available: true, blockedBy: null }
+                    - { startTime: '13:00', endTime: '13:30', available: true, blockedBy: null }
+                    - { startTime: '13:30', endTime: '14:00', available: true, blockedBy: null }
+                    - { startTime: '14:00', endTime: '14:30', available: true, blockedBy: null }
+                    - { startTime: '14:30', endTime: '15:00', available: true, blockedBy: null }
+                    - { startTime: '15:00', endTime: '15:30', available: true, blockedBy: null }
+                    - { startTime: '15:30', endTime: '16:00', available: true, blockedBy: null }
+                    - { startTime: '16:00', endTime: '16:30', available: true, blockedBy: null }
+                    - { startTime: '16:30', endTime: '17:00', available: true, blockedBy: null }
+                    - { startTime: '17:00', endTime: '17:30', available: true, blockedBy: null }
+                    - { startTime: '17:30', endTime: '18:00', available: true, blockedBy: null }
+                    - { startTime: '18:00', endTime: '18:30', available: true, blockedBy: null }
+                    - { startTime: '18:30', endTime: '19:00', available: true, blockedBy: null }
+                    - { startTime: '19:00', endTime: '19:30', available: true, blockedBy: null }
+                    - { startTime: '19:30', endTime: '20:00', available: true, blockedBy: null }
+            stale:
+              value:
+                type: https://app.example.invalid/problems/invalid-reservation-transition
+                title: Transisi reservasi tidak valid
+                status: 409
+                detail: Reservasi sudah diproses atau tidak lagi berstatus PENDING.
+                instance: /api/staff/reservations/91/approve
+                code: INVALID_RESERVATION_TRANSITION
+    ReservationActionConflict:
+      description: Alternatif tertutup untuk transisi reservasi stale atau idempotency mismatch.
+      content:
+        application/problem+json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/ReservationTransitionProblem'
+              - $ref: '#/components/schemas/IdempotencyConflictProblem'
+          examples:
+            stale:
+              value:
+                type: https://app.example.invalid/problems/invalid-reservation-transition
+                title: Transisi reservasi tidak valid
+                status: 409
+                detail: Reservasi tidak berada pada status yang dapat dibatalkan.
+                instance: /api/staff/reservations/91/reject
+                code: INVALID_RESERVATION_TRANSITION
+            idempotency:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/reservations/91/cancel
+                code: IDEMPOTENCY_KEY_REUSED
+    ReportTransitionConflict:
+      description: Transisi laporan ditolak oleh state machine atau target sudah stale/expired.
+      content:
+        application/problem+json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/ReportTransitionProblem'
+              - $ref: '#/components/schemas/IdempotencyConflictProblem'
+          examples:
+            stale:
+              value:
+                type: https://app.example.invalid/problems/invalid-report-transition
+                title: Transisi laporan tidak valid
+                status: 409
+                detail: Laporan sudah berada pada status terminal.
+                instance: /api/staff/reports/15/resolve
+                code: INVALID_REPORT_TRANSITION
+            idempotency:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/staff/reports/15/resolve
+                code: IDEMPOTENCY_KEY_REUSED
+    ReportStartTransitionConflict:
+      description: Transisi laporan ditolak oleh state machine atau target sudah stale/expired.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ReportTransitionProblem' }
+          example:
+            type: https://app.example.invalid/problems/invalid-report-transition
+            title: Transisi laporan tidak valid
+            status: 409
+            detail: Laporan sudah berada pada status terminal.
+            instance: /api/staff/reports/15/start
+            code: INVALID_REPORT_TRANSITION
+    AccountTransitionConflict:
+      description: Transisi akun ditolak oleh state machine atau target sudah stale/expired.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/AccountTransitionProblem' }
+          example:
+            type: https://app.example.invalid/problems/invalid-account-transition
+            title: Transisi akun tidak valid
+            status: 409
+            detail: Akun sudah tidak berada pada status PENDING.
+            instance: /api/admin/users/42/approve
+            code: INVALID_ACCOUNT_TRANSITION
+    FacilityTransitionConflict:
+      description: Transisi fasilitas ditolak oleh state machine atau target sudah stale/expired.
+      content:
+        application/problem+json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/FacilityTransitionProblem'
+              - $ref: '#/components/schemas/IdempotencyConflictProblem'
+          examples:
+            stale:
+              value:
+                type: https://app.example.invalid/problems/invalid-facility-transition
+                title: Transisi fasilitas tidak valid
+                status: 409
+                detail: Transisi status fasilitas tidak diizinkan dari status saat ini.
+                instance: /api/staff/facilities/1/status
+                code: INVALID_FACILITY_TRANSITION
+            idempotency:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/staff/facilities/1/status
+                code: IDEMPOTENCY_KEY_REUSED
+    UnprocessableEntity:
+      description: Input valid secara bentuk tetapi melanggar validasi field atau aturan bisnis.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/validation-failed
+            title: Validasi gagal
+            status: 422
+            detail: Satu atau lebih field tidak memenuhi aturan.
+            instance: /api/resource
+            code: VALIDATION_FAILED
+            errors:
+              - field: startTime
+                code: SLOT_ALIGNMENT_INVALID
+                message: Waktu harus berada pada kelipatan 30 menit.
+    LoginRateLimited:
+      description: Lebih dari 10 kegagalan login dalam 15 menit untuk kombinasi IP dan email ternormalisasi.
+      headers:
+        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/login-rate-limited
+            title: Terlalu banyak percobaan login
+            status: 429
+            detail: Coba lagi setelah Retry-After detik.
+            instance: /api/auth/login
+            code: LOGIN_RATE_LIMITED
+    UploadRateLimited:
+      description: 'Batas upload intent terlampaui: 20 per user per jam atau 60 per IP per jam.'
+      headers:
+        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/upload-rate-limited
+            title: Batas upload tercapai
+            status: 429
+            detail: Batas penerbitan upload intent per jam tercapai.
+            instance: /api/report-uploads
+            code: UPLOAD_RATE_LIMITED
+    BlobFailure:
+      description: Upstream Vercel Blob gagal atau tidak dapat diverifikasi.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/blob-upstream-failure
+            title: Penyimpanan foto tidak tersedia
+            status: 502
+            detail: Penyimpanan foto gagal diproses; silakan coba lagi.
+            instance: /api/report-uploads
+            code: BLOB_UPSTREAM_FAILURE
+    UploadQuotaExhausted:
+      description: Kuota Vercel Blob tercapai; tidak ada laporan parsial yang dibuat.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/upload-quota-exhausted
+            title: Kuota upload habis
+            status: 503
+            detail: Upload baru ditolak sampai kuota penyimpanan tersedia kembali.
+            instance: /api/report-uploads
+            code: UPLOAD_QUOTA_EXHAUSTED
+    AdminUserMutationConflict:
+      description: Email telah digunakan atau Idempotency-Key dipakai untuk payload berbeda.
+      content:
+        application/problem+json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/AdminUserEmailConflictProblem'
+              - $ref: '#/components/schemas/IdempotencyConflictProblem'
+          examples:
+            email:
+              value:
+                type: https://app.example.invalid/problems/email-already-used
+                title: Email sudah digunakan
+                status: 409
+                detail: Email siti.aminah@example.com sudah terdaftar.
+                instance: /api/admin/users
+                code: EMAIL_ALREADY_USED
+            idempotency:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/admin/users
+                code: IDEMPOTENCY_KEY_REUSED
+    FacilityMutationConflict:
+      description: Nama fasilitas, transisi status, atau Idempotency-Key menimbulkan konflik.
+      content:
+        application/problem+json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/FacilityMutationProblem'
+              - $ref: '#/components/schemas/FacilityTransitionProblem'
+              - $ref: '#/components/schemas/IdempotencyConflictProblem'
+          examples:
+            name:
+              value:
+                type: https://app.example.invalid/problems/facility-name-already-used
+                title: Nama fasilitas sudah digunakan
+                status: 409
+                detail: Nama fasilitas RK-101 harus unik.
+                instance: /api/admin/facilities
+                code: FACILITY_NAME_ALREADY_USED
+            transition:
+              value:
+                type: https://app.example.invalid/problems/invalid-facility-transition
+                title: Transisi fasilitas tidak valid
+                status: 409
+                detail: Transisi status fasilitas tidak diizinkan dari status saat ini.
+                instance: /api/admin/facilities/1
+                code: INVALID_FACILITY_TRANSITION
+            idempotency:
+              value:
+                type: https://app.example.invalid/problems/idempotency-key-reused
+                title: Idempotensi tidak cocok
+                status: 409
+                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
+                instance: /api/admin/facilities/1
+                code: IDEMPOTENCY_KEY_REUSED
+    InternalServerError:
+      description: Kesalahan tak terduga; detail internal dicatat server dan tidak dikirim ke client.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://app.example.invalid/problems/internal-error
+            title: Kesalahan internal
+            status: 500
+            detail: Terjadi kesalahan yang tidak terduga.
+            instance: /api/resource
+            code: INTERNAL_ERROR
+  schemas:
+    Role:
+      type: string
+      enum: [pengguna, petugas, admin]
+    AccountStatus:
+      type: string
+      enum: [PENDING, ACTIVE, REJECTED, DISABLED]
+    FacilityType:
+      type: string
+      enum: [ruang_kelas, aula, laboratorium, alat, lapangan]
+    FacilityStatus:
+      type: string
+      enum: [ACTIVE, UNDER_MAINTENANCE, INACTIVE]
+    PublicFacilityStatus:
+      type: string
+      enum: [ACTIVE, UNDER_MAINTENANCE]
+    ReservationStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, CANCELLED_BY_USER, CANCELLED_BY_OFFICER, EXPIRED]
+    ReportStatus:
+      type: string
+      enum: [NEW, IN_PROGRESS, RESOLVED, REJECTED]
+    ReportCategory:
+      type: string
+      enum: [Listrik, Peralatan, Furnitur, Bangunan, Kebersihan, Lainnya]
+    UtcInstant:
+      type: string
+      format: date-time
+      pattern: 'Z$'
+      description: Instant ISO 8601 canonical UTC; wajib memiliki trailing Z, bukan offset lokal atau offset numerik. Untuk expiry reservasi, server menetapkan EXPIRED ketika serverNow >= startsAt.
+    ReservationStartTime:
+      type: string
+      enum: ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30']
+      description: Waktu mulai lokal Asia/Jakarta yang valid setiap 30 menit dari 07:00 sampai 19:30.
+    ReservationEndTime:
+      type: string
+      enum: ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00']
+      description: Waktu selesai lokal Asia/Jakarta yang valid setiap 30 menit dari 07:30 sampai 20:00.
+    SafeUser:
+      type: object
+      additionalProperties: false
+      required: [id, nama, email, role, status, waktuDaftar, waktuVerifikasi]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        email: { type: string, format: email, maxLength: 254, readOnly: true }
+        role: { $ref: '#/components/schemas/Role' }
+        status: { $ref: '#/components/schemas/AccountStatus' }
+        waktuDaftar: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        waktuVerifikasi:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+    StaffUser:
+      type: object
+      additionalProperties: false
+      required: [id, nama, role]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        role: { type: string, enum: [petugas, admin], readOnly: true }
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [nama, email, password]
+      properties:
+        nama: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, format: password, minLength: 1, maxLength: 72, description: 'Server dan client wajib menegakkan 8–72 byte UTF-8; minLength/maxLength hanya batas aman karakter, bukan aturan otoritatif byte.' }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, format: password, minLength: 1, maxLength: 72, description: 'Verifikasi server dan client memakai password 8–72 byte UTF-8; minLength/maxLength hanya batas aman karakter, bukan aturan otoritatif byte.' }
+    AdminCreateUserRequest:
+      type: object
+      additionalProperties: false
+      required: [nama, email, password, role]
+      properties:
+        nama: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, format: password, minLength: 1, maxLength: 72, description: 'Server dan client wajib menegakkan 8–72 byte UTF-8; minLength/maxLength hanya batas aman karakter, bukan aturan otoritatif byte.' }
+        role: { type: string, enum: [pengguna, petugas] }
+    FacilityCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [nama, tipe, lokasi, kapasitas]
+      properties:
+        nama: { type: string, minLength: 1, maxLength: 100 }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200 }
+        kapasitas: { type: integer, minimum: 1 }
+        deskripsi: { type: [string, 'null'], maxLength: 2000 }
+    FacilityUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        nama: { type: string, minLength: 1, maxLength: 100 }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200 }
+        kapasitas: { type: integer, minimum: 1 }
+        deskripsi: { type: [string, 'null'], maxLength: 2000 }
+        status: { $ref: '#/components/schemas/FacilityStatus' }
+    StaffFacilityStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, enum: [ACTIVE, UNDER_MAINTENANCE] }
+    Facility:
+      type: object
+      additionalProperties: false
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status, statusChangedAt, statusChangedBy]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100 }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200 }
+        kapasitas: { type: integer, minimum: 1 }
+        deskripsi: { type: [string, 'null'], maxLength: 2000 }
+        status: { $ref: '#/components/schemas/FacilityStatus' }
+        statusChangedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+          description: Provenance status; selalu dikirim pada schema operasional/admin dan bernilai null bila belum tersedia.
+        statusChangedBy:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
+          description: Aktor provenance status; selalu dikirim pada schema operasional/admin dan bernilai null bila belum tersedia.
+    PublicFacility:
+      type: object
+      additionalProperties: false
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200, readOnly: true }
+        kapasitas: { type: integer, minimum: 1, readOnly: true }
+        deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
+        status: { $ref: '#/components/schemas/PublicFacilityStatus' }
+    FacilitySnapshot:
+      type: object
+      additionalProperties: false
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status]
+      description: Snapshot fasilitas aman untuk record terautentikasi; dapat memuat INACTIVE tetapi tidak memuat provenance status.
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200, readOnly: true }
+        kapasitas: { type: integer, minimum: 1, readOnly: true }
+        deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
+        status: { $ref: '#/components/schemas/FacilityStatus' }
+    ReservationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [facilityId, date, startTime, endTime, tujuanPenggunaan]
+      properties:
+        facilityId: { type: integer, minimum: 1 }
+        date: { type: string, format: date, description: Tanggal kalender Asia/Jakarta; tidak boleh lampau. }
+        startTime: { $ref: '#/components/schemas/ReservationStartTime' }
+        endTime: { $ref: '#/components/schemas/ReservationEndTime' }
+        tujuanPenggunaan: { type: string, minLength: 1, maxLength: 500 }
+    ReasonRequest:
+      type: object
+      additionalProperties: false
+      required: [alasan]
+      properties:
+        alasan: { type: string, minLength: 1, maxLength: 500 }
+    ResolutionRequest:
+      type: object
+      additionalProperties: false
+      required: [catatanResolusi]
+      properties:
+        catatanResolusi: { type: string, minLength: 1, maxLength: 500 }
+    Reservation:
+      type: object
+      additionalProperties: false
+      required: [id, facility, date, timezone, startTime, endTime, startsAt, endsAt, tujuanPenggunaan, status, alasan, submittedAt, processedAt, processedBy]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        facility: { $ref: '#/components/schemas/FacilitySnapshot' }
+        date: { type: string, format: date, readOnly: true, description: Tanggal kalender Asia/Jakarta. }
+        timezone: { type: string, const: Asia/Jakarta, readOnly: true }
+        startTime: { $ref: '#/components/schemas/ReservationStartTime', readOnly: true }
+        endTime: { $ref: '#/components/schemas/ReservationEndTime', readOnly: true }
+        startsAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        endsAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        tujuanPenggunaan: { type: string, minLength: 1, maxLength: 500, readOnly: true }
+        status: { $ref: '#/components/schemas/ReservationStatus' }
+        alasan: { type: [string, 'null'], maxLength: 500, readOnly: true }
+        submittedAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        processedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+        processedBy:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
+    StaffReservation:
+      type: object
+      additionalProperties: false
+      required: [id, facility, pemohon, date, timezone, startTime, endTime, startsAt, endsAt, tujuanPenggunaan, status, alasan, submittedAt, processedAt, processedBy]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        facility: { $ref: '#/components/schemas/Facility' }
+        pemohon: { $ref: '#/components/schemas/SafeUser' }
+        date: { type: string, format: date, readOnly: true, description: Tanggal kalender Asia/Jakarta. }
+        timezone: { type: string, const: Asia/Jakarta, readOnly: true }
+        startTime: { $ref: '#/components/schemas/ReservationStartTime', readOnly: true }
+        endTime: { $ref: '#/components/schemas/ReservationEndTime', readOnly: true }
+        startsAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        endsAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        tujuanPenggunaan: { type: string, minLength: 1, maxLength: 500, readOnly: true }
+        status: { $ref: '#/components/schemas/ReservationStatus' }
+        alasan: { type: [string, 'null'], maxLength: 500, readOnly: true }
+        submittedAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        processedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+        processedBy:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
+    ReportUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [fileName, contentType, size]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: '^(?!\\.{1,2}$)(?!.*[/\\\\])(?!.*[\\x00-\\x1F\\x7F]).+$'
+          description: Hanya basename tanpa separator, control character, atau dot segment; nama asli tidak pernah masuk pathname. Server boleh mengabaikannya setelah validasi.
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        size: { type: integer, minimum: 1, maximum: 5242880, description: 'Ukuran byte, maksimum 5 MiB.' }
+    UploadIntent:
+      type: object
+      additionalProperties: false
+      required: [uploadId, pathname, uploadUrl, method, requiredHeaders, expiresAt, maximumSizeInBytes]
+      properties:
+        uploadId: { type: string, format: uuid, readOnly: true }
+        pathname: { type: string, minLength: 1, maxLength: 512, readOnly: true, description: Path dibuat server hanya dari owner terautentikasi dan nilai random server; original fileName tidak pernah masuk pathname dan path bukan URL permanen. }
+        uploadUrl: { type: string, format: uri, readOnly: true, description: Presigned URL upload maksimum 10 menit. }
+        method: { type: string, const: PUT, readOnly: true }
+        requiredHeaders:
+          type: object
+          additionalProperties: { type: string }
+          readOnly: true
+        expiresAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        maximumSizeInBytes: { type: integer, const: 5242880, readOnly: true }
+    PhotoMetadata:
+      type: object
+      additionalProperties: false
+      required: [hasPhoto, contentType, size]
+      properties:
+        hasPhoto: { type: boolean, const: true, readOnly: true }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp], readOnly: true }
+        size: { type: integer, minimum: 1, maximum: 5242880, readOnly: true }
+    ReportCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [uploadId, facilityId, kategori, deskripsi]
+      properties:
+        uploadId: { type: string, format: uuid }
+        facilityId: { type: integer, minimum: 1 }
+        kategori: { $ref: '#/components/schemas/ReportCategory' }
+        deskripsi: { type: string, minLength: 1, maxLength: 2000 }
+    Report:
+      type: object
+      additionalProperties: false
+      required: [id, facility, kategori, deskripsi, foto, status, catatanResolusi, ditanganiOleh, createdAt, processedAt]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        facility: { $ref: '#/components/schemas/FacilitySnapshot' }
+        kategori: { $ref: '#/components/schemas/ReportCategory' }
+        deskripsi: { type: string, minLength: 1, maxLength: 2000 }
+        foto: { $ref: '#/components/schemas/PhotoMetadata' }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        catatanResolusi: { type: [string, 'null'], maxLength: 500, readOnly: true }
+        ditanganiOleh:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
+        createdAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        processedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+    StaffReport:
+      type: object
+      additionalProperties: false
+      required: [id, facility, pelapor, kategori, deskripsi, foto, status, catatanResolusi, ditanganiOleh, createdAt, processedAt]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        facility: { $ref: '#/components/schemas/Facility' }
+        pelapor: { $ref: '#/components/schemas/SafeUser' }
+        kategori: { $ref: '#/components/schemas/ReportCategory' }
+        deskripsi: { type: string, minLength: 1, maxLength: 2000 }
+        foto: { $ref: '#/components/schemas/PhotoMetadata' }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        catatanResolusi: { type: [string, 'null'], maxLength: 500, readOnly: true }
+        ditanganiOleh:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
+        createdAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+        processedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+    PhotoUrlResponse:
+      type: object
+      additionalProperties: false
+      required: [url, expiresAt]
+      properties:
+        url: { type: string, format: uri, readOnly: true, description: Signed URL sementara maksimal 5 menit; jangan dipersistenkan. }
+        expiresAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+    AvailabilitySlot:
+      type: object
+      additionalProperties: false
+      required: [startTime, endTime, available, blockedBy]
+      properties:
+        startTime: { $ref: '#/components/schemas/ReservationStartTime', readOnly: true }
+        endTime: { $ref: '#/components/schemas/ReservationEndTime', readOnly: true }
+        available: { type: boolean, readOnly: true }
+        blockedBy: { type: [string, 'null'], enum: [APPROVED, MAINTENANCE, null], readOnly: true }
+    AvailabilityResponse:
+      type: object
+      additionalProperties: false
+      required: [facilityId, date, timezone, slots]
+      properties:
+        facilityId: { type: integer, minimum: 1, readOnly: true }
+        date: { type: string, format: date, readOnly: true }
+        timezone: { type: string, const: Asia/Jakarta, readOnly: true }
+        slots:
+          type: array
+          minItems: 26
+          maxItems: 26
+          prefixItems:
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '07:00' }
+                    endTime: { const: '07:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '07:30' }
+                    endTime: { const: '08:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '08:00' }
+                    endTime: { const: '08:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '08:30' }
+                    endTime: { const: '09:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '09:00' }
+                    endTime: { const: '09:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '09:30' }
+                    endTime: { const: '10:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '10:00' }
+                    endTime: { const: '10:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '10:30' }
+                    endTime: { const: '11:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '11:00' }
+                    endTime: { const: '11:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '11:30' }
+                    endTime: { const: '12:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '12:00' }
+                    endTime: { const: '12:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '12:30' }
+                    endTime: { const: '13:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '13:00' }
+                    endTime: { const: '13:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '13:30' }
+                    endTime: { const: '14:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '14:00' }
+                    endTime: { const: '14:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '14:30' }
+                    endTime: { const: '15:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '15:00' }
+                    endTime: { const: '15:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '15:30' }
+                    endTime: { const: '16:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '16:00' }
+                    endTime: { const: '16:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '16:30' }
+                    endTime: { const: '17:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '17:00' }
+                    endTime: { const: '17:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '17:30' }
+                    endTime: { const: '18:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '18:00' }
+                    endTime: { const: '18:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '18:30' }
+                    endTime: { const: '19:00' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '19:00' }
+                    endTime: { const: '19:30' }
+            - allOf:
+                - $ref: '#/components/schemas/AvailabilitySlot'
+                - type: object
+                  properties:
+                    startTime: { const: '19:30' }
+                    endTime: { const: '20:00' }
+          items: { $ref: '#/components/schemas/AvailabilitySlot' }
+    PageMeta:
+      type: object
+      additionalProperties: false
+      required: [page, perPage, totalItems, totalPages]
+      properties:
+        page: { type: integer, minimum: 1, readOnly: true }
+        perPage: { type: integer, minimum: 1, maximum: 100, readOnly: true }
+        totalItems: { type: integer, minimum: 0, readOnly: true }
+        totalPages: { type: integer, minimum: 0, readOnly: true }
+    FacilityCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Facility' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    PublicFacilityCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/PublicFacility' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    ReservationCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Reservation' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    StaffReservationCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/StaffReservation' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    ReportCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Report' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    StaffReportCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/StaffReport' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    UserCollection:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/SafeUser' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    AuthUserResponse:
+      type: object
+      additionalProperties: false
+      required: [user]
+      properties:
+        user: { $ref: '#/components/schemas/SafeUser' }
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required: [user, expiresAt]
+      properties:
+        user: { $ref: '#/components/schemas/SafeUser' }
+        expiresAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+    Problem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+      unevaluatedProperties: false
+      description: Closed generic RFC 9457 problem detail.
+    ProblemBase:
+      type: object
+      required: [type, title, status, detail, instance, code]
+      properties:
+        type: { type: string, format: uri, description: URI problem type yang stabil. }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string, description: 'Identifier instance request, bukan rahasia.' }
+        code: { type: string, description: Kode error machine-readable. }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ProblemFieldError' }
+    MutationForbiddenProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 403 }
+            code: { type: string, enum: [FORBIDDEN, CSRF_ORIGIN_REJECTED] }
+      unevaluatedProperties: false
+    ForbiddenProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 403 }
+            code: { type: string, const: FORBIDDEN }
+      unevaluatedProperties: false
+    IdempotencyConflictProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: IDEMPOTENCY_KEY_REUSED }
+      unevaluatedProperties: false
+    ProblemFieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code, message]
+      properties:
+        field: { type: string }
+        code: { type: string }
+        message: { type: string }
+    ReservationConflictProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [availability]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, enum: [RESERVATION_OVERLAP, APPROVAL_CONFLICT] }
+            availability: { $ref: '#/components/schemas/AvailabilityResponse' }
+      unevaluatedProperties: false
+      description: Closed RFC 9457 operation-specific conflict; availability is the actual latest AvailabilityResponse.
+    ReservationTransitionProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: INVALID_RESERVATION_TRANSITION }
+      unevaluatedProperties: false
+    ReportTransitionProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: INVALID_REPORT_TRANSITION }
+      unevaluatedProperties: false
+    ReportFinalizationConflictProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: UPLOAD_ALREADY_FINALIZED }
+      unevaluatedProperties: false
+    AccountTransitionProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+             status: { type: integer, const: 409 }
+             code: { type: string, const: INVALID_ACCOUNT_TRANSITION }
+      unevaluatedProperties: false
+    AdminUserEmailConflictProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: EMAIL_ALREADY_USED }
+      unevaluatedProperties: false
+    FacilityTransitionProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: INVALID_FACILITY_TRANSITION }
+      unevaluatedProperties: false
+    FacilityMutationProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: FACILITY_NAME_ALREADY_USED }
+      unevaluatedProperties: false
+    DamageGroup:
+      type: object
+      additionalProperties: false
+      required: [facilityId, facilityName, kategori, status, count]
+      properties:
+        facilityId: { type: integer, minimum: 1 }
+        facilityName: { type: string }
+        kategori: { $ref: '#/components/schemas/ReportCategory' }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        count: { type: integer, minimum: 0 }
+    Analytics:
+      type: object
+      additionalProperties: false
+      required: [filter, timezone, effectiveRange, generatedAt, occupancy, damageGroups, methodology]
+      properties:
+        filter:
+          type: object
+          additionalProperties: false
+          required: [dateFrom, dateTo, location]
+          properties:
+            dateFrom: { type: string, format: date }
+            dateTo: { type: string, format: date }
+            location:
+              type: [string, 'null']
+              maxLength: 200
+              description: >-
+                Requested/effective location; null means all locations. Matching is
+                trim + case-fold + exact, case-insensitive.
+        timezone: { type: string, const: Asia/Jakarta }
+        effectiveRange:
+          type: object
+          additionalProperties: false
+          required: [from, until]
+          properties:
+            from: { $ref: '#/components/schemas/UtcInstant', description: 00:00 dateFrom Asia/Jakarta sebagai UTC. }
+            until: { $ref: '#/components/schemas/UtcInstant', description: 00:00 sehari setelah dateTo Asia/Jakarta sebagai UTC; batas exclusive. }
+        generatedAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true, description: Waktu server saat dataset dashboard/export yang sama dibuat. }
+        occupancy:
+          type: object
+          additionalProperties: false
+          required: [numeratorMinutes, denominatorMinutes, percentage]
+          properties:
+            numeratorMinutes: { type: integer, minimum: 0, description: Total menit irisan reservasi APPROVED. }
+            denominatorMinutes: { type: integer, minimum: 0, description: 'Setiap fasilitas yang cocok dengan location ternormalisasi, tanpa mengecualikan ACTIVE, UNDER_MAINTENANCE, atau INACTIVE, × hari kalender × 780; status historis tidak direkonstruksi.' }
+            percentage: { type: number, minimum: 0, maximum: 100 }
+        damageGroups:
+          type: array
+          items: { $ref: '#/components/schemas/DamageGroup' }
+        methodology:
+          type: object
+          additionalProperties: false
+          required: [operatingMinutesPerDay, approvedOnly, maintenanceExcludedFromDenominator, damageCountedFrom]
+          properties:
+            operatingMinutesPerDay: { type: integer, const: 780 }
+            approvedOnly: { type: boolean, const: true }
+            maintenanceExcludedFromDenominator: { type: boolean, const: false }
+            damageCountedFrom: { type: string, const: createdAt }
