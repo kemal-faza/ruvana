@@ -37,8 +37,9 @@ async function main() {
     { nama: "RK-102", tipe: "ruang_kelas", lokasi: "Gedung A Lt.1", kapasitas: 40, deskripsi: "Ruang kelas standar" },
     { nama: "Aula Utama", tipe: "aula", lokasi: "Gedung Serbaguna", kapasitas: 300, deskripsi: "Aula serbaguna dengan panggung" },
     { nama: "Lab Komputer 1", tipe: "laboratorium", lokasi: "Gedung B Lt.2", kapasitas: 35, deskripsi: "Lab komputer 35 unit" },
-    { nama: "Proyektor LCD", tipe: "alat", lokasi: "Ruang Penyimpanan Alat", kapasitas: 1, deskripsi: "Proyektor LCD portabel" },
-    { nama: "Kamera DSLR", tipe: "alat", lokasi: "Ruang Penyimpanan Alat", kapasitas: 1, deskripsi: "Kamera DSLR untuk dokumentasi" },
+    { nama: "Lab Kimia", tipe: "laboratorium", lokasi: "Gedung B Lt.2", kapasitas: 30, deskripsi: "Laboratorium kimia dengan peralatan praktikum" },
+    { nama: "Proyektor", tipe: "alat", lokasi: "Ruang Penyimpanan Alat", kapasitas: 1, deskripsi: "Proyektor portabel" },
+    { nama: "Speaker", tipe: "alat", lokasi: "Ruang Penyimpanan Alat", kapasitas: 1, deskripsi: "Speaker portabel untuk acara" },
     { nama: "Lapangan Basket", tipe: "lapangan", lokasi: "Area Olahraga", kapasitas: 20, deskripsi: "Lapangan basket outdoor" },
     { nama: "Lapangan Futsal", tipe: "lapangan", lokasi: "Area Olahraga", kapasitas: 14, deskripsi: "Lapangan futsal rumput sintetis" },
   ] as const;

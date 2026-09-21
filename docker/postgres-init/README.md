@@ -1,1 +1,0 @@
--- Postgres: user & shadow DB diatur via env POSTGRES_USER (ruvana) + CREATE DATABASE grant default untuk superuser.

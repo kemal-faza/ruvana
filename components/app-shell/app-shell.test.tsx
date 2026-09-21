@@ -62,7 +62,20 @@ describe("AppShell", () => {
     const logout = screen.getAllByRole("link", { name: "Keluar" })[0]
     expect(logout).toHaveAttribute("href", "/keluar")
     expect(logout).not.toHaveAttribute("type")
+    // Link tetap dapat fokus; jangan matikan outline tanpa indikator pengganti.
+    expect(logout.className).not.toMatch(/outline-none/)
     expect((await axe(container)).violations).toEqual([])
+  })
+
+  it("memberi stagger CSS pada butir navigasi tanpa menyembunyikan konten", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    const { container } = renderFixture()
+
+    const staggerNodes = Array.from(
+      container.querySelectorAll<HTMLElement>(".motion-rise-stagger"),
+    )
+    expect(staggerNodes.length).toBeGreaterThan(0)
+    expect(staggerNodes.every((node) => node.style.getPropertyValue("--stagger-index") !== "")).toBe(true)
   })
 
   it("menjaga sidebar desktop terbuka tanpa shortcut Ctrl atau Cmd+B", () => {
