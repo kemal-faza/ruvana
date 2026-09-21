@@ -18,6 +18,11 @@
 #   scripts/check-banned-words.sh --file <path>
 #
 # Exit code 0 = bersih, 1 = ada pelanggaran.
+#
+# Catatan performa: script ini hanya boleh memanggil proses eksternal
+# O(jumlah file), bukan O(jumlah baris). Di Windows (Git Bash/MSYS2) tiap
+# spawn proses berbiaya besar, sehingga pemeriksaan baris demi baris dengan
+# `grep` terpisah membuat `git commit` terasa menggantung.
 # ============================================================
 
 set -u
@@ -31,8 +36,9 @@ YELLOW=$'\033[33m'
 NC=$'\033[0m'
 
 # File/folder yang sengaja dilewati (binary, dependency, artefak build,
-# serta file konfigurasi script ini sendiri).
-SKIP_PATHS='(^|/)(\.git|node_modules|\.next|generated|out|build|coverage|\.venv|venv|scripts)(/|$)|\.(png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot|pdf|sql|lock)$'
+# lockfile generated, serta file konfigurasi script ini sendiri).
+# Dipakai baik saat scan penuh maupun saat memilih file staged.
+SKIP_PATHS='(^|/)(\.git|node_modules|\.next|generated|out|build|coverage|\.venv|venv|scripts)(/|$)|(^|/)(pnpm-lock\.yaml|package-lock\.json)$|\.(png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot|pdf|sql|lock)$'
 # File daftar kata itu sendiri justru memuat kata tsb (harus dilewati).
 SKIP_FILES='^scripts/\.banned-words$'
 
@@ -67,7 +73,8 @@ done
 collect_files() {
   case "$MODE" in
     staged)
-      git diff --cached --name-only --diff-filter=ACM ;;
+      git diff --cached --name-only --diff-filter=ACM \
+        | grep -Ev "$SKIP_PATHS" || true ;;
     file)
       echo "$FILE_ARG" ;;
     all)
@@ -81,26 +88,26 @@ files="$(collect_files)"
 
 violations=0
 
+# Nama file yang mengandung kata terlarang — satu grep untuk seluruh daftar.
+while IFS= read -r path; do
+  [[ -z "$path" ]] && continue
+  grep -Eq "$SKIP_FILES" <<<"$path" && continue
+  echo "${RED}✗ Nama file mengandung kata terlarang: $path${NC}"
+  violations=$((violations + 1))
+done < <(grep -E -e "$BANNED_RE" <<<"$files" || true)
+
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   # Lewati file konfigurasi daftar kata (memuat kata tsb secara sah).
   grep -Eq "$SKIP_FILES" <<<"$f" && continue
-  # Nama file yang mengandung kata terlarang
-  if grep -Eq "$BANNED_RE" <<<"$(basename "$f")"; then
-    echo "${RED}✗ Nama file mengandung kata terlarang: $f${NC}"
+  [[ -f "$f" ]] || continue
+
+  # Isi file: satu grep -n per file. `-I` melewati file binary tanpa perlu
+  # memanggil `file` per file.
+  while IFS= read -r hit; do
+    echo "${RED}✗ $f:${hit%%:*} — mengandung kata terlarang:${NC} ${hit#*:}"
     violations=$((violations + 1))
-  fi
-  # Isi file (lewatkan file non-teks / binary)
-  if [[ -f "$f" ]] && file -b --mime-encoding "$f" 2>/dev/null | grep -q "utf-8\|ascii"; then
-    line_no=0
-    while IFS= read -r line || [[ -n "$line" ]]; do
-      line_no=$((line_no + 1))
-      if grep -Eqi "$BANNED_RE" <<<"$line"; then
-        echo "${RED}✗ $f:$line_no — mengandung kata terlarang:${NC} $line"
-        violations=$((violations + 1))
-      fi
-    done < "$f"
-  fi
+  done < <(grep -nEi -e "$BANNED_RE" -I -- "$f" || true)
 done <<< "$files"
 
 if [[ $violations -gt 0 ]]; then
