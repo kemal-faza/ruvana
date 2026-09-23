@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
+import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import type { ReservationCreateInput } from "@/lib/validation/reservation";
-import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta, generateAllSlots } from "@/lib/time/reservation-time";
+import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta } from "@/lib/time/reservation-time";
 
 export type ServiceError =
   | { type: "validation"; errors: ProblemFieldError[] }
@@ -72,31 +73,6 @@ function toReservationResponse(row: {
   };
 }
 
-function buildAvailabilityResponse(
-  facilityId: number,
-  date: string,
-  approvedRanges: Array<{ startTime: Date; endTime: Date }>,
-) {
-  const allSlots = generateAllSlots();
-  const slots = allSlots.map((slot) => {
-    const slotStart = asiaJakartaToUtc(date, slot.startTime);
-    const slotEnd = asiaJakartaToUtc(date, slot.endTime);
-    const blocked = approvedRanges.some((r) => r.startTime < slotEnd && r.endTime > slotStart);
-    return {
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      available: !blocked,
-      blockedBy: blocked ? "APPROVED" : null,
-    };
-  });
-  return {
-    facilityId,
-    date,
-    timezone: "Asia/Jakarta",
-    slots,
-  };
-}
-
 export async function createReservationService(
   userId: number,
   input: ReservationCreateInput,
@@ -159,17 +135,14 @@ export async function createReservationService(
       });
 
       if (overlapping.length > 0) {
-        // Ambil semua APPROVED pada tanggal tersebut untuk build availability terbaru
-        const approvedOnDate = await tx.reservation.findMany({
-          where: {
-            facilityId: input.facilityId,
-            status: "APPROVED",
-            tanggal: { gte: tanggal, lt: new Date(tanggal.getTime() + 24 * 60 * 60 * 1000) },
-          },
-          select: { startTime: true, endTime: true },
+        // Bangun availability terbaru lewat sumber tunggal, di dalam transaksi
+        // yang sama: teruskan tx agar konsisten dengan row lock, dan status
+        // fasilitas yang sudah dibaca lewat SELECT ... FOR UPDATE agar tidak
+        // query ulang di luar lock.
+        const availability = await computeFacilityAvailability(input.facilityId, input.date, {
+          client: tx,
+          facilityStatus: facility.status,
         });
-        // Sertakan juga rentang yang baru ditemukan jika belum ada
-        const availability = buildAvailabilityResponse(input.facilityId, input.date, approvedOnDate);
         throw { kind: "conflict" as const, availability };
       }
 
@@ -225,4 +198,4 @@ export async function createReservationService(
 }
 
 // Ekspor helper untuk test
-export { buildAvailabilityResponse, toReservationResponse };
+export { toReservationResponse };
