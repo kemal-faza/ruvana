@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockTransaction = vi.fn();
 const findManyRoot = vi.fn();
 const countRoot = vi.fn();
+const updateManyRoot = vi.fn().mockResolvedValue({ count: 0 });
 
 // Mock singleton Prisma — pola yang sama seperti test TASK 3.1
 vi.mock("@/lib/prisma", () => ({
@@ -11,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
     reservation: {
       findMany: (...args: unknown[]) => (findManyRoot as (...a: unknown[]) => unknown)(...args),
       count: (...args: unknown[]) => (countRoot as (...a: unknown[]) => unknown)(...args),
+      updateMany: (...args: unknown[]) => (updateManyRoot as (...a: unknown[]) => unknown)(...args),
     },
   },
 }));
@@ -81,6 +83,7 @@ function mockTx(opts: {
     update: vi.fn().mockImplementation((args: { data: Record<string, unknown> }) =>
       Promise.resolve({ ...(row as object), ...args.data }),
     ),
+    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
   };
   const facility = {
     findUnique: vi.fn().mockResolvedValue(
@@ -120,6 +123,20 @@ describe("approveReservationService", () => {
         data: expect.objectContaining({ status: "APPROVED", diprosesOleh: 7, waktuDiproses: now }),
       }),
     );
+  });
+
+  it("menjalankan expiry idempoten sebelum membaca baris saat approve", async () => {
+    const { reservation } = mockTx();
+
+    await approveReservationService(7, 92, now);
+
+    const updateMany = vi.mocked(reservation.updateMany);
+    const findUnique = vi.mocked(reservation.findUnique);
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { status: "PENDING", startTime: { lte: now } },
+      data: expect.objectContaining({ status: "EXPIRED" }),
+    });
+    expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(findUnique.mock.invocationCallOrder[0]);
   });
 
   it("menolak approve yang bentrok tanpa perubahan dan membawa availability", async () => {
@@ -253,6 +270,19 @@ describe("cancelReservationByOfficerService", () => {
 });
 
 describe("listStaffQueueService", () => {
+  it("menjalankan expiry sebelum membaca antrean agar yang basi tidak tampil", async () => {
+    findManyRoot.mockResolvedValue([]);
+    countRoot.mockResolvedValue(0);
+
+    await listStaffQueueService({ page: 1, perPage: 20 });
+
+    expect(updateManyRoot).toHaveBeenCalledWith({
+      where: { status: "PENDING", startTime: { lte: expect.any(Date) } },
+      data: expect.objectContaining({ status: "EXPIRED" }),
+    });
+    expect(updateManyRoot.mock.invocationCallOrder[0]).toBeLessThan(findManyRoot.mock.invocationCallOrder[0]);
+  });
+
   it("mengembalikan PENDING terlama dulu beserta pemohon dan meta", async () => {
     findManyRoot.mockResolvedValue([makeRow(), makeRow({ id: 93 })]);
     countRoot.mockResolvedValue(2);

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const findMany = vi.fn();
 const count = vi.fn();
 const findFirst = vi.fn();
+const updateMany = vi.fn().mockResolvedValue({ count: 0 });
 
 // Mock singleton Prisma — pola yang sama seperti test TASK 3.1
 vi.mock("@/lib/prisma", () => ({
@@ -11,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
       findMany: (...args: unknown[]) => (findMany as (...a: unknown[]) => unknown)(...args),
       count: (...args: unknown[]) => (count as (...a: unknown[]) => unknown)(...args),
       findFirst: (...args: unknown[]) => (findFirst as (...a: unknown[]) => unknown)(...args),
+      updateMany: (...args: unknown[]) => (updateMany as (...a: unknown[]) => unknown)(...args),
     },
   },
 }));
@@ -47,6 +49,19 @@ beforeEach(() => {
 });
 
 describe("listMyReservationsService", () => {
+  it("menjalankan expiry sebelum membaca riwayat agar status terkini tampil", async () => {
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
+
+    await listMyReservationsService(42, { page: 1, perPage: 20 });
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { status: "PENDING", startTime: { lte: expect.any(Date) } },
+      data: expect.objectContaining({ status: "EXPIRED" }),
+    });
+    expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(findMany.mock.invocationCallOrder[0]);
+  });
+
   it("mengembalikan item milik pengguna beserta meta pagination", async () => {
     findMany.mockResolvedValue([makeRow(), makeRow({ id: 90, status: "PENDING" })]);
     count.mockResolvedValue(2);

@@ -46,9 +46,10 @@ function mockTx(row: Record<string, unknown> | null) {
   const update = vi.fn().mockImplementation((args: { data: Record<string, unknown> }) =>
     Promise.resolve({ ...(row as object), ...args.data }),
   );
-  const tx = { reservation: { findFirst, update } };
+  const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const tx = { reservation: { findFirst, update, updateMany } };
   mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
-  return { findFirst, update };
+  return { findFirst, update, updateMany };
 }
 
 beforeEach(() => {
@@ -56,6 +57,18 @@ beforeEach(() => {
 });
 
 describe("cancelMyReservationService", () => {
+  it("menjalankan expiry idempoten sebelum membaca baris", async () => {
+    const { findFirst, updateMany } = mockTx(makeRow());
+
+    await cancelMyReservationService(42, 91, { alasan: "Jadwal berubah" }, now);
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { status: "PENDING", startTime: { lte: now } },
+      data: expect.objectContaining({ status: "EXPIRED" }),
+    });
+    expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(findFirst.mock.invocationCallOrder[0]);
+  });
+
   it("membatalkan reservasi PENDING milik sendiri", async () => {
     const { update } = mockTx(makeRow());
 

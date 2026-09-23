@@ -13,6 +13,7 @@ import {
   listPendingQueue,
 } from "@/lib/db/reservations";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
+import { expirePendingReservations } from "@/lib/reservations/expiry";
 import type { CancelReservationInput, ReservationCreateInput } from "@/lib/validation/reservation";
 import type { MyReservationListQuery } from "@/lib/validation/reservation-query";
 import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta } from "@/lib/time/reservation-time";
@@ -224,6 +225,7 @@ export async function listMyReservationsService(
   query: MyReservationListQuery,
 ): Promise<{ ok: true; data: MyReservationCollection }> {
   const { page, perPage, status } = query;
+  await expirePendingReservations();
   const [rows, totalItems] = await Promise.all([
     listMyReservations({ userId, status, skip: (page - 1) * perPage, take: perPage }),
     countMyReservations({ userId, status }),
@@ -247,6 +249,7 @@ export async function getMyReservationService(
   userId: number,
   id: number,
 ): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: Extract<ServiceError, { type: "not_found" }> }> {
+  await expirePendingReservations();
   const row = await findMyReservationById(userId, id);
   if (!row) {
     return { ok: false, error: { type: "not_found", message: "Reservasi tidak ditemukan" } };
@@ -263,6 +266,7 @@ export async function cancelMyReservationService(
 ): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: ServiceError }> {
   try {
     const updated = await prisma.$transaction(async (tx) => {
+      await expirePendingReservations(tx, now);
       const row = await tx.reservation.findFirst({
         where: { id, userId },
         include: { facility: true },
@@ -399,6 +403,7 @@ export async function listStaffQueueService(query: {
   perPage: number;
 }): Promise<{ ok: true; data: StaffReservationCollection }> {
   const { page, perPage } = query;
+  await expirePendingReservations();
   const [rows, totalItems] = await Promise.all([
     listPendingQueue({ skip: (page - 1) * perPage, take: perPage }),
     countPendingQueue(),
@@ -453,6 +458,7 @@ export async function approveReservationService(
 ): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
   try {
     const { updated, actor } = await prisma.$transaction(async (tx) => {
+      await expirePendingReservations(tx, now);
       const row = await tx.reservation.findUnique({
         where: { id },
         include: { facility: true },
@@ -526,6 +532,7 @@ export async function rejectReservationService(
 ): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
   try {
     const { updated, actor } = await prisma.$transaction(async (tx) => {
+      await expirePendingReservations(tx, now);
       const row = await tx.reservation.findUnique({
         where: { id },
         include: { facility: true },
