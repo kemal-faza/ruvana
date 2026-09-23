@@ -1,9 +1,16 @@
 import type { ProblemFieldError } from "@/lib/http/problem";
+import { TIPE_FASILITAS } from "@/config/business";
 import { parseCalendarDate } from "@/lib/time/jakarta";
+
+const MAX_PANJANG_TEKS = 200;
 
 export interface PublicListQuery {
   page: number;
   perPage: number;
+  search?: string;
+  type?: (typeof TIPE_FASILITAS)[number];
+  location?: string;
+  minCapacity?: number;
 }
 
 export type ParseResult<T> =
@@ -14,6 +21,41 @@ function parsePositiveInt(raw: string | null): number | null {
   if (raw === null) return null;
   if (!/^\d+$/.test(raw)) return NaN;
   return Number(raw);
+}
+
+/**
+ * Membuang parameter yang nilainya kosong atau hanya spasi sebelum parse.
+ * API tetap ketat (query mentah apa adanya), sedangkan halaman lebih permisif:
+ * input form yang dikosongkan pengguna tidak boleh memicu 422.
+ */
+export function cleanSearchParams(searchParams: URLSearchParams): URLSearchParams {
+  const cleaned = new URLSearchParams();
+  for (const [key, value] of searchParams.entries()) {
+    if (value.trim() !== "") {
+      cleaned.append(key, value);
+    }
+  }
+  return cleaned;
+}
+
+function parseBoundedText(raw: string | null, field: string): string | undefined | ProblemFieldError {
+  if (raw === null) return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) {
+    return { field, code: "TOO_SHORT", message: `${field} tidak boleh kosong` };
+  }
+  if (trimmed.length > MAX_PANJANG_TEKS) {
+    return {
+      field,
+      code: "TOO_LONG",
+      message: `${field} maksimal ${MAX_PANJANG_TEKS} karakter`,
+    };
+  }
+  return trimmed;
+}
+
+function isProblemFieldError(value: unknown): value is ProblemFieldError {
+  return typeof value === "object" && value !== null && "code" in value;
 }
 
 export function parsePublicListQuery(searchParams: URLSearchParams): ParseResult<PublicListQuery> {
@@ -35,6 +77,34 @@ export function parsePublicListQuery(searchParams: URLSearchParams): ParseResult
     errors.push({ field: "perPage", code: "OUT_OF_RANGE", message: "perPage harus di antara 1 dan 100" });
   }
 
+  const search = parseBoundedText(searchParams.get("search"), "search");
+  if (isProblemFieldError(search)) {
+    errors.push(search);
+  }
+
+  const location = parseBoundedText(searchParams.get("location"), "location");
+  if (isProblemFieldError(location)) {
+    errors.push(location);
+  }
+
+  const rawType = searchParams.get("type");
+  let type: PublicListQuery["type"];
+  if (rawType !== null) {
+    if ((TIPE_FASILITAS as readonly string[]).includes(rawType)) {
+      type = rawType as PublicListQuery["type"];
+    } else {
+      errors.push({ field: "type", code: "INVALID_ENUM", message: "type harus salah satu tipe fasilitas yang dikenal" });
+    }
+  }
+
+  const rawMinCapacity = searchParams.get("minCapacity");
+  const minCapacity = parsePositiveInt(rawMinCapacity);
+  if (Number.isNaN(minCapacity)) {
+    errors.push({ field: "minCapacity", code: "INVALID_INTEGER", message: "minCapacity harus bilangan bulat positif" });
+  } else if (minCapacity !== null && minCapacity < 1) {
+    errors.push({ field: "minCapacity", code: "OUT_OF_RANGE", message: "minCapacity harus minimal 1" });
+  }
+
   if (errors.length > 0) {
     return { ok: false, errors };
   }
@@ -44,6 +114,10 @@ export function parsePublicListQuery(searchParams: URLSearchParams): ParseResult
     value: {
       page: page ?? 1,
       perPage: perPage ?? 20,
+      ...(search !== undefined ? { search: search as string } : {}),
+      ...(type !== undefined ? { type } : {}),
+      ...(location !== undefined ? { location: location as string } : {}),
+      ...(minCapacity !== null ? { minCapacity } : {}),
     },
   };
 }
