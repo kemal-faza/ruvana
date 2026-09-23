@@ -1,436 +1,189 @@
-"use client";
+"use client"
 
-import { useActionState, type CSSProperties, type ReactNode } from "react";
-import { login } from "@/app/login/actions";
-import Logo from "@/components/Logo";
+import Link from "next/link"
+import { ArrowLeft, Building2, CalendarCheck2, LockKeyhole, Mail, ShieldCheck } from "lucide-react"
+import { useActionState } from "react"
 
-const C = {
-  canvas: "#F7F5EF",
-  surface: "#FFFFFF",
-  brand: "#6F7F3B",
-  strong: "#526222",
-  text: "#252525",
-  muted: "#5F5D57",
-  mutedBrand: "#77746D",
-  border: "#E5E2D9",
-  subtle: "#F1F0EA",
-  dangerText: "#9B1C1C",
-  dangerSurface: "#FDECEC",
-  successText: "#1F5C3A",
-  successSurface: "#E7F4EC",
-};
+import { login } from "@/app/login/actions"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+
+const manfaat = [
+  {
+    icon: CalendarCheck2,
+    title: "Reservasi terpusat",
+    description: "Ajukan dan pantau penggunaan fasilitas kampus dalam satu tempat.",
+  },
+  {
+    icon: Building2,
+    title: "Informasi yang jelas",
+    description: "Lihat fasilitas, jadwal, dan status permintaan dengan mudah.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Akses sesuai peran",
+    description: "Setiap akun memperoleh fitur sesuai kewenangannya.",
+  },
+] as const
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState(login, {
     ok: false,
     pesan: "",
-  });
+  })
+
+  const emailError = state.fieldErrors?.email?.[0]
+  const passwordError = state.fieldErrors?.password?.[0]
 
   return (
-    <div
-      className="login-page"
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        background: C.canvas,
-      }}
-    >
-      {/* ── Left panel — campus photo + branding ── */}
+    <main className="relative min-h-dvh overflow-hidden bg-background">
       <div
-        className="login-brand-panel"
-        style={{
-          position: "relative",
-          width: "50%",
-          minHeight: "100vh",
-          overflow: "hidden",
-          flexShrink: 0,
-        }}
-      >
-        {/* Campus Photo */}
-        <img
-          src="https://fsm.undip.ac.id/wp-content/uploads/2020/10/DSC7133.jpg"
-          alt=""
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top_left,var(--primary-subdued),transparent_68%)] opacity-70"
+      />
 
-        {/* Green / Dark Overlay */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(82,98,34,0.10) 0%, rgba(82,98,34,0.36) 50%, rgba(82,98,34,0.72) 100%)",
-          }}
-        />
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-6xl flex-col p-4 sm:p-6 lg:px-8">
+        <header className="flex items-center justify-between gap-4">
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors duration-motion-standard hover:text-foreground"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Kembali ke beranda
+          </Link>
+          <ThemeToggle />
+        </header>
 
-        {/* Branding Content */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            minHeight: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: "40px 44px",
-            boxSizing: "border-box",
-          }}
-        >
-          {/* Logo */}
-          <Logo
-            tone="light"
-            withText
-            textColor="#1a1919"
-          />
-
-          {/* Bottom Branding */}
-          <div style={{ maxWidth: 360 }}>
+        <div className="grid flex-1 items-center gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:gap-16 lg:py-12">
+          <section aria-labelledby="login-intro-title" className="hidden max-w-xl lg:block">
+            <p className="mb-4 text-sm font-medium tracking-wide text-primary">
+              Sistem fasilitas kampus
+            </p>
             <h2
-              style={{
-                margin: 0,
-                fontSize: 24,
-                fontWeight: 600,
-                color: "#f1ececfa",
-                letterSpacing: "-0.3px",
-                lineHeight: 1.35,
-              }}
+              id="login-intro-title"
+              className="text-4xl/tight font-semibold tracking-tight text-balance"
             >
-              Kelola reservasi &amp; laporan fasilitas kampus
+              Kelola kebutuhan fasilitas dengan lebih tenang.
             </h2>
-
-            <p
-              style={{
-                margin: "14px 0 0",
-                fontSize: 14,
-                color: "rgba(255,255,255,0.82)",
-                lineHeight: 1.65,
-              }}
-            >
-              Ruang kelas, laboratorium, aula, alat, dan lapangan — mudah
-              ditemukan dan dijadwalkan.
+            <p className="mt-4 max-w-lg text-base/relaxed text-muted-foreground">
+              Satu akses untuk reservasi ruang, pemantauan permintaan, dan pengelolaan fasilitas
+              sesuai peran Anda.
             </p>
-          </div>
+
+            <ul className="mt-10 grid gap-5" aria-label="Manfaat sistem">
+              {manfaat.map((item) => {
+                const Icon = item.icon
+                return (
+                  <li key={item.title} className="flex gap-4">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-subdued text-primary-subdued-foreground">
+                      <Icon aria-hidden="true" className="size-5" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold">{item.title}</span>
+                      <span className="mt-1 block text-sm/relaxed text-muted-foreground">
+                        {item.description}
+                      </span>
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+
+          <Card className="mx-auto w-full max-w-md hover:translate-y-0">
+            <CardHeader className="gap-2">
+              <p className="text-sm font-medium text-primary lg:hidden">Sistem fasilitas kampus</p>
+              <h1 className="text-2xl font-semibold tracking-tight">Masuk ke akun</h1>
+              <CardDescription className="leading-relaxed">
+                Gunakan email dan kata sandi akun yang telah aktif.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <form action={action} className="flex flex-col gap-5">
+                <Field data-invalid={emailError ? true : undefined}>
+                  <FieldLabel htmlFor="login-email" required>
+                    Email
+                  </FieldLabel>
+                  <div className="relative">
+                    <Mail
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      id="login-email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="nama@kampus.ac.id"
+                      required
+                      aria-invalid={emailError ? true : undefined}
+                      aria-describedby={emailError ? "login-email-error" : undefined}
+                      className="h-11 pl-10"
+                    />
+                  </div>
+                  {emailError && <FieldError id="login-email-error">{emailError}</FieldError>}
+                </Field>
+
+                <Field data-invalid={passwordError ? true : undefined}>
+                  <FieldLabel htmlFor="login-password" required>
+                    Kata sandi
+                  </FieldLabel>
+                  <div className="relative">
+                    <LockKeyhole
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      id="login-password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="Masukkan kata sandi"
+                      required
+                      aria-invalid={passwordError ? true : undefined}
+                      aria-describedby={passwordError ? "login-password-error" : undefined}
+                      className="h-11 pl-10"
+                    />
+                  </div>
+                  {passwordError && (
+                    <FieldError id="login-password-error">{passwordError}</FieldError>
+                  )}
+                </Field>
+
+                {state.pesan && (
+                  <p
+                    role={state.ok ? "status" : "alert"}
+                    className={
+                      state.ok
+                        ? "rounded-lg bg-success-subdued px-3 py-2.5 text-sm text-success-subdued-foreground"
+                        : "rounded-lg bg-destructive-subdued px-3 py-2.5 text-sm text-destructive-subdued-foreground"
+                    }
+                  >
+                    {state.pesan}
+                  </p>
+                )}
+
+                <Button type="submit" size="lg" loading={pending} className="mt-1 min-h-11 w-full">
+                  Masuk
+                </Button>
+
+                <FieldDescription className="text-center">
+                  Akun baru dapat masuk setelah disetujui admin.
+                </FieldDescription>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* ── Right panel — login form ── */}
-      <div
-        className="login-form-panel"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "40px 24px",
-          background: C.canvas,
-          boxSizing: "border-box",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 360,
-          }}
-        >
-          {/* Mobile Logo */}
-          <div
-            className="login-logo-mobile"
-            style={{
-              marginBottom: 32,
-            }}
-          >
-            <Logo
-              withText
-              sublabel="Reservasi dan Pelaporan Fasilitas Kampus"
-              size={40}
-            />
-          </div>
-
-          {/* Heading */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: 28,
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 600,
-                color: C.text,
-                letterSpacing: "-0.3px",
-              }}
-            >
-              LOGIN
-            </h1>
-
-            <p
-              style={{
-                margin: "8px 0 0",
-                fontSize: 13,
-                color: C.mutedBrand,
-                lineHeight: 1.5,
-              }}
-            >
-              Masuk untuk mengelola reservasi dan fasilitas kampus
-            </p>
-          </div>
-
-          {/* Login Form */}
-          <form
-            action={action}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 18,
-            }}
-          >
-            {/* Username */}
-            <LoginInput
-              label="Username"
-              name="email"
-              type="email"
-              placeholder="Masukkan username"
-              autoComplete="email"
-              icon={
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 21a8 8 0 0 0-16 0" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              }
-              error={state.fieldErrors?.email}
-            />
-
-            {/* Password */}
-            <LoginInput
-              label="Password"
-              name="password"
-              type="password"
-              placeholder="Masukkan password"
-              autoComplete="current-password"
-              icon={
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="4" y="10" width="16" height="10" rx="2" />
-                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                </svg>
-              }
-              error={state.fieldErrors?.password}
-            />
-
-            {/* Message */}
-            {state.pesan && (
-              <div
-                role="alert"
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: state.ok ? C.successText : C.dangerText,
-                  background: state.ok
-                    ? C.successSurface
-                    : C.dangerSurface,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  lineHeight: 1.4,
-                }}
-              >
-                {state.pesan}
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={pending}
-              style={{
-                marginTop: 4,
-                background: pending ? C.mutedBrand : C.brand,
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                padding: "12px 0",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: pending ? "not-allowed" : "pointer",
-                opacity: pending ? 0.7 : 1,
-                transition: "background 150ms, opacity 150ms",
-              }}
-            >
-              {pending ? "Memeriksa..." : "Masuk"}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Responsive CSS */}
-      <style>{`
-        /* Desktop */
-        .login-brand-panel {
-          display: flex;
-        }
-
-        .login-logo-mobile {
-          display: none;
-        }
-
-        /* Mobile */
-        @media (max-width: 639px) {
-          .login-brand-panel {
-            display: none;
-          }
-
-          .login-form-panel {
-            width: 100%;
-            min-height: 100vh;
-          }
-
-          .login-logo-mobile {
-            display: block;
-          }
-        }
-
-        /* Next.js development UI */
-        #nextjs__portal,
-        [data-nextjs-toast],
-        [data-nextjs-devtools-indicator] {
-          display: none !important;
-        }
-      `}</style>
-    </div>
-  );
+    </main>
+  )
 }
-
-/* =========================================
-   Login Input Component
-========================================= */
-
-function LoginInput({
-  label,
-  name,
-  type = "text",
-  placeholder,
-  icon,
-  autoComplete,
-  error,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  placeholder: string;
-  icon: ReactNode;
-  autoComplete?: string;
-  error?: string[];
-}) {
-  return (
-    <label
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color: C.text,
-        }}
-      >
-        {label}
-      </span>
-
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-        }}
-      >
-        {/* Input Icon */}
-        <div
-          style={{
-            position: "absolute",
-            left: 14,
-            top: "50%",
-            transform: "translateY(-50%)",
-            color: C.mutedBrand,
-            display: "flex",
-            alignItems: "center",
-            pointerEvents: "none",
-          }}
-        >
-          {icon}
-        </div>
-
-        {/* Input */}
-        <input
-          name={name}
-          type={type}
-          placeholder={placeholder}
-          style={{
-            ...inputStyle,
-            paddingLeft: 42,
-          }}
-          autoComplete={autoComplete}
-        />
-      </div>
-
-      {/* Validation Errors */}
-      {error?.map((e) => (
-        <span
-          key={e}
-          style={{
-            fontSize: 12,
-            color: C.dangerText,
-          }}
-        >
-          {e}
-        </span>
-      ))}
-    </label>
-  );
-}
-
-/* =========================================
-Input Style
-========================================= */
-
-const inputStyle: CSSProperties = {
-  width: "100%",
-  padding: "11px 14px",
-  borderRadius: 10,
-  border: `1px solid ${C.border}`,
-  fontSize: 14,
-  background: "#FFFFFF",
-  color: C.text,
-  outline: "none",
-  boxSizing: "border-box",
-  transition: "border-color 150ms, box-shadow 150ms",
-};

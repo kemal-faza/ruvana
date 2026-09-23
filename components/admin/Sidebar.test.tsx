@@ -29,7 +29,7 @@ describe("AdminSidebar", () => {
       </SidebarProvider>,
     )
 
-    const tautan = screen.getByRole("link", { name: "Kelola Akun" })
+    const tautan = screen.getByRole("link", { name: "Kelola Pengguna" })
     expect(tautan).toHaveAttribute("href", "/admin/pengguna")
     expect(tautan).toHaveAttribute("aria-current", "page")
 

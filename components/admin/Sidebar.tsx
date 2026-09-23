@@ -1,30 +1,28 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { LogOut, Users } from "lucide-react";
+import { LogOut, Users } from "lucide-react"
 
-import { logout } from "@/app/login/actions";
-import { NavigationList } from "@/components/app-shell/app-sidebar";
-import type { NavigationGroup } from "@/components/app-shell/types";
-import Logo from "@/components/Logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { logout } from "@/app/login/actions"
+import { NavigationList } from "@/components/app-shell/app-sidebar"
+import type { NavigationGroup } from "@/components/app-shell/types"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   useSidebar,
-} from "@/components/ui/sidebar";
-import type { SessionUser } from "@/lib/auth";
+} from "@/components/ui/sidebar"
+import type { SessionUser } from "@/lib/auth"
 
 const NAVIGASI: readonly NavigationGroup[] = [
   {
     key: "kelola",
     label: "Kelola",
-    items: [{ key: "admin-users", label: "Kelola Akun", href: "/admin/pengguna", icon: Users }],
+    items: [{ key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users }],
   },
-];
+]
 
 function inisial(nama: string) {
   return nama
@@ -32,23 +30,19 @@ function inisial(nama: string) {
     .map((kata) => kata[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase();
+    .toUpperCase()
 }
 
 export default function AdminSidebar({ admin }: { admin: SessionUser }) {
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar()
 
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <Link
-          href="/admin/pengguna"
-          onClick={() => setOpenMobile(false)}
-          className="flex min-h-11 items-center rounded-md px-2"
-          aria-label="Ruvana Admin — Kelola Akun"
-        >
-          <Logo tone="light" withText textColor="currentColor" sublabel="Admin" size={38} />
-        </Link>
+        <div className="flex min-h-11 flex-col justify-center px-2">
+          <span className="text-sm font-semibold text-sidebar-foreground">Administrasi</span>
+          <span className="text-xs text-sidebar-foreground/70">Pengelolaan fasilitas</span>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -82,5 +76,5 @@ export default function AdminSidebar({ admin }: { admin: SessionUser }) {
         </Button>
       </SidebarFooter>
     </Sidebar>
-  );
+  )
 }

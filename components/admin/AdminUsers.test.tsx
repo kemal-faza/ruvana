@@ -70,7 +70,7 @@ describe("AdminUsers (kelola akun)", () => {
   it("menampilkan ringkasan, tabel, dan badge status berbahasa Indonesia", () => {
     renderFixture()
 
-    expect(screen.getByRole("heading", { level: 1, name: "Manajemen pengguna" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Kelola pengguna" })).toBeInTheDocument()
     expect(screen.getByText("Menampilkan 4 dari 4 akun.")).toBeInTheDocument()
 
     const tabel = screen.getByRole("table")
@@ -98,14 +98,14 @@ describe("AdminUsers (kelola akun)", () => {
     const user = userEvent.setup()
     renderFixture()
 
-    await user.click(screen.getByRole("button", { name: "Tambah petugas / pengguna" }))
+    await user.click(screen.getByRole("button", { name: "Tambah akun" }))
 
     const dialog = await screen.findByRole("dialog", { name: "Buat akun baru" })
     expect(dialog).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/nama lengkap/i)).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/email/i)).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/password awal/i)).toBeInTheDocument()
-    expect(within(dialog).getByLabelText(/role/i)).toBeInTheDocument()
+    expect(within(dialog).getByLabelText(/peran/i)).toBeInTheDocument()
     expect(within(dialog).getByRole("button", { name: "Buat akun" })).toBeInTheDocument()
   })
 

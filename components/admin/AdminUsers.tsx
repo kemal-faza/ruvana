@@ -150,19 +150,20 @@ export default function AdminUsers({
   );
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
+    <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
+          <p className="mb-1 text-sm font-medium text-primary">Administrasi</p>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            Manajemen pengguna
+            Kelola pengguna
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Buat akun petugas dan pengguna secara langsung.
+            Cari, tinjau, dan buat akun petugas atau pengguna.
           </p>
         </div>
         <Button type="button" onClick={() => setSheetTerbuka(true)}>
           <UserPlus aria-hidden="true" />
-          <span>Tambah petugas / pengguna</span>
+          <span>Tambah akun</span>
         </Button>
       </header>
 
@@ -214,17 +215,17 @@ export default function AdminUsers({
               />
             </div>
             <label className="flex items-center gap-2 text-sm">
-              <span className="sr-only">Filter role</span>
+              <span className="sr-only">Filter peran</span>
               <select
                 value={roleFilter}
                 onChange={(e) => {
                   setRoleFilter(e.target.value);
                   setHalaman(1);
                 }}
-                aria-label="Filter role"
+                aria-label="Filter peran"
                 className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <option value="">Semua role</option>
+                <option value="">Semua peran</option>
                 {Object.entries(ROLE_LABEL).map(([nilai, label]) => (
                   <option key={nilai} value={nilai}>
                     {label}
@@ -285,7 +286,7 @@ export default function AdminUsers({
                       />
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium">
-                      Role
+                      Peran
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium">
                       Status
@@ -399,7 +400,7 @@ export default function AdminUsers({
       </section>
 
       <SheetBuatAkun terbuka={sheetTerbuka} onTerbukaChange={setSheetTerbuka} />
-    </div>
+    </main>
   );
 }
 
@@ -483,7 +484,7 @@ function SheetBuatAkun({
           </Field>
           <Field>
             <FieldLabel htmlFor="buat-role" required>
-              Role
+              Peran
             </FieldLabel>
             <select
               id="buat-role"
@@ -495,7 +496,7 @@ function SheetBuatAkun({
               className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <option value="" disabled>
-                Pilih role
+                Pilih peran
               </option>
               <option value="petugas">Petugas</option>
               <option value="pengguna">Pengguna</option>
