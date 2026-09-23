@@ -43,6 +43,7 @@ Status keputusan:
 | D-006 | `development` | pnpm 10 sebagai package manager |
 | D-007 | `development` | TDD dan test otomatis wajib; pemilihan runner ditunda sampai test harness dibuat |
 | D-008 | `deployment` | Vercel, Prisma Postgres, dan private Vercel Blob untuk production |
+| D-009 | `project-wide` | Listener status fasilitas menerima client transaksi (tx-first) |
 
 ---
 
@@ -386,6 +387,51 @@ tersedia ketika domain reservasi membutuhkannya.
 Neon sempat dipilih sebagai target PostgreSQL managed ketika proyek berpindah
 dari MariaDB ke PostgreSQL. PRD final kemudian menetapkan Prisma Postgres sebagai
 database production. D-008 mengikuti keputusan final tersebut.
+
+## D-009 — Listener status fasilitas menerima client transaksi
+
+- **Status:** `accepted`
+- **Scope:** `project-wide`
+- **Diterima:** 2026-09-23
+
+### Konteks
+
+Kontrak Fase 0 (`lib/facility-status-contract.ts`) mendefinisikan listener
+sebagai `(payload) => Promise<void>`, sementara PRD Bagian 7.3 dan RES-09
+mewajibkan perubahan ke `UNDER_MAINTENANCE` dan pembatalan reservasi terkait
+tersimpan dalam satu transaksi PostgreSQL yang all-or-nothing.
+
+### Keputusan
+
+Ubah signature kontrak menjadi `(transaction: Prisma.TransactionClient,
+payload: FacilityStatusChangedPayload) => Promise<void>`. Pemicu (Modul 4)
+membuka transaksi, meneruskan client yang sama kepada listener, dan menunggu
+listener sebelum commit. Listener memakai client tersebut dan tidak membuka
+transaksi sendiri atau memakai singleton Prisma untuk operasi dalam event.
+
+### Alasan
+
+- Perubahan status dan seluruh pembatalan wajib commit atau rollback bersama;
+  listener dengan koneksi/transaksi sendiri membuka jendela race dan kegagalan
+  parsial.
+- Satu signature bersama membuat Modul 3 dan 4 dapat diuji terpisah lewat
+  client/transaksi palsu tanpa menunggu implementasi satu sama lain.
+
+### Konsekuensi
+
+- Pemicu harus meneruskan `Prisma.TransactionClient` yang sama dan menunggu
+  listener sebelum commit; respons berhasil hanya setelah kedua efek tersimpan.
+- Listener harus idempoten (hanya menyentuh baris yang relevan) agar retry
+  pemicu tidak menggandakan efek.
+- `payload.waktu` menjadi satu-satunya penanda batas masa depan dan waktu
+  proses agar konsisten dalam transaksi yang sama.
+
+### Alternatif yang dipertimbangkan
+
+| Alternatif | Trade-off utama |
+|---|---|
+| Listener payload-only membuka transaksi sendiri | Sederhana bagi pemicu, tetapi status fasilitas dan pembatalan bisa commit terpisah dan saling bertabrakan. |
+| Event asinkron setelah commit | Pemicu tidak menunggu, tetapi kegagalan listener meninggalkan status dan reservasi tidak konsisten tanpa mekanisme retry. |
 
 ## Sumber kebenaran
 

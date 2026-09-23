@@ -2,6 +2,7 @@
 // Modul 3 (RES-09) = listener terhadap perubahan ini; Modul 4 (REP-04) = pemicu.
 // Tujuan: modul 3 & 4 bisa maju paralel tanpa saling menunggu implementasi.
 
+import type { Prisma } from "../generated/prisma/client";
 import type { StatusFasilitas } from "../generated/prisma/enums";
 
 export const FACILITY_STATUS_CHANGED = "facility.status.changed" as const;
@@ -15,7 +16,12 @@ export interface FacilityStatusChangedPayload {
 }
 
 // Dokumentasi kontrak (dipakai Modul 3 & 4):
-// - Pemicu (Modul 4): saat status fasilitas berubah, panggil emitFacilityStatusChanged(payload).
-// - Listener (Modul 3): saat payload statusBaru = 'UNDER_MAINTENANCE', batalkan reservasi
-//   masa depan berstatus 'APPROVED' pada facilityId tsb (alasan otomatis).
-export type FacilityStatusChangedListener = (payload: FacilityStatusChangedPayload) => Promise<void>;
+// - Pemicu (Modul 4): buka satu transaksi, ubah status fasilitas, teruskan
+//   client transaksi + payload ke listener, tunggu listener sebelum commit.
+// - Listener (Modul 3): saat payload statusBaru = 'UNDER_MAINTENANCE', batalkan
+//   reservasi masa depan berstatus 'APPROVED' pada facilityId tsb (alasan
+//   otomatis). Listener tidak boleh membuka transaksi sendiri.
+export type FacilityStatusChangedListener = (
+  transaction: Prisma.TransactionClient,
+  payload: FacilityStatusChangedPayload,
+) => Promise<void>;

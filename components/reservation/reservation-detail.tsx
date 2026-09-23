@@ -66,6 +66,8 @@ export function ReservationDetail({ id }: { id: number }) {
   }, [id]);
 
   useEffect(() => {
+    // Pengecualian standar: fetch data saat id berubah.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDetail();
   }, [loadDetail]);
 

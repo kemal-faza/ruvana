@@ -62,6 +62,8 @@ export function ReservationQueue() {
   }, []);
 
   useEffect(() => {
+    // Pengecualian standar: fetch data saat halaman berubah.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load(page);
   }, [load, page]);
 
