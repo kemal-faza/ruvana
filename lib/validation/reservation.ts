@@ -123,3 +123,40 @@ export function parseReservationCreateBody(body: unknown): ParseResult<Reservati
     },
   };
 }
+
+export interface CancelReservationInput {
+  alasan: string;
+}
+
+// Body POST /api/reservations/[id]/cancel — ReasonRequest di openapi.
+export function parseCancelBody(body: unknown): ParseResult<CancelReservationInput> {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return {
+      ok: false,
+      errors: [{ field: "body", code: "INVALID_BODY", message: "Body harus berupa objek JSON" }],
+    };
+  }
+
+  const obj = body as Record<string, unknown>;
+  const rawAlasan = obj.alasan;
+  if (typeof rawAlasan !== "string") {
+    return {
+      ok: false,
+      errors: [{ field: "alasan", code: "INVALID_ALASAN", message: "alasan wajib diisi" }],
+    };
+  }
+  const trimmed = rawAlasan.trim();
+  if (trimmed.length < 1) {
+    return {
+      ok: false,
+      errors: [{ field: "alasan", code: "TOO_SHORT", message: "alasan tidak boleh kosong" }],
+    };
+  }
+  if (trimmed.length > 500) {
+    return {
+      ok: false,
+      errors: [{ field: "alasan", code: "TOO_LONG", message: "alasan maksimal 500 karakter" }],
+    };
+  }
+  return { ok: true, value: { alasan: trimmed } };
+}

@@ -1,8 +1,9 @@
+import { BATAS_PEMBATALAN_JAM } from "@/config/business";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
 import { countMyReservations, findMyReservationById, listMyReservations } from "@/lib/db/reservations";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
-import type { ReservationCreateInput } from "@/lib/validation/reservation";
+import type { CancelReservationInput, ReservationCreateInput } from "@/lib/validation/reservation";
 import type { MyReservationListQuery } from "@/lib/validation/reservation-query";
 import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta } from "@/lib/time/reservation-time";
 
@@ -10,7 +11,8 @@ export type ServiceError =
   | { type: "validation"; errors: ProblemFieldError[] }
   | { type: "not_found"; message: string }
   | { type: "facility_unavailable"; message: string }
-  | { type: "conflict"; message: string; availability: unknown };
+  | { type: "conflict"; message: string; availability: unknown }
+  | { type: "transition"; message: string };
 
 export interface ReservationResult {
   id: number;
@@ -249,4 +251,62 @@ export async function getMyReservationService(
   }
   type ReservationRow = Parameters<typeof toReservationResponse>[0];
   return { ok: true, data: toReservationResponse(row as unknown as ReservationRow) };
+}
+
+// Pembatalan oleh pemilik: PENDING/APPROVED → CANCELLED_BY_USER.
+// Batas waktu tunggal dari BATAS_PEMBATALAN_JAM: startsAt - now >= batas.
+// Cukup update status — slot APPROVED yang dibatalkan otomatis bebas lagi
+// karena availability dihitung dari reservasi APPROVED (lihat availability.ts).
+export async function cancelMyReservationService(
+  userId: number,
+  id: number,
+  input: CancelReservationInput,
+  now: Date = new Date(),
+): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: ServiceError }> {
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.reservation.findFirst({
+        where: { id, userId },
+        include: { facility: true },
+      });
+      if (!row) {
+        throw { kind: "not_found" as const };
+      }
+      if (row.status !== "PENDING" && row.status !== "APPROVED") {
+        throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat dibatalkan." };
+      }
+      if (row.startTime.getTime() - now.getTime() < BATAS_PEMBATALAN_JAM * 60 * 60 * 1000) {
+        throw {
+          kind: "transition" as const,
+          message: `Pembatalan hanya dapat dilakukan paling lambat ${BATAS_PEMBATALAN_JAM} jam sebelum waktu mulai. Hubungi petugas untuk bantuan.`,
+        };
+      }
+      return tx.reservation.update({
+        where: { id: row.id },
+        data: {
+          status: "CANCELLED_BY_USER",
+          alasan: input.alasan,
+          waktuDiproses: now,
+        },
+        include: { facility: true },
+      });
+    });
+
+    type ReservationRow = Parameters<typeof toReservationResponse>[0];
+    return { ok: true, data: toReservationResponse(updated as unknown as ReservationRow) };
+  } catch (e: unknown) {
+    const err = e as Record<string, unknown>;
+    if (err && typeof err === "object" && "kind" in err) {
+      if ((err as { kind: string }).kind === "not_found") {
+        return { ok: false, error: { type: "not_found", message: "Reservasi tidak ditemukan" } };
+      }
+      if ((err as { kind: string }).kind === "transition") {
+        return {
+          ok: false,
+          error: { type: "transition", message: (err as { message: string }).message },
+        };
+      }
+    }
+    throw e;
+  }
 }

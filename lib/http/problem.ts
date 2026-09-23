@@ -114,6 +114,16 @@ export function reservationOverlap(instance: string, detail: string, availabilit
   });
 }
 
+export function invalidReservationTransition(instance: string, detail: string) {
+  return problemResponse({
+    status: 409,
+    code: "INVALID_RESERVATION_TRANSITION",
+    title: "Transisi reservasi tidak valid",
+    detail,
+    instance,
+  });
+}
+
 export function idempotencyConflict(instance: string, detail = "Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.") {
   return problemResponse({
     status: 409,

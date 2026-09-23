@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
+import { BATAS_PEMBATALAN_JAM } from "@/config/business";
 import { LABEL_TIPE_FASILITAS } from "@/config/labels";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
+import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi, TipeFasilitas } from "@/generated/prisma/enums";
 
@@ -32,39 +35,76 @@ export function ReservationDetail({ id }: { id: number }) {
   const [data, setData] = useState<ReservationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState<"ok" | "login" | "missing" | "error">("ok");
+  const [cancelAlasan, setCancelAlasan] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelResult, setCancelResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const loadDetail = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/reservations/${id}`);
+      if (res.status === 401) {
+        setState("login");
+        return;
+      }
+      if (res.status === 404) {
+        setState("missing");
+        return;
+      }
+      if (!res.ok) {
+        setState("error");
+        return;
+      }
+      setData((await res.json()) as ReservationResult);
+      setState("ok");
+    } catch {
+      setState("error");
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/reservations/${id}`);
-        if (cancelled) return;
-        if (res.status === 401) {
-          setState("login");
-          return;
-        }
-        if (res.status === 404) {
-          setState("missing");
-          return;
-        }
-        if (!res.ok) {
-          setState("error");
-          return;
-        }
-        setData((await res.json()) as ReservationResult);
-        setState("ok");
-      } catch {
-        if (!cancelled) setState("error");
-      } finally {
-        if (!cancelled) setLoading(false);
+    // Pengecualian standar: fetch data saat id berubah.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadDetail();
+  }, [loadDetail]);
+
+  async function submitCancel() {
+    if (!cancelAlasan.trim() || cancelLoading) return;
+    setCancelLoading(true);
+    setCancelResult(null);
+    try {
+      const res = await fetch(`/api/reservations/${id}/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({ alasan: cancelAlasan.trim() }),
+      });
+      const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
+      if (res.ok) {
+        setCancelAlasan("");
+        setConfirming(false);
+        setCancelResult({ ok: true, msg: "Reservasi dibatalkan." });
+        await loadDetail();
+        return;
       }
+      const msg = payload?.detail || payload?.title || `Gagal membatalkan (${res.status})`;
+      setCancelResult({ ok: false, msg });
+      // Status mungkin berubah di server (mis. sudah diproses) — sinkronkan tampilan
+      if (res.status === 404 || res.status === 409) {
+        setConfirming(false);
+        await loadDetail();
+      }
+    } catch {
+      setCancelResult({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+    } finally {
+      setCancelLoading(false);
     }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  }
 
   if (loading) {
     return <p className="text-sm text-muted-foreground">Memuat detail reservasi…</p>;
@@ -145,6 +185,72 @@ export function ReservationDetail({ id }: { id: number }) {
           <dd className="font-medium">{formatInstant(data.processedAt)}</dd>
         </div>
       </dl>
+
+      {(data.status === "PENDING" || data.status === "APPROVED") && (
+        <section aria-label="Batalkan reservasi" className="flex flex-col gap-4 rounded-card border border-border bg-card p-4">
+          <div>
+            <h2 className="font-heading text-lg font-semibold">Batalkan reservasi</h2>
+            <p className="text-sm text-muted-foreground">
+              Pembatalan hanya dapat dilakukan paling lambat {BATAS_PEMBATALAN_JAM} jam sebelum waktu mulai.
+              Setelah itu, hubungi petugas untuk bantuan.
+            </p>
+          </div>
+          {!confirming ? (
+            <Field>
+              <FieldLabel htmlFor="alasan-batal">Alasan pembatalan</FieldLabel>
+              <textarea
+                id="alasan-batal"
+                value={cancelAlasan}
+                onChange={(e) => setCancelAlasan(e.target.value)}
+                maxLength={500}
+                rows={2}
+                placeholder="Contoh: Jadwal kegiatan berubah"
+                className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+              <FieldDescription>{cancelAlasan.length}/500 karakter.</FieldDescription>
+              <div>
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={!cancelAlasan.trim() || cancelLoading}
+                  onClick={() => setConfirming(true)}
+                >
+                  Batalkan reservasi
+                </Button>
+              </div>
+            </Field>
+          ) : (
+            <div className="flex flex-col gap-3" role="group" aria-label="Konfirmasi pembatalan">
+              <p className="text-sm">
+                Yakin membatalkan reservasi <span className="font-medium">{data.facility.nama}</span> pada{" "}
+                <span className="font-medium">
+                  {formatTanggal(data.date)} · {data.startTime}–{data.endTime}
+                </span>
+                ? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="danger"
+                  loading={cancelLoading}
+                  disabled={cancelLoading}
+                  onClick={submitCancel}
+                >
+                  Ya, batalkan
+                </Button>
+                <Button type="button" variant="outline" disabled={cancelLoading} onClick={() => setConfirming(false)}>
+                  Kembali
+                </Button>
+              </div>
+            </div>
+          )}
+          {cancelResult && (
+            <p className={`text-sm font-medium ${cancelResult.ok ? "text-green-700" : "text-destructive"}`}>
+              {cancelResult.msg}
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
