@@ -17,7 +17,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RE = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 
 export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<StateBuatAkun> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const nama = String(form.get("nama") ?? "").trim();
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
@@ -46,6 +46,7 @@ export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<St
         password: passwordHash,
         role: role as Role,
         status: AccountStatus.ACTIVE,
+        dibuatOleh: admin.id,
       },
     });
   } catch (err) {
