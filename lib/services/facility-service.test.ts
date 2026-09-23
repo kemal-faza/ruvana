@@ -48,6 +48,44 @@ describe("listPublicFacilities", () => {
       ["deskripsi", "id", "kapasitas", "lokasi", "nama", "status", "tipe"].sort(),
     );
   });
+
+  it("tidak mengirim filter kosong ke db ketika tidak ada filter aktif", async () => {
+    vi.mocked(findPublicFacilities).mockResolvedValue([]);
+    vi.mocked(countPublicFacilities).mockResolvedValue(0);
+
+    await listPublicFacilities({ page: 1, perPage: 20 });
+
+    expect(findPublicFacilities).toHaveBeenCalledWith({ skip: 0, take: 20 });
+    expect(countPublicFacilities).toHaveBeenCalledWith({});
+  });
+
+  it("meneruskan filter aktif ke list dan count", async () => {
+    vi.mocked(findPublicFacilities).mockResolvedValue([]);
+    vi.mocked(countPublicFacilities).mockResolvedValue(0);
+
+    await listPublicFacilities({
+      page: 1,
+      perPage: 20,
+      search: "lab",
+      type: "laboratorium",
+      location: "Gedung A",
+      minCapacity: 30,
+    });
+
+    const filters = { search: "lab", type: "laboratorium", location: "Gedung A", minCapacity: 30 };
+    expect(findPublicFacilities).toHaveBeenCalledWith({ skip: 0, take: 20, ...filters });
+    expect(countPublicFacilities).toHaveBeenCalledWith(filters);
+  });
+
+  it("menghitung totalPages dari count terfilter", async () => {
+    vi.mocked(findPublicFacilities).mockResolvedValue([mockFacility]);
+    vi.mocked(countPublicFacilities).mockResolvedValue(5);
+
+    const result = await listPublicFacilities({ page: 1, perPage: 2, search: "lab" });
+
+    expect(countPublicFacilities).toHaveBeenCalledWith({ search: "lab" });
+    expect(result.meta).toEqual({ page: 1, perPage: 2, totalItems: 5, totalPages: 3 });
+  });
 });
 
 describe("getPublicFacility", () => {
