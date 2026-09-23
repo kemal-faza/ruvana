@@ -9,7 +9,7 @@ import {
   findUsersById,
   type ReportWithFacility,
 } from "@/lib/db/reports";
-import { saveReportPhoto } from "@/lib/storage/report-photo";
+import { removeReportPhoto, saveReportPhoto } from "@/lib/storage/report-photo";
 import { validateReportSubmission, type ReportSubmissionErrors } from "@/lib/validation/report";
 
 export type ReportStatus = StatusLaporan;
@@ -161,13 +161,20 @@ export async function createReport(input: CreateReportInput): Promise<CreateRepo
     };
   }
 
-  const row = await createReportRow({
-    userId: input.userId,
-    facilityId: facility.id,
-    kategori: input.kategori,
-    deskripsi: input.deskripsi.trim(),
-    foto: fotoResult.webPath,
-  });
+  let row: ReportWithFacility;
+  try {
+    row = await createReportRow({
+      userId: input.userId,
+      facilityId: facility.id,
+      kategori: input.kategori,
+      deskripsi: input.deskripsi.trim(),
+      foto: fotoResult.webPath,
+    });
+  } catch (error) {
+    // File sudah ditulis; bila insert DB gagal, bersihkan agar tidak jadi orphan (PRD 11.3).
+    await removeReportPhoto(fotoResult.webPath);
+    throw error;
+  }
 
   const handlers = await resolveHandlers([row]);
   return { ok: true, item: toReportItem(row, handlers) };

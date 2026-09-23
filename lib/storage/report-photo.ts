@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 
 import { LAPORAN_UPLOAD } from "@/config/business";
@@ -74,4 +74,19 @@ export async function saveReportPhoto(file: File): Promise<SaveReportPhotoResult
   await writeFile(path.join(UPLOAD_DIR, fileName), bytes);
 
   return { ok: true, webPath: `/uploads/reports/${fileName}`, contentType: declared };
+}
+
+/**
+ * Menghapus foto yang sudah tertulis ketika pembuatan laporan gagal (anti-orphan,
+ * lihat PRD 11.3: upload gagal tidak boleh meninggalkan file). Best-effort: kegagalan
+ * hapus tidak dilempar agar tidak menutupi error asli.
+ */
+export async function removeReportPhoto(webPath: string) {
+  const fileName = webPath.split("/").pop();
+  if (!fileName || fileName === ".." || fileName.includes("/") || fileName.includes("\\")) return;
+  try {
+    await unlink(path.join(UPLOAD_DIR, fileName));
+  } catch {
+    // file mungkin sudah tidak ada atau sudah dihapus proses lain — abaikan
+  }
 }
