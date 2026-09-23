@@ -8,7 +8,6 @@ import { isValidDateFormat } from "@/lib/time/reservation-time";
 export const dynamic = "force-dynamic";
 
 async function getFacilities() {
-  // Sumber data asli Modul 2 (fasilitas): ambil daftar publik lalu saring yang ACTIVE untuk dropdown reservasi
   const { items } = await listPublicFacilities({ page: 1, perPage: 500 });
   return items
     .filter((facility) => facility.status === "ACTIVE")
@@ -27,7 +26,6 @@ export default async function ReservasiPage({
   const rawFacilityId = Array.isArray(query.facilityId) ? query.facilityId[0] : query.facilityId;
   const rawDate = Array.isArray(query.date) ? query.date[0] : query.date;
 
-  // Tanggal default: besok, agar tidak langsung lampau
   const fallbackDate = (() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -40,8 +38,6 @@ export default async function ReservasiPage({
     ? parsedFacilityId
     : (facilities[0]?.id ?? 0);
 
-  // Hitung availability di server (internal, bukan endpoint publik),
-  // lalu teruskan sebagai prop — client tidak fetch API baru.
   const availability =
     facilityId > 0 ? await computeFacilityAvailability(facilityId, date) : null;
 

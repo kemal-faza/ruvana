@@ -10,7 +10,6 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/reservat
   const instance = new URL(request.url).pathname;
   const { reservationId } = await ctx.params;
 
-  // 1. Authenticate
   let session: Awaited<ReturnType<typeof getSession>>;
   try {
     session = await getSession(request);
@@ -19,23 +18,19 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/reservat
     return internalError(instance);
   }
 
-  // 2. Verifikasi ACTIVE — akun non-ACTIVE mendapat 401 generik
   if (!session || session.user.status !== "ACTIVE") {
     return unauthorized(instance);
   }
 
-  // 3. Otorisasi role — hanya pengguna
   if (session.user.role !== "pengguna") {
     return forbidden(instance);
   }
 
-  // 4. Validasi id path
   const parsed = parseReservationId(reservationId);
   if (!parsed.ok) {
     return validationFailed(instance, parsed.errors);
   }
 
-  // 5. Detail milik pengguna sesi saja — milik orang lain termasking 404
   try {
     const result = await getMyReservationService(session.user.id, parsed.value);
     if (!result.ok) {

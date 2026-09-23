@@ -5,7 +5,6 @@ const findManyRoot = vi.fn();
 const countRoot = vi.fn();
 const updateManyRoot = vi.fn().mockResolvedValue({ count: 0 });
 
-// Mock singleton Prisma — pola yang sama seperti test TASK 3.1
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: (...args: unknown[]) => (mockTransaction as unknown as (...a: unknown[]) => unknown)(...args),

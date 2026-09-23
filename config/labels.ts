@@ -28,7 +28,6 @@ export const BADGE_STATUS_FASILITAS: Record<StatusFasilitas, "success" | "pendin
   INACTIVE: "neutral",
 };
 
-// Label Indonesia untuk status reservasi; nilai enum tetap bahasa Inggris-teknis.
 export const LABEL_STATUS_RESERVASI: Record<StatusReservasi, string> = {
   PENDING: "Menunggu",
   APPROVED: "Disetujui",

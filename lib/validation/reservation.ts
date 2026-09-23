@@ -94,7 +94,6 @@ export function parseReservationCreateBody(body: unknown): ParseResult<Reservati
 
   // Validasi silang waktu
   if (startTime && endTime) {
-    // Pastikan isSlotAligned juga (sudah via enum, tapi double check)
     if (!isSlotAligned(startTime) || !isSlotAligned(endTime)) {
       errors.push({ field: "startTime", code: "SLOT_ALIGNMENT_INVALID", message: "Waktu harus berada pada kelipatan 30 menit." });
     } else if (!isWithinOperationalHours(startTime, endTime)) {
@@ -128,7 +127,6 @@ export interface CancelReservationInput {
   alasan: string;
 }
 
-// Body POST /api/reservations/[id]/cancel — ReasonRequest di openapi.
 export function parseCancelBody(body: unknown): ParseResult<CancelReservationInput> {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return {

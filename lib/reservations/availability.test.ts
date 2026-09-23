@@ -60,7 +60,6 @@ describe("computeFacilityAvailability", () => {
   });
 
   it("memblokir irisan parsial (predikat overlap tidak berubah)", async () => {
-    // 09:15–09:45 menyentuh slot 09:00 dan 09:30, tapi bukan 08:30 / 10:00
     const approved = [
       { startTime: asiaJakartaToUtc("2026-09-15", "09:15"), endTime: asiaJakartaToUtc("2026-09-15", "09:45") },
     ];
@@ -131,8 +130,6 @@ describe("computeFacilityAvailability", () => {
   });
 
   it("hanya APPROVED yang memblokir: reservasi batal tidak menutup slot", async () => {
-    // Query DB difilter status APPROVED, sehingga reservasi yang dibatalkan
-    // petugas (CANCELLED_BY_OFFICER) tidak ikut — slot kembali tersedia.
     const { client, findMany } = makeClient({ approved: [] });
     const result = await computeFacilityAvailability(1, "2026-09-15", { client });
 

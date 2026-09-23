@@ -1,6 +1,6 @@
 // Helper murni untuk dropdown Jam mulai / Jam selesai.
 // Sengaja tanpa dependensi Prisma/query agar aman diimpor Client Component.
-// Aturan bisnis yang dijaga di sini:
+// Aturan bisnis yang dijaga:
 // - Hanya APPROVED (dan MAINTENANCE) yang menandai slot tidak tersedia.
 // - Jam selesai harus setelah jam mulai dan seluruh slot 30-menit di antaranya
 //   berstatus tersedia (tidak boleh lompat melewati slot yang tidak tersedia).

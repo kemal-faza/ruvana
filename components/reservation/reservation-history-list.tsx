@@ -64,8 +64,6 @@ export function ReservationHistoryList() {
   }, []);
 
   useEffect(() => {
-    // Pengecualian standar: fetch data saat filter/halaman berubah.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load(statusFilter, page);
   }, [load, statusFilter, page]);
 

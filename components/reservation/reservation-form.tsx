@@ -58,7 +58,6 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     }
   }
 
-  // Ringkasan live (read-only, turunan state yang sudah ada) — null bila pilihan belum lengkap
   const selectedFacility = facilities.find((f) => f.id === facilityId);
   let summary: string | null = null;
   if (selectedFacility && date && startTime && endTime) {
@@ -88,7 +87,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     e.preventDefault();
     setResult(null);
 
-    // validasi client (server tetap sumber kebenaran)
+    // validasi client 
     if (!facilityId || facilityId < 1) {
       setResult({ ok: false, msg: "facilityId harus bilangan positif" });
       return;

@@ -32,7 +32,6 @@ describe("expirePendingReservations", () => {
 
     await expirePendingReservations(makeClient(), now);
 
-    // lte (bukan lt): konsisten dengan kontrak "EXPIRED ketika serverNow >= startsAt"
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: "PENDING", startTime: { lte: now } } }),
     );
@@ -43,8 +42,6 @@ describe("expirePendingReservations", () => {
 
     await expirePendingReservations(makeClient());
 
-    // APPROVED/REJECTED/CANCELLED/EXPIRED tidak cocok dengan where,
-    // jadi eksekusi berulang tidak menimbulkan efek samping tambahan
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ status: "PENDING" }) }),
     );

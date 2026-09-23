@@ -4,10 +4,6 @@ import { NextResponse } from "next/server";
 import { internalError, unauthorized } from "@/lib/http/problem";
 import { expirePendingReservations } from "@/lib/reservations/expiry";
 
-// Pemicu terjadwal TASK 3.6 (Vercel Cron → GET di sini). Sengaja tanpa guard
-// sesi, tanpa validasi Origin, dan tanpa Idempotency-Key: pemanggilnya bukan
-// browser melainkan scheduler server-ke-server yang membawa bearer secret,
-// dan operasinya idempoten sehingga aman di-retry/dieksekusi berulang.
 export async function GET(request: NextRequest) {
   const instance = new URL(request.url).pathname;
 

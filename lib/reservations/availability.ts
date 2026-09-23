@@ -1,9 +1,3 @@
-// Perhitungan ketersediaan internal — SATU-SATUNYA sumber logic pemetaan slot.
-// INI BUKAN endpoint API publik: dipanggil dari Server Component
-// (app/reservasi/page.tsx) dan dari reservation-service saat membangun
-// payload 409 RESERVATION_OVERLAP. Endpoint availability publik tetap
-// ranah Modul 2.
-
 import type { Prisma } from "@/generated/prisma/client";
 import type { StatusFasilitas } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";

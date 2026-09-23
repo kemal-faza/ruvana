@@ -396,8 +396,6 @@ function mapServiceException(e: unknown): ServiceError | null {
   return null;
 }
 
-// Antrian petugas: PENDING saja, FIFO. processedBy selalu null di sini
-// (belum ada yang memproses).
 export async function listStaffQueueService(query: {
   page: number;
   perPage: number;
@@ -422,9 +420,6 @@ export async function listStaffQueueService(query: {
   };
 }
 
-// Daftar APPROVED untuk pembatalan mendesak petugas (TASK 3.5):
-// hanya APPROVED, urut waktu mulai terdekat dulu. processedBy selalu
-// null di sini (belum ada yang membatalkan).
 export async function listStaffApprovedService(query: {
   page: number;
   perPage: number;
@@ -448,9 +443,6 @@ export async function listStaffApprovedService(query: {
   };
 }
 
-// Approve atomik: row lock fasilitas → final conflict check APPROVED →
-// set APPROVED + catat aktor & waktu tepat satu kali. Bentrok berarti
-// tidak ada perubahan dan respons membawa availability terbaru.
 export async function approveReservationService(
   staffId: number,
   id: number,
@@ -575,9 +567,6 @@ export async function rejectReservationService(
   }
 }
 
-// Pembatalan mendesak petugas (TASK 3.5): alasan wajib divalidasi di route.
-// Slot bebas lagi karena availability hanya menghitung APPROVED; alasan
-// terlihat pemilik karena field alasan dikembalikan apa adanya.
 export async function cancelReservationByOfficerService(
   staffId: number,
   id: number,

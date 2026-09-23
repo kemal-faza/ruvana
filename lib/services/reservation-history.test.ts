@@ -5,7 +5,6 @@ const count = vi.fn();
 const findFirst = vi.fn();
 const updateMany = vi.fn().mockResolvedValue({ count: 0 });
 
-// Mock singleton Prisma — pola yang sama seperti test TASK 3.1
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     reservation: {
@@ -117,7 +116,6 @@ describe("getMyReservationService", () => {
       expect(result.data.alasan).toBe("Ruangan dipakai rapat jurusan");
       expect(result.data.tujuanPenggunaan).toBe("Diskusi kelompok");
     }
-    // Ownership: query selalu menyertakan userId sesi
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 91, userId: 42 } }),
     );

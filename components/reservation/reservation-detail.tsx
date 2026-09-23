@@ -66,8 +66,6 @@ export function ReservationDetail({ id }: { id: number }) {
   }, [id]);
 
   useEffect(() => {
-    // Pengecualian standar: fetch data saat id berubah.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDetail();
   }, [loadDetail]);
 
@@ -94,7 +92,6 @@ export function ReservationDetail({ id }: { id: number }) {
       }
       const msg = payload?.detail || payload?.title || `Gagal membatalkan (${res.status})`;
       setCancelResult({ ok: false, msg });
-      // Status mungkin berubah di server (mis. sudah diproses) — sinkronkan tampilan
       if (res.status === 404 || res.status === 409) {
         setConfirming(false);
         await loadDetail();

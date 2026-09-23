@@ -17,7 +17,6 @@ export function findOverlappingApproved(
     where: {
       facilityId,
       status: "APPROVED",
-      // overlap: existing.startTime < new.endsAt && existing.endTime > new.startsAt
       startTime: { lt: endsAt },
       endTime: { gt: startsAt },
     },
@@ -78,8 +77,6 @@ function myReservationsWhere(userId: number, status?: StatusReservasi) {
   return { userId, ...(status ? { status } : {}) };
 }
 
-// Riwayat milik pengguna: urutan deterministik createdAt DESC lalu id DESC.
-// Ownership dijaga lewat filter userId di setiap query.
 export function listMyReservations({ userId, status, skip, take }: ListMyReservationsParams) {
   return prisma.reservation.findMany({
     where: myReservationsWhere(userId, status),
@@ -96,8 +93,6 @@ export function countMyReservations({ userId, status }: Omit<ListMyReservationsP
   });
 }
 
-// Detail milik pengguna: findFirst dengan (id, userId) agar reservasi
-// milik pengguna lain termasking sebagai null (→ 404 di route).
 export function findMyReservationById(userId: number, id: number) {
   return prisma.reservation.findFirst({
     where: { id, userId },
@@ -105,7 +100,6 @@ export function findMyReservationById(userId: number, id: number) {
   });
 }
 
-// Antrian petugas: PENDING saja, FIFO agar yang paling lama menunggu diproses dulu.
 export function listPendingQueue({ skip, take }: { skip: number; take: number }) {
   return prisma.reservation.findMany({
     where: { status: "PENDING" },
@@ -122,8 +116,6 @@ export function countPendingQueue() {
   });
 }
 
-// Daftar APPROVED untuk pembatalan mendesak (TASK 3.5): urut waktu mulai
-// terdekat agar reservasi yang paling segera terdampak mudah ditemukan.
 export function listApprovedQueue({ skip, take }: { skip: number; take: number }) {
   return prisma.reservation.findMany({
     where: { status: "APPROVED" },

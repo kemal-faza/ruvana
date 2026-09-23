@@ -83,9 +83,6 @@ export interface StaffReservationListQuery {
   status: StaffReservationListStatus;
 }
 
-// Query GET /api/staff/reservations: antrean PENDING (default) atau daftar
-// APPROVED untuk pembatalan mendesak (TASK 3.5). Status lain ditolak agar
-// endpoint staff tidak membocorkan arsip terminal yang bukan domain petugas.
 export function parseStaffReservationListQuery(searchParams: URLSearchParams): ParseResult<StaffReservationListQuery> {
   const errors: ProblemFieldError[] = [];
 

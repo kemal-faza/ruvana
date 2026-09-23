@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { expirePendingReservations } from "@/lib/reservations/expiry";
-
 import { GET } from "./route";
 
 vi.mock("@/lib/reservations/expiry", () => ({
@@ -41,8 +39,6 @@ describe("GET /api/cron/expire-reservations", () => {
   });
 
   it("menolak tanpa atau dengan bearer salah tanpa menjalankan expiry", async () => {
-    // Nilai header di-trim oleh implementasi Headers, jadi kasus trailing
-    // space tidak diuji di sini — yang penting hanya kecocokan exact.
     for (const auth of [null, "Bearer salah", "Basic abc", "Bearer"]) {
       const response = await GET(requestWith(auth));
       expect(response.status).toBe(401);

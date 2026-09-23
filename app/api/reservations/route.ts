@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     return unauthorized(instance);
   }
 
-  // 3. Otorisasi role — hanya pengguna
+  // 3. Otorisasi role, hanya pengguna
   if (session.user.role !== "pengguna") {
     return forbidden(instance);
   }
@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
           headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
         });
       }
-      // Jika record ada tapi belum ada response (race), lanjut ke bisnis — akan ter-handle via unique constraint saat create
     }
   } catch (e) {
     console.error("Gagal lookup idempotency", e);
@@ -93,7 +92,6 @@ export async function POST(request: NextRequest) {
   // 8. Validasi body dengan ParseResult
   const parsed = parseReservationCreateBody(rawBody);
   if (!parsed.ok) {
-    // Simpan 422 sebagai hasil deterministik untuk idempotency
     const body = {
       type: "https://ruvana.invalid/problems/validation-failed",
       title: "Validasi gagal",
@@ -209,7 +207,7 @@ export async function POST(request: NextRequest) {
     return internalError(instance);
   }
 
-  // 10. Sukses 201 — simpan untuk replay idempotency
+  // 10. Sukses 201, simpan untuk replay idempotency
   const successBody = serviceResult.data;
   try {
     await prisma.idempotencyKey.create({
@@ -253,12 +251,12 @@ export async function GET(request: NextRequest) {
     return internalError(instance);
   }
 
-  // 2. Verifikasi ACTIVE — akun non-ACTIVE mendapat 401 generik
+  // 2. Verifikasi ACTIVE, akun non-ACTIVE mendapat 401 generik
   if (!session || session.user.status !== "ACTIVE") {
     return unauthorized(instance);
   }
 
-  // 3. Otorisasi role — hanya pengguna
+  // 3. Otorisasi role, hanya pengguna
   if (session.user.role !== "pengguna") {
     return forbidden(instance);
   }
