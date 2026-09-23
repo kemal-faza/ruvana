@@ -48,7 +48,7 @@ export default function LoginForm() {
         <div className="grid flex-1 items-center gap-6 py-8 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:gap-16 lg:py-12">
           <section
             aria-labelledby="login-intro-title"
-            className="relative min-h-[min(15rem,40dvh)] overflow-hidden rounded-card bg-muted sm:min-h-[min(22rem,60dvh)] md:min-h-[min(28rem,calc(100dvh_-_10rem))] lg:min-h-[min(36rem,calc(100dvh_-_10rem))]"
+            className="relative min-h-[min(15rem,40dvh)] overflow-hidden rounded-card bg-muted sm:min-h-[min(22rem,60dvh)] md:min-h-[min(28rem,calc(100dvh-10rem))] lg:min-h-[min(36rem,calc(100dvh-10rem))]"
           >
             <Image
               src="/fsm-login.jpg"
@@ -72,7 +72,7 @@ export default function LoginForm() {
           <section aria-labelledby="login-title" className="mx-auto w-full max-w-md px-1 sm:px-2">
             <header className="mb-8 space-y-2">
               <h1 id="login-title" className="text-2xl font-semibold tracking-tight">Masuk ke akun</h1>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-sm/relaxed text-muted-foreground">
                 Gunakan email dan kata sandi akun yang telah aktif.
               </p>
             </header>
