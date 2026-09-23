@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { createSession, destroySession, getSessionUserId } from "@/lib/auth";
+import { createSession, destroySession, getSessionUser, getSessionUserId } from "@/lib/auth";
 
 const cookieValues = new Map<string, string>();
 const storedSessions = new Map<string, { userId: number; expiresAt: Date }>();
@@ -17,6 +18,7 @@ vi.mock("next/headers", () => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     session: { create: vi.fn(), findUnique: vi.fn(), deleteMany: vi.fn() },
+    user: { findUnique: vi.fn() },
   },
 }));
 
@@ -47,5 +49,18 @@ describe("sesi", () => {
     cookieValues.set("ruvana_session", token);
 
     expect(await getSessionUserId()).toBeNull();
+  });
+
+  it("menolak sesi akun yang sudah dinonaktifkan", async () => {
+    await createSession(12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 12,
+      nama: "Pengguna Nonaktif",
+      email: "nonaktif@ruvana.test",
+      role: Role.pengguna,
+      status: AccountStatus.DISABLED,
+    } as never);
+
+    expect(await getSessionUser()).toBeNull();
   });
 });

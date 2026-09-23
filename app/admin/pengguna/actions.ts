@@ -18,6 +18,11 @@ export type StateVerifikasiPendaftaran = {
   pesan: string;
 };
 
+export type StateStatusAkun = {
+  ok: boolean;
+  pesan: string;
+};
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RE = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 
@@ -95,4 +100,47 @@ export async function verifikasiPendaftaran(
 
   revalidatePath("/admin/pengguna");
   return { ok: true, pesan: disetujui ? "Akun berhasil disetujui." : "Pendaftaran ditolak." };
+}
+
+export async function ubahStatusAkun(
+  _prev: StateStatusAkun,
+  form: FormData,
+): Promise<StateStatusAkun> {
+  const admin = await requireAdmin();
+
+  const id = Number(form.get("id"));
+  const tindakan = String(form.get("tindakan") ?? "");
+  if (!Number.isSafeInteger(id) || id <= 0 || (tindakan !== "nonaktifkan" && tindakan !== "aktifkan")) {
+    return { ok: false, pesan: "Permintaan perubahan status tidak valid." };
+  }
+  if (tindakan === "nonaktifkan" && id === admin.id) {
+    return { ok: false, pesan: "Akun admin yang sedang digunakan tidak dapat dinonaktifkan." };
+  }
+
+  const statusAwal = tindakan === "nonaktifkan" ? AccountStatus.ACTIVE : AccountStatus.DISABLED;
+  const statusBaru = tindakan === "nonaktifkan" ? AccountStatus.DISABLED : AccountStatus.ACTIVE;
+
+  try {
+    const hasil = await prisma.$transaction(async (tx) => {
+      const pembaruan = await tx.user.updateMany({
+        where: { id, status: statusAwal },
+        data: { status: statusBaru },
+      });
+      if (pembaruan.count === 1 && tindakan === "nonaktifkan") {
+        await tx.session.deleteMany({ where: { userId: id } });
+      }
+      return pembaruan;
+    });
+    if (hasil.count !== 1) {
+      return { ok: false, pesan: "Status akun telah berubah. Muat ulang daftar pengguna." };
+    }
+  } catch {
+    return { ok: false, pesan: "Gagal mengubah status akun. Coba lagi." };
+  }
+
+  revalidatePath("/admin/pengguna");
+  return {
+    ok: true,
+    pesan: tindakan === "nonaktifkan" ? "Akun berhasil dinonaktifkan." : "Akun berhasil diaktifkan kembali.",
+  };
 }

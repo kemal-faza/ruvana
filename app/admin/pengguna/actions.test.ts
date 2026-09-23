@@ -3,9 +3,15 @@ import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { verifikasiPendaftaran } from "./actions";
+import { ubahStatusAkun, verifikasiPendaftaran } from "./actions";
 
-vi.mock("@/lib/prisma", () => ({ prisma: { user: { create: vi.fn(), updateMany: vi.fn() } } }));
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    user: { create: vi.fn(), updateMany: vi.fn() },
+    session: { deleteMany: vi.fn() },
+    $transaction: vi.fn(),
+  },
+}));
 vi.mock("@/lib/auth", () => ({ requireAdmin: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
@@ -18,10 +24,64 @@ function form(keputusan: string, id = "7") {
   return data;
 }
 
+function formStatus(tindakan: string, id = "7") {
+  const data = new FormData();
+  data.set("id", id);
+  data.set("tindakan", tindakan);
+  return data;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(requireAdmin).mockResolvedValue({ id: 1, role: Role.admin } as never);
   vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
+  vi.mocked(prisma.$transaction).mockImplementation((async (callback: (tx: typeof prisma) => Promise<unknown>) => callback(prisma)) as never);
+});
+
+describe("ubahStatusAkun", () => {
+  it("menonaktifkan akun ACTIVE dan mencabut semua sesinya dalam transaksi", async () => {
+    const result = await ubahStatusAkun(state, formStatus("nonaktifkan"));
+
+    expect(result.ok).toBe(true);
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 7, status: AccountStatus.ACTIVE },
+      data: { status: AccountStatus.DISABLED },
+    });
+    expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 7 } });
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/pengguna");
+  });
+
+  it("mengaktifkan kembali hanya akun DISABLED tanpa mengubah role atau histori", async () => {
+    const result = await ubahStatusAkun(state, formStatus("aktifkan"));
+
+    expect(result.ok).toBe(true);
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 7, status: AccountStatus.DISABLED },
+      data: { status: AccountStatus.ACTIVE },
+    });
+    expect(prisma.session.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("menolak perubahan status yang sudah diproses dan upaya menonaktifkan diri", async () => {
+    vi.mocked(prisma.user.updateMany).mockResolvedValueOnce({ count: 0 } as never);
+    expect((await ubahStatusAkun(state, formStatus("nonaktifkan"))).ok).toBe(false);
+    expect(prisma.session.deleteMany).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+
+    expect((await ubahStatusAkun(state, formStatus("nonaktifkan", "1"))).ok).toBe(false);
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+
+  it("menolak input tidak valid dan akses tanpa admin", async () => {
+    expect((await ubahStatusAkun(state, formStatus("aktifkan", "0"))).ok).toBe(false);
+    expect((await ubahStatusAkun(state, formStatus("lainnya"))).ok).toBe(false);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+
+    vi.mocked(requireAdmin).mockRejectedValueOnce(new Error("Akses ditolak"));
+    await expect(ubahStatusAkun(state, formStatus("aktifkan"))).rejects.toThrow("Akses ditolak");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
 });
 
 describe("verifikasiPendaftaran", () => {

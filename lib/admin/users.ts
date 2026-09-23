@@ -19,8 +19,8 @@ export type RingkasanAkun = {
   dinonaktifkan: number;
 };
 
-export async function daftarPengguna(): Promise<{ users: AdminUserRow[]; ringkasan: RingkasanAkun }> {
-  await requireAdmin();
+export async function daftarPengguna(): Promise<{ users: AdminUserRow[]; ringkasan: RingkasanAkun; adminId: number }> {
+  const admin = await requireAdmin();
   const [users, total, aktif, pending, dinonaktifkan] = await Promise.all([
     prisma.user.findMany({
       orderBy: { waktuDaftar: "desc" },
@@ -43,5 +43,6 @@ export async function daftarPengguna(): Promise<{ users: AdminUserRow[]; ringkas
   return {
     users,
     ringkasan: { total, aktif, pending, dinonaktifkan },
+    adminId: admin.id,
   };
 }

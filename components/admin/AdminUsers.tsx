@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Search, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 
-import { buatAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions";
+import { buatAkun, ubahStatusAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -95,9 +95,11 @@ function inisial(nama: string) {
 export default function AdminUsers({
   users,
   ringkasan,
+  adminId,
 }: {
   users: AdminUserRow[];
   ringkasan: RingkasanAkun;
+  adminId: number;
 }) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -110,6 +112,12 @@ export default function AdminUsers({
     verifikasiPendaftaran,
     { ok: false, pesan: "" },
   );
+  const [hasilStatus, aksiStatus, memprosesStatus] = useActionState(
+    ubahStatusAkun,
+    { ok: false, pesan: "" },
+  );
+  const [aksiTerakhir, setAksiTerakhir] = useState<"verifikasi" | "status" | null>(null);
+  const umpanBalik = aksiTerakhir === "status" ? hasilStatus : hasilVerifikasi;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -171,12 +179,12 @@ export default function AdminUsers({
         </Button>
       </header>
 
-      {hasilVerifikasi.pesan && (
+      {umpanBalik.pesan && (
         <p
-          role={hasilVerifikasi.ok ? "status" : "alert"}
-          className={hasilVerifikasi.ok ? "text-sm text-success" : "text-sm text-destructive"}
+          role={umpanBalik.ok ? "status" : "alert"}
+          className={umpanBalik.ok ? "text-sm text-success" : "text-sm text-destructive"}
         >
-          {hasilVerifikasi.pesan}
+          {umpanBalik.pesan}
         </p>
       )}
 
@@ -366,14 +374,18 @@ export default function AdminUsers({
                         </td>
                         <td className="px-4 py-3">
                           {u.status === "PENDING" && u.role === "pengguna" ? (
-                            <form action={aksiVerifikasi} className="flex items-center gap-2">
+                            <form
+                              action={aksiVerifikasi}
+                              onSubmit={() => setAksiTerakhir("verifikasi")}
+                              className="flex items-center gap-2"
+                            >
                               <input type="hidden" name="id" value={u.id} />
                               <Button
                                 type="submit"
                                 name="keputusan"
                                 value="setujui"
                                 size="sm"
-                                disabled={memverifikasi}
+                                disabled={memverifikasi || memprosesStatus}
                               >
                                 Setujui
                               </Button>
@@ -383,9 +395,28 @@ export default function AdminUsers({
                                 value="tolak"
                                 size="sm"
                                 variant="outline"
-                                disabled={memverifikasi}
+                                disabled={memverifikasi || memprosesStatus}
                               >
                                 Tolak
+                              </Button>
+                            </form>
+                          ) : u.status === "ACTIVE" && u.id === adminId ? (
+                            <span className="text-xs text-muted-foreground">Akun Anda</span>
+                          ) : u.status === "ACTIVE" || u.status === "DISABLED" ? (
+                            <form
+                              action={aksiStatus}
+                              onSubmit={() => setAksiTerakhir("status")}
+                            >
+                              <input type="hidden" name="id" value={u.id} />
+                              <Button
+                                type="submit"
+                                name="tindakan"
+                                value={u.status === "ACTIVE" ? "nonaktifkan" : "aktifkan"}
+                                size="sm"
+                                variant={u.status === "ACTIVE" ? "outline" : "primary"}
+                                disabled={memprosesStatus || memverifikasi}
+                              >
+                                {u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan kembali"}
                               </Button>
                             </form>
                           ) : (
