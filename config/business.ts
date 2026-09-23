@@ -8,6 +8,9 @@ export const DURASI_SLOT_MENIT = 30;
 export const BATAS_LOGIN_GAGAL = 10;
 export const JENDELA_LOGIN_MENIT = 15;
 export const MASA_SESI_JAM = 12;
+export const BATAS_NAMA_AKUN_KARAKTER = 100;
+export const BATAS_EMAIL_AKUN_KARAKTER = 254;
+export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 2; // H-2 jam sebelum mulai
 
 // Daftar role & status (nilai aktual enum di Prisma; konstanta untuk UI/logika)

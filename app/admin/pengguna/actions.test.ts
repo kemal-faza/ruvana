@@ -3,7 +3,7 @@ import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { ubahStatusAkun, verifikasiPendaftaran } from "./actions";
+import { buatAkun, ubahStatusAkun, verifikasiPendaftaran } from "./actions";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -31,11 +31,53 @@ function formStatus(tindakan: string, id = "7") {
   return data;
 }
 
+function formAkun(password: string, nama = "Siti Aminah", email = "siti@kampus.ac.id") {
+  const data = new FormData();
+  data.set("nama", nama);
+  data.set("email", email);
+  data.set("password", password);
+  data.set("role", "pengguna");
+  return data;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(requireAdmin).mockResolvedValue({ id: 1, role: Role.admin } as never);
   vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
   vi.mocked(prisma.$transaction).mockImplementation((async (callback: (tx: typeof prisma) => Promise<unknown>) => callback(prisma)) as never);
+});
+
+describe("buatAkun", () => {
+  it("menerima password tepat 72 byte dan mencatat admin pembuat akun", async () => {
+    const result = await buatAkun(state, formAkun(`a1${"é".repeat(35)}`));
+
+    expect(result.ok).toBe(true);
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        password: expect.any(String),
+        dibuatOleh: 1,
+        status: AccountStatus.ACTIVE,
+      }),
+    });
+  });
+
+  it("menolak password lebih dari 72 byte sebelum membuat akun", async () => {
+    const result = await buatAkun(state, formAkun(`a1x${"é".repeat(35)}`));
+
+    expect(result.fieldErrors?.password).toEqual(["Password maksimal 72 byte."]);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("menolak nama dan email melebihi batas sebelum membuat akun", async () => {
+    const result = await buatAkun(
+      state,
+      formAkun("rahasia123", "A".repeat(101), `${"a".repeat(243)}@kampus.ac.id`),
+    );
+
+    expect(result.fieldErrors?.nama).toBeDefined();
+    expect(result.fieldErrors?.email).toBeDefined();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("ubahStatusAkun", () => {

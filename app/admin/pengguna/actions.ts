@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
+import {
+  BATAS_EMAIL_AKUN_KARAKTER,
+  BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_BYTE,
+} from "@/config/business";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 
@@ -34,10 +39,16 @@ export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<St
   const role = String(form.get("role") ?? "");
 
   const fieldErrors: Record<string, string[]> = {};
-  if (nama.length < 3) fieldErrors.nama = ["Nama minimal 3 karakter."];
-  if (!EMAIL_RE.test(email)) fieldErrors.email = ["Format email tidak valid."];
+  if (nama.length < 3 || nama.length > BATAS_NAMA_AKUN_KARAKTER) {
+    fieldErrors.nama = [`Nama harus berisi 3–${BATAS_NAMA_AKUN_KARAKTER} karakter.`];
+  }
+  if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) {
+    fieldErrors.email = ["Format email tidak valid atau terlalu panjang."];
+  }
   if (password.length < 8 || !PASSWORD_RE.test(password)) {
     fieldErrors.password = ["Password minimal 8 karakter, mengandung huruf dan angka."];
+  } else if (Buffer.byteLength(password, "utf8") > BATAS_PASSWORD_AKUN_BYTE) {
+    fieldErrors.password = [`Password maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`];
   }
   if (role !== "pengguna" && role !== "petugas") {
     fieldErrors.role = ["Role yang diizinkan: pengguna atau petugas."];

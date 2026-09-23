@@ -2,6 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { buatAkun } from "@/app/admin/pengguna/actions"
 import AdminUsers from "@/components/admin/AdminUsers"
 import type { AdminUserRow } from "@/lib/admin/users"
 
@@ -160,6 +161,28 @@ describe("AdminUsers (kelola akun)", () => {
     expect(within(dialog).getByLabelText(/password awal/i)).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/peran/i)).toBeInTheDocument()
     expect(within(dialog).getByRole("button", { name: "Buat akun" })).toBeInTheDocument()
+  })
+
+  it("mencegah pengiriman password lebih dari 72 byte pada form admin", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+    await user.click(screen.getByRole("button", { name: "Tambah akun" }))
+
+    const dialog = await screen.findByRole("dialog", { name: "Buat akun baru" })
+    const nama = within(dialog).getByLabelText(/nama lengkap/i) as HTMLInputElement
+    const email = within(dialog).getByLabelText(/email/i) as HTMLInputElement
+    const password = within(dialog).getByLabelText(/password awal/i) as HTMLInputElement
+
+    expect(nama).toHaveAttribute("maxlength", "100")
+    expect(email).toHaveAttribute("maxlength", "254")
+    await user.type(nama, "Siti Aminah")
+    await user.type(email, "siti@kampus.ac.id")
+    await user.type(password, `a1x${"é".repeat(35)}`)
+    await user.selectOptions(within(dialog).getByLabelText(/peran/i), "pengguna")
+    await user.click(within(dialog).getByRole("button", { name: "Buat akun" }))
+
+    expect(password.validationMessage).toBe("Password maksimal 72 byte.")
+    expect(buatAkun).not.toHaveBeenCalled()
   })
 
   it("mengurutkan berdasarkan nama menaik lalu menurun", async () => {

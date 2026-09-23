@@ -4,6 +4,11 @@ import { useActionState, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Search, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 
 import { buatAkun, ubahStatusAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions";
+import {
+  BATAS_EMAIL_AKUN_KARAKTER,
+  BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_BYTE,
+} from "@/config/business";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -497,7 +502,31 @@ function SheetBuatAkun({
             Akun petugas dan pengguna yang dibuat admin langsung berstatus aktif.
           </SheetDescription>
         </SheetHeader>
-        <form action={action} className="flex flex-col gap-4 px-4 pb-4">
+        <form
+          action={action}
+          className="flex flex-col gap-4 px-4 pb-4"
+          onSubmit={(event) => {
+            const form = event.currentTarget;
+            const nama = form.elements.namedItem("nama") as HTMLInputElement;
+            const password = form.elements.namedItem("password") as HTMLInputElement;
+            const ukuranPassword = new TextEncoder().encode(password.value).length;
+
+            nama.setCustomValidity(nama.value.trim().length < 3 ? "Nama minimal 3 karakter." : "");
+            password.setCustomValidity(
+              ukuranPassword > BATAS_PASSWORD_AKUN_BYTE
+                ? `Password maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
+                : !/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/.test(password.value)
+                  ? "Password harus mengandung huruf dan angka."
+                  : "",
+            );
+
+            const firstInvalid = [nama, password].find((input) => !input.validity.valid);
+            if (firstInvalid) {
+              firstInvalid.reportValidity();
+              event.preventDefault();
+            }
+          }}
+        >
           <Field>
             <FieldLabel htmlFor="buat-nama" required>
               Nama lengkap
@@ -509,6 +538,8 @@ function SheetBuatAkun({
               autoComplete="name"
               required
               minLength={3}
+              maxLength={BATAS_NAMA_AKUN_KARAKTER}
+              onInput={(event) => event.currentTarget.setCustomValidity("")}
               aria-invalid={state.fieldErrors?.nama ? true : undefined}
               aria-describedby={state.fieldErrors?.nama ? "buat-nama-error" : undefined}
             />
@@ -527,6 +558,7 @@ function SheetBuatAkun({
               placeholder="nama@email.com"
               autoComplete="email"
               required
+              maxLength={BATAS_EMAIL_AKUN_KARAKTER}
               aria-invalid={state.fieldErrors?.email ? true : undefined}
               aria-describedby={state.fieldErrors?.email ? "buat-email-error" : undefined}
             />
@@ -546,11 +578,15 @@ function SheetBuatAkun({
               autoComplete="new-password"
               required
               minLength={8}
+              onInput={(event) => event.currentTarget.setCustomValidity("")}
               aria-invalid={state.fieldErrors?.password ? true : undefined}
               aria-describedby={
-                state.fieldErrors?.password ? "buat-password-error" : undefined
+                state.fieldErrors?.password ? "buat-password-error" : "buat-password-help"
               }
             />
+            <p id="buat-password-help" className="text-sm text-muted-foreground">
+              Minimal 8 karakter dengan huruf dan angka, maksimal {BATAS_PASSWORD_AKUN_BYTE} byte.
+            </p>
             {state.fieldErrors?.password && (
               <FieldError id="buat-password-error">
                 {state.fieldErrors.password[0]}

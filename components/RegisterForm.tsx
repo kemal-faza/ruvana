@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { daftar } from "@/app/daftar/actions";
+import {
+  BATAS_EMAIL_AKUN_KARAKTER,
+  BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_BYTE,
+} from "@/config/business";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -48,8 +53,8 @@ export default function RegisterForm() {
               password.setCustomValidity(
                 passwordLength < 8
                   ? "Kata sandi harus berisi minimal 8 karakter."
-                  : passwordLength > 72
-                    ? "Kata sandi maksimal 72 byte."
+                  : passwordLength > BATAS_PASSWORD_AKUN_BYTE
+                    ? `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
                     : "",
               );
 
@@ -62,12 +67,12 @@ export default function RegisterForm() {
           >
             <Field data-invalid={!!state.fieldErrors?.nama || undefined}>
               <FieldLabel htmlFor="daftar-nama" required>Nama lengkap</FieldLabel>
-              <Input id="daftar-nama" name="nama" autoComplete="name" maxLength={100} required onInput={(event) => event.currentTarget.setCustomValidity("")} aria-invalid={!!state.fieldErrors?.nama || undefined} aria-describedby={state.fieldErrors?.nama ? "daftar-nama-error" : undefined} />
+              <Input id="daftar-nama" name="nama" autoComplete="name" maxLength={BATAS_NAMA_AKUN_KARAKTER} required onInput={(event) => event.currentTarget.setCustomValidity("")} aria-invalid={!!state.fieldErrors?.nama || undefined} aria-describedby={state.fieldErrors?.nama ? "daftar-nama-error" : undefined} />
               {state.fieldErrors?.nama && <FieldError id="daftar-nama-error">{state.fieldErrors.nama[0]}</FieldError>}
             </Field>
             <Field data-invalid={!!state.fieldErrors?.email || undefined}>
               <FieldLabel htmlFor="daftar-email" required>Email</FieldLabel>
-              <Input id="daftar-email" name="email" type="email" autoComplete="email" maxLength={254} required onInput={(event) => event.currentTarget.setCustomValidity("")} aria-invalid={!!state.fieldErrors?.email || undefined} aria-describedby={state.fieldErrors?.email ? "daftar-email-error" : undefined} />
+              <Input id="daftar-email" name="email" type="email" autoComplete="email" maxLength={BATAS_EMAIL_AKUN_KARAKTER} required onInput={(event) => event.currentTarget.setCustomValidity("")} aria-invalid={!!state.fieldErrors?.email || undefined} aria-describedby={state.fieldErrors?.email ? "daftar-email-error" : undefined} />
               {state.fieldErrors?.email && <FieldError id="daftar-email-error">{state.fieldErrors.email[0]}</FieldError>}
             </Field>
             <Field data-invalid={!!state.fieldErrors?.password || undefined}>
