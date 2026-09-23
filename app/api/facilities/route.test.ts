@@ -37,4 +37,56 @@ describe("GET /api/facilities", () => {
     expect(body.errors[0].field).toBe("perPage");
     expect(listPublicFacilities).not.toHaveBeenCalled();
   });
+
+  it("mengembalikan 422 ketika type di luar enum", async () => {
+    const request = new NextRequest("http://localhost/api/facilities?type=gedung");
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.errors[0]).toMatchObject({ field: "type", code: "INVALID_ENUM" });
+    expect(listPublicFacilities).not.toHaveBeenCalled();
+  });
+
+  it("mengembalikan 422 ketika minCapacity=0", async () => {
+    const request = new NextRequest("http://localhost/api/facilities?minCapacity=0");
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.errors[0]).toMatchObject({ field: "minCapacity", code: "OUT_OF_RANGE" });
+    expect(listPublicFacilities).not.toHaveBeenCalled();
+  });
+
+  it("mengembalikan 422 ketika search lebih dari 200 karakter", async () => {
+    const request = new NextRequest(`http://localhost/api/facilities?search=${"a".repeat(201)}`);
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.errors[0]).toMatchObject({ field: "search", code: "TOO_LONG" });
+    expect(listPublicFacilities).not.toHaveBeenCalled();
+  });
+
+  it("meneruskan filter yang valid ke service", async () => {
+    vi.mocked(listPublicFacilities).mockResolvedValue({
+      items: [],
+      meta: { page: 1, perPage: 20, totalItems: 0, totalPages: 0 },
+    });
+
+    const request = new NextRequest(
+      "http://localhost/api/facilities?search=lab&type=laboratorium&location=Gedung&minCapacity=30",
+    );
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    expect(listPublicFacilities).toHaveBeenCalledWith({
+      page: 1,
+      perPage: 20,
+      search: "lab",
+      type: "laboratorium",
+      location: "Gedung",
+      minCapacity: 30,
+    });
+  });
 });
