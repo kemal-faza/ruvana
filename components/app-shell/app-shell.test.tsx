@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
 import { CalendarDays, LayoutDashboard, Settings } from "lucide-react"
 
-import { logout } from "@/app/login/actions"
+import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
 import type { NavigationGroup } from "@/components/app-shell/types"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
@@ -14,7 +14,7 @@ const routeState = vi.hoisted(() => ({ pathname: "/reservasi" }))
 vi.mock("next/navigation", () => ({
   usePathname: () => routeState.pathname,
 }))
-vi.mock("@/app/login/actions", () => ({ logout: vi.fn() }))
+vi.mock("@/lib/auth-client", () => ({ logoutFromBrowser: vi.fn() }))
 
 const navigation: readonly NavigationGroup[] = [
   {
@@ -50,7 +50,7 @@ describe("AppShell", () => {
     routeState.pathname = "/reservasi"
   })
 
-  it("merender navigasi aktif dan mengirim logout lewat Server Action", async () => {
+  it("merender navigasi aktif dan mengirim logout lewat API", async () => {
     setMatchMedia("(max-width: 1023px)", false)
     const user = userEvent.setup()
     const { container } = renderFixture()
@@ -62,9 +62,9 @@ describe("AppShell", () => {
     expect(screen.getByText("Pratinjau UI")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Buka navigasi" })).not.toBeInTheDocument()
     const tombolKeluar = screen.getAllByRole("button", { name: "Keluar" })[0]
-    expect(tombolKeluar).toHaveAttribute("type", "submit")
+    expect(tombolKeluar).toHaveAttribute("type", "button")
     await user.click(tombolKeluar)
-    expect(logout).toHaveBeenCalledOnce()
+    expect(logoutFromBrowser).toHaveBeenCalledOnce()
     expect((await axe(container)).violations).toEqual([])
   })
 

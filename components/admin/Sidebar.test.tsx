@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { logout } from "@/app/login/actions"
+import { logoutFromBrowser } from "@/lib/auth-client"
 import AdminSidebar from "@/components/admin/Sidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
@@ -11,8 +11,8 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/admin/pengguna",
 }))
 
-vi.mock("@/app/login/actions", () => ({
-  logout: vi.fn(),
+vi.mock("@/lib/auth-client", () => ({
+  logoutFromBrowser: vi.fn(),
 }))
 
 afterEach(() => {
@@ -39,9 +39,9 @@ describe("AdminSidebar", () => {
     expect(screen.getByText("Ayu Pratama")).toBeInTheDocument()
     expect(screen.getAllByText("Admin").length).toBeGreaterThanOrEqual(1)
     const tombolKeluar = screen.getByRole("button", { name: "Keluar" })
-    expect(tombolKeluar).toHaveAttribute("type", "submit")
+    expect(tombolKeluar).toHaveAttribute("type", "button")
     await user.click(tombolKeluar)
-    expect(logout).toHaveBeenCalledOnce()
+    expect(logoutFromBrowser).toHaveBeenCalledOnce()
     expect(screen.getByRole("navigation", { name: "Navigasi utama" })).toBeInTheDocument()
   })
 })

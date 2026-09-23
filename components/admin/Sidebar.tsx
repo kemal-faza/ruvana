@@ -1,8 +1,9 @@
 "use client"
 
 import { LogOut, Users } from "lucide-react"
+import { useState } from "react"
 
-import { logout } from "@/app/login/actions"
+import { logoutFromBrowser } from "@/lib/auth-client"
 import { NavigationList } from "@/components/app-shell/app-sidebar"
 import type { NavigationGroup } from "@/components/app-shell/types"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -35,6 +36,7 @@ function inisial(nama: string) {
 
 export default function AdminSidebar({ admin }: { admin: SessionUser }) {
   const { setOpenMobile } = useSidebar()
+  const [logoutError, setLogoutError] = useState("")
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -65,12 +67,23 @@ export default function AdminSidebar({ admin }: { admin: SessionUser }) {
           </div>
           <ThemeToggle />
         </div>
-        <form action={logout}>
-          <Button type="submit" variant="outline" className="w-full justify-start">
-            <LogOut aria-hidden="true" />
-            <span>Keluar</span>
-          </Button>
-        </form>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-start"
+          onClick={async () => {
+            try {
+              setLogoutError("")
+              await logoutFromBrowser()
+            } catch {
+              setLogoutError("Gagal keluar. Coba lagi.")
+            }
+          }}
+        >
+          <LogOut aria-hidden="true" />
+          <span>Keluar</span>
+        </Button>
+        {logoutError && <p role="alert" className="text-xs text-destructive">{logoutError}</p>}
       </SidebarFooter>
     </Sidebar>
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import type { CSSProperties } from "react"
+import { useState, type CSSProperties } from "react"
 import { usePathname } from "next/navigation"
 import { motion } from "motion/react"
 import {
@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react"
 
-import { logout } from "@/app/login/actions"
+import { logoutFromBrowser } from "@/lib/auth-client"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Sidebar,
@@ -145,6 +145,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
 
 export function AppSidebar({ navigation, account }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar()
+  const [logoutError, setLogoutError] = useState("")
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -171,15 +172,25 @@ export function AppSidebar({ navigation, account }: AppSidebarProps) {
           <ThemeToggle />
         </div>
         {account ? (
-          <form action={logout} onSubmit={() => setOpenMobile(false)}>
+          <div>
             <button
-              type="submit"
+              type="button"
               className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={async () => {
+                try {
+                  setLogoutError("")
+                  await logoutFromBrowser()
+                  setOpenMobile(false)
+                } catch {
+                  setLogoutError("Gagal keluar. Coba lagi.")
+                }
+              }}
             >
               <LogOut aria-hidden="true" className="size-4 shrink-0" />
               <span>Keluar</span>
             </button>
-          </form>
+            {logoutError && <p role="alert" className="text-xs text-destructive">{logoutError}</p>}
+          </div>
         ) : (
           <Link
             href="/login"

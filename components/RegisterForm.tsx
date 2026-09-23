@@ -2,9 +2,8 @@
 
 import Link from "next/link"
 import { ArrowLeft, LockKeyhole, Mail, UserRound } from "lucide-react"
-import { useActionState, useEffect } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 
-import { daftar } from "@/app/daftar/actions"
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -17,7 +16,60 @@ import {
 } from "@/config/business"
 
 export default function RegisterForm() {
-  const [state, action, pending] = useActionState(daftar, { ok: false, pesan: "" })
+  const [state, setState] = useState<{ ok: boolean; pesan: string; fieldErrors?: Record<string, string[]> }>({ ok: false, pesan: "" })
+  const [pending, setPending] = useState(false)
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = event.currentTarget
+    const nama = form.elements.namedItem("nama") as HTMLInputElement
+    const email = form.elements.namedItem("email") as HTMLInputElement
+    const password = form.elements.namedItem("password") as HTMLInputElement
+    const passwordLength = new TextEncoder().encode(password.value).length
+
+    nama.setCustomValidity(!nama.value.trim() ? "Nama lengkap wajib diisi." : "")
+    email.setCustomValidity(
+      !email.value.trim()
+        ? "Email wajib diisi."
+        : !email.validity.valid
+          ? "Masukkan alamat email yang valid."
+          : "",
+    )
+    password.setCustomValidity(
+      passwordLength < 8
+        ? "Kata sandi harus berukuran minimal 8 byte."
+        : passwordLength > BATAS_PASSWORD_AKUN_BYTE
+          ? `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
+          : "",
+    )
+    const firstInvalid = [nama, email, password].find((input) => !input.validity.valid)
+    if (firstInvalid) {
+      firstInvalid.reportValidity()
+      return
+    }
+
+    setPending(true)
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama: nama.value, email: email.value, password: password.value }),
+      })
+      if (response.ok) {
+        form.reset()
+        setState({ ok: true, pesan: "Pendaftaran berhasil. Tunggu persetujuan admin sebelum masuk." })
+      } else {
+        const problem = await response.json() as { code?: string; errors?: { field: string; message: string }[] }
+        const fieldErrors = Object.fromEntries((problem.errors ?? []).map(({ field, message }) => [field, [message]]))
+        if (problem.code === "EMAIL_ALREADY_USED") fieldErrors.email = ["Email sudah terdaftar."]
+        setState({ ok: false, pesan: problem.code === "EMAIL_ALREADY_USED" ? "Email sudah terdaftar." : "Periksa kembali isian formulir atau coba lagi.", fieldErrors })
+      }
+    } catch {
+      setState({ ok: false, pesan: "Pendaftaran gagal. Coba lagi." })
+    } finally {
+      setPending(false)
+    }
+  }
 
   useEffect(() => {
     const firstError = ["nama", "email", "password"].find((field) => state.fieldErrors?.[field])
@@ -55,38 +107,9 @@ export default function RegisterForm() {
           </div>
 
           <form
-            action={action}
+            onSubmit={submit}
             className="flex flex-col gap-5"
             noValidate
-            onSubmit={(event) => {
-              const form = event.currentTarget
-              const nama = form.elements.namedItem("nama") as HTMLInputElement
-              const email = form.elements.namedItem("email") as HTMLInputElement
-              const password = form.elements.namedItem("password") as HTMLInputElement
-              const passwordLength = new TextEncoder().encode(password.value).length
-
-              nama.setCustomValidity(!nama.value.trim() ? "Nama lengkap wajib diisi." : "")
-              email.setCustomValidity(
-                !email.value.trim()
-                  ? "Email wajib diisi."
-                  : !email.validity.valid
-                    ? "Masukkan alamat email yang valid."
-                    : "",
-              )
-              password.setCustomValidity(
-                passwordLength < 8
-                  ? "Kata sandi harus berisi minimal 8 karakter."
-                  : passwordLength > BATAS_PASSWORD_AKUN_BYTE
-                    ? `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
-                    : "",
-              )
-
-              const firstInvalid = [nama, email, password].find((input) => !input.validity.valid)
-              if (firstInvalid) {
-                firstInvalid.reportValidity()
-                event.preventDefault()
-              }
-            }}
           >
             <Field data-invalid={!!state.fieldErrors?.nama || undefined}>
               <FieldLabel htmlFor="daftar-nama" required>Nama lengkap</FieldLabel>
@@ -161,7 +184,7 @@ export default function RegisterForm() {
                 />
               </div>
               <p id="daftar-password-help" className="text-sm text-muted-foreground">
-                Kata Sandi minimal 8 karakter.
+                Kata sandi berukuran 8–72 byte UTF-8.
               </p>
               {state.fieldErrors?.password && (
                 <FieldError id="daftar-password-error">{state.fieldErrors.password[0]}</FieldError>

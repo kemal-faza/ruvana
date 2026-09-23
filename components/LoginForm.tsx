@@ -2,9 +2,8 @@
 
 import Link from "next/link"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
-import { useActionState, useEffect } from "react"
+import { useEffect, useState } from "react"
 
-import { login } from "@/app/login/actions"
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -12,10 +11,12 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 
 export default function LoginForm() {
-  const [state, action, pending] = useActionState(login, {
+  const [state, setState] = useState({
     ok: false,
     pesan: "",
+    fieldErrors: {} as Record<string, string[]>,
   })
+  const [pending, setPending] = useState(false)
 
   const emailError = state.fieldErrors?.email?.[0]
   const passwordError = state.fieldErrors?.password?.[0]
@@ -53,7 +54,39 @@ export default function LoginForm() {
             </p>
           </div>
 
-          <form action={action} className="flex flex-col gap-5">
+          <form
+            className="flex flex-col gap-5"
+            onSubmit={async (event) => {
+              event.preventDefault()
+              const form = new FormData(event.currentTarget)
+              setPending(true)
+              try {
+                const response = await fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+                })
+                const result = await response.json()
+                if (response.ok) {
+                  window.location.assign(result.user.role === "admin" ? "/admin" : "/fasilitas")
+                  return
+                }
+                const fieldErrors: Record<string, string[]> = {}
+                if (response.status === 422 && Array.isArray(result.errors)) {
+                  for (const error of result.errors) {
+                    if (typeof error.field === "string" && typeof error.message === "string") {
+                      fieldErrors[error.field] = [error.message]
+                    }
+                  }
+                }
+                setState({ ok: false, pesan: result.detail ?? "Gagal masuk. Coba lagi.", fieldErrors })
+              } catch {
+                setState({ ok: false, pesan: "Gagal terhubung. Coba lagi.", fieldErrors: {} })
+              } finally {
+                setPending(false)
+              }
+            }}
+          >
             <Field data-invalid={emailError ? true : undefined}>
               <FieldLabel htmlFor="login-email" required>
                 Email
