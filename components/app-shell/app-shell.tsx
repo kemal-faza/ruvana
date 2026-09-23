@@ -15,12 +15,11 @@ function serializeNavigation(
   }))
 }
 
-export function AppShell({ navigation, account, logoutDestination, children }: AppShellProps) {
+export function AppShell({ navigation, account, children }: AppShellProps) {
   return (
     <AppShellClient
       navigation={serializeNavigation(navigation)}
       account={account}
-      logoutDestination={logoutDestination}
     >
       {children}
     </AppShellClient>

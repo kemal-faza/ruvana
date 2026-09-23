@@ -27,15 +27,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { navigation, shellAccount, shellLogoutDestination } from "@/config/navigation"
+import { navigation, shellAccount } from "@/config/navigation"
 
 export default function Home() {
   return (
-    <AppShell
-      navigation={navigation}
-      account={shellAccount}
-      logoutDestination={shellLogoutDestination}
-    >
+    <AppShell navigation={navigation} account={shellAccount}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-3">
           <p className="text-sm font-medium tracking-wide text-primary">Pratinjau UI</p>

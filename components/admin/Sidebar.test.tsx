@@ -1,6 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { logout } from "@/app/login/actions"
 import AdminSidebar from "@/components/admin/Sidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
@@ -19,8 +21,9 @@ afterEach(() => {
 })
 
 describe("AdminSidebar", () => {
-  it("menampilkan navigasi aktif, identitas admin, dan tombol keluar", () => {
+  it("menampilkan navigasi aktif, identitas admin, dan tombol keluar yang mencabut sesi", async () => {
     setMatchMedia("(max-width: 1023px)", false)
+    const user = userEvent.setup()
     render(
       <SidebarProvider>
         <AdminSidebar
@@ -35,7 +38,10 @@ describe("AdminSidebar", () => {
 
     expect(screen.getByText("Ayu Pratama")).toBeInTheDocument()
     expect(screen.getAllByText("Admin").length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByRole("button", { name: "Keluar" })).toBeInTheDocument()
+    const tombolKeluar = screen.getByRole("button", { name: "Keluar" })
+    expect(tombolKeluar).toHaveAttribute("type", "submit")
+    await user.click(tombolKeluar)
+    expect(logout).toHaveBeenCalledOnce()
     expect(screen.getByRole("navigation", { name: "Navigasi utama" })).toBeInTheDocument()
   })
 })

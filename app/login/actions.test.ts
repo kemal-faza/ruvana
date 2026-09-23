@@ -2,9 +2,9 @@ import bcrypt from "bcryptjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/auth";
+import { createSession, destroySession } from "@/lib/auth";
 import { clearLoginFailures, loginBlocked, recordLoginFailure } from "@/lib/login-rate-limit";
-import { login } from "./actions";
+import { login, logout } from "./actions";
 
 vi.mock("@/lib/prisma", () => ({ prisma: { user: { findUnique: vi.fn() } } }));
 vi.mock("@/lib/auth", () => ({ createSession: vi.fn(), destroySession: vi.fn() }));
@@ -19,10 +19,10 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn((path: string) => { throw ne
 const state = { ok: false, pesan: "" };
 const password = "rahasia123";
 
-function form() {
+function form(inputPassword = password) {
   const data = new FormData();
   data.set("email", " USER@KAMPUS.AC.ID ");
-  data.set("password", password);
+  data.set("password", inputPassword);
   return data;
 }
 
@@ -56,22 +56,49 @@ describe("login", () => {
     expect((await login(state, form())).pesan).toBe("Email atau kata sandi salah.");
   });
 
-  it("membuat sesi hanya bagi akun aktif dengan kata sandi benar", async () => {
+  it.each([
+    { role: Role.pengguna, tujuan: "/fasilitas" },
+    { role: Role.petugas, tujuan: "/fasilitas" },
+    { role: Role.admin, tujuan: "/admin" },
+  ])("membuat sesi bagi akun aktif ber-role $role", async ({ role, tujuan }) => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 7,
-      role: Role.pengguna,
+      role,
       status: AccountStatus.ACTIVE,
       password: await bcrypt.hash(password, 4),
     } as never);
 
-    await expect(login(state, form())).rejects.toThrow("REDIRECT:/");
+    await expect(login(state, form())).rejects.toThrow(`REDIRECT:${tujuan}`);
     expect(createSession).toHaveBeenCalledWith(7);
     expect(clearLoginFailures).toHaveBeenCalledWith("attempt-key");
+  });
+
+  it("menolak password lebih dari 72 byte meski 72 byte pertamanya benar", async () => {
+    const passwordBatas = `a1${"x".repeat(70)}`;
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 7,
+      role: Role.pengguna,
+      status: AccountStatus.ACTIVE,
+      password: await bcrypt.hash(passwordBatas, 4),
+    } as never);
+
+    const result = await login(state, form(`${passwordBatas}z`));
+
+    expect(result.pesan).toBe("Email atau kata sandi salah.");
+    expect(recordLoginFailure).toHaveBeenCalledWith("attempt-key");
+    expect(createSession).not.toHaveBeenCalled();
   });
 
   it("menolak percobaan setelah batas tanpa membaca akun", async () => {
     vi.mocked(loginBlocked).mockResolvedValue(true);
     expect((await login(state, form())).pesan).toMatch(/Terlalu banyak percobaan/);
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("logout", () => {
+  it("mencabut sesi sebelum mengarahkan ke login", async () => {
+    await expect(logout()).rejects.toThrow("REDIRECT:/login");
+    expect(destroySession).toHaveBeenCalledOnce();
   });
 });

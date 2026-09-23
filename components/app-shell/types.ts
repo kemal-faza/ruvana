@@ -29,7 +29,6 @@ export interface ShellAccount {
 
 export interface AppShellProps {
   navigation: readonly NavigationGroup[]
-  account: ShellAccount
-  logoutDestination: string
+  account: ShellAccount | null
   children: ReactNode
 }

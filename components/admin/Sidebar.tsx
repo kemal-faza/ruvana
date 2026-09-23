@@ -65,15 +65,12 @@ export default function AdminSidebar({ admin }: { admin: SessionUser }) {
           </div>
           <ThemeToggle />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full justify-start"
-          onClick={() => logout()}
-        >
-          <LogOut aria-hidden="true" />
-          <span>Keluar</span>
-        </Button>
+        <form action={logout}>
+          <Button type="submit" variant="outline" className="w-full justify-start">
+            <LogOut aria-hidden="true" />
+            <span>Keluar</span>
+          </Button>
+        </form>
       </SidebarFooter>
     </Sidebar>
   )

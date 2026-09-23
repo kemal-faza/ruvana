@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { BATAS_PASSWORD_AKUN_BYTE } from "@/config/business";
 import { prisma } from "@/lib/prisma";
 import { createSession, destroySession } from "@/lib/auth";
 import { clearLoginFailures, loginAttemptKey, loginBlocked, recordLoginFailure } from "@/lib/login-rate-limit";
@@ -24,6 +25,7 @@ export async function login(
     .toLowerCase();
 
   const password = String(form.get("password") ?? "");
+  const passwordTerlaluPanjang = Buffer.byteLength(password, "utf8") > BATAS_PASSWORD_AKUN_BYTE;
 
   const fieldErrors: Record<string, string[]> = {};
 
@@ -72,7 +74,7 @@ export async function login(
   }
 
   let passwordCocok = false;
-  if (user) {
+  if (user && !passwordTerlaluPanjang) {
     try {
       passwordCocok = await bcrypt.compare(password, user.password);
     } catch {
@@ -105,7 +107,7 @@ export async function login(
 
     case Role.petugas:
     case Role.pengguna:
-      redirect("/");
+      redirect("/fasilitas");
 
     default:
       await destroySession();

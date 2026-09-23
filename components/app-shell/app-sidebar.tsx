@@ -10,12 +10,14 @@ import {
   Circle,
   ClipboardList,
   LayoutDashboard,
+  LogIn,
   LogOut,
   Settings,
   SwatchBook,
   Users,
 } from "lucide-react"
 
+import { logout } from "@/app/login/actions"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Sidebar,
@@ -41,8 +43,7 @@ import type {
 
 interface AppSidebarProps {
   navigation: readonly (NavigationGroup | SerializableNavigationGroup)[]
-  account: ShellAccount
-  logoutDestination: string
+  account: ShellAccount | null
 }
 
 interface NavigationListProps {
@@ -142,7 +143,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
   )
 }
 
-export function AppSidebar({ navigation, account, logoutDestination }: AppSidebarProps) {
+export function AppSidebar({ navigation, account }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar()
 
   return (
@@ -164,19 +165,31 @@ export function AppSidebar({ navigation, account, logoutDestination }: AppSideba
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{account.displayName}</p>
-            <p className="truncate text-xs text-sidebar-foreground/70">{account.roleLabel}</p>
+            <p className="truncate text-sm font-medium">{account?.displayName ?? "Pengunjung"}</p>
+            <p className="truncate text-xs text-sidebar-foreground/70">{account?.roleLabel ?? "Belum masuk"}</p>
           </div>
           <ThemeToggle />
         </div>
-        <Link
-          href={logoutDestination}
-          onClick={() => setOpenMobile(false)}
-          className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut aria-hidden="true" className="size-4 shrink-0" />
-          <span>Keluar</span>
-        </Link>
+        {account ? (
+          <form action={logout} onSubmit={() => setOpenMobile(false)}>
+            <button
+              type="submit"
+              className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LogOut aria-hidden="true" className="size-4 shrink-0" />
+              <span>Keluar</span>
+            </button>
+          </form>
+        ) : (
+          <Link
+            href="/login"
+            onClick={() => setOpenMobile(false)}
+            className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <LogIn aria-hidden="true" className="size-4 shrink-0" />
+            <span>Masuk</span>
+          </Link>
+        )}
       </SidebarFooter>
     </Sidebar>
   )
