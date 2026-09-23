@@ -29,8 +29,8 @@ export function FacilityList({ items }: FacilityListProps) {
 
   return (
     <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((facility) => (
-        <FacilityCard key={facility.id} facility={facility} />
+      {items.map((facility, index) => (
+        <FacilityCard key={facility.id} facility={facility} eager={index === 0} />
       ))}
     </div>
   )
