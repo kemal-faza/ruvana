@@ -40,7 +40,7 @@ export default function LoginForm() {
             className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors duration-motion-standard hover:text-foreground"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
-            Kembali ke beranda
+            Kembali
           </Link>
           <ThemeToggle />
         </header>
