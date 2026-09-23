@@ -32,6 +32,16 @@ describe("problemResponse", () => {
     expect(response.status).toBe(422);
   });
 
+  it("menyertakan field perPage untuk validasi query fasilitas", async () => {
+    const response = validationFailed("/api/facilities", [
+      { field: "perPage", code: "OUT_OF_RANGE", message: "perPage harus di antara 1 dan 100" },
+    ]);
+    const body = await response.json();
+    expect(body.errors).toHaveLength(1);
+    expect(body.errors[0].field).toBe("perPage");
+    expect(response.status).toBe(422);
+  });
+
   it("unauthorized mengembalikan 401", async () => {
     const r = unauthorized("/api/reservations");
     expect(r.status).toBe(401);
