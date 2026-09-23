@@ -104,3 +104,21 @@ export function findMyReservationById(userId: number, id: number) {
     include: { facility: true },
   });
 }
+
+// Antrian petugas: hanya PENDING yang belum diproses, FIFO
+// (createdAt ASC lalu id ASC) agar yang paling lama menunggu diproses dulu.
+export function listPendingQueue({ skip, take }: { skip: number; take: number }) {
+  return prisma.reservation.findMany({
+    where: { status: "PENDING" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    include: { facility: true, user: true },
+    skip,
+    take,
+  });
+}
+
+export function countPendingQueue() {
+  return prisma.reservation.count({
+    where: { status: "PENDING" },
+  });
+}

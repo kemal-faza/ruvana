@@ -1,7 +1,15 @@
 import { BATAS_PEMBATALAN_JAM } from "@/config/business";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
-import { countMyReservations, findMyReservationById, listMyReservations } from "@/lib/db/reservations";
+import { lockFacilityById } from "@/lib/db/facilities";
+import {
+  countMyReservations,
+  countPendingQueue,
+  findMyReservationById,
+  findOverlappingApproved,
+  listMyReservations,
+  listPendingQueue,
+} from "@/lib/db/reservations";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import type { CancelReservationInput, ReservationCreateInput } from "@/lib/validation/reservation";
 import type { MyReservationListQuery } from "@/lib/validation/reservation-query";
@@ -307,6 +315,242 @@ export async function cancelMyReservationService(
         };
       }
     }
+    throw e;
+  }
+}
+
+export interface ActorRef {
+  id: number;
+  nama: string;
+  role: string;
+}
+
+export interface PemohonRef {
+  id: number;
+  nama: string;
+  email: string;
+  role: string;
+  status: string;
+  waktuDaftar: string;
+  waktuVerifikasi: string | null;
+}
+
+export interface StaffReservationResult extends Omit<ReservationResult, "processedBy"> {
+  processedBy: ActorRef | null;
+  pemohon: PemohonRef;
+}
+
+export interface StaffReservationCollection {
+  items: StaffReservationResult[];
+  meta: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+type StaffReservationRow = Parameters<typeof toReservationResponse>[0] & {
+  user: {
+    id: number;
+    nama: string;
+    email: string;
+    role: string;
+    status: string;
+    waktuDaftar: Date;
+    waktuVerifikasi: Date | null;
+  };
+};
+
+function toStaffReservationResponse(row: StaffReservationRow, actor: ActorRef | null): StaffReservationResult {
+  return {
+    ...toReservationResponse(row),
+    processedBy: actor,
+    pemohon: {
+      id: row.user.id,
+      nama: row.user.nama,
+      email: row.user.email,
+      role: row.user.role,
+      status: row.user.status,
+      waktuDaftar: row.user.waktuDaftar.toISOString(),
+      waktuVerifikasi: row.user.waktuVerifikasi ? row.user.waktuVerifikasi.toISOString() : null,
+    },
+  };
+}
+
+function mapServiceException(e: unknown): ServiceError | null {
+  const err = e as Record<string, unknown>;
+  if (!err || typeof err !== "object" || !("kind" in err)) return null;
+  const kind = (err as { kind: string }).kind;
+  const message = (err as { message?: unknown }).message;
+  if (kind === "not_found") {
+    return {
+      type: "not_found",
+      message: typeof message === "string" ? message : "Reservasi tidak ditemukan",
+    };
+  }
+  if (kind === "transition") {
+    return { type: "transition", message: (err as { message: string }).message };
+  }
+  if (kind === "conflict") {
+    return {
+      type: "conflict",
+      message: (err as { message: string }).message,
+      availability: (err as { availability: unknown }).availability,
+    };
+  }
+  return null;
+}
+
+// Antrian petugas: PENDING saja, FIFO. processedBy selalu null di sini
+// (belum ada yang memproses).
+export async function listStaffQueueService(query: {
+  page: number;
+  perPage: number;
+}): Promise<{ ok: true; data: StaffReservationCollection }> {
+  const { page, perPage } = query;
+  const [rows, totalItems] = await Promise.all([
+    listPendingQueue({ skip: (page - 1) * perPage, take: perPage }),
+    countPendingQueue(),
+  ]);
+  return {
+    ok: true,
+    data: {
+      items: (rows as unknown as StaffReservationRow[]).map((row) => toStaffReservationResponse(row, null)),
+      meta: {
+        page,
+        perPage,
+        totalItems,
+        totalPages: Math.ceil(totalItems / perPage),
+      },
+    },
+  };
+}
+
+// Approve atomik: row lock fasilitas → final conflict check APPROVED →
+// set APPROVED + catat aktor & waktu tepat satu kali. Bentrok berarti
+// tidak ada perubahan dan respons membawa availability terbaru.
+export async function approveReservationService(
+  staffId: number,
+  id: number,
+  now: Date = new Date(),
+): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
+  try {
+    const { updated, actor } = await prisma.$transaction(async (tx) => {
+      const row = await tx.reservation.findUnique({
+        where: { id },
+        include: { facility: true },
+      });
+      if (!row) {
+        throw { kind: "not_found" as const };
+      }
+      if (row.status !== "PENDING") {
+        throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat disetujui." };
+      }
+      // Row lock + baca status fasilitas dalam transaksi yang sama
+      const facility = await lockFacilityById(tx, row.facilityId);
+      if (!facility) {
+        throw { kind: "not_found" as const, message: "Fasilitas tidak ditemukan" };
+      }
+      // Bukan logic maintenance (ranah TASK 3.7/Modul 4): approve hanya
+      // berjalan di atas fasilitas ACTIVE.
+      if (facility.status !== "ACTIVE") {
+        throw { kind: "transition" as const, message: "Fasilitas tidak tersedia untuk persetujuan." };
+      }
+      const overlapping = await findOverlappingApproved(tx, {
+        facilityId: row.facilityId,
+        startsAt: row.startTime,
+        endsAt: row.endTime,
+      });
+      if (overlapping.length > 0) {
+        const availability = await computeFacilityAvailability(row.facilityId, formatDateAsiaJakarta(row.tanggal), {
+          client: tx,
+          facilityStatus: facility.status,
+        });
+        throw {
+          kind: "conflict" as const,
+          message: "Slot reservasi telah disetujui untuk reservasi lain.",
+          availability,
+        };
+      }
+      const updated = await tx.reservation.update({
+        where: { id: row.id },
+        data: {
+          status: "APPROVED",
+          waktuDiproses: now,
+          diprosesOleh: staffId,
+        },
+        include: { facility: true, user: true },
+      });
+      const actorRow = await tx.user.findUnique({
+        where: { id: staffId },
+        select: { id: true, nama: true, role: true },
+      });
+      return {
+        updated,
+        actor: actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
+      };
+    });
+
+    return {
+      ok: true,
+      data: toStaffReservationResponse(updated as unknown as StaffReservationRow, actor),
+    };
+  } catch (e: unknown) {
+    const mapped = mapServiceException(e);
+    if (mapped) return { ok: false, error: mapped };
+    throw e;
+  }
+}
+
+// Reject: hanya dari PENDING, alasan wajib (divalidasi di route),
+// catat aktor & waktu. Row lock fasilitas menyeragamkan race dengan approve.
+export async function rejectReservationService(
+  staffId: number,
+  id: number,
+  input: CancelReservationInput,
+  now: Date = new Date(),
+): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
+  try {
+    const { updated, actor } = await prisma.$transaction(async (tx) => {
+      const row = await tx.reservation.findUnique({
+        where: { id },
+        include: { facility: true },
+      });
+      if (!row) {
+        throw { kind: "not_found" as const };
+      }
+      if (row.status !== "PENDING") {
+        throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat ditolak." };
+      }
+      await lockFacilityById(tx, row.facilityId);
+      const updated = await tx.reservation.update({
+        where: { id: row.id },
+        data: {
+          status: "REJECTED",
+          alasan: input.alasan,
+          waktuDiproses: now,
+          diprosesOleh: staffId,
+        },
+        include: { facility: true, user: true },
+      });
+      const actorRow = await tx.user.findUnique({
+        where: { id: staffId },
+        select: { id: true, nama: true, role: true },
+      });
+      return {
+        updated,
+        actor: actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
+      };
+    });
+
+    return {
+      ok: true,
+      data: toStaffReservationResponse(updated as unknown as StaffReservationRow, actor),
+    };
+  } catch (e: unknown) {
+    const mapped = mapServiceException(e);
+    if (mapped) return { ok: false, error: mapped };
     throw e;
   }
 }

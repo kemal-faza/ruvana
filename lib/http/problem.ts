@@ -124,6 +124,17 @@ export function invalidReservationTransition(instance: string, detail: string) {
   });
 }
 
+export function approvalConflict(instance: string, detail: string, availability: unknown) {
+  return problemResponse({
+    status: 409,
+    code: "APPROVAL_CONFLICT",
+    title: "Persetujuan reservasi bertabrakan",
+    detail,
+    instance,
+    availability,
+  });
+}
+
 export function idempotencyConflict(instance: string, detail = "Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.") {
   return problemResponse({
     status: 409,
