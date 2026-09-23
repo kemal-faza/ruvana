@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { Search } from "lucide-react"
 
@@ -5,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldTitle } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
+import { LABEL_FILTER_JUMLAH_ALAT, LABEL_FILTER_KAPASITAS_RUANG } from "@/config/labels"
 import { cn } from "@/lib/utils"
 
 interface FacilityFilterFormProps {
@@ -20,6 +24,12 @@ const controlClass =
   "flex min-h-11 items-center gap-2.5 rounded-control border border-border bg-background px-3 text-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
 
 export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
+  // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
+  // kapasitas menyesuaikan tipe yang sedang dipilih.
+  const [tipe, setTipe] = useState(value?.type ?? "")
+  const isAlat = tipe === "alat"
+  const kapasitasLabel = isAlat ? LABEL_FILTER_JUMLAH_ALAT : LABEL_FILTER_KAPASITAS_RUANG
+
   return (
     <form
       method="get"
@@ -48,13 +58,14 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
         <select
           name="type"
           aria-label="Tipe"
-          defaultValue={value?.type ?? ""}
+          value={tipe}
+          onChange={(event) => setTipe(event.target.value)}
           className={cn(controlClass, "appearance-none text-sm")}
         >
           <option value="">Semua tipe</option>
-          {TIPE_FASILITAS.map((tipe) => (
-            <option key={tipe} value={tipe}>
-              {TIPE_FASILITAS_LABEL[tipe]}
+          {TIPE_FASILITAS.map((tipeOption) => (
+            <option key={tipeOption} value={tipeOption}>
+              {TIPE_FASILITAS_LABEL[tipeOption]}
             </option>
           ))}
         </select>
@@ -76,13 +87,13 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
       </Field>
 
       <Field>
-        <FieldTitle>Kapasitas minimum</FieldTitle>
+        <FieldTitle>{kapasitasLabel}</FieldTitle>
         <div className={controlClass}>
           <Input
             type="number"
             name="minCapacity"
-            aria-label="Kapasitas minimum"
-            placeholder="30"
+            aria-label={kapasitasLabel}
+            placeholder={isAlat ? "2" : "30"}
             min={1}
             defaultValue={value?.minCapacity ?? ""}
             className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"

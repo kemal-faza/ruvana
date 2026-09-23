@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { FacilityFilterForm } from "./facility-filter-form"
@@ -51,5 +52,40 @@ describe("FacilityFilterForm", () => {
     expect(screen.getByRole("button", { name: /terapkan/i })).toBeInTheDocument()
     const reset = screen.getByRole("button", { name: /reset/i })
     expect(reset).toHaveAttribute("href", "/fasilitas")
+  })
+
+  it("menampilkan label 'Kapasitas minimum' untuk tipe ruangan", () => {
+    render(<FacilityFilterForm value={{ type: "ruang_kelas" }} />)
+
+    expect(screen.getByLabelText("Kapasitas minimum (orang)")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Jumlah minimum (unit)")).not.toBeInTheDocument()
+  })
+
+  it("mengubah label menjadi 'Jumlah minimum' saat tipe alat", () => {
+    render(<FacilityFilterForm value={{ type: "alat" }} />)
+
+    expect(screen.getByLabelText("Jumlah minimum (unit)")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Kapasitas minimum (orang)")).not.toBeInTheDocument()
+  })
+
+  it("mengubah label secara dinamis saat tipe alat dipilih", async () => {
+    const user = userEvent.setup()
+    render(<FacilityFilterForm />)
+
+    expect(screen.getByLabelText("Kapasitas minimum (orang)")).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText(/tipe/i), "alat")
+
+    expect(screen.getByLabelText("Jumlah minimum (unit)")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Kapasitas minimum (orang)")).not.toBeInTheDocument()
+  })
+
+  it("tetap memakai name minCapacity saat label berubah", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<FacilityFilterForm />)
+
+    await user.selectOptions(screen.getByLabelText(/tipe/i), "alat")
+
+    expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
   })
 })
