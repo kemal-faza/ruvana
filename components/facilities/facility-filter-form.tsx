@@ -35,10 +35,10 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
       method="get"
       action="/fasilitas"
       aria-label="Filter fasilitas"
-      className="grid grid-cols-1 items-end gap-3 rounded-2xl border border-border bg-card p-4 shadow-subtle sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto_auto]"
+      className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4 shadow-subtle sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto_auto]"
     >
-      <Field className="justify-end">
-        <FieldTitle>Kata kunci</FieldTitle>
+      <Field>
+        <FieldTitle className="min-h-10">Kata kunci</FieldTitle>
         <div className={controlClass}>
           <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
           <Input
@@ -53,8 +53,8 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
         </div>
       </Field>
 
-      <Field className="justify-end">
-        <FieldTitle>Tipe</FieldTitle>
+      <Field>
+        <FieldTitle className="min-h-10">Tipe</FieldTitle>
         <select
           name="type"
           aria-label="Tipe"
@@ -71,8 +71,8 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
         </select>
       </Field>
 
-      <Field className="justify-end">
-        <FieldTitle>Lokasi</FieldTitle>
+      <Field>
+        <FieldTitle className="min-h-10">Lokasi</FieldTitle>
         <div className={controlClass}>
           <Input
             type="text"
@@ -86,8 +86,8 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
         </div>
       </Field>
 
-      <Field className="justify-end">
-        <FieldTitle>{kapasitasLabel}</FieldTitle>
+      <Field>
+        <FieldTitle className="min-h-10">{kapasitasLabel}</FieldTitle>
         <div className={controlClass}>
           <Input
             type="number"
