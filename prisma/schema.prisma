@@ -35,8 +35,29 @@ model User {
 
   reservations Reservation[]
   reports      Report[]
+  sessions     Session[]
 
   @@map("users")
+}
+
+model Session {
+  tokenHash String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model LoginAttempt {
+  key       String   @id
+  failures  Int      @default(0)
+  windowAt  DateTime
+
+  @@map("login_attempts")
 }
 
 enum TipeFasilitas {
