@@ -1,4 +1,5 @@
 import type { Role, StatusFasilitas, StatusLaporan, TipeFasilitas } from "@/generated/prisma/enums";
+import { STATUS_LAPORAN } from "@/config/business";
 import {
   countReportsByUser,
   createReport as createReportRow,
@@ -58,7 +59,12 @@ export interface ReportListView {
   totalByStatus: Record<ReportStatus, number>;
 }
 
-const ALL_REPORT_STATUSES: ReportStatus[] = ["NEW", "IN_PROGRESS", "RESOLVED", "REJECTED"];
+const ALL_REPORT_STATUSES: readonly StatusLaporan[] = STATUS_LAPORAN;
+
+// Ambil maksimal 1.000 laporan per panggilan; filter & paginasi saat ini di sisi
+// klien. Bila jumlah laporan melebihi batas, daftar terpotong diam-diam — paginasi
+// server menyusul bersama seam sesi (lihat deskripsi PR).
+const AMBIL_MAKS_LAPORAN = 1000;
 
 export async function listMyReports({ userId, status }: ListMyReportsParams = {}): Promise<ReportListView> {
   const owner = userId ?? (await findDefaultReportOwner())?.id ?? null;
@@ -71,7 +77,7 @@ export async function listMyReports({ userId, status }: ListMyReportsParams = {}
   if (owner == null) return emptyView;
 
   const [rows, total, perStatus] = await Promise.all([
-    findReportsByUser({ userId: owner, status, skip: 0, take: 1000 }),
+    findReportsByUser({ userId: owner, status, skip: 0, take: AMBIL_MAKS_LAPORAN }),
     countReportsByUser(owner, status),
     countPerStatus(owner),
   ]);
@@ -114,8 +120,7 @@ export function toReportItem(row: ReportWithFacility, handlers: Map<number, Repo
 }
 
 export async function listReportFacilityOptions(): Promise<FacilityReportOption[]> {
-  const options = await findReportFacilityOptions();
-  return options as FacilityReportOption[];
+  return findReportFacilityOptions();
 }
 
 export type CreateReportResult =
