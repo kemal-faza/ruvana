@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/session";
+import { getSessionUser } from "@/lib/auth";
+import { Role } from "@/generated/prisma/enums";
 import { getAllowedOrigins, validateOrigin } from "@/lib/http/origin";
 import { buildIdempotencyScope, hashCanonicalBody, isValidIdempotencyKey } from "@/lib/http/idempotency";
 import {
@@ -24,19 +25,19 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
   const instance = new URL(request.url).pathname;
   const { reservationId } = await ctx.params;
 
-  let session: Awaited<ReturnType<typeof getSession>>;
+  let user: Awaited<ReturnType<typeof getSessionUser>>;
   try {
-    session = await getSession(request);
+    user = await getSessionUser();
   } catch (e) {
     console.error("Gagal memeriksa sesi", e);
     return internalError(instance);
   }
 
-  if (!session || session.user.status !== "ACTIVE") {
+  if (!user) {
     return unauthorized(instance);
   }
 
-  if (session.user.role !== "pengguna") {
+  if (user.role !== Role.pengguna) {
     return forbidden(instance);
   }
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
 
   try {
     const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: session.user.id, scope: SCOPE },
+      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
     });
     if (existing) {
       if (existing.requestHash !== requestHash) {
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
       await prisma.idempotencyKey.create({
         data: {
           key: idempotencyKey,
-          principalId: session.user.id,
+          principalId: user.id,
           scope: SCOPE,
           requestHash,
           responseStatus: 422,
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
 
   let serviceResult: Awaited<ReturnType<typeof cancelMyReservationService>>;
   try {
-    serviceResult = await cancelMyReservationService(session.user.id, parsedId.value, parsed.value, new Date());
+    serviceResult = await cancelMyReservationService(user.id, parsedId.value, parsed.value, new Date());
   } catch (e) {
     console.error("Gagal membatalkan reservasi", e);
     return internalError(instance);
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: user.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 404,
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: user.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 409,
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
     await prisma.idempotencyKey.create({
       data: {
         key: idempotencyKey,
-        principalId: session.user.id,
+        principalId: user.id,
         scope: SCOPE,
         requestHash,
         responseStatus: 200,
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
     });
   } catch {
     const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: session.user.id, scope: SCOPE },
+      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
     });
     if (existing && existing.responseBody) {
       return NextResponse.json(existing.responseBody as object, {

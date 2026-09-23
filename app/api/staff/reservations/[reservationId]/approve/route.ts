@@ -34,7 +34,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
 
   let serviceResult: Awaited<ReturnType<typeof approveReservationService>>;
   try {
-    serviceResult = await approveReservationService(session.user.id, parsed.value, new Date());
+    serviceResult = await approveReservationService(session.id, parsed.value, new Date());
   } catch (e) {
     console.error("Gagal menyetujui reservasi", e);
     return internalError(instance);

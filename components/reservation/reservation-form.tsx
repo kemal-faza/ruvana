@@ -32,33 +32,56 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; msg: string; detail?: string } | null>(null);
 
+  // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
+  // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
+  // dimuat ulang via "Tampilkan ketersediaan"). Komponen di-remount per
+  // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
+  const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
+
+  // Availability dihitung server untuk prop facilityId. Bila user memilih
+  // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
+  // baru — perlakukan sebagai tidak diketahui (fallback: semua waktu aktif,
+  // server tetap memvalidasi dan menolak saat submit).
+  const availabilityForSelected = selectedFacilityId === facilityId ? availability : null;
+
   // Peta status per jam mulai dari availability server (null = tidak diketahui)
   const statusByStart = useMemo(() => {
     const map = new Map<string, { available: boolean; blockedBy: "APPROVED" | "MAINTENANCE" | null }>();
-    if (availability) {
-      for (const slot of availability.slots) {
+    if (availabilityForSelected) {
+      for (const slot of availabilityForSelected.slots) {
         map.set(slot.startTime, { available: slot.available, blockedBy: slot.blockedBy });
       }
     }
     return map;
-  }, [availability]);
+  }, [availabilityForSelected]);
 
   // Opsi jam selesai: setelah jam mulai & seluruh slot di antaranya tersedia
   const validEndTimes = useMemo(
-    () => (startTime ? getValidEndTimes(startTime, availability?.slots ?? null) : []),
-    [startTime, availability],
+    () => (startTime ? getValidEndTimes(startTime, availabilityForSelected?.slots ?? null) : []),
+    [startTime, availabilityForSelected],
   );
 
   function handleStartChange(value: string | null) {
     if (!value) return;
     setStartTime(value);
     // Reset jam selesai bila tidak valid lagi untuk jam mulai yang baru
-    if (endTime && !getValidEndTimes(value, availability?.slots ?? null).includes(endTime)) {
+    if (endTime && !getValidEndTimes(value, availabilityForSelected?.slots ?? null).includes(endTime)) {
       setEndTime("");
     }
   }
 
-  const selectedFacility = facilities.find((f) => f.id === facilityId);
+  function handleFacilityChange(value: string | null) {
+    const id = Number(value);
+    if (!value || !Number.isInteger(id) || id < 1) return;
+    if (id === selectedFacilityId) return;
+    setSelectedFacilityId(id);
+    // Pilihan waktu mengacu pada availability fasilitas lama — reset agar
+    // user memilih ulang slot untuk fasilitas yang baru.
+    setStartTime("");
+    setEndTime("");
+  }
+
+  const selectedFacility = facilities.find((f) => f.id === selectedFacilityId);
   let summary: string | null = null;
   if (selectedFacility && date && startTime && endTime) {
     const [year, month, day] = date.split("-").map(Number);
@@ -87,9 +110,9 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     e.preventDefault();
     setResult(null);
 
-    // validasi client 
-    if (!facilityId || facilityId < 1) {
-      setResult({ ok: false, msg: "facilityId harus bilangan positif" });
+    // validasi client
+    if (!selectedFacilityId || selectedFacilityId < 1) {
+      setResult({ ok: false, msg: "Pilih fasilitas terlebih dahulu" });
       return;
     }
     if (!date) {
@@ -104,8 +127,9 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
       setResult({ ok: false, msg: "Pilih jam selesai" });
       return;
     }
-    // pertahanan terakhir di client: rentang tidak boleh melewati slot yang tidak tersedia
-    if (availability && !getValidEndTimes(startTime, availability.slots).includes(endTime)) {
+    // pertahanan terakhir di client: rentang tidak boleh melewati slot yang tidak tersedia.
+    // Dilewati bila availability bukan milik fasilitas terpilih (server yang memvalidasi).
+    if (availabilityForSelected && !getValidEndTimes(startTime, availabilityForSelected.slots).includes(endTime)) {
       setResult({ ok: false, msg: "Rentang waktu melewati slot yang tidak tersedia" });
       return;
     }
@@ -122,7 +146,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     setLoading(true);
     try {
       const body = {
-        facilityId,
+        facilityId: selectedFacilityId,
         date,
         startTime,
         endTime,
@@ -176,7 +200,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel>Fasilitas</FieldLabel>
-                <Select name="facilityId" defaultValue={String(facilityId)}>
+                <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih fasilitas">
                       {(value: string) => {
@@ -193,6 +217,11 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedFacilityId !== facilityId && (
+                  <FieldDescription>
+                    Fasilitas berubah — klik Tampilkan ketersediaan untuk memuat slot terbaru sebelum memilih waktu.
+                  </FieldDescription>
+                )}
               </Field>
 
               <Field>
@@ -266,7 +295,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                 ) : null}
               </Field>
             </div>
-            {!availability && (
+            {!availabilityForSelected && (
               <p className="text-xs text-muted-foreground">
                 Ketersediaan slot tidak dapat dimuat; semua waktu ditampilkan aktif dan server tetap memvalidasi saat submit.
               </p>

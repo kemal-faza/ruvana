@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/session";
+import { getSessionUser } from "@/lib/auth";
+import { Role } from "@/generated/prisma/enums";
 import { forbidden, internalError, notFound, unauthorized, validationFailed } from "@/lib/http/problem";
 import { getMyReservationService } from "@/lib/services/reservation-service";
 import { parseReservationId } from "@/lib/validation/reservation-query";
@@ -10,19 +11,19 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/reservat
   const instance = new URL(request.url).pathname;
   const { reservationId } = await ctx.params;
 
-  let session: Awaited<ReturnType<typeof getSession>>;
+  let user: Awaited<ReturnType<typeof getSessionUser>>;
   try {
-    session = await getSession(request);
+    user = await getSessionUser();
   } catch (e) {
     console.error("Gagal memeriksa sesi", e);
     return internalError(instance);
   }
 
-  if (!session || session.user.status !== "ACTIVE") {
+  if (!user) {
     return unauthorized(instance);
   }
 
-  if (session.user.role !== "pengguna") {
+  if (user.role !== Role.pengguna) {
     return forbidden(instance);
   }
 
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/reservat
   }
 
   try {
-    const result = await getMyReservationService(session.user.id, parsed.value);
+    const result = await getMyReservationService(user.id, parsed.value);
     if (!result.ok) {
       return notFound(instance, result.error.message);
     }

@@ -9,7 +9,7 @@ export const reservasiNavigation: readonly NavigationGroup[] = [
     label: "Utama",
     items: [
       { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
+      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
       { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
       { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },

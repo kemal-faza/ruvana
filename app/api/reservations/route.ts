@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getSession } from "@/lib/session";
+import { getSessionUser } from "@/lib/auth";
+import { Role } from "@/generated/prisma/enums";
 import { getAllowedOrigins, validateOrigin } from "@/lib/http/origin";
 import { buildIdempotencyScope, hashCanonicalBody, isValidIdempotencyKey } from "@/lib/http/idempotency";
 import {
@@ -24,22 +25,23 @@ const SCOPE = buildIdempotencyScope("POST", "/api/reservations");
 export async function POST(request: NextRequest) {
   const instance = new URL(request.url).pathname;
 
-  // 1. Authenticate
-  let session: Awaited<ReturnType<typeof getSession>>;
+  // 1. Authenticate via cookie ruvana_session (lib/auth sebagai sumber kebenaran:
+  // cookie ada + session ada + belum expired + user ada + status ACTIVE).
+  let user: Awaited<ReturnType<typeof getSessionUser>>;
   try {
-    session = await getSession(request);
+    user = await getSessionUser();
   } catch (e) {
     console.error("Gagal memeriksa sesi", e);
     return internalError(instance);
   }
 
-  // 2. Verifikasi ACTIVE
-  if (!session || session.user.status !== "ACTIVE") {
+  // 2. Verifikasi ACTIVE (getSessionUser sudah mengembalikan null untuk non-ACTIVE)
+  if (!user) {
     return unauthorized(instance);
   }
 
   // 3. Otorisasi role, hanya pengguna
-  if (session.user.role !== "pengguna") {
+  if (user.role !== Role.pengguna) {
     return forbidden(instance);
   }
 
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
   // 7. Idempotency lookup (replay atau mismatch)
   try {
     const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: session.user.id, scope: SCOPE },
+      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
     });
     if (existing) {
       if (existing.requestHash !== requestHash) {
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
       await prisma.idempotencyKey.create({
         data: {
           key: idempotencyKey,
-          principalId: session.user.id,
+          principalId: user.id,
           scope: SCOPE,
           requestHash,
           responseStatus: 422,
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
   // 9. Operasi bisnis dalam transaksi (row lock facilities + cek APPROVED)
   let serviceResult: Awaited<ReturnType<typeof createReservationService>>;
   try {
-    serviceResult = await createReservationService(session.user.id, parsed.value, new Date());
+    serviceResult = await createReservationService(user.id, parsed.value, new Date());
   } catch (e) {
     console.error("Gagal membuat reservasi", e);
     return internalError(instance);
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: user.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 422,
@@ -168,7 +170,7 @@ export async function POST(request: NextRequest) {
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: user.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 404,
@@ -193,7 +195,7 @@ export async function POST(request: NextRequest) {
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: user.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 409,
@@ -213,7 +215,7 @@ export async function POST(request: NextRequest) {
     await prisma.idempotencyKey.create({
       data: {
         key: idempotencyKey,
-        principalId: session.user.id,
+        principalId: user.id,
         scope: SCOPE,
         requestHash,
         responseStatus: 201,
@@ -223,7 +225,7 @@ export async function POST(request: NextRequest) {
     });
   } catch {
     const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: session.user.id, scope: SCOPE },
+      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
     });
     if (existing && existing.responseBody) {
       return NextResponse.json(existing.responseBody as object, {
@@ -242,22 +244,23 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const instance = new URL(request.url).pathname;
 
-  // 1. Authenticate
-  let session: Awaited<ReturnType<typeof getSession>>;
+  // 1. Authenticate via cookie ruvana_session (lib/auth sebagai sumber kebenaran)
+  let user: Awaited<ReturnType<typeof getSessionUser>>;
   try {
-    session = await getSession(request);
+    user = await getSessionUser();
   } catch (e) {
     console.error("Gagal memeriksa sesi", e);
     return internalError(instance);
   }
 
   // 2. Verifikasi ACTIVE, akun non-ACTIVE mendapat 401 generik
-  if (!session || session.user.status !== "ACTIVE") {
+  // (getSessionUser sudah mengembalikan null untuk non-ACTIVE)
+  if (!user) {
     return unauthorized(instance);
   }
 
   // 3. Otorisasi role, hanya pengguna
-  if (session.user.role !== "pengguna") {
+  if (user.role !== Role.pengguna) {
     return forbidden(instance);
   }
 
@@ -269,7 +272,7 @@ export async function GET(request: NextRequest) {
 
   // 5. Ambil riwayat milik pengguna sesi saja (guard ownership di service/db)
   try {
-    const result = await listMyReservationsService(session.user.id, parsed.value);
+    const result = await listMyReservationsService(user.id, parsed.value);
     return NextResponse.json(result.data, {
       status: 200,
       headers: { "Cache-Control": "no-store" },

@@ -1,23 +1,27 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getSession, type Session } from "@/lib/session";
+import { getSessionUser, type SessionUser } from "@/lib/auth";
+import { Role } from "@/generated/prisma/enums";
 import { forbidden, internalError, unauthorized } from "@/lib/http/problem";
 
-export async function guardStaff(request: NextRequest): Promise<Session | NextResponse> {
+export async function guardStaff(request: NextRequest): Promise<SessionUser | NextResponse> {
   const instance = new URL(request.url).pathname;
-  let session: Session | null;
+  let user: SessionUser | null;
   try {
-    session = await getSession(request);
+    // Sumber kebenaran tunggal: cookie ruvana_session + expiry + user ACTIVE (lib/auth).
+    user = await getSessionUser();
   } catch (e) {
     console.error("Gagal memeriksa sesi", e);
     return internalError(instance);
   }
-  if (!session || session.user.status !== "ACTIVE") {
+  // getSessionUser mengembalikan null untuk: tanpa cookie, session tidak ada,
+  // expired, user tidak ada, atau status bukan ACTIVE → 401 generik.
+  if (!user) {
     return unauthorized(instance);
   }
-  if (session.user.role !== "petugas" && session.user.role !== "admin") {
+  if (user.role !== Role.petugas && user.role !== Role.admin) {
     return forbidden(instance);
   }
-  return session;
+  return user;
 }

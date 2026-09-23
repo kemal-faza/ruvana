@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
 
   try {
     const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: session.user.id, scope: SCOPE },
+      where: { key: idempotencyKey, principalId: session.id, scope: SCOPE },
     });
     if (existing) {
       if (existing.requestHash !== requestHash) {
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
       await prisma.idempotencyKey.create({
         data: {
           key: idempotencyKey,
-          principalId: session.user.id,
+          principalId: session.id,
           scope: SCOPE,
           requestHash,
           responseStatus: 422,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
 
   let serviceResult: Awaited<ReturnType<typeof rejectReservationService>>;
   try {
-    serviceResult = await rejectReservationService(session.user.id, parsedId.value, parsed.value, new Date());
+    serviceResult = await rejectReservationService(session.id, parsedId.value, parsed.value, new Date());
   } catch (e) {
     console.error("Gagal menolak reservasi", e);
     return internalError(instance);
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: session.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 404,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
         await prisma.idempotencyKey.create({
           data: {
             key: idempotencyKey,
-            principalId: session.user.id,
+            principalId: session.id,
             scope: SCOPE,
             requestHash,
             responseStatus: 409,
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
     await prisma.idempotencyKey.create({
       data: {
         key: idempotencyKey,
-        principalId: session.user.id,
+        principalId: session.id,
         scope: SCOPE,
         requestHash,
         responseStatus: 200,
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
     });
   } catch {
     const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: session.user.id, scope: SCOPE },
+      where: { key: idempotencyKey, principalId: session.id, scope: SCOPE },
     });
     if (existing && existing.responseBody) {
       return NextResponse.json(existing.responseBody as object, {
