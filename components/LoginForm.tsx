@@ -1,11 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
 import { useActionState, useEffect } from "react"
 
 import { login } from "@/app/login/actions"
+import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
@@ -28,31 +28,7 @@ export default function LoginForm() {
 
   return (
     <main className="min-h-dvh bg-background md:grid md:grid-cols-2">
-      <section
-        aria-labelledby="login-intro-title"
-        className="relative hidden min-h-dvh overflow-hidden bg-muted md:block"
-      >
-        <Image
-          src="/fsm-login.jpg"
-          alt="Gedung Fakultas Sains dan Matematika Universitas Diponegoro"
-          fill
-          priority
-          sizes="(min-width: 768px) 50vw, 100vw"
-          className="object-cover"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-b from-primary-950/10 via-primary-950/35 to-primary-950/80"
-        />
-        <div className="absolute inset-x-0 bottom-0 max-w-lg p-8 text-white lg:p-11">
-          <h2 id="login-intro-title" className="text-2xl/tight font-semibold tracking-tight">
-            Kelola kebutuhan fasilitas lebih terstruktur.
-          </h2>
-          <p className="mt-3 text-sm/relaxed text-white/90 sm:text-base/relaxed">
-            Satu akses untuk reservasi ruang, pemantauan permintaan, dan pengelolaan fasilitas.
-          </p>
-        </div>
-      </section>
+      <AuthPhotoPanel />
 
       <section
         aria-labelledby="login-title"
