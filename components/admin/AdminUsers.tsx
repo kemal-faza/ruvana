@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Search, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 
-import { buatAkun } from "@/app/admin/pengguna/actions";
+import { buatAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -106,6 +106,10 @@ export default function AdminUsers({
   const [kunciUrut, setKunciUrut] = useState<KunciUrut | null>(null);
   const [arahUrut, setArahUrut] = useState<ArahUrut>("naik");
   const [halaman, setHalaman] = useState(1);
+  const [hasilVerifikasi, aksiVerifikasi, memverifikasi] = useActionState(
+    verifikasiPendaftaran,
+    { ok: false, pesan: "" },
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -166,6 +170,15 @@ export default function AdminUsers({
           <span>Tambah akun</span>
         </Button>
       </header>
+
+      {hasilVerifikasi.pesan && (
+        <p
+          role={hasilVerifikasi.ok ? "status" : "alert"}
+          className={hasilVerifikasi.ok ? "text-sm text-success" : "text-sm text-destructive"}
+        >
+          {hasilVerifikasi.pesan}
+        </p>
+      )}
 
       <section aria-label="Ringkasan akun" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {RINGKASAN_ITEM.map((item) => {
@@ -309,6 +322,9 @@ export default function AdminUsers({
                         onToggle={() => toggleUrut("waktuDaftar")}
                       />
                     </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Tindakan
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -347,6 +363,34 @@ export default function AdminUsers({
                         </td>
                         <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">
                           {fmtTanggal(u.waktuDaftar)}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.status === "PENDING" && u.role === "pengguna" ? (
+                            <form action={aksiVerifikasi} className="flex items-center gap-2">
+                              <input type="hidden" name="id" value={u.id} />
+                              <Button
+                                type="submit"
+                                name="keputusan"
+                                value="setujui"
+                                size="sm"
+                                disabled={memverifikasi}
+                              >
+                                Setujui
+                              </Button>
+                              <Button
+                                type="submit"
+                                name="keputusan"
+                                value="tolak"
+                                size="sm"
+                                variant="outline"
+                                disabled={memverifikasi}
+                              >
+                                Tolak
+                              </Button>
+                            </form>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
                       </tr>
                     );

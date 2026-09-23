@@ -7,6 +7,7 @@ import type { AdminUserRow } from "@/lib/admin/users"
 
 vi.mock("@/app/admin/pengguna/actions", () => ({
   buatAkun: vi.fn(),
+  verifikasiPendaftaran: vi.fn(),
 }))
 
 const users: AdminUserRow[] = [
@@ -23,7 +24,7 @@ const users: AdminUserRow[] = [
     id: 2,
     nama: "Budi Santoso",
     email: "budi@kampus.ac.id",
-    role: "petugas",
+    role: "pengguna",
     status: "PENDING",
     waktuDaftar: new Date("2026-09-03T08:00:00+07:00"),
     waktuVerifikasi: null,
@@ -82,6 +83,16 @@ describe("AdminUsers (kelola akun)", () => {
     expect(within(tabel).getByText("Aktif")).toBeInTheDocument()
     expect(within(tabel).getByText("Ditolak")).toBeInTheDocument()
     expect(within(tabel).getByText("Dinonaktifkan")).toBeInTheDocument()
+  })
+
+  it("menampilkan keputusan verifikasi hanya untuk pengguna yang masih PENDING", () => {
+    renderFixture()
+
+    const barisPending = screen.getByText("Budi Santoso").closest("tr")
+    expect(barisPending).not.toBeNull()
+    expect(within(barisPending!).getByRole("button", { name: "Setujui" })).toBeInTheDocument()
+    expect(within(barisPending!).getByRole("button", { name: "Tolak" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Setujui" })).toHaveLength(1)
   })
 
   it("memfilter daftar dan menampilkan empty state saat tidak cocok", async () => {

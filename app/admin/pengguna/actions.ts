@@ -13,6 +13,11 @@ export type StateBuatAkun = {
   fieldErrors?: Record<string, string[]>;
 };
 
+export type StateVerifikasiPendaftaran = {
+  ok: boolean;
+  pesan: string;
+};
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RE = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 
@@ -58,4 +63,36 @@ export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<St
 
   revalidatePath("/admin/pengguna");
   return { ok: true, pesan: "Akun berhasil dibuat." };
+}
+
+export async function verifikasiPendaftaran(
+  _prev: StateVerifikasiPendaftaran,
+  form: FormData,
+): Promise<StateVerifikasiPendaftaran> {
+  await requireAdmin();
+
+  const id = Number(form.get("id"));
+  const keputusan = String(form.get("keputusan") ?? "");
+  if (!Number.isSafeInteger(id) || id <= 0 || (keputusan !== "setujui" && keputusan !== "tolak")) {
+    return { ok: false, pesan: "Permintaan verifikasi tidak valid." };
+  }
+
+  const disetujui = keputusan === "setujui";
+  try {
+    const hasil = await prisma.user.updateMany({
+      where: { id, role: Role.pengguna, status: AccountStatus.PENDING },
+      data: {
+        status: disetujui ? AccountStatus.ACTIVE : AccountStatus.REJECTED,
+        ...(disetujui ? { waktuVerifikasi: new Date() } : {}),
+      },
+    });
+    if (hasil.count !== 1) {
+      return { ok: false, pesan: "Akun tidak lagi menunggu verifikasi." };
+    }
+  } catch {
+    return { ok: false, pesan: "Gagal memverifikasi akun. Coba lagi." };
+  }
+
+  revalidatePath("/admin/pengguna");
+  return { ok: true, pesan: disetujui ? "Akun berhasil disetujui." : "Pendaftaran ditolak." };
 }
