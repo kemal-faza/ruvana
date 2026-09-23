@@ -1,38 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, Building2, CalendarCheck2, LockKeyhole, Mail, ShieldCheck } from "lucide-react"
-import { useActionState } from "react"
+import Image from "next/image"
+import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
+import { useActionState, useEffect } from "react"
 
 import { login } from "@/app/login/actions"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-
-const manfaat = [
-  {
-    icon: CalendarCheck2,
-    title: "Reservasi terpusat",
-    description: "Ajukan dan pantau penggunaan fasilitas kampus dalam satu tempat.",
-  },
-  {
-    icon: Building2,
-    title: "Informasi yang jelas",
-    description: "Lihat fasilitas, jadwal, dan status permintaan dengan mudah.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Akses sesuai peran",
-    description: "Setiap akun memperoleh fitur sesuai kewenangannya.",
-  },
-] as const
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState(login, {
@@ -42,6 +19,12 @@ export default function LoginForm() {
 
   const emailError = state.fieldErrors?.email?.[0]
   const passwordError = state.fieldErrors?.password?.[0]
+
+  useEffect(() => {
+    if (emailError) document.getElementById("login-email")?.focus()
+    else if (passwordError) document.getElementById("login-password")?.focus()
+    else if (state.pesan) document.getElementById("login-error")?.focus()
+  }, [emailError, passwordError, state.pesan])
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-background">
@@ -62,53 +45,39 @@ export default function LoginForm() {
           <ThemeToggle />
         </header>
 
-        <div className="grid flex-1 items-center gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:gap-16 lg:py-12">
-          <section aria-labelledby="login-intro-title" className="hidden max-w-xl lg:block">
-            <p className="mb-4 text-sm font-medium tracking-wide text-primary">
-              Sistem fasilitas kampus
-            </p>
-            <h2
-              id="login-intro-title"
-              className="text-4xl/tight font-semibold tracking-tight text-balance"
-            >
-              Kelola kebutuhan fasilitas dengan lebih tenang.
-            </h2>
-            <p className="mt-4 max-w-lg text-base/relaxed text-muted-foreground">
-              Satu akses untuk reservasi ruang, pemantauan permintaan, dan pengelolaan fasilitas
-              sesuai peran Anda.
-            </p>
-
-            <ul className="mt-10 grid gap-5" aria-label="Manfaat sistem">
-              {manfaat.map((item) => {
-                const Icon = item.icon
-                return (
-                  <li key={item.title} className="flex gap-4">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-subdued text-primary-subdued-foreground">
-                      <Icon aria-hidden="true" className="size-5" />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-semibold">{item.title}</span>
-                      <span className="mt-1 block text-sm/relaxed text-muted-foreground">
-                        {item.description}
-                      </span>
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
+        <div className="grid flex-1 items-center gap-6 py-8 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:gap-16 lg:py-12">
+          <section
+            aria-labelledby="login-intro-title"
+            className="relative min-h-[min(15rem,40dvh)] overflow-hidden rounded-card bg-muted sm:min-h-[min(22rem,60dvh)] md:min-h-[min(28rem,calc(100dvh_-_10rem))] lg:min-h-[min(36rem,calc(100dvh_-_10rem))]"
+          >
+            <Image
+              src="/fsm-login.jpg"
+              alt="Gedung Fakultas Sains dan Matematika Universitas Diponegoro"
+              fill
+              priority
+              sizes="(min-width: 1024px) 52vw, 100vw"
+              className="object-cover"
+            />
+            <div aria-hidden="true" className="absolute inset-0 bg-primary-950/55" />
+            <div className="absolute inset-x-0 bottom-0 max-w-xl p-5 text-white sm:p-7 lg:p-9">
+              <h2 id="login-intro-title" className="text-2xl/tight font-semibold tracking-tight">
+                Kelola kebutuhan fasilitas lebih terstruktur.
+              </h2>
+              <p className="mt-3 max-w-lg text-sm/relaxed text-white/90 sm:text-base/relaxed">
+                Satu akses untuk reservasi ruang, pemantauan permintaan, dan pengelolaan fasilitas.
+              </p>
+            </div>
           </section>
 
-          <Card className="mx-auto w-full max-w-md hover:translate-y-0">
-            <CardHeader className="gap-2">
-              <p className="text-sm font-medium text-primary lg:hidden">Sistem fasilitas kampus</p>
-              <h1 className="text-2xl font-semibold tracking-tight">Masuk ke akun</h1>
-              <CardDescription className="leading-relaxed">
+          <section aria-labelledby="login-title" className="mx-auto w-full max-w-md px-1 sm:px-2">
+            <header className="mb-8 space-y-2">
+              <h1 id="login-title" className="text-2xl font-semibold tracking-tight">Masuk ke akun</h1>
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 Gunakan email dan kata sandi akun yang telah aktif.
-              </CardDescription>
-            </CardHeader>
+              </p>
+            </header>
 
-            <CardContent>
-              <form action={action} className="flex flex-col gap-5">
+            <form action={action} className="flex flex-col gap-5">
                 <Field data-invalid={emailError ? true : undefined}>
                   <FieldLabel htmlFor="login-email" required>
                     Email
@@ -123,7 +92,7 @@ export default function LoginForm() {
                       name="email"
                       type="email"
                       autoComplete="email"
-                      placeholder="nama@kampus.ac.id"
+                      placeholder="nama@ruvana.id"
                       required
                       aria-invalid={emailError ? true : undefined}
                       aria-describedby={emailError ? "login-email-error" : undefined}
@@ -161,6 +130,8 @@ export default function LoginForm() {
 
                 {state.pesan && (
                   <p
+                    id="login-error"
+                    tabIndex={-1}
                     role={state.ok ? "status" : "alert"}
                     className={
                       state.ok
@@ -179,9 +150,11 @@ export default function LoginForm() {
                 <FieldDescription className="text-center">
                   Akun baru dapat masuk setelah disetujui admin.
                 </FieldDescription>
-              </form>
-            </CardContent>
-          </Card>
+                <p className="text-center text-sm">
+                  Belum punya akun? <Link href="/daftar" className="font-medium text-primary underline">Daftar</Link>
+                </p>
+            </form>
+          </section>
         </div>
       </div>
     </main>
