@@ -35,3 +35,22 @@ export const TIPE_FASILITAS_LABEL: Record<(typeof TIPE_FASILITAS)[number], strin
   alat: "Alat",
   lapangan: "Lapangan",
 }
+
+// Kategori laporan kerusakan awal per PRD REP-01 (Modul 4).
+export const KATEGORI_LAPORAN = [
+  "Listrik",
+  "Peralatan",
+  "Furnitur",
+  "Bangunan",
+  "Kebersihan",
+  "Lainnya",
+] as const
+
+// Batas unggah foto laporan per PRD REP-01: JPEG/PNG/WebP, maksimal 5 MiB.
+export const LAPORAN_UPLOAD = {
+  tipeDiizinkan: ["image/jpeg", "image/png", "image/webp"] as const,
+  maksByte: 5 * 1024 * 1024,
+} as const
+
+// Deskripsi laporan mengikuti batas global PRD (2.000 karakter).
+export const MAKS_DESKRIPSI_LAPORAN = 2000

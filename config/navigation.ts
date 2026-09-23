@@ -17,7 +17,7 @@ export const navigation: readonly NavigationGroup[] = [
       { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
-      { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },
+      { key: "laporan", label: "Laporan", href: "/reports", icon: ClipboardList },
     ],
   },
   {

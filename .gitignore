@@ -83,3 +83,6 @@ figma/
 output/
 .vitest/
 .commandcode/
+
+# uploads runtime (foto laporan hasil unggah) — tidak untuk di-commit
+/public/uploads/
