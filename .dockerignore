@@ -1,0 +1,13 @@
+# Menjaga build context kecil dan bebas artefak pengguna untuk image seed.
+node_modules
+.next
+.worktrees
+.out
+generated
+docs
+figma
+.git
+public
+docker
+.env*
+*.tsbuildinfo

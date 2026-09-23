@@ -48,7 +48,7 @@ export function SiteHeader({ current }: SiteHeaderProps) {
         <div className="flex items-center gap-2.5">
           <ThemeToggle />
           <Link
-            href="/masuk"
+            href="/login"
             className={cn(
               buttonVariants({ variant: "ghost" }),
               "hidden min-h-11 px-4 text-muted-foreground md:inline-flex",

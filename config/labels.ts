@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import type { StatusFasilitas, StatusReservasi, TipeFasilitas } from "../generated/prisma/enums";
+=======
+import type { StatusFasilitas, StatusLaporan, TipeFasilitas } from "../generated/prisma/enums";
+>>>>>>> 68b9fd958714abbff4db9d833f3d224826ef4dfa
 
 export const LABEL_TIPE_FASILITAS: Record<TipeFasilitas, string> = {
   ruang_kelas: "Ruang kelas",
@@ -28,6 +32,7 @@ export const BADGE_STATUS_FASILITAS: Record<StatusFasilitas, "success" | "pendin
   INACTIVE: "neutral",
 };
 
+<<<<<<< HEAD
 export const LABEL_STATUS_RESERVASI: Record<StatusReservasi, string> = {
   PENDING: "Menunggu",
   APPROVED: "Disetujui",
@@ -47,4 +52,21 @@ export const BADGE_STATUS_RESERVASI: Record<
   CANCELLED_BY_USER: "neutral",
   CANCELLED_BY_OFFICER: "neutral",
   EXPIRED: "outline",
+=======
+export const LABEL_STATUS_LAPORAN: Record<StatusLaporan, string> = {
+  NEW: "Baru",
+  IN_PROGRESS: "Diproses",
+  RESOLVED: "Selesai",
+  REJECTED: "Ditolak",
+};
+
+export const BADGE_STATUS_LAPORAN: Record<
+  StatusLaporan,
+  "pending" | "info" | "success" | "danger"
+> = {
+  NEW: "pending",
+  IN_PROGRESS: "info",
+  RESOLVED: "success",
+  REJECTED: "danger",
+>>>>>>> 68b9fd958714abbff4db9d833f3d224826ef4dfa
 };

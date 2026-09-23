@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/.pnpm-store/
 /.pnp
 .pnp.*
 .yarn/*
@@ -83,3 +84,6 @@ figma/
 output/
 .vitest/
 .commandcode/
+
+# uploads runtime (foto laporan hasil unggah) — tidak untuk di-commit
+/public/uploads/
