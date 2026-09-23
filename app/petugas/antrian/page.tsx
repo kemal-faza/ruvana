@@ -2,6 +2,7 @@ import { Building2, ClipboardList, Inbox, LayoutDashboard } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell/app-shell";
 import type { NavigationGroup } from "@/components/app-shell/types";
+import { ApprovedReservationList } from "@/components/staff/approved-reservation-list";
 import { ReservationQueue } from "@/components/staff/reservation-queue";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,16 @@ export default function AntrianPage() {
           </p>
         </header>
         <ReservationQueue />
+        <section aria-label="Pembatalan mendesak" className="flex flex-col gap-4">
+          <header className="flex flex-col gap-2">
+            <h2 className="font-heading text-xl font-semibold tracking-tight">Pembatalan mendesak</h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Batalkan reservasi yang sudah disetujui untuk kondisi mendesak. Alasan wajib diisi dan terlihat oleh
+              pemilik reservasi.
+            </p>
+          </header>
+          <ApprovedReservationList />
+        </section>
       </main>
     </AppShell>
   );

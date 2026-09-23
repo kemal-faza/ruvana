@@ -1,48 +1,32 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/session";
 import { getAllowedOrigins, validateOrigin } from "@/lib/http/origin";
 import { buildIdempotencyScope, hashCanonicalBody, isValidIdempotencyKey } from "@/lib/http/idempotency";
 import {
   badRequest,
   csrfOriginRejected,
-  forbidden,
   idempotencyConflict,
   internalError,
   invalidReservationTransition,
   notFound,
-  unauthorized,
   validationFailed,
 } from "@/lib/http/problem";
-import { cancelMyReservationService } from "@/lib/services/reservation-service";
+import { cancelReservationByOfficerService } from "@/lib/services/reservation-service";
 import { parseCancelBody } from "@/lib/validation/reservation";
 import { parseReservationId } from "@/lib/validation/reservation-query";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(request: NextRequest, ctx: RouteContext<"/api/reservations/[reservationId]/cancel">) {
+import { guardStaff } from "../../guard";
+
+export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/reservations/[reservationId]/cancel">) {
   const instance = new URL(request.url).pathname;
   const { reservationId } = await ctx.params;
 
-  let session: Awaited<ReturnType<typeof getSession>>;
-  try {
-    session = await getSession(request);
-  } catch (e) {
-    console.error("Gagal memeriksa sesi", e);
-    return internalError(instance);
-  }
+  const session = await guardStaff(request);
+  if (session instanceof NextResponse) return session;
 
-  if (!session || session.user.status !== "ACTIVE") {
-    return unauthorized(instance);
-  }
-
-  if (session.user.role !== "pengguna") {
-    return forbidden(instance);
-  }
-
-  // Origin dicek setelah auth & authorization, sebelum idempotency (urutan kontrak OpenAPI).
-  const allowedOrigins = getAllowedOrigins();
-  const originResult = validateOrigin(request, allowedOrigins);
+  const originResult = validateOrigin(request, getAllowedOrigins());
   if (!originResult.ok) {
     return csrfOriginRejected(instance);
   }
@@ -53,14 +37,12 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
   }
   const idempotencyKey = rawKey!.trim();
 
-  // Id path divalidasi dulu karena scope idempotency mengikat id.
   const parsedId = parseReservationId(reservationId);
   if (!parsedId.ok) {
     return validationFailed(instance, parsedId.errors);
   }
-  const SCOPE = buildIdempotencyScope("POST", `/api/reservations/${parsedId.value}/cancel`);
+  const SCOPE = buildIdempotencyScope("POST", `/api/staff/reservations/${parsedId.value}/cancel`);
 
-  // Body di-parse dulu karena hash-nya bagian dari identity idempotency.
   let rawBody: unknown;
   try {
     rawBody = await request.json();
@@ -119,11 +101,11 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
     return validationFailed(instance, parsed.errors);
   }
 
-  let serviceResult: Awaited<ReturnType<typeof cancelMyReservationService>>;
+  let serviceResult: Awaited<ReturnType<typeof cancelReservationByOfficerService>>;
   try {
-    serviceResult = await cancelMyReservationService(session.user.id, parsedId.value, parsed.value, new Date());
+    serviceResult = await cancelReservationByOfficerService(session.user.id, parsedId.value, parsed.value, new Date());
   } catch (e) {
-    console.error("Gagal membatalkan reservasi", e);
+    console.error("Gagal membatalkan reservasi oleh petugas", e);
     return internalError(instance);
   }
 

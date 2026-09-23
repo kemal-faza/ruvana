@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
 import { lockFacilityById } from "@/lib/db/facilities";
 import {
+  countApprovedQueue,
   countMyReservations,
   countPendingQueue,
   findMyReservationById,
   findOverlappingApproved,
+  listApprovedQueue,
   listMyReservations,
   listPendingQueue,
 } from "@/lib/db/reservations";
@@ -94,7 +96,6 @@ export async function createReservationService(
   const endsAt = asiaJakartaToUtc(input.date, input.endTime);
   const tanggal = asiaJakartaToUtc(input.date, "00:00");
 
-  // Validasi tanggal/slot lampau: menolak jika startsAt <= now
   if (startsAt.getTime() <= now.getTime()) {
     return {
       ok: false,
@@ -147,10 +148,6 @@ export async function createReservationService(
       });
 
       if (overlapping.length > 0) {
-        // Bangun availability terbaru lewat sumber tunggal, di dalam transaksi
-        // yang sama: teruskan tx agar konsisten dengan row lock, dan status
-        // fasilitas yang sudah dibaca lewat SELECT ... FOR UPDATE agar tidak
-        // query ulang di luar lock.
         const availability = await computeFacilityAvailability(input.facilityId, input.date, {
           client: tx,
           facilityStatus: facility.status,
@@ -222,8 +219,6 @@ export interface MyReservationCollection {
   };
 }
 
-// Riwayat milik pengguna: hanya baris dengan userId sesi yang dibaca.
-// Urutan deterministik createdAt DESC lalu id DESC (lihat db layer).
 export async function listMyReservationsService(
   userId: number,
   query: MyReservationListQuery,
@@ -248,7 +243,6 @@ export async function listMyReservationsService(
   };
 }
 
-// Detail milik pengguna: reservasi pengguna lain termasking sebagai not_found.
 export async function getMyReservationService(
   userId: number,
   id: number,
@@ -261,10 +255,6 @@ export async function getMyReservationService(
   return { ok: true, data: toReservationResponse(row as unknown as ReservationRow) };
 }
 
-// Pembatalan oleh pemilik: PENDING/APPROVED → CANCELLED_BY_USER.
-// Batas waktu tunggal dari BATAS_PEMBATALAN_JAM: startsAt - now >= batas.
-// Cukup update status — slot APPROVED yang dibatalkan otomatis bebas lagi
-// karena availability dihitung dari reservasi APPROVED (lihat availability.ts).
 export async function cancelMyReservationService(
   userId: number,
   id: number,
@@ -427,6 +417,32 @@ export async function listStaffQueueService(query: {
   };
 }
 
+// Daftar APPROVED untuk pembatalan mendesak petugas (TASK 3.5):
+// hanya APPROVED, urut waktu mulai terdekat dulu. processedBy selalu
+// null di sini (belum ada yang membatalkan).
+export async function listStaffApprovedService(query: {
+  page: number;
+  perPage: number;
+}): Promise<{ ok: true; data: StaffReservationCollection }> {
+  const { page, perPage } = query;
+  const [rows, totalItems] = await Promise.all([
+    listApprovedQueue({ skip: (page - 1) * perPage, take: perPage }),
+    countApprovedQueue(),
+  ]);
+  return {
+    ok: true,
+    data: {
+      items: (rows as unknown as StaffReservationRow[]).map((row) => toStaffReservationResponse(row, null)),
+      meta: {
+        page,
+        perPage,
+        totalItems,
+        totalPages: Math.ceil(totalItems / perPage),
+      },
+    },
+  };
+}
+
 // Approve atomik: row lock fasilitas → final conflict check APPROVED →
 // set APPROVED + catat aktor & waktu tepat satu kali. Bentrok berarti
 // tidak ada perubahan dan respons membawa availability terbaru.
@@ -447,13 +463,11 @@ export async function approveReservationService(
       if (row.status !== "PENDING") {
         throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat disetujui." };
       }
-      // Row lock + baca status fasilitas dalam transaksi yang sama
       const facility = await lockFacilityById(tx, row.facilityId);
       if (!facility) {
         throw { kind: "not_found" as const, message: "Fasilitas tidak ditemukan" };
       }
-      // Bukan logic maintenance (ranah TASK 3.7/Modul 4): approve hanya
-      // berjalan di atas fasilitas ACTIVE.
+
       if (facility.status !== "ACTIVE") {
         throw { kind: "transition" as const, message: "Fasilitas tidak tersedia untuk persetujuan." };
       }
@@ -503,8 +517,7 @@ export async function approveReservationService(
   }
 }
 
-// Reject: hanya dari PENDING, alasan wajib (divalidasi di route),
-// catat aktor & waktu. Row lock fasilitas menyeragamkan race dengan approve.
+// Reject: alasan wajib divalidasi di route; row lock menyeragamkan race dengan approve.
 export async function rejectReservationService(
   staffId: number,
   id: number,
@@ -528,6 +541,59 @@ export async function rejectReservationService(
         where: { id: row.id },
         data: {
           status: "REJECTED",
+          alasan: input.alasan,
+          waktuDiproses: now,
+          diprosesOleh: staffId,
+        },
+        include: { facility: true, user: true },
+      });
+      const actorRow = await tx.user.findUnique({
+        where: { id: staffId },
+        select: { id: true, nama: true, role: true },
+      });
+      return {
+        updated,
+        actor: actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
+      };
+    });
+
+    return {
+      ok: true,
+      data: toStaffReservationResponse(updated as unknown as StaffReservationRow, actor),
+    };
+  } catch (e: unknown) {
+    const mapped = mapServiceException(e);
+    if (mapped) return { ok: false, error: mapped };
+    throw e;
+  }
+}
+
+// Pembatalan mendesak petugas (TASK 3.5): alasan wajib divalidasi di route.
+// Slot bebas lagi karena availability hanya menghitung APPROVED; alasan
+// terlihat pemilik karena field alasan dikembalikan apa adanya.
+export async function cancelReservationByOfficerService(
+  staffId: number,
+  id: number,
+  input: CancelReservationInput,
+  now: Date = new Date(),
+): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
+  try {
+    const { updated, actor } = await prisma.$transaction(async (tx) => {
+      const row = await tx.reservation.findUnique({
+        where: { id },
+        include: { facility: true },
+      });
+      if (!row) {
+        throw { kind: "not_found" as const };
+      }
+      if (row.status !== "APPROVED") {
+        throw { kind: "transition" as const, message: "Hanya reservasi berstatus disetujui yang dapat dibatalkan petugas." };
+      }
+      await lockFacilityById(tx, row.facilityId);
+      const updated = await tx.reservation.update({
+        where: { id: row.id },
+        data: {
+          status: "CANCELLED_BY_OFFICER",
           alasan: input.alasan,
           waktuDiproses: now,
           diprosesOleh: staffId,

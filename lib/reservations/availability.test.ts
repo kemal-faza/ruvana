@@ -129,4 +129,16 @@ describe("computeFacilityAvailability", () => {
     expect(findUnique).not.toHaveBeenCalled();
     expect(findMany).not.toHaveBeenCalled();
   });
+
+  it("hanya APPROVED yang memblokir: reservasi batal tidak menutup slot", async () => {
+    // Query DB difilter status APPROVED, sehingga reservasi yang dibatalkan
+    // petugas (CANCELLED_BY_OFFICER) tidak ikut — slot kembali tersedia.
+    const { client, findMany } = makeClient({ approved: [] });
+    const result = await computeFacilityAvailability(1, "2026-09-15", { client });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ status: "APPROVED" }) }),
+    );
+    expect(result?.slots.every((s) => s.available && s.blockedBy === null)).toBe(true);
+  });
 });

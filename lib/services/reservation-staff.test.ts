@@ -17,6 +17,8 @@ vi.mock("@/lib/prisma", () => ({
 
 import {
   approveReservationService,
+  cancelReservationByOfficerService,
+  listStaffApprovedService,
   listStaffQueueService,
   rejectReservationService,
 } from "./reservation-service";
@@ -198,6 +200,58 @@ describe("rejectReservationService", () => {
   });
 });
 
+describe("cancelReservationByOfficerService", () => {
+  it("membatalkan APPROVED dengan alasan, aktor, dan waktu", async () => {
+    const { reservation } = mockTx({ row: makeRow({ status: "APPROVED" }) });
+
+    const result = await cancelReservationByOfficerService(7, 92, { alasan: "Gedung ditutup darurat" }, now);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.status).toBe("CANCELLED_BY_OFFICER");
+      expect(result.data.alasan).toBe("Gedung ditutup darurat");
+      expect(result.data.processedBy).toEqual(actor);
+      expect(result.data.processedAt).toBe(now.toISOString());
+    }
+    expect(reservation.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 92 },
+        data: expect.objectContaining({
+          status: "CANCELLED_BY_OFFICER",
+          alasan: "Gedung ditutup darurat",
+          diprosesOleh: 7,
+          waktuDiproses: now,
+        }),
+      }),
+    );
+  });
+
+  it("menolak status selain APPROVED", async () => {
+    for (const status of ["PENDING", "REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"]) {
+      const { reservation } = mockTx({ row: makeRow({ status }) });
+      const result = await cancelReservationByOfficerService(7, 92, { alasan: "x" }, now);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.type).toBe("transition");
+      expect(reservation.update).not.toHaveBeenCalled();
+    }
+  });
+
+  it("mengembalikan not_found untuk id yang tidak ada", async () => {
+    mockTx({ row: null });
+
+    const result = await cancelReservationByOfficerService(7, 999, { alasan: "x" }, now);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("not_found");
+  });
+
+  it("menolak tanpa alasan di validation layer", () => {
+    for (const body of [{}, { alasan: "   " }]) {
+      expect(parseCancelBody(body).ok).toBe(false);
+    }
+  });
+});
+
 describe("listStaffQueueService", () => {
   it("mengembalikan PENDING terlama dulu beserta pemohon dan meta", async () => {
     findManyRoot.mockResolvedValue([makeRow(), makeRow({ id: 93 })]);
@@ -218,5 +272,38 @@ describe("listStaffQueueService", () => {
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       }),
     );
+  });
+});
+
+describe("listStaffApprovedService", () => {
+  it("mengembalikan APPROVED urut waktu mulai terdekat beserta pemohon dan meta", async () => {
+    findManyRoot.mockResolvedValue([makeRow({ status: "APPROVED" }), makeRow({ id: 93, status: "APPROVED" })]);
+    countRoot.mockResolvedValue(2);
+
+    const result = await listStaffApprovedService({ page: 1, perPage: 20 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.items.map((i) => i.id)).toEqual([92, 93]);
+      expect(result.data.items.every((i) => i.status === "APPROVED")).toBe(true);
+      expect(result.data.items[0].pemohon.email).toBe("siti.aminah@example.com");
+      expect(result.data.items[0].processedBy).toBeNull();
+      expect(result.data.meta).toEqual({ page: 1, perPage: 20, totalItems: 2, totalPages: 1 });
+    }
+    expect(findManyRoot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: "APPROVED" },
+        orderBy: [{ startTime: "asc" }, { id: "asc" }],
+      }),
+    );
+  });
+
+  it("memakai skip/take dari paginasi", async () => {
+    findManyRoot.mockResolvedValue([]);
+    countRoot.mockResolvedValue(0);
+
+    await listStaffApprovedService({ page: 3, perPage: 5 });
+
+    expect(findManyRoot).toHaveBeenCalledWith(expect.objectContaining({ skip: 10, take: 5 }));
   });
 });

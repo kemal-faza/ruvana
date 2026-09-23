@@ -142,7 +142,6 @@ describe("createReservationService", () => {
     const tx = makeTxMock();
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
     await createReservationService(42, validInput, now);
-    // Pastikan $queryRaw dipanggil dengan fragment FOR UPDATE
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
   });
 });

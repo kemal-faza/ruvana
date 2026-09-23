@@ -153,6 +153,12 @@ export function ReservationHistoryList() {
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 <p className="line-clamp-2">{item.tujuanPenggunaan}</p>
+                {item.alasan && (
+                  <p className="mt-1 line-clamp-2">
+                    <span className="font-medium text-foreground">Alasan: </span>
+                    {item.alasan}
+                  </p>
+                )}
               </CardContent>
               <CardFooter className="mt-auto">
                 <Button

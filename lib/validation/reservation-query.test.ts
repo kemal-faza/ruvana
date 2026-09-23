@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseMyReservationListQuery, parseReservationId } from "./reservation-query";
+import { parseMyReservationListQuery, parseReservationId, parseStaffReservationListQuery } from "./reservation-query";
 
 function params(query: string): URLSearchParams {
   return new URLSearchParams(query);
@@ -71,6 +71,41 @@ describe("parseReservationId", () => {
       const r = parseReservationId(raw);
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.errors[0].field).toBe("reservationId");
+    }
+  });
+});
+
+describe("parseStaffReservationListQuery", () => {
+  it("default ke status PENDING dengan page 1 dan perPage 20", () => {
+    const r = parseStaffReservationListQuery(params(""));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value).toEqual({ page: 1, perPage: 20, status: "PENDING" });
+    }
+  });
+
+  it("menerima status APPROVED untuk pembatalan mendesak", () => {
+    const r = parseStaffReservationListQuery(params("status=APPROVED&page=2&perPage=10"));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value).toEqual({ page: 2, perPage: 10, status: "APPROVED" });
+    }
+  });
+
+  it("menolak status selain PENDING/APPROVED", () => {
+    for (const raw of ["REJECTED", "CANCELLED_BY_USER", "EXPIRED", "DISETUJUI", ""]) {
+      const r = parseStaffReservationListQuery(params(`status=${raw}`));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.some((e) => e.field === "status")).toBe(true);
+    }
+  });
+
+  it("menolak page/perPage tidak valid", () => {
+    const r = parseStaffReservationListQuery(params("page=0&perPage=101"));
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors.some((e) => e.field === "page")).toBe(true);
+      expect(r.errors.some((e) => e.field === "perPage")).toBe(true);
     }
   });
 });

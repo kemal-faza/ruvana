@@ -105,8 +105,7 @@ export function findMyReservationById(userId: number, id: number) {
   });
 }
 
-// Antrian petugas: hanya PENDING yang belum diproses, FIFO
-// (createdAt ASC lalu id ASC) agar yang paling lama menunggu diproses dulu.
+// Antrian petugas: PENDING saja, FIFO agar yang paling lama menunggu diproses dulu.
 export function listPendingQueue({ skip, take }: { skip: number; take: number }) {
   return prisma.reservation.findMany({
     where: { status: "PENDING" },
@@ -120,5 +119,23 @@ export function listPendingQueue({ skip, take }: { skip: number; take: number })
 export function countPendingQueue() {
   return prisma.reservation.count({
     where: { status: "PENDING" },
+  });
+}
+
+// Daftar APPROVED untuk pembatalan mendesak (TASK 3.5): urut waktu mulai
+// terdekat agar reservasi yang paling segera terdampak mudah ditemukan.
+export function listApprovedQueue({ skip, take }: { skip: number; take: number }) {
+  return prisma.reservation.findMany({
+    where: { status: "APPROVED" },
+    orderBy: [{ startTime: "asc" }, { id: "asc" }],
+    include: { facility: true, user: true },
+    skip,
+    take,
+  });
+}
+
+export function countApprovedQueue() {
+  return prisma.reservation.count({
+    where: { status: "APPROVED" },
   });
 }
