@@ -3,7 +3,12 @@
 import { useActionState, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Search, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 
-import { buatAkun } from "@/app/admin/pengguna/actions";
+import { buatAkun, ubahStatusAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions";
+import {
+  BATAS_EMAIL_AKUN_KARAKTER,
+  BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_BYTE,
+} from "@/config/business";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -95,9 +100,11 @@ function inisial(nama: string) {
 export default function AdminUsers({
   users,
   ringkasan,
+  adminId,
 }: {
   users: AdminUserRow[];
   ringkasan: RingkasanAkun;
+  adminId: number;
 }) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -106,6 +113,16 @@ export default function AdminUsers({
   const [kunciUrut, setKunciUrut] = useState<KunciUrut | null>(null);
   const [arahUrut, setArahUrut] = useState<ArahUrut>("naik");
   const [halaman, setHalaman] = useState(1);
+  const [hasilVerifikasi, aksiVerifikasi, memverifikasi] = useActionState(
+    verifikasiPendaftaran,
+    { ok: false, pesan: "" },
+  );
+  const [hasilStatus, aksiStatus, memprosesStatus] = useActionState(
+    ubahStatusAkun,
+    { ok: false, pesan: "" },
+  );
+  const [aksiTerakhir, setAksiTerakhir] = useState<"verifikasi" | "status" | null>(null);
+  const umpanBalik = aksiTerakhir === "status" ? hasilStatus : hasilVerifikasi;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -166,6 +183,15 @@ export default function AdminUsers({
           <span>Tambah akun</span>
         </Button>
       </header>
+
+      {umpanBalik.pesan && (
+        <p
+          role={umpanBalik.ok ? "status" : "alert"}
+          className={umpanBalik.ok ? "text-sm text-success" : "text-sm text-destructive"}
+        >
+          {umpanBalik.pesan}
+        </p>
+      )}
 
       <section aria-label="Ringkasan akun" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {RINGKASAN_ITEM.map((item) => {
@@ -309,6 +335,9 @@ export default function AdminUsers({
                         onToggle={() => toggleUrut("waktuDaftar")}
                       />
                     </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Tindakan
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -347,6 +376,57 @@ export default function AdminUsers({
                         </td>
                         <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">
                           {fmtTanggal(u.waktuDaftar)}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.status === "PENDING" && u.role === "pengguna" ? (
+                            <form
+                              action={aksiVerifikasi}
+                              onSubmit={() => setAksiTerakhir("verifikasi")}
+                              className="flex items-center gap-2"
+                            >
+                              <input type="hidden" name="id" value={u.id} />
+                              <Button
+                                type="submit"
+                                name="keputusan"
+                                value="setujui"
+                                size="sm"
+                                disabled={memverifikasi || memprosesStatus}
+                              >
+                                Setujui
+                              </Button>
+                              <Button
+                                type="submit"
+                                name="keputusan"
+                                value="tolak"
+                                size="sm"
+                                variant="outline"
+                                disabled={memverifikasi || memprosesStatus}
+                              >
+                                Tolak
+                              </Button>
+                            </form>
+                          ) : u.status === "ACTIVE" && u.id === adminId ? (
+                            <span className="text-xs text-muted-foreground">Akun Anda</span>
+                          ) : u.status === "ACTIVE" || u.status === "DISABLED" ? (
+                            <form
+                              action={aksiStatus}
+                              onSubmit={() => setAksiTerakhir("status")}
+                            >
+                              <input type="hidden" name="id" value={u.id} />
+                              <Button
+                                type="submit"
+                                name="tindakan"
+                                value={u.status === "ACTIVE" ? "nonaktifkan" : "aktifkan"}
+                                size="sm"
+                                variant={u.status === "ACTIVE" ? "outline" : "primary"}
+                                disabled={memprosesStatus || memverifikasi}
+                              >
+                                {u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan kembali"}
+                              </Button>
+                            </form>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -422,7 +502,31 @@ function SheetBuatAkun({
             Akun petugas dan pengguna yang dibuat admin langsung berstatus aktif.
           </SheetDescription>
         </SheetHeader>
-        <form action={action} className="flex flex-col gap-4 px-4 pb-4">
+        <form
+          action={action}
+          className="flex flex-col gap-4 px-4 pb-4"
+          onSubmit={(event) => {
+            const form = event.currentTarget;
+            const nama = form.elements.namedItem("nama") as HTMLInputElement;
+            const password = form.elements.namedItem("password") as HTMLInputElement;
+            const ukuranPassword = new TextEncoder().encode(password.value).length;
+
+            nama.setCustomValidity(nama.value.trim().length < 3 ? "Nama minimal 3 karakter." : "");
+            password.setCustomValidity(
+              ukuranPassword > BATAS_PASSWORD_AKUN_BYTE
+                ? `Password maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
+                : !/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/.test(password.value)
+                  ? "Password harus mengandung huruf dan angka."
+                  : "",
+            );
+
+            const firstInvalid = [nama, password].find((input) => !input.validity.valid);
+            if (firstInvalid) {
+              firstInvalid.reportValidity();
+              event.preventDefault();
+            }
+          }}
+        >
           <Field>
             <FieldLabel htmlFor="buat-nama" required>
               Nama lengkap
@@ -434,6 +538,8 @@ function SheetBuatAkun({
               autoComplete="name"
               required
               minLength={3}
+              maxLength={BATAS_NAMA_AKUN_KARAKTER}
+              onInput={(event) => event.currentTarget.setCustomValidity("")}
               aria-invalid={state.fieldErrors?.nama ? true : undefined}
               aria-describedby={state.fieldErrors?.nama ? "buat-nama-error" : undefined}
             />
@@ -452,6 +558,7 @@ function SheetBuatAkun({
               placeholder="nama@email.com"
               autoComplete="email"
               required
+              maxLength={BATAS_EMAIL_AKUN_KARAKTER}
               aria-invalid={state.fieldErrors?.email ? true : undefined}
               aria-describedby={state.fieldErrors?.email ? "buat-email-error" : undefined}
             />
@@ -471,11 +578,15 @@ function SheetBuatAkun({
               autoComplete="new-password"
               required
               minLength={8}
+              onInput={(event) => event.currentTarget.setCustomValidity("")}
               aria-invalid={state.fieldErrors?.password ? true : undefined}
               aria-describedby={
-                state.fieldErrors?.password ? "buat-password-error" : undefined
+                state.fieldErrors?.password ? "buat-password-error" : "buat-password-help"
               }
             />
+            <p id="buat-password-help" className="text-sm text-muted-foreground">
+              Minimal 8 karakter dengan huruf dan angka, maksimal {BATAS_PASSWORD_AKUN_BYTE} byte.
+            </p>
             {state.fieldErrors?.password && (
               <FieldError id="buat-password-error">
                 {state.fieldErrors.password[0]}

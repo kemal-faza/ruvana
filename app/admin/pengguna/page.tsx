@@ -4,6 +4,6 @@ import { daftarPengguna } from "@/lib/admin/users";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPenggunaPage() {
-  const { users, ringkasan } = await daftarPengguna();
-  return <AdminUsers users={users} ringkasan={ringkasan} />;
+  const { users, ringkasan, adminId } = await daftarPengguna();
+  return <AdminUsers users={users} ringkasan={ringkasan} adminId={adminId} />;
 }

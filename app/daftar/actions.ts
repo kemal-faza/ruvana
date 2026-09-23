@@ -3,6 +3,11 @@
 import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
+import {
+  BATAS_EMAIL_AKUN_KARAKTER,
+  BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_BYTE,
+} from "@/config/business";
 import { prisma } from "@/lib/prisma";
 
 export type StateDaftar = {
@@ -19,10 +24,13 @@ export async function daftar(_prev: StateDaftar, form: FormData): Promise<StateD
   const password = String(form.get("password") ?? "");
   const fieldErrors: Record<string, string[]> = {};
 
-  if (!nama || nama.length > 100) fieldErrors.nama = ["Nama wajib diisi"];
-  if (!EMAIL_RE.test(email) || email.length > 254) fieldErrors.email = ["Masukkan email yang valid."];
+  if (!nama || nama.length > BATAS_NAMA_AKUN_KARAKTER) fieldErrors.nama = ["Nama wajib diisi"];
+  if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) fieldErrors.email = ["Masukkan email yang valid."];
   const passwordBytes = Buffer.byteLength(password, "utf8");
-  if (passwordBytes < 8 || passwordBytes > 72) fieldErrors.password = ["Kata sandi harus minimal berisi 8 karakter."];
+  if (passwordBytes < 8) fieldErrors.password = ["Kata sandi harus minimal berisi 8 karakter."];
+  else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
+    fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`];
+  }
 
   if (Object.keys(fieldErrors).length) {
     return { ok: false, pesan: "Periksa kembali isian formulir.", fieldErrors };

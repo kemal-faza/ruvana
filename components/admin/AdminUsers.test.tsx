@@ -2,11 +2,14 @@ import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { buatAkun } from "@/app/admin/pengguna/actions"
 import AdminUsers from "@/components/admin/AdminUsers"
 import type { AdminUserRow } from "@/lib/admin/users"
 
 vi.mock("@/app/admin/pengguna/actions", () => ({
   buatAkun: vi.fn(),
+  verifikasiPendaftaran: vi.fn(),
+  ubahStatusAkun: vi.fn(),
 }))
 
 const users: AdminUserRow[] = [
@@ -23,7 +26,7 @@ const users: AdminUserRow[] = [
     id: 2,
     nama: "Budi Santoso",
     email: "budi@kampus.ac.id",
-    role: "petugas",
+    role: "pengguna",
     status: "PENDING",
     waktuDaftar: new Date("2026-09-03T08:00:00+07:00"),
     waktuVerifikasi: null,
@@ -61,7 +64,7 @@ const banyakPengguna: AdminUserRow[] = Array.from({ length: 12 }, (_, index) => 
 }))
 
 function renderFixture() {
-  return render(<AdminUsers users={users} ringkasan={ringkasan} />)
+  return render(<AdminUsers users={users} ringkasan={ringkasan} adminId={99} />)
 }
 
 afterEach(cleanup)
@@ -82,6 +85,57 @@ describe("AdminUsers (kelola akun)", () => {
     expect(within(tabel).getByText("Aktif")).toBeInTheDocument()
     expect(within(tabel).getByText("Ditolak")).toBeInTheDocument()
     expect(within(tabel).getByText("Dinonaktifkan")).toBeInTheDocument()
+  })
+
+  it("menampilkan keputusan verifikasi hanya untuk pengguna yang masih PENDING", () => {
+    renderFixture()
+
+    const barisPending = screen.getByText("Budi Santoso").closest("tr")
+    expect(barisPending).not.toBeNull()
+    expect(within(barisPending!).getByRole("button", { name: "Setujui" })).toBeInTheDocument()
+    expect(within(barisPending!).getByRole("button", { name: "Tolak" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Setujui" })).toHaveLength(1)
+  })
+
+  it("menampilkan aksi nonaktifkan dan aktifkan kembali sesuai status akun", () => {
+    renderFixture()
+
+    const barisAktif = screen.getByText("Ayu Pratama").closest("tr")
+    const barisNonaktif = screen.getByText("Dedi Kurnia").closest("tr")
+    expect(barisAktif).not.toBeNull()
+    expect(barisNonaktif).not.toBeNull()
+    expect(within(barisAktif!).getByRole("button", { name: "Nonaktifkan" })).toBeInTheDocument()
+    expect(within(barisNonaktif!).getByRole("button", { name: "Aktifkan kembali" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Nonaktifkan" })).toHaveLength(1)
+  })
+
+  it("melindungi akun admin yang sedang digunakan dari penonaktifan", () => {
+    render(
+      <AdminUsers
+        users={[{ ...users[0], role: "admin" }]}
+        ringkasan={{ total: 1, aktif: 1, pending: 0, dinonaktifkan: 0 }}
+        adminId={1}
+      />,
+    )
+
+    expect(screen.getByText("Akun Anda")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Nonaktifkan" })).not.toBeInTheDocument()
+  })
+
+  it("mencari berdasarkan email dan memfilter peran serta status", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+
+    await user.type(screen.getByLabelText("Cari nama atau email"), "citra@kampus.ac.id")
+    expect(screen.getByText("Menampilkan 1 dari 4 akun.")).toBeInTheDocument()
+    expect(screen.getByText("Citra Lestari")).toBeInTheDocument()
+
+    await user.clear(screen.getByLabelText("Cari nama atau email"))
+    await user.selectOptions(screen.getByLabelText("Filter peran"), "pengguna")
+    await user.selectOptions(screen.getByLabelText("Filter status"), "REJECTED")
+    expect(screen.getByText("Menampilkan 1 dari 4 akun.")).toBeInTheDocument()
+    expect(screen.getByText("Citra Lestari")).toBeInTheDocument()
+    expect(screen.queryByText("Ayu Pratama")).not.toBeInTheDocument()
   })
 
   it("memfilter daftar dan menampilkan empty state saat tidak cocok", async () => {
@@ -107,6 +161,28 @@ describe("AdminUsers (kelola akun)", () => {
     expect(within(dialog).getByLabelText(/password awal/i)).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/peran/i)).toBeInTheDocument()
     expect(within(dialog).getByRole("button", { name: "Buat akun" })).toBeInTheDocument()
+  })
+
+  it("mencegah pengiriman password lebih dari 72 byte pada form admin", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+    await user.click(screen.getByRole("button", { name: "Tambah akun" }))
+
+    const dialog = await screen.findByRole("dialog", { name: "Buat akun baru" })
+    const nama = within(dialog).getByLabelText(/nama lengkap/i) as HTMLInputElement
+    const email = within(dialog).getByLabelText(/email/i) as HTMLInputElement
+    const password = within(dialog).getByLabelText(/password awal/i) as HTMLInputElement
+
+    expect(nama).toHaveAttribute("maxlength", "100")
+    expect(email).toHaveAttribute("maxlength", "254")
+    await user.type(nama, "Siti Aminah")
+    await user.type(email, "siti@kampus.ac.id")
+    await user.type(password, `a1x${"é".repeat(35)}`)
+    await user.selectOptions(within(dialog).getByLabelText(/peran/i), "pengguna")
+    await user.click(within(dialog).getByRole("button", { name: "Buat akun" }))
+
+    expect(password.validationMessage).toBe("Password maksimal 72 byte.")
+    expect(buatAkun).not.toHaveBeenCalled()
   })
 
   it("mengurutkan berdasarkan nama menaik lalu menurun", async () => {
@@ -151,6 +227,7 @@ describe("AdminUsers (kelola akun)", () => {
       <AdminUsers
         users={banyakPengguna}
         ringkasan={{ total: 12, aktif: 12, pending: 0, dinonaktifkan: 0 }}
+        adminId={99}
       />,
     )
 
