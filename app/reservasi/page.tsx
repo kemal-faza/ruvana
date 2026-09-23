@@ -3,7 +3,9 @@ import { Building2, CalendarDays, ClipboardList, LayoutDashboard, Settings } fro
 import { AppShell } from "@/components/app-shell/app-shell";
 import type { NavigationGroup } from "@/components/app-shell/types";
 import { ReservationForm } from "@/components/reservation/reservation-form";
+import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import { listPublicFacilities } from "@/lib/services/facility-service";
+import { isValidDateFormat } from "@/lib/time/reservation-time";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +36,34 @@ async function getFacilities() {
     .sort((a, b) => a.nama.localeCompare(b.nama, "id"));
 }
 
-export default async function ReservasiPage() {
+export default async function ReservasiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const facilities = await getFacilities();
+  const query = await searchParams;
+
+  const rawFacilityId = Array.isArray(query.facilityId) ? query.facilityId[0] : query.facilityId;
+  const rawDate = Array.isArray(query.date) ? query.date[0] : query.date;
+
+  // Tanggal default: besok, agar tidak langsung lampau
+  const fallbackDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
+  const date = rawDate && isValidDateFormat(rawDate) ? rawDate : fallbackDate;
+
+  const parsedFacilityId = rawFacilityId ? Number(rawFacilityId) : NaN;
+  const facilityId = facilities.some((f) => f.id === parsedFacilityId)
+    ? parsedFacilityId
+    : (facilities[0]?.id ?? 0);
+
+  // Hitung availability di server (internal, bukan endpoint publik),
+  // lalu teruskan sebagai prop — client tidak fetch API baru.
+  const availability =
+    facilityId > 0 ? await computeFacilityAvailability(facilityId, date) : null;
 
   return (
     <AppShell navigation={navigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }} logoutDestination="/keluar">
@@ -45,7 +73,13 @@ export default async function ReservasiPage() {
           <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Ajukan reservasi</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">Lengkapi detail reservasi untuk mengajukan peminjaman fasilitas.</p>
         </header>
-        <ReservationForm facilities={facilities} />
+        <ReservationForm
+          key={`${facilityId}:${date}`}
+          facilities={facilities}
+          facilityId={facilityId}
+          date={date}
+          availability={availability}
+        />
       </main>
     </AppShell>
   );
