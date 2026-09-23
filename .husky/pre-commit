@@ -1,3 +1,7 @@
 # Jalankan pengecekan kata terlarang (AI-trap words) pada file yang di-staged.
 # Script exit non-zero => commit dibatalkan.
-pnpm exec bash scripts/check-banned-words.sh --staged
+#
+# Panggil `bash` langsung, JANGAN lewat `pnpm exec`: di Windows itu menambah
+# rantai shim (pnpm.cmd -> cmd.exe -> node -> bash.exe) yang memakan beberapa
+# detik untuk setiap commit. Git for Windows sudah menaruh bash-nya di PATH.
+bash scripts/check-banned-words.sh --staged

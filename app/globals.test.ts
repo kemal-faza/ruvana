@@ -52,3 +52,27 @@ describe("lapisan CSS motion Plan C", () => {
     expect(css).not.toContain("theme-slide-down 550ms")
   })
 })
+
+describe("token desain semantik landing", () => {
+  it("mendaftarkan token kontainer, ritme, dan tipografi di @theme", () => {
+    const css = readCss()
+
+    for (const token of [
+      "--container-shell: 1256px;",
+      "--spacing-hero-top: 62px;",
+      "--spacing-section-top: 92px;",
+      "--spacing-block: 30px;",
+      "--spacing-header: 72px;",
+      "--text-display: clamp(40px, 4.4vw, 58px);",
+      "--text-display--line-height: 1.08;",
+    ]) {
+      expect(css).toContain(token)
+    }
+  })
+
+  it("membundel line-height ke token teks, bukan token leading terpisah", () => {
+    const css = readCss()
+
+    expect(css).not.toMatch(/--leading-(display|heading|body)/)
+  })
+})

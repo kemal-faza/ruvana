@@ -10,6 +10,11 @@
 !.yarn/releases
 !.yarn/versions
 
+# pnpm satu-satunya package manager (lihat "packageManager" di package.json).
+# Lockfile npm/yarn jangan dibuat — CI memakai pnpm install --frozen-lockfile.
+package-lock.json
+yarn.lock
+
 # testing
 /coverage
 /test-results/
@@ -69,13 +74,12 @@ docker-compose.override.yml
 # --- pengecualian agar template & migrasi ikut ter-commit ---
 !.env.example
 !prisma/migrations/**/*.sql
-!docker/postgres-init/**/*.sql
 
 .codegraph/
 .worktrees/
 .superpowers/
 figma/
-docker/
 
 output/
 .vitest/
+.commandcode/

@@ -30,7 +30,7 @@ describe("HeroVisual", () => {
 
     const photo = screen.getByRole("img", { name: "Peralatan laboratorium di atas meja kerja" })
     expect(photo).toHaveAttribute("src", "/ruvana-lab2.jpg")
-    expect(photo).toHaveClass("scale-[1.08]", "blur-[1.25px]")
+    expect(photo).toHaveClass("scale-[1.08]", "blur-soft")
     expect(screen.getByText("Laboratorium")).toBeVisible()
     expect(container.querySelector("figcaption")).toHaveClass("top-[7%]", "left-[4%]")
   })

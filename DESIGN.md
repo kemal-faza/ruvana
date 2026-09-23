@@ -103,7 +103,7 @@ Gunakan 700 hanya untuk metrik atau display yang benar-benar perlu penekanan. Ju
 
 | Kelompok | Token dan aturan |
 |---|---|
-| Spasi | `space-page` 28–32 px desktop; `space-card` 18–24 px; gap berulang 8–24 px |
+| Spasi | `space-page` 28–32 px desktop; `space-card` 18–24 px; gap berulang 8–24 px. Ritme landing memakai token di **Token landing dan chrome publik** |
 | Radius | `radius-card` 16–24 px; `radius-control` 8–12 px |
 | Bayangan | `shadow-subtle`: `0 2px 8px rgba(0,0,0,0.04)` light dan `0 2px 10px rgba(0,0,0,0.18)` dark; gunakan untuk menunjukkan kedalaman |
 | Ikon | Satu keluarga outline konsisten, seperti Lucide, umumnya 16–20 px |
@@ -127,6 +127,75 @@ Dua syarat berikut mengikat seluruh motion, tanpa pengecualian:
 2. Animasi hanya boleh menganimasikan `transform` dan `opacity`; properti yang memicu layout tidak boleh dianimasikan.
 
 Gradasi kuat tidak boleh digunakan. Gradasi tonal halus boleh dipakai pada permukaan dekoratif maupun kontrol; gradasi beranimasi hanya diizinkan untuk indikator loading (`skeleton` shimmer), dan gradien dekoratif yang bergerak (`sweep`) dihapus. Gradasi tidak boleh dipakai untuk menyampaikan makna status atau membedakan state tanpa cue nonwarna. Tidak ada node motion yang berloop tak terbatas. `Parallax` yang terikat scroll masih diizinkan (maksimal empat per halaman, penanda `data-motion-ambient`); `Ambient` dan pola loop dekoratif dihapus dari sistem. Gradasi hanya boleh dipakai sebagai lapisan dekoratif; teks tetap berada di atas permukaan solid bertoken. Karena gradasi membuat kontras menjadi per-piksel, rasio kontras pada permukaan bergradasi tidak dijamin oleh token dan harus ditinjau secara visual.
+
+### Token landing dan chrome publik
+
+Nilai visual landing dan chrome publik tidak ditulis sebagai nilai mentah di komponen. Blok `@theme` di `app/globals.css` mendefinisikan token berikut; komponen memakai utility hasilnya. Nilainya sengaja dipertahankan apa adanya (tanpa normalisasi) karena sudah ditinjau visual.
+
+**Kontainer konten**
+
+| Token | Nilai | Utility | Pemakaian |
+|---|---|---|---|
+| `--container-shell` | 1256 px | `max-w-shell` | Shell halaman publik |
+| `--container-hero` | 680 px | `max-w-hero` | Visual hero |
+| `--container-heading` | 600 px | `max-w-heading` | Judul section |
+| `--container-wide` | 560 px | `max-w-wide` | Blok ajakan dan hero ringkas |
+| `--container-title` | 520 px | `max-w-title` | Judul hero |
+| `--container-lede` | 480 px | `max-w-lede` | Paragraf hero |
+| `--container-copy` | 390 px | `max-w-copy` | Deskripsi kartu manfaat |
+| `--container-support` | 370 px | `max-w-support` | Paragraf pendukung section |
+| `--container-step` | 250 px | `max-w-step` | Deskripsi langkah cara kerja |
+
+**Ritme dan jarak**
+
+| Token | Nilai | Utility | Pemakaian |
+|---|---|---|---|
+| `--spacing-hero-top` / `--spacing-hero-top-lg` | 62 px / 94 px | `pt-hero-top`, `sm:pt-hero-top-lg` | Jarak atas hero |
+| `--spacing-section-top` / `--spacing-section-top-lg` | 92 px / 128 px | `pt-section-top`, `sm:pt-section-top-lg` | Jarak atas section |
+| `--spacing-search-top-lg` | 72 px | `sm:pt-search-top-lg` | Jarak atas pencarian fasilitas |
+| `--spacing-footer-top-lg` | 84 px | `sm:pt-footer-top-lg` | Jarak atas isi footer |
+| `--spacing-block-xs` | 18 px | `pt-block-xs` | Padding dalam kartu langkah |
+| `--spacing-block-sm` | 25 px | `max-md:mt-block-sm` | Jarak judul langkah di mobile |
+| `--spacing-block` | 30 px | `mb-block`, `md:gap-block` | Jarak judul ke konten |
+| `--spacing-block-lg` | 42 px | `sm:mb-block-lg`, `md:py-block-lg` | Jarak blok di layar lebar |
+| `--spacing-hero-gap` / `--spacing-hero-gap-lg` | 38 px / 50 px | `gap-hero-gap`, `md:gap-hero-gap-lg` | Gap grid hero |
+| `--spacing-header` / `--spacing-header-lg` | 72 px / 84 px | `h-header`, `sm:h-header-lg` | Tinggi header publik |
+| `--spacing-eyebrow-rule` | 34 px | `w-eyebrow-rule` | Garis aksen eyebrow |
+| `--spacing-search-inset` | 9 px | `max-md:p-search-inset` | Padding form pencarian di mobile |
+
+**Tipografi landing**
+
+Line-height dibundel ke token teks lewat `--text-<nama>--line-height`, sehingga satu utility menetapkan ukuran dan leading sekaligus.
+
+| Token | Nilai | Utility |
+|---|---|---|
+| `--text-caption` | 13 px | `text-caption` |
+| `--text-copy` | 13 px / 1.65 | `text-copy` |
+| `--text-body` | 17 px | `text-body` |
+| `--text-lede` | 15 px / 1.7 | `text-lede` |
+| `--text-lede-lg` | 17 px / 1.75 | `sm:text-lede-lg` |
+| `--text-display` | `clamp(40px, 4.4vw, 58px)` / 1.08 | `text-display` |
+| `--text-display-md` | `clamp(27px, 3.5vw, 44px)` / 1.15 | `text-display-md` |
+| `--text-display-sm` | `clamp(25px, 3.2vw, 40px)` / 1.17 | `text-display-sm` |
+| `--text-mockup-wordmark` | `clamp(8px, 1.1vw, 14px)` | `text-mockup-wordmark` |
+| `--text-mockup-nav` | `clamp(5px, 0.72vw, 10px)` | `text-mockup-nav` |
+| `--text-mockup-badge` | `clamp(7px, 0.85vw, 11px)` | `text-mockup-badge` |
+
+Token `--text-mockup-*` hanya untuk teks mini di dalam mockup dashboard; ukurannya sengaja di bawah `type-metadata` karena bersifat ilustratif, bukan teks yang perlu dibaca.
+
+**Tracking dan dekorasi**
+
+| Token | Nilai | Utility |
+|---|---|---|
+| `--tracking-display` | -0.055em | `tracking-display` |
+| `--tracking-heading` | -0.05em | `tracking-heading` |
+| `--tracking-subtitle` | -0.035em | `tracking-subtitle` |
+| `--tracking-title` | -0.03em | `tracking-title` |
+| `--tracking-eyebrow` | 0.08em | `tracking-eyebrow` |
+| `--tracking-label` | 0.06em | `tracking-label` |
+| `--blur-soft` | 1.25 px | `blur-soft` |
+
+Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Tailwind: `md` (768 px) untuk tablet dan `lg` (1024 px) untuk desktop. Jangan memakai breakpoint arbitrer seperti `min-[701px]`.
 
 ## Tata letak dan navigasi
 

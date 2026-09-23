@@ -97,7 +97,7 @@ export function StaggerItem({
   return (
     <Component
       data-motion-reveal="true"
-      className={cn("min-w-0 motion-reduce:!transform-none", className)}
+      className={cn("min-w-0 motion-reduce:transform-none!", className)}
       variants={getStaggerItemVariants(
         motionPreference.reduceMotion,
         motionPreference.distance(distance),

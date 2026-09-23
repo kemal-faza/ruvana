@@ -25,27 +25,27 @@ const tipeOptions: { value: string; label: string }[] = TIPE_FASILITAS.map(
 // Kontrol di dalam field memakai `outline-none`, jadi indikator fokus dipindahkan
 // ke pembungkusnya: satu ring menandai seluruh kontrol gabungan saat fokus masuk.
 const fieldClass =
-  "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 max-[700px]:px-2.5";
+  "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 max-md:px-2.5";
 
 export function FacilitySearch() {
   return (
     <section
       id="pencarian-fasilitas"
       aria-labelledby="pencarian-fasilitas-title"
-      className="mx-auto w-full max-w-[1256px] px-4 pt-14 sm:px-7 sm:pt-[72px]"
+      className="mx-auto w-full max-w-shell px-4 pt-14 sm:px-7 sm:pt-search-top-lg"
     >
       <form
         method="get"
         action="/fasilitas"
         className={cn(
           "grid grid-cols-1 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-subtle",
-          "max-[900px]:grid-cols-2 max-[700px]:p-[9px]",
-          "min-[901px]:grid-cols-[1.1fr_1fr_1fr_auto]",
+          "max-lg:grid-cols-2 max-md:p-search-inset",
+          "lg:grid-cols-[1.1fr_1fr_1fr_auto]",
         )}
       >
         <h2
           id="pencarian-fasilitas-title"
-          className="px-4 text-sm leading-snug font-medium max-[900px]:col-span-2 max-[700px]:px-1.5"
+          className="px-4 text-sm/snug font-medium max-lg:col-span-2 max-md:px-1.5"
         >
           Cari fasilitas
           <small className="mt-1 block text-xs font-normal text-muted-foreground">
@@ -85,7 +85,7 @@ export function FacilitySearch() {
           type="submit"
           className={cn(
             buttonVariants(),
-            "min-h-12 gap-2 px-5 max-[900px]:col-span-2 max-[900px]:w-full cursor-pointer",
+            "min-h-12 gap-2 px-5 max-lg:col-span-2 max-lg:w-full cursor-pointer",
           )}
         >
           Jelajahi

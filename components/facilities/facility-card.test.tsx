@@ -35,6 +35,29 @@ describe("FacilityCard", () => {
     expect(link).toHaveAttribute("href", "/fasilitas/1")
   })
 
+  it("memuat foto secara eager saat diminta agar cepat menjadi LCP", () => {
+    const { container } = render(<FacilityCard facility={facility} eager />)
+
+    expect(container.querySelector("img")).toHaveAttribute("loading", "eager")
+  })
+
+  it("menunda foto card berikutnya dengan lazy loading", () => {
+    const { container } = render(<FacilityCard facility={facility} />)
+
+    expect(container.querySelector("img")).toHaveAttribute("loading", "lazy")
+  })
+
+  it("menempelkan footer tombol ke dasar card", () => {
+    render(<FacilityCard facility={facility} />)
+
+    const footer = screen
+      .getByRole("button", { name: /lihat detail/i })
+      .closest("[data-slot='card-footer']")
+
+    expect(footer).not.toBeNull()
+    expect(footer).toHaveClass("mt-auto")
+  })
+
   it("tidak menampilkan data reservasi atau identitas pemesan", () => {
     render(<FacilityCard facility={facility} />)
 
