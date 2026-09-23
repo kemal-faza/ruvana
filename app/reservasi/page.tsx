@@ -3,7 +3,9 @@ import { Building2, CalendarDays, ClipboardList, LayoutDashboard, Settings } fro
 import { AppShell } from "@/components/app-shell/app-shell";
 import type { NavigationGroup } from "@/components/app-shell/types";
 import { ReservationForm } from "@/components/reservation/reservation-form";
-import { prisma } from "@/lib/prisma";
+import { listPublicFacilities } from "@/lib/services/facility-service";
+
+export const dynamic = "force-dynamic";
 
 const navigation: readonly NavigationGroup[] = [
   {
@@ -24,23 +26,12 @@ const navigation: readonly NavigationGroup[] = [
 ];
 
 async function getFacilities() {
-  try {
-    const facilities = await prisma.facility.findMany({
-      where: { status: "ACTIVE" },
-      select: { id: true, nama: true, lokasi: true },
-      orderBy: { nama: "asc" },
-    });
-    if (facilities.length > 0) return facilities;
-  } catch {
-    // fallback ke dummy jika DB belum siap / build tanpa DATABASE_URL
-  }
-  // TODO: data dummy hardcoded sementara — harus diganti ke query Prisma asli (status ACTIVE: id, nama, lokasi) begitu data fasilitas sungguhan tersedia / seed sudah dijalankan
-  return [
-    { id: 1, nama: "RK-101", lokasi: "Gedung A Lt.1" },
-    { id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" },
-    { id: 4, nama: "Lab Komputer 1", lokasi: "Gedung B Lt.2" },
-    { id: 7, nama: "Lapangan Basket", lokasi: "Area Olahraga" },
-  ];
+  // Sumber data asli Modul 2 (fasilitas): ambil daftar publik lalu saring yang ACTIVE untuk dropdown reservasi
+  const { items } = await listPublicFacilities({ page: 1, perPage: 500 });
+  return items
+    .filter((facility) => facility.status === "ACTIVE")
+    .map((facility) => ({ id: facility.id, nama: facility.nama, lokasi: facility.lokasi }))
+    .sort((a, b) => a.nama.localeCompare(b.nama, "id"));
 }
 
 export default async function ReservasiPage() {

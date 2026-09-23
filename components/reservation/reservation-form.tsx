@@ -35,16 +35,14 @@ function generateSlots(): Slot[] {
 
 const ALL_SLOTS = generateSlots();
 
-export function ReservationForm({ facilities }: { facilities?: FacilityOption[] }) {
-  // TODO: picks first fasilitas as default — page.tsx should pass ACTIVE facilities from Prisma; dummy fallback ada di page
-  const initialFacilities = facilities && facilities.length > 0 ? facilities : undefined;
-  const [facilityId, setFacilityId] = useState(() => String(initialFacilities?.[0]?.id ?? "1"));
+export function ReservationForm({ facilities }: { facilities: FacilityOption[] }) {
+  const [facilityId, setFacilityId] = useState(() => (facilities.length > 0 ? String(facilities[0].id) : ""));
 
-  // Sinkronkan state jika prop facilities berubah (mis. setelah fetch server atau saat dummy vs DB) — cegah stale id
+  // Sinkronkan state jika prop facilities berubah — cegah stale id
   useEffect(() => {
-    if (facilities && facilities.length > 0 && !facilities.some((f) => String(f.id) === facilityId)) {
+    if (!facilities.some((f) => String(f.id) === facilityId)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFacilityId(String(facilities[0].id));
+      setFacilityId(facilities.length > 0 ? String(facilities[0].id) : "");
     }
   }, [facilities, facilityId]);
   const [date, setDate] = useState(() => {
@@ -87,17 +85,19 @@ export function ReservationForm({ facilities }: { facilities?: FacilityOption[] 
 
   const range = getRange();
 
-  // daftar fasilitas untuk dropdown — jika page tidak passing data, pakai dummy agar UI tetap bisa dicoba
-  const displayFacilities: FacilityOption[] =
-    facilities && facilities.length > 0
-      ? facilities
-      : [
-          // TODO: data dummy hardcoded sementara — harus diganti ke query Prisma asli (status ACTIVE: id, nama, lokasi) begitu data fasilitas sungguhan tersedia
-          { id: 1, nama: "RK-101", lokasi: "Gedung A Lt.1" },
-          { id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" },
-          { id: 4, nama: "Lab Komputer 1", lokasi: "Gedung B Lt.2" },
-          { id: 7, nama: "Lapangan Basket", lokasi: "Area Olahraga" },
-        ];
+  if (facilities.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Ajukan reservasi</CardTitle>
+          <CardDescription>Lengkapi detail di bawah untuk mengajukan reservasi.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Belum ada fasilitas tersedia.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -175,13 +175,13 @@ export function ReservationForm({ facilities }: { facilities?: FacilityOption[] 
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih fasilitas">
                   {(value: string) => {
-                    const match = displayFacilities.find((f) => String(f.id) === value);
+                    const match = facilities.find((f) => String(f.id) === value);
                     return match ? `${match.nama} — ${match.lokasi}` : "Pilih fasilitas";
                   }}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {displayFacilities.map((f) => (
+                {facilities.map((f) => (
                   <SelectItem key={f.id} value={String(f.id)}>
                     {f.nama} — {f.lokasi}
                   </SelectItem>
@@ -233,7 +233,7 @@ export function ReservationForm({ facilities }: { facilities?: FacilityOption[] 
           {result && (
             <div className={`rounded-md border p-3 text-sm ${result.ok ? "border-green-200 bg-green-50 text-green-900" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
               <p className="font-medium">{result.msg}</p>
-              {result.detail && <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs opacity-80">{result.detail}</pre>}
+              {result.detail && <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word text-xs opacity-80">{result.detail}</pre>}
             </div>
           )}
         </form>
