@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
+import { countMyReservations, findMyReservationById, listMyReservations } from "@/lib/db/reservations";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import type { ReservationCreateInput } from "@/lib/validation/reservation";
+import type { MyReservationListQuery } from "@/lib/validation/reservation-query";
 import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta } from "@/lib/time/reservation-time";
 
 export type ServiceError =
@@ -199,3 +201,52 @@ export async function createReservationService(
 
 // Ekspor helper untuk test
 export { toReservationResponse };
+
+export interface MyReservationCollection {
+  items: ReservationResult[];
+  meta: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+// Riwayat milik pengguna: hanya baris dengan userId sesi yang dibaca.
+// Urutan deterministik createdAt DESC lalu id DESC (lihat db layer).
+export async function listMyReservationsService(
+  userId: number,
+  query: MyReservationListQuery,
+): Promise<{ ok: true; data: MyReservationCollection }> {
+  const { page, perPage, status } = query;
+  const [rows, totalItems] = await Promise.all([
+    listMyReservations({ userId, status, skip: (page - 1) * perPage, take: perPage }),
+    countMyReservations({ userId, status }),
+  ]);
+  type ReservationRow = Parameters<typeof toReservationResponse>[0];
+  return {
+    ok: true,
+    data: {
+      items: rows.map((row) => toReservationResponse(row as unknown as ReservationRow)),
+      meta: {
+        page,
+        perPage,
+        totalItems,
+        totalPages: Math.ceil(totalItems / perPage),
+      },
+    },
+  };
+}
+
+// Detail milik pengguna: reservasi pengguna lain termasking sebagai not_found.
+export async function getMyReservationService(
+  userId: number,
+  id: number,
+): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: Extract<ServiceError, { type: "not_found" }> }> {
+  const row = await findMyReservationById(userId, id);
+  if (!row) {
+    return { ok: false, error: { type: "not_found", message: "Reservasi tidak ditemukan" } };
+  }
+  type ReservationRow = Parameters<typeof toReservationResponse>[0];
+  return { ok: true, data: toReservationResponse(row as unknown as ReservationRow) };
+}

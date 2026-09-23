@@ -1,4 +1,4 @@
-import type { StatusFasilitas, TipeFasilitas } from "../generated/prisma/enums";
+import type { StatusFasilitas, StatusReservasi, TipeFasilitas } from "../generated/prisma/enums";
 
 export const LABEL_TIPE_FASILITAS: Record<TipeFasilitas, string> = {
   ruang_kelas: "Ruang kelas",
@@ -26,4 +26,26 @@ export const BADGE_STATUS_FASILITAS: Record<StatusFasilitas, "success" | "pendin
   ACTIVE: "success",
   UNDER_MAINTENANCE: "pending",
   INACTIVE: "neutral",
+};
+
+// Label Indonesia untuk status reservasi; nilai enum tetap bahasa Inggris-teknis.
+export const LABEL_STATUS_RESERVASI: Record<StatusReservasi, string> = {
+  PENDING: "Menunggu",
+  APPROVED: "Disetujui",
+  REJECTED: "Ditolak",
+  CANCELLED_BY_USER: "Dibatalkan pengguna",
+  CANCELLED_BY_OFFICER: "Dibatalkan petugas",
+  EXPIRED: "Kedaluwarsa",
+};
+
+export const BADGE_STATUS_RESERVASI: Record<
+  StatusReservasi,
+  "success" | "pending" | "neutral" | "destructive" | "outline"
+> = {
+  PENDING: "pending",
+  APPROVED: "success",
+  REJECTED: "destructive",
+  CANCELLED_BY_USER: "neutral",
+  CANCELLED_BY_OFFICER: "neutral",
+  EXPIRED: "outline",
 };

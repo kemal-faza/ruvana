@@ -15,7 +15,8 @@ import {
   validationFailed,
 } from "@/lib/http/problem";
 import { parseReservationCreateBody } from "@/lib/validation/reservation";
-import { createReservationService } from "@/lib/services/reservation-service";
+import { parseMyReservationListQuery } from "@/lib/validation/reservation-query";
+import { createReservationService, listMyReservationsService } from "@/lib/services/reservation-service";
 import { prisma } from "@/lib/prisma";
 
 const SCOPE = buildIdempotencyScope("POST", "/api/reservations");
@@ -238,4 +239,45 @@ export async function POST(request: NextRequest) {
     status: 201,
     headers: { "Cache-Control": "no-store" },
   });
+}
+
+export async function GET(request: NextRequest) {
+  const instance = new URL(request.url).pathname;
+
+  // 1. Authenticate
+  let session: Awaited<ReturnType<typeof getSession>>;
+  try {
+    session = await getSession(request);
+  } catch (e) {
+    console.error("Gagal memeriksa sesi", e);
+    return internalError(instance);
+  }
+
+  // 2. Verifikasi ACTIVE — akun non-ACTIVE mendapat 401 generik
+  if (!session || session.user.status !== "ACTIVE") {
+    return unauthorized(instance);
+  }
+
+  // 3. Otorisasi role — hanya pengguna
+  if (session.user.role !== "pengguna") {
+    return forbidden(instance);
+  }
+
+  // 4. Validasi query (page, perPage, status opsional)
+  const parsed = parseMyReservationListQuery(request.nextUrl.searchParams);
+  if (!parsed.ok) {
+    return validationFailed(instance, parsed.errors);
+  }
+
+  // 5. Ambil riwayat milik pengguna sesi saja (guard ownership di service/db)
+  try {
+    const result = await listMyReservationsService(session.user.id, parsed.value);
+    return NextResponse.json(result.data, {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (e) {
+    console.error("Gagal mengambil riwayat reservasi", e);
+    return internalError(instance);
+  }
 }

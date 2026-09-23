@@ -1,31 +1,11 @@
-import { Building2, CalendarDays, ClipboardList, LayoutDashboard, Settings } from "lucide-react";
-
 import { AppShell } from "@/components/app-shell/app-shell";
-import type { NavigationGroup } from "@/components/app-shell/types";
 import { ReservationForm } from "@/components/reservation/reservation-form";
+import { reservasiNavigation } from "./navigation";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import { listPublicFacilities } from "@/lib/services/facility-service";
 import { isValidDateFormat } from "@/lib/time/reservation-time";
 
 export const dynamic = "force-dynamic";
-
-const navigation: readonly NavigationGroup[] = [
-  {
-    key: "utama",
-    label: "Utama",
-    items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
-      { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
-      { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },
-    ],
-  },
-  {
-    key: "sistem",
-    label: "Sistem",
-    items: [{ key: "pengaturan", label: "Pengaturan", href: "/pengaturan", icon: Settings }],
-  },
-];
 
 async function getFacilities() {
   // Sumber data asli Modul 2 (fasilitas): ambil daftar publik lalu saring yang ACTIVE untuk dropdown reservasi
@@ -66,7 +46,7 @@ export default async function ReservasiPage({
     facilityId > 0 ? await computeFacilityAvailability(facilityId, date) : null;
 
   return (
-    <AppShell navigation={navigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }} logoutDestination="/keluar">
+    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }} logoutDestination="/keluar">
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-medium tracking-wide text-primary">Reservasi</p>
