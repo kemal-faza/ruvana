@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
+import { requireAdmin } from "@/lib/auth";
 
 export type AdminUserRow = {
   id: number;
@@ -19,6 +20,7 @@ export type RingkasanAkun = {
 };
 
 export async function daftarPengguna(): Promise<{ users: AdminUserRow[]; ringkasan: RingkasanAkun }> {
+  await requireAdmin();
   const [users, total, aktif, pending, dinonaktifkan] = await Promise.all([
     prisma.user.findMany({
       orderBy: { waktuDaftar: "desc" },

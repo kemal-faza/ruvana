@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
 
 export type StateBuatAkun = {
   ok: boolean;
@@ -16,8 +17,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RE = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 
 export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<StateBuatAkun> {
+  await requireAdmin();
   const nama = String(form.get("nama") ?? "").trim();
-  const email = String(form.get("email") ?? "").trim();
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
   const role = String(form.get("role") ?? "");
 

@@ -1,15 +1,12 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { MASA_SESI_JAM } from "@/config/business";
 import { prisma } from "@/lib/prisma";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 
 const COOKIE_NAME = "ruvana_session";
-const MAX_AGE = 60 * 60 * 12; // 12 jam
-
-const SESSION_SECRET = process.env.SESSION_SECRET ?? "ruvana-dev-secret";
-
-type SessionPayload = { uid: number; exp: number };
+const MAX_AGE = MASA_SESI_JAM * 60 * 60;
 
 export type SessionUser = {
   id: number;
@@ -18,37 +15,21 @@ export type SessionUser = {
   role: Role;
 };
 
-function sign(data: string): string {
-  return createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
-}
-
-function encodeToken(payload: SessionPayload): string {
-  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  return `${body}.${sign(body)}`;
-}
-
-function decodeToken(token: string): SessionPayload | null {
-  const dot = token.lastIndexOf(".");
-  if (dot <= 0) return null;
-  const body = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  const expected = sign(body);
-  if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
-    return null;
-  }
-  try {
-    const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as SessionPayload;
-    if (typeof payload.uid !== "number" || typeof payload.exp !== "number") return null;
-    return payload;
-  } catch {
-    return null;
-  }
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export async function createSession(userId: number) {
+  const token = randomBytes(32).toString("base64url");
+  await prisma.session.create({
+    data: {
+      tokenHash: hashToken(token),
+      userId,
+      expiresAt: new Date(Date.now() + MAX_AGE * 1000),
+    },
+  });
   const cookieStore = await cookies();
-  const exp = Math.floor(Date.now() / 1000) + MAX_AGE;
-  cookieStore.set(COOKIE_NAME, encodeToken({ uid: userId, exp }), {
+  cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -59,6 +40,10 @@ export async function createSession(userId: number) {
 
 export async function destroySession() {
   const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (token) {
+    await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+  }
   cookieStore.delete(COOKIE_NAME);
 }
 
@@ -66,9 +51,12 @@ export async function getSessionUserId(): Promise<number | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  const payload = decodeToken(token);
-  if (!payload || payload.exp < Math.floor(Date.now() / 1000)) return null;
-  return payload.uid;
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { userId: true, expiresAt: true },
+  });
+  if (!session || session.expiresAt.getTime() <= Date.now()) return null;
+  return session.userId;
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -82,9 +70,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return user;
 }
 
-// Guard untuk area admin (Modul 5): wajib sesi aktif & role admin.
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user || user.role !== Role.admin) redirect("/login");
+  if (!user) redirect("/login");
+  if (user.role !== Role.admin) redirect("/403");
   return user;
 }

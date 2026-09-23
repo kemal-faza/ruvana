@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createSession, destroySession } from "@/lib/auth";
+import { clearLoginFailures, loginAttemptKey, loginBlocked, recordLoginFailure } from "@/lib/login-rate-limit";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 
 export type StateLogin = {
@@ -24,15 +25,11 @@ export async function login(
 
   const password = String(form.get("password") ?? "");
 
-  // =========================
-  // VALIDASI INPUT
-  // =========================
-
   const fieldErrors: Record<string, string[]> = {};
 
   if (!email) {
     fieldErrors.email = ["Email wajib diisi."];
-  } else if (!EMAIL_RE.test(email)) {
+  } else if (!EMAIL_RE.test(email) || email.length > 254) {
     fieldErrors.email = ["Format email tidak valid."];
   }
 
@@ -48,21 +45,20 @@ export async function login(
     };
   }
 
-  // =========================
-  // AMBIL USER
-  // =========================
-
   let user;
+  let key: string;
 
   try {
+    key = await loginAttemptKey(email);
+    if (await loginBlocked(key)) {
+      return { ok: false, pesan: "Terlalu banyak percobaan masuk. Coba lagi dalam 15 menit." };
+    }
     user = await prisma.user.findUnique({
       where: {
         email,
       },
       select: {
         id: true,
-        nama: true,
-        email: true,
         role: true,
         status: true,
         password: true,
@@ -75,60 +71,26 @@ export async function login(
     };
   }
 
-  // =========================
-  // CEK EMAIL & PASSWORD
-  // =========================
-
-  // Pesan dibuat generik supaya tidak membocorkan
-  // apakah email tertentu terdaftar atau tidak.
-  if (!user) {
-    return {
-      ok: false,
-      pesan: "Email atau password salah.",
-    };
-  }
-
   let passwordCocok = false;
+  if (user) {
+    try {
+      passwordCocok = await bcrypt.compare(password, user.password);
+    } catch {
+      passwordCocok = false;
+    }
+  }
+
+  if (!user || !passwordCocok || user.status !== AccountStatus.ACTIVE) {
+    try {
+      await recordLoginFailure(key);
+    } catch {
+      return { ok: false, pesan: "Gagal terhubung. Coba lagi." };
+    }
+    return { ok: false, pesan: "Email atau kata sandi salah." };
+  }
 
   try {
-    passwordCocok = await bcrypt.compare(password, user.password);
-  } catch {
-    return {
-      ok: false,
-      pesan: "Email atau password salah.",
-    };
-  }
-
-  if (!passwordCocok) {
-    return {
-      ok: false,
-      pesan: "Email atau password salah.",
-    };
-  }
-
-  // =========================
-  // CEK STATUS AKUN
-  // =========================
-
-  if (user.status === AccountStatus.PENDING) {
-    return {
-      ok: false,
-      pesan: "Akun masih menunggu verifikasi admin.",
-    };
-  }
-
-  if (user.status !== AccountStatus.ACTIVE) {
-    return {
-      ok: false,
-      pesan: "Akun tidak aktif.",
-    };
-  }
-
-  // =========================
-  // BUAT SESSION
-  // =========================
-
-  try {
+    await clearLoginFailures(key);
     await createSession(user.id);
   } catch {
     return {
@@ -137,27 +99,20 @@ export async function login(
     };
   }
 
-  // =========================
-  // REDIRECT BERDASARKAN ROLE
-  // =========================
-
   switch (user.role) {
     case Role.admin:
       redirect("/admin");
 
     case Role.petugas:
-      redirect("/petugas");
-
     case Role.pengguna:
       redirect("/");
 
     default:
-      // Pengaman tambahan jika ada role yang tidak dikenali.
       await destroySession();
 
       return {
         ok: false,
-        pesan: "Role akun tidak valid.",
+        pesan: "Gagal masuk. Coba lagi.",
       };
   }
 }
