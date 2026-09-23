@@ -19,7 +19,7 @@ export default function RegisterForm() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-5 p-4 sm:p-6">
-      <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">← Kembali ke masuk</Link>
+      <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">← Kembali</Link>
       <Card>
         <CardHeader>
           <h1 className="text-2xl font-semibold">Daftar akun</h1>
