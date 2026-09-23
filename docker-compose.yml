@@ -17,5 +17,20 @@ services:
       timeout: 5s
       retries: 10
 
+  # Inisialisasi otomatis Modul 4: begitu PostgreSQL sehat, jalankan migrasi +
+  # seed (termasuk laporan demo) persis sekali. Seed idempoten sehingga aman
+  # dipicu ulang, termasuk setelah volume db di-reset.
+  db-init:
+    image: ruvana-db-init
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.seed
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ruvana}:${POSTGRES_PASSWORD:-ruvana_pass}@db:5432/${POSTGRES_DB:-ruvana}
+    restart: "no"
+
 volumes:
   db_data:
