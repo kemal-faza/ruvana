@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 
 import type { NavigationGroup, ShellAccount } from "@/components/app-shell/types"
+import type { SessionUser } from "@/lib/auth"
 
 export const navigation: readonly NavigationGroup[] = [
   {
@@ -17,7 +18,7 @@ export const navigation: readonly NavigationGroup[] = [
       { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
-      { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },
+      { key: "laporan", label: "Laporan", href: "/reports", icon: ClipboardList },
     ],
   },
   {
@@ -32,4 +33,12 @@ export const navigation: readonly NavigationGroup[] = [
 
 export const shellAccount: ShellAccount = { displayName: "Ayu Pratama", roleLabel: "Pengguna" }
 
-export const shellLogoutDestination = "/keluar"
+const roleLabel: Record<SessionUser["role"], string> = {
+  pengguna: "Pengguna",
+  petugas: "Petugas",
+  admin: "Admin",
+}
+
+export function shellAccountFromUser(user: SessionUser | null): ShellAccount | null {
+  return user ? { displayName: user.nama, roleLabel: roleLabel[user.role] } : null
+}

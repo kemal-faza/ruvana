@@ -15,18 +15,18 @@ const sidebarItems = ["Ringkasan", "Fasilitas", "Reservasi Saya", "Laporan Saya"
 function DashboardMockup() {
   return (
     <div className="flex h-full">
-      <aside className="w-[29%] shrink-0 border-r border-border bg-muted/70 p-[5%]">
-        <p className="mb-[18%] text-mockup-wordmark font-semibold tracking-tight">
+      <aside className="w-[29%] shrink-0 border-r border-border bg-muted/70 p-[5%] max-sm:w-[44%] sm:max-xl:min-w-36.25">
+        <p className="mb-[18%] max-sm:mb-[12%] sm:max-xl:mb-[12%] text-mockup-wordmark font-semibold tracking-tight">
           ruvana
         </p>
-        <ul className="space-y-[7%]">
+        <ul className="space-y-[7%] max-sm:space-y-[4%] sm:max-xl:space-y-[4%]">
           {sidebarItems.map((item, index) => (
             <li
               key={item}
-              className={cn(
-                "flex items-center gap-[7%] rounded-md px-[7%] py-[6%] text-mockup-nav whitespace-nowrap text-muted-foreground",
+              className={`${cn(
+                "flex items-center gap-[7%] rounded-md px-[7%] py-[6%] whitespace-nowrap text-muted-foreground max-sm:gap-[3%] max-sm:px-[3%] max-sm:py-[4%] sm:max-xl:gap-[3%] sm:max-xl:px-[3%] sm:max-xl:py-[4%]",
                 index === 0 && "bg-primary-subdued text-primary-subdued-foreground",
-              )}
+              )} text-mockup-nav`}
             >
               <span aria-hidden="true" className="block size-[0.45em] rounded-full bg-current" />
               {item}
@@ -88,7 +88,7 @@ export function HeroVisual({ className }: HeroVisualProps) {
       <article
         aria-label="Mockup dashboard Ruvana"
         data-mockup-card="dashboard"
-        className="absolute bottom-[2%] left-[2%] z-2 aspect-video w-[84%] rotate-[-0.8deg] overflow-hidden rounded-card border border-border bg-card shadow-subtle"
+        className="absolute bottom-[2%] left-[2%] z-2 aspect-video w-[84%] max-md:w-[92%] rotate-[-0.8deg] overflow-hidden rounded-card border border-border bg-card shadow-subtle"
       >
         <DashboardMockup />
       </article>

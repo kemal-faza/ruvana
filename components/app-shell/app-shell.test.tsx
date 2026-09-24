@@ -2,8 +2,9 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
-import { CalendarDays, LayoutDashboard, Settings } from "lucide-react"
+import { CalendarDays, History, LayoutDashboard, Settings } from "lucide-react"
 
+import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
 import type { NavigationGroup } from "@/components/app-shell/types"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
@@ -13,6 +14,7 @@ const routeState = vi.hoisted(() => ({ pathname: "/reservasi" }))
 vi.mock("next/navigation", () => ({
   usePathname: () => routeState.pathname,
 }))
+vi.mock("@/lib/auth-client", () => ({ logoutFromBrowser: vi.fn() }))
 
 const navigation: readonly NavigationGroup[] = [
   {
@@ -20,7 +22,8 @@ const navigation: readonly NavigationGroup[] = [
     label: "Utama",
     items: [
       { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
+      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
+      { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
     ],
   },
   {
@@ -35,7 +38,6 @@ function renderFixture() {
     <AppShell
       navigation={navigation}
       account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
-      logoutDestination="/keluar"
     >
       <p>Pratinjau UI</p>
     </AppShell>,
@@ -49,8 +51,9 @@ describe("AppShell", () => {
     routeState.pathname = "/reservasi"
   })
 
-  it("merender navigasi aktif, outlet, dan logout sebagai link biasa", async () => {
+  it("merender navigasi aktif dan mengirim logout lewat API", async () => {
     setMatchMedia("(max-width: 1023px)", false)
+    const user = userEvent.setup()
     const { container } = renderFixture()
 
     expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).toHaveAttribute(
@@ -59,12 +62,24 @@ describe("AppShell", () => {
     )
     expect(screen.getByText("Pratinjau UI")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Buka navigasi" })).not.toBeInTheDocument()
-    const logout = screen.getAllByRole("link", { name: "Keluar" })[0]
-    expect(logout).toHaveAttribute("href", "/keluar")
-    expect(logout).not.toHaveAttribute("type")
-    // Link tetap dapat fokus; jangan matikan outline tanpa indikator pengganti.
-    expect(logout.className).not.toMatch(/outline-none/)
+    const tombolKeluar = screen.getAllByRole("button", { name: "Keluar" })[0]
+    expect(tombolKeluar).toHaveAttribute("type", "button")
+    await user.click(tombolKeluar)
+    expect(logoutFromBrowser).toHaveBeenCalledOnce()
     expect((await axe(container)).violations).toEqual([])
+  })
+
+  it("menampilkan masuk dan menyembunyikan logout saat tidak ada sesi", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    render(
+      <AppShell navigation={navigation} account={null}>
+        <p>Pratinjau UI</p>
+      </AppShell>,
+    )
+
+    expect(screen.getByText("Pengunjung")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Masuk" })).toHaveAttribute("href", "/login")
+    expect(screen.queryByRole("button", { name: "Keluar" })).not.toBeInTheDocument()
   })
 
   it("memberi stagger CSS pada butir navigasi tanpa menyembunyikan konten", () => {
@@ -116,6 +131,18 @@ describe("AppShell", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Navigasi utama" })).not.toBeInTheDocument())
   })
 
+  it("hanya menandai Reservasi Saya di route anak tanpa double-active Reservasi", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    routeState.pathname = "/reservasi/riwayat"
+    renderFixture()
+
+    expect(screen.getAllByRole("link", { name: "Reservasi Saya" })[0]).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute("aria-current")
+  })
+
   it("memindahkan active state ketika pathname berubah tanpa filter role", () => {
     setMatchMedia("(max-width: 1023px)", false)
     const view = renderFixture()
@@ -125,7 +152,6 @@ describe("AppShell", () => {
       <AppShell
         navigation={navigation}
         account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
-        logoutDestination="/keluar"
       >
         <p>Pratinjau UI</p>
       </AppShell>,
