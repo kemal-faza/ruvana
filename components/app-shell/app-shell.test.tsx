@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
-import { CalendarDays, LayoutDashboard, Settings } from "lucide-react"
+import { CalendarDays, History, LayoutDashboard, Settings } from "lucide-react"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
@@ -22,7 +22,8 @@ const navigation: readonly NavigationGroup[] = [
     label: "Utama",
     items: [
       { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
+      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
+      { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
     ],
   },
   {
@@ -128,6 +129,18 @@ describe("AppShell", () => {
     const reopenedDialog = await screen.findByRole("dialog", { name: "Navigasi utama" })
     await user.click(within(reopenedDialog).getByRole("link", { name: "Reservasi" }))
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Navigasi utama" })).not.toBeInTheDocument())
+  })
+
+  it("hanya menandai Reservasi Saya di route anak tanpa double-active Reservasi", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    routeState.pathname = "/reservasi/riwayat"
+    renderFixture()
+
+    expect(screen.getAllByRole("link", { name: "Reservasi Saya" })[0]).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute("aria-current")
   })
 
   it("memindahkan active state ketika pathname berubah tanpa filter role", () => {
