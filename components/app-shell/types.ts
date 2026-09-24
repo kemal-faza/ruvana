@@ -6,6 +6,12 @@ export interface NavigationItem {
   label: string
   href: string
   icon: LucideIcon
+  /**
+   * Bila true, item hanya active pada pathname yang sama persis.
+   * Dipakai untuk item parent yang anak routenya punya butir menu sendiri
+   * (mis. /reservasi vs /reservasi/riwayat) agar tidak double-active.
+   */
+  exact?: boolean
 }
 
 export interface NavigationGroup {

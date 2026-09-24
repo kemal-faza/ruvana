@@ -996,13 +996,22 @@ paths:
       operationId: listStaffReservations
       tags: [Staff]
       summary: Menampilkan antrean reservasi petugas
-      description: Role yang diterima tepat petugas atau admin, wajib ACTIVE. Role lain menghasilkan 403. Expiry idempoten dijalankan sebelum query. Hanya PENDING yang belum expired, dengan urutan FIFO submittedAt ASC lalu id ASC.
-      x-requirement-ids: [RES-05, RES-08, IAM-03]
+      description: Role yang diterima tepat petugas atau admin, wajib ACTIVE. Role lain menghasilkan 403. Expiry idempoten dijalankan sebelum query. Tanpa parameter status (atau status=PENDING) mengembalikan PENDING yang belum expired dengan urutan FIFO submittedAt ASC lalu id ASC; status=APPROVED mengembalikan reservasi APPROVED urut waktu mulai terdekat untuk pembatalan mendesak.
+      x-requirement-ids: [RES-05, RES-07, RES-08, IAM-03]
       security:
         - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
+        - name: status
+          in: query
+          required: false
+          description: Filter daftar staff. PENDING untuk antrean persetujuan; APPROVED untuk kandidat pembatalan mendesak. Nilai lain ditolak.
+          schema:
+            type: string
+            enum: [PENDING, APPROVED]
+            default: PENDING
+          example: APPROVED
       responses:
         '200':
           description: Antrean reservasi aktif.
