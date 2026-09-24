@@ -175,7 +175,6 @@ export default function RegisterForm() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="Buat kata sandi"
-                  minLength={8}
                   required
                   onInput={(event) => event.currentTarget.setCustomValidity("")}
                   aria-invalid={!!state.fieldErrors?.password || undefined}

@@ -39,4 +39,19 @@ describe("RegisterForm", () => {
     await waitFor(() => expect(document.getElementById("daftar-email-error")).toHaveTextContent("Email sudah terdaftar"))
     expect(screen.getByLabelText(/Email/)).toHaveAttribute("aria-invalid", "true")
   })
+
+  it("menerima password multibyte yang tepat 8 byte UTF-8", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal("fetch", fetchMock)
+    render(<RegisterForm />)
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText(/Nama lengkap/), "Ayu")
+    await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
+    await user.type(screen.getByLabelText(/Kata sandi/), "éééé")
+    await user.click(screen.getByRole("button", { name: "Daftar" }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+    expect(fetchMock).toHaveBeenCalledWith("/api/auth/register", expect.objectContaining({
+      body: JSON.stringify({ nama: "Ayu", email: "ayu@kampus.ac.id", password: "éééé" }),
+    }))
+  })
 })
