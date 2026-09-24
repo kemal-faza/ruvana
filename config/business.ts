@@ -92,7 +92,10 @@ export const STATUS_RESERVASI = [
   "CANCELLED_BY_OFFICER",
   "EXPIRED",
 ] as const;
-export const STATUS_LAPORAN = ["NEW", "IN_PROGRESS", "RESOLVED", "REJECTED"] as const;
+export const STATUS_LAPORAN_BARU = "NEW" as const;
+export const STATUS_LAPORAN_DIPROSES = "IN_PROGRESS" as const;
+export const STATUS_LAPORAN_KERJA_PETUGAS = [STATUS_LAPORAN_BARU, STATUS_LAPORAN_DIPROSES] as const;
+export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, "RESOLVED", "REJECTED"] as const;
 export const STATUS_FASILITAS = ["ACTIVE", "UNDER_MAINTENANCE", "INACTIVE"] as const;
 export const TIPE_FASILITAS = ["ruang_kelas", "aula", "laboratorium", "alat", "lapangan"] as const;
 

@@ -42,6 +42,15 @@ describe("dashboard Petugas", () => {
     expect(screen.getByText("Belum ada reservasi menunggu.")).toBeInTheDocument();
   });
 
+  it("mengarahkan pintasan status fasilitas ke halaman kerja Petugas", () => {
+    render(<StaffDashboard reservations={[]} totalReservations={0} />);
+
+    expect(screen.getByRole("link", { name: "Lihat status operasional fasilitas" })).toHaveAttribute(
+      "href",
+      "/petugas/fasilitas",
+    );
+  });
+
   it("membedakan kegagalan dari antrean kosong dan menyediakan retry", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue({

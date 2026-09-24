@@ -31,7 +31,17 @@ const reportSelect = {
   facility: { select: reportFacilitySelect },
 } satisfies Prisma.ReportSelect;
 
+const staffReportPreviewSelect = {
+  id: true,
+  kategori: true,
+  deskripsi: true,
+  status: true,
+  createdAt: true,
+  facility: { select: { nama: true } },
+} satisfies Prisma.ReportSelect;
+
 export type ReportWithFacility = Prisma.ReportGetPayload<{ select: typeof reportSelect }>;
+export type StaffReportPreviewRow = Prisma.ReportGetPayload<{ select: typeof staffReportPreviewSelect }>;
 
 export interface FindReportsByUserParams {
   userId: number;
@@ -54,6 +64,20 @@ export function countReportsByUser(userId: number, status?: StatusLaporan) {
   return prisma.report.count({
     where: { userId, ...(status ? { status } : {}) },
   });
+}
+
+export function findReportsByStatus({ status, skip, take }: { status: StatusLaporan; skip: number; take: number }) {
+  return prisma.report.findMany({
+    where: { status },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: staffReportPreviewSelect,
+    skip,
+    take,
+  });
+}
+
+export function countStaffReportsByStatus(status: StatusLaporan) {
+  return prisma.report.count({ where: { status } });
 }
 
 export function findUsersById(ids: number[]) {

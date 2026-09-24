@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { ReportWorkSummaries } from "@/components/staff/report-work-summaries";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
 
 interface DashboardQueueResponse {
@@ -123,6 +124,23 @@ export function StaffDashboard({ reservations, totalReservations, initialError =
                 ))}
               </ul>
             )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <ReportWorkSummaries />
+
+      <section aria-labelledby="status-fasilitas-title" className="min-w-0">
+        <Card className="min-w-0">
+          <CardHeader>
+            <h2 id="status-fasilitas-title" className="font-medium">Status operasional fasilitas</h2>
+            <CardDescription>Periksa dan perbarui status fasilitas yang sedang dikelola.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button render={<Link href="/petugas/fasilitas" />} variant="outline">
+              Lihat status operasional fasilitas
+              <ArrowRight aria-hidden="true" />
+            </Button>
           </CardContent>
         </Card>
       </section>
