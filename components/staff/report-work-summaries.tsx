@@ -117,7 +117,7 @@ export function ReportWorkSummaries() {
                 {error && !loading && (
                   <div className="flex flex-col items-start gap-3">
                     <p role="alert" className="text-sm text-destructive">Gagal memuat ringkasan laporan.</p>
-                    <Button type="button" variant="outline" onClick={() => void retryLoad()}>
+                    <Button type="button" variant="outline" className="min-h-11 gap-2.5 px-4 text-sm" onClick={() => void retryLoad()}>
                       Coba lagi
                     </Button>
                   </div>
@@ -140,9 +140,9 @@ export function ReportWorkSummaries() {
                     ))}
                   </ul>
                 )}
-                <Button render={<Link href={`/petugas/laporan?status=${item.status}`} />} variant="outline" className="self-start">
+                <Button render={<Link href={`/petugas/laporan?status=${item.status}`} />} variant="outline" className="min-h-11 self-start gap-2.5 px-4 text-sm">
                   {item.linkText}
-                  <ArrowRight aria-hidden="true" />
+                  <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
                 </Button>
               </CardContent>
             </Card>

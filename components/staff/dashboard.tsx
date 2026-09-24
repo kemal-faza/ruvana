@@ -57,16 +57,19 @@ export function StaffDashboard({ reservations, totalReservations, initialError =
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <header className="flex min-w-0 flex-col gap-2">
-        <p className="text-sm font-medium tracking-wide text-primary">Petugas</p>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard Petugas</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Ringkasan pekerjaan operasional yang perlu ditangani.
+    <main className="mx-auto flex w-full max-w-shell min-w-0 flex-col gap-8 px-4 pt-8 pb-12 sm:gap-10 sm:px-7 sm:pt-12 sm:pb-16 lg:gap-12 lg:pt-section-top">
+      <header className="max-w-heading">
+        <p className="mb-4 flex items-center gap-3 text-caption font-semibold tracking-eyebrow text-brand-olive uppercase">
+          Ringkasan operasional
+          <span aria-hidden="true" className="h-px w-eyebrow-rule bg-brand-olive" />
+        </p>
+        <h1 className="mb-4 text-display-md font-semibold tracking-heading">Dashboard Petugas</h1>
+        <p className="text-lede text-muted-foreground sm:text-lede-lg">
+          Reservasi dan laporan yang perlu ditangani.
         </p>
       </header>
 
-      <section aria-labelledby="reservasi-pending-title" className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+      <section aria-labelledby="reservasi-pending-title" className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle id="reservasi-pending-title" className="text-base">Menunggu persetujuan</CardTitle>
@@ -77,9 +80,9 @@ export function StaffDashboard({ reservations, totalReservations, initialError =
               {error ? "—" : total}
               <span className="sr-only"> reservasi menunggu persetujuan</span>
             </p>
-            <Button render={<Link href="/petugas/antrian" />}>
+            <Button className="min-h-11 gap-2.5 px-4 text-sm" render={<Link href="/petugas/antrian" />}>
               Buka antrean persetujuan
-              <ArrowRight aria-hidden="true" />
+              <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
             </Button>
           </CardContent>
         </Card>
@@ -130,19 +133,17 @@ export function StaffDashboard({ reservations, totalReservations, initialError =
 
       <ReportWorkSummaries />
 
-      <section aria-labelledby="status-fasilitas-title" className="min-w-0">
-        <Card className="min-w-0">
-          <CardHeader>
-            <h2 id="status-fasilitas-title" className="font-medium">Status operasional fasilitas</h2>
-            <CardDescription>Periksa dan perbarui status fasilitas yang sedang dikelola.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button render={<Link href="/petugas/fasilitas" />} variant="outline">
-              Lihat status operasional fasilitas
-              <ArrowRight aria-hidden="true" />
-            </Button>
-          </CardContent>
-        </Card>
+      <section aria-labelledby="status-fasilitas-title" className="min-w-0 border-t border-border pt-6">
+        <h2 id="status-fasilitas-title" className="font-heading text-lg font-semibold tracking-subtitle">
+          Status operasional fasilitas
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Periksa dan perbarui status fasilitas yang sedang dikelola.
+        </p>
+        <Button render={<Link href="/petugas/fasilitas" />} variant="outline" className="mt-4 min-h-11 gap-2.5 px-4 text-sm">
+          Lihat status operasional fasilitas
+          <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
+        </Button>
       </section>
     </main>
   );
