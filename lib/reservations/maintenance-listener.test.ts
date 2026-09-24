@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { FacilityStatusChangedPayload } from "@/lib/facility-status-contract";
-import { asiaJakartaToUtc } from "@/lib/time/reservation-time";
+import { asiaJakartaToUtc, calendarDateToUtcMidnight } from "@/lib/time/reservation-time";
 
 import { computeFacilityAvailability, type AvailabilityClient } from "./availability";
 import { ALASAN_PERBAIKAN, handleFacilityStatusChanged } from "./maintenance-listener";
@@ -28,7 +28,7 @@ function makeStore(): FakeRow[] {
       status: "APPROVED",
       startTime: asiaJakartaToUtc("2026-09-15", "09:00"),
       endTime: asiaJakartaToUtc("2026-09-15", "10:00"),
-      tanggal: asiaJakartaToUtc("2026-09-15", "00:00"),
+      tanggal: calendarDateToUtcMidnight("2026-09-15"),
     },
     {
       id: 2,
@@ -36,7 +36,7 @@ function makeStore(): FakeRow[] {
       status: "APPROVED",
       startTime: asiaJakartaToUtc("2026-09-10", "09:00"),
       endTime: asiaJakartaToUtc("2026-09-10", "10:00"),
-      tanggal: asiaJakartaToUtc("2026-09-10", "00:00"),
+      tanggal: calendarDateToUtcMidnight("2026-09-10"),
     },
     {
       id: 3,
@@ -44,7 +44,7 @@ function makeStore(): FakeRow[] {
       status: "PENDING",
       startTime: asiaJakartaToUtc("2026-09-15", "11:00"),
       endTime: asiaJakartaToUtc("2026-09-15", "12:00"),
-      tanggal: asiaJakartaToUtc("2026-09-15", "00:00"),
+      tanggal: calendarDateToUtcMidnight("2026-09-15"),
     },
     {
       id: 4,
@@ -52,7 +52,7 @@ function makeStore(): FakeRow[] {
       status: "APPROVED",
       startTime: asiaJakartaToUtc("2026-09-15", "09:00"),
       endTime: asiaJakartaToUtc("2026-09-15", "10:00"),
-      tanggal: asiaJakartaToUtc("2026-09-15", "00:00"),
+      tanggal: calendarDateToUtcMidnight("2026-09-15"),
     },
     {
       id: 5,
@@ -60,7 +60,7 @@ function makeStore(): FakeRow[] {
       status: "APPROVED",
       startTime: WAKTU,
       endTime: asiaJakartaToUtc("2026-09-14", "10:30"),
-      tanggal: asiaJakartaToUtc("2026-09-14", "00:00"),
+      tanggal: calendarDateToUtcMidnight("2026-09-14"),
     },
   ];
 }
