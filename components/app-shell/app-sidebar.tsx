@@ -52,7 +52,9 @@ interface NavigationListProps {
 }
 
 function isNavigationItemActive(pathname: string, item: NavigationItem | SerializableNavigationItem) {
-  return pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`))
+  if (pathname === item.href) return true
+  if (item.exact) return false
+  return item.href !== "/" && pathname.startsWith(`${item.href}/`)
 }
 
 const iconRegistry = {

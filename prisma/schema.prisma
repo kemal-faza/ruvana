@@ -106,16 +106,18 @@ model Reservation {
   userId           Int
   facility         Facility       @relation(fields: [facilityId], references: [id])
   facilityId       Int
-  tanggal          DateTime
-  startTime        DateTime
-  endTime          DateTime
+  // Tanggal kalender Asia/Jakarta (PRD Bagian 8 & 10): PostgreSQL DATE.
+  tanggal          DateTime       @db.Date
+  // Instant absolut (UTC) untuk mulai/selesai (PRD): TIMESTAMPTZ.
+  startTime        DateTime       @db.Timestamptz(3)
+  endTime          DateTime       @db.Timestamptz(3)
   tujuanPenggunaan String
   status           StatusReservasi @default(PENDING)
   alasan           String?
   diprosesOleh     Int?
-  waktuDiproses    DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  waktuDiproses    DateTime?      @db.Timestamptz(3)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
 
   @@index([facilityId, tanggal, startTime, status])
   @@map("reservations")
@@ -144,4 +146,20 @@ model Report {
   updatedAt       DateTime      @updatedAt
 
   @@map("reports")
+}
+
+model IdempotencyKey {
+  id           String   @id @default(uuid())
+  key          String
+  principalId  Int
+  scope        String
+  requestHash  String
+  responseStatus Int?
+  responseBody Json?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@unique([key, principalId, scope])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
 }
