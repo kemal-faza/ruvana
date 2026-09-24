@@ -59,6 +59,22 @@ describe("computeFacilityAvailability", () => {
     expect(blocked.every((s) => s.blockedBy === "APPROVED")).toBe(true);
   });
 
+  it("memilih reservasi berdasarkan tanggal kalender PostgreSQL DATE", async () => {
+    const { client, findMany } = makeClient();
+    await computeFacilityAvailability(1, "2026-09-15", { client });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tanggal: {
+            gte: new Date("2026-09-15T00:00:00.000Z"),
+            lt: new Date("2026-09-16T00:00:00.000Z"),
+          },
+        }),
+      }),
+    );
+  });
+
   it("memblokir irisan parsial (predikat overlap tidak berubah)", async () => {
     const approved = [
       { startTime: asiaJakartaToUtc("2026-09-15", "09:15"), endTime: asiaJakartaToUtc("2026-09-15", "09:45") },

@@ -3,6 +3,7 @@ import type { StatusFasilitas } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import {
   asiaJakartaToUtc,
+  calendarDateToUtcMidnight,
   generateAllSlots,
   isValidDateFormat,
 } from "@/lib/time/reservation-time";
@@ -67,7 +68,7 @@ export async function computeFacilityAvailability(
     };
   }
 
-  const dayStart = asiaJakartaToUtc(date, "00:00");
+  const dayStart = calendarDateToUtcMidnight(date);
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
   const approved = await client.reservation.findMany({
     where: {
