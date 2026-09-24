@@ -172,11 +172,11 @@ export default function Home() {
 
                 <Field>
                   <FieldLabel htmlFor="contoh-select">Pilihan</FieldLabel>
-                  <Select name="pilihan-contoh" defaultValue="opsi-satu">
+                  <Select name="pilihan-contoh" defaultValue="opsi-satu" modal={false}>
                     <SelectTrigger id="contoh-select" className="min-h-11 w-full">
                       <SelectValue placeholder="Pilih salah satu" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
                       <SelectItem value="opsi-satu">Pilihan pertama</SelectItem>
                       <SelectItem value="opsi-dua">Pilihan kedua</SelectItem>
                       <SelectItem value="opsi-tiga">Pilihan ketiga</SelectItem>
