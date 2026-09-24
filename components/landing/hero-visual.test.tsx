@@ -22,6 +22,7 @@ describe("HeroVisual", () => {
     expect(screen.getByText("Fasilitas")).toBeVisible()
     expect(screen.getByText("Reservasi Saya")).toBeVisible()
     expect(screen.getByText("Laporan Saya")).toBeVisible()
+    expect(screen.getByText("Ringkasan").closest("li")).toHaveClass("text-mockup-nav")
     expect(screen.queryByText("Rani Amelia")).not.toBeInTheDocument()
   })
 

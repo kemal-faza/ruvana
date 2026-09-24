@@ -23,10 +23,10 @@ function DashboardMockup() {
           {sidebarItems.map((item, index) => (
             <li
               key={item}
-              className={cn(
-                "flex items-center gap-[7%] rounded-md px-[7%] py-[6%] text-mockup-nav whitespace-nowrap text-muted-foreground",
+              className={`${cn(
+                "flex items-center gap-[7%] rounded-md px-[7%] py-[6%] whitespace-nowrap text-muted-foreground",
                 index === 0 && "bg-primary-subdued text-primary-subdued-foreground",
-              )}
+              )} text-mockup-nav`}
             >
               <span aria-hidden="true" className="block size-[0.45em] rounded-full bg-current" />
               {item}
