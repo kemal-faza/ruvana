@@ -9,7 +9,9 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
+import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function LoginForm() {
   const [state, setState] = useState({
@@ -57,16 +59,23 @@ export default function LoginForm() {
 
           <form
             className="flex flex-col gap-5"
+            noValidate
             onSubmit={async (event) => {
               event.preventDefault()
               const form = new FormData(event.currentTarget)
+              const email = String(form.get("email") ?? "").trim()
               const password = String(form.get("password") ?? "")
-              if (new TextEncoder().encode(password).length > BATAS_PASSWORD_AKUN_BYTE) {
-                setState({
-                  ok: false,
-                  pesan: "",
-                  fieldErrors: { password: [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`] },
-                })
+              const fieldErrors: Record<string, string[]> = {}
+              if (!email) fieldErrors.email = ["Email wajib diisi."]
+              else if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) {
+                fieldErrors.email = ["Format email tidak valid."]
+              }
+              if (!password) fieldErrors.password = ["Kata sandi wajib diisi."]
+              else if (new TextEncoder().encode(password).length > BATAS_PASSWORD_AKUN_BYTE) {
+                fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`]
+              }
+              if (Object.keys(fieldErrors).length > 0) {
+                setState({ ok: false, pesan: "", fieldErrors })
                 return
               }
               setPending(true)
@@ -74,7 +83,7 @@ export default function LoginForm() {
                 const response = await fetch("/api/auth/login", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email: form.get("email"), password }),
+                  body: JSON.stringify({ email, password }),
                 })
                 const result = await response.json()
                 if (response.ok) {
@@ -113,6 +122,13 @@ export default function LoginForm() {
                   autoComplete="email"
                   placeholder="nama@ruvana.id"
                   required
+                  onInput={() => {
+                    if (emailError) setState((previous) => ({
+                      ...previous,
+                      pesan: "",
+                      fieldErrors: { ...previous.fieldErrors, email: [] },
+                    }))
+                  }}
                   aria-invalid={emailError ? true : undefined}
                   aria-describedby={emailError ? "login-email-error" : undefined}
                   className="h-11 pl-10"
@@ -138,7 +154,11 @@ export default function LoginForm() {
                   placeholder="Masukkan kata sandi"
                   required
                   onInput={() => {
-                    if (passwordError) setState({ ok: false, pesan: "", fieldErrors: {} })
+                    if (passwordError) setState((previous) => ({
+                      ...previous,
+                      pesan: "",
+                      fieldErrors: { ...previous.fieldErrors, password: [] },
+                    }))
                   }}
                   aria-invalid={passwordError ? true : undefined}
                   aria-describedby={passwordError ? "login-password-error" : undefined}

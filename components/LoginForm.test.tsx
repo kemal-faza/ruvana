@@ -24,3 +24,17 @@ it("menolak password multibyte di atas 72 byte sebelum request login", async () 
   expect(screen.getByLabelText(/Kata sandi/)).toHaveAttribute("aria-invalid", "true")
   expect(fetchMock).not.toHaveBeenCalled()
 })
+
+it("menampilkan error email di bawah field tanpa mengirim request", async () => {
+  const fetchMock = vi.fn()
+  vi.stubGlobal("fetch", fetchMock)
+  render(<LoginForm />)
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText(/Email/), "ayu@invalid")
+  await user.type(screen.getByLabelText(/Kata sandi/), "rahasia123")
+  await user.click(screen.getByRole("button", { name: "Masuk" }))
+
+  expect(await screen.findByText("Format email tidak valid.")).toBeInTheDocument()
+  expect(screen.getByLabelText(/Email/)).toHaveAttribute("aria-invalid", "true")
+  expect(fetchMock).not.toHaveBeenCalled()
+})
