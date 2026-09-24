@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { RETENSI_IDEMPOTENCY_JAM } from "@/config/business";
 import { getSessionUser } from "@/lib/auth";
 import { Role } from "@/generated/prisma/enums";
 import { getAllowedOrigins, validateOrigin } from "@/lib/http/origin";
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
     principalId: user.id,
     scope: SCOPE,
     requestHash,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + RETENSI_IDEMPOTENCY_JAM * 60 * 60 * 1000),
   };
   try {
     const claim = await claimOrGetIdempotencyKey(idempotencyIdentity);
@@ -141,7 +142,14 @@ export async function POST(request: NextRequest) {
   // 9. Operasi bisnis dalam transaksi (row lock facilities + cek APPROVED)
   let serviceResult: Awaited<ReturnType<typeof createReservationService>>;
   try {
-    serviceResult = await createReservationService(user.id, parsed.value, new Date());
+    serviceResult = await createReservationService(user.id, parsed.value, new Date(), async (tx, result) => {
+      const stored = await storeIdempotencyResult(
+        idempotencyIdentity,
+        { responseStatus: 201, responseBody: result },
+        tx,
+      );
+      if (stored.count !== 1) throw new Error("Klaim idempotency tidak dapat diselesaikan");
+    });
   } catch (e) {
     console.error("Gagal membuat reservasi", e);
     try {
@@ -197,17 +205,14 @@ export async function POST(request: NextRequest) {
       } catch {}
       return reservationOverlap(instance, err.message, err.availability);
     }
+    try {
+      await deleteIdempotencyClaim(idempotencyIdentity);
+    } catch {}
     return internalError(instance);
   }
 
   // 10. Sukses 201, simpan untuk replay idempotency
   const successBody = serviceResult.data;
-  try {
-    await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 201, responseBody: successBody });
-  } catch {
-    // best-effort
-  }
-
   return NextResponse.json(successBody, {
     status: 201,
     headers: { "Cache-Control": "no-store" },

@@ -38,6 +38,12 @@ export function asiaJakartaToUtc(dateStr: string, timeStr: string): Date {
   return new Date(utcMillis);
 }
 
+/** Representasikan tanggal kalender sebagai UTC midnight untuk kolom PostgreSQL DATE. */
+export function calendarDateToUtcMidnight(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 export function formatDateAsiaJakarta(date: Date): string {
   // Manual formatting agar tidak bergantung locale runtime
   // Konversi UTC ke Jakarta dengan menambah offset

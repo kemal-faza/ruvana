@@ -21,7 +21,7 @@ const identity = {
   principalId: 42,
   scope: "POST:/api/reservations",
   requestHash: "abc",
-  expiresAt: new Date("2026-09-10T00:00:00Z"),
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
 };
 
 beforeEach(() => {
@@ -68,6 +68,28 @@ describe("claimOrGetIdempotencyKey", () => {
 
     expect(result.claimed).toBe(false);
     expect(result.record).toEqual(winner);
+  });
+
+  it("mengganti klaim lama yang kedaluwarsa setelah bentrok unique", async () => {
+    const expired = {
+      id: "00000000-0000-4000-8000-000000000000",
+      createdAt: new Date("2026-09-10T00:00:00Z"),
+      ...identity,
+      expiresAt: new Date(Date.now() - 1000),
+      responseStatus: null,
+      responseBody: null,
+    };
+    const replacement = { ...expired, id: "00000000-0000-4000-8000-000000000001", expiresAt: identity.expiresAt };
+    idempotencyKey.create.mockRejectedValueOnce({ code: "P2002" }).mockResolvedValueOnce(replacement);
+    idempotencyKey.findFirst.mockResolvedValue(expired);
+
+    const result = await claimOrGetIdempotencyKey(identity);
+
+    expect(result).toEqual({ claimed: true, record: replacement });
+    expect(idempotencyKey.deleteMany).toHaveBeenCalledWith({
+      where: { id: expired.id, expiresAt: { lte: expect.any(Date) } },
+    });
+    expect(idempotencyKey.create).toHaveBeenCalledTimes(2);
   });
 
   it("error selain P2002 diteruskan (bukan dianggap menang/kalah)", async () => {

@@ -10,7 +10,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { createReservationService } from "./reservation-service";
-import { asiaJakartaToUtc } from "@/lib/time/reservation-time";
+import { asiaJakartaToUtc, calendarDateToUtcMidnight } from "@/lib/time/reservation-time";
 
 function makeTxMock(overrides: {
   facility?: { id: number; status: string } | null;
@@ -85,6 +85,9 @@ describe("createReservationService", () => {
       expect(result.data.date).toBe("2026-09-15");
       expect(result.data.timezone).toBe("Asia/Jakarta");
     }
+    expect(tx.reservation.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ tanggal: calendarDateToUtcMidnight(validInput.date) }) }),
+    );
     expect(tx.$queryRaw).toHaveBeenCalled();
   });
 

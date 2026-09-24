@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   asiaJakartaToUtc,
+  calendarDateToUtcMidnight,
   formatDateAsiaJakarta,
   formatTimeAsiaJakarta,
   generateAllSlots,
@@ -74,6 +75,12 @@ describe("asiaJakartaToUtc", () => {
     const utc = asiaJakartaToUtc("2026-09-15", "19:30");
     expect(formatDateAsiaJakarta(utc)).toBe("2026-09-15");
     expect(formatTimeAsiaJakarta(utc)).toBe("19:30");
+  });
+});
+
+describe("calendarDateToUtcMidnight", () => {
+  it("mempertahankan tanggal kalender sebagai UTC midnight untuk kolom DATE", () => {
+    expect(calendarDateToUtcMidnight("2026-09-15").toISOString()).toBe("2026-09-15T00:00:00.000Z");
   });
 });
 

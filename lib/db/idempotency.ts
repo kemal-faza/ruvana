@@ -47,9 +47,9 @@ export function createIdempotencyRecord(
   });
 }
 
-export function deleteExpiredIdempotencyKeys() {
+export function deleteExpiredIdempotencyKeys(now: Date = new Date()) {
   return prisma.idempotencyKey.deleteMany({
-    where: { expiresAt: { lt: new Date() } },
+    where: { expiresAt: { lte: now } },
   });
 }
 
@@ -82,25 +82,33 @@ export async function claimOrGetIdempotencyKey({
   requestHash,
   expiresAt,
 }: ClaimIdempotencyParams): Promise<ClaimOrGetResult> {
-  try {
-    const record = await prisma.idempotencyKey.create({
-      data: { key, principalId, scope, requestHash, expiresAt },
-    });
-    return { claimed: true, record };
-  } catch (e) {
-    if (!isUniqueViolation(e)) throw e;
-    const record = await prisma.idempotencyKey.findFirst({
-      where: { key, principalId, scope },
-    });
-    if (!record) {
-      // Klaim pemenang terhapus bersamaan (mis. cleanup 5xx); coba klaim ulang sekali.
-      const retry = await prisma.idempotencyKey.create({
+  await deleteExpiredIdempotencyKeys();
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const record = await prisma.idempotencyKey.create({
         data: { key, principalId, scope, requestHash, expiresAt },
       });
-      return { claimed: true, record: retry };
+      return { claimed: true, record };
+    } catch (e) {
+      if (!isUniqueViolation(e)) throw e;
+      const record = await prisma.idempotencyKey.findFirst({
+        where: { key, principalId, scope },
+      });
+      if (!record) continue;
+
+      const now = new Date();
+      if (record.expiresAt.getTime() <= now.getTime()) {
+        await prisma.idempotencyKey.deleteMany({
+          where: { id: record.id, expiresAt: { lte: now } },
+        });
+        continue;
+      }
+      return { claimed: false, record };
     }
-    return { claimed: false, record };
   }
+
+  throw new Error("Klaim idempotency berubah berulang kali; coba ulangi permintaan.");
 }
 
 export function isIdempotencySettled(
@@ -134,9 +142,10 @@ export async function waitForIdempotencyResult(
 export function storeIdempotencyResult(
   { key, principalId, scope, requestHash }: ClaimIdempotencyParams,
   result: { responseStatus: number; responseBody: unknown },
+  client: typeof prisma | Prisma.TransactionClient = prisma,
 ) {
   // updateMany dengan guard requestHash: hanya pemilik klaim yang menyimpan.
-  return prisma.idempotencyKey.updateMany({
+  return client.idempotencyKey.updateMany({
     where: { key, principalId, scope, requestHash },
     data: {
       responseStatus: result.responseStatus,

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { RETENSI_IDEMPOTENCY_JAM } from "@/config/business";
 import { getAllowedOrigins, validateOrigin } from "@/lib/http/origin";
 import { buildIdempotencyScope, hashCanonicalBody, isValidIdempotencyKey } from "@/lib/http/idempotency";
 import {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
     principalId: session.id,
     scope: SCOPE,
     requestHash,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + RETENSI_IDEMPOTENCY_JAM * 60 * 60 * 1000),
   };
   try {
     const claim = await claimOrGetIdempotencyKey(idempotencyIdentity);
@@ -121,7 +122,20 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
 
   let serviceResult: Awaited<ReturnType<typeof cancelReservationByOfficerService>>;
   try {
-    serviceResult = await cancelReservationByOfficerService(session.id, parsedId.value, parsed.value, new Date());
+    serviceResult = await cancelReservationByOfficerService(
+      session.id,
+      parsedId.value,
+      parsed.value,
+      new Date(),
+      async (tx, result) => {
+        const stored = await storeIdempotencyResult(
+          idempotencyIdentity,
+          { responseStatus: 200, responseBody: result },
+          tx,
+        );
+        if (stored.count !== 1) throw new Error("Klaim idempotency tidak dapat diselesaikan");
+      },
+    );
   } catch (e) {
     console.error("Gagal membatalkan reservasi oleh petugas", e);
     try {
@@ -160,14 +174,13 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/staff/r
       } catch {}
       return invalidReservationTransition(instance, err.message);
     }
+    try {
+      await deleteIdempotencyClaim(idempotencyIdentity);
+    } catch {}
     return internalError(instance);
   }
 
   const successBody = serviceResult.data;
-  try {
-    await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 200, responseBody: successBody });
-  } catch {}
-
   return NextResponse.json(successBody, {
     status: 200,
     headers: { "Cache-Control": "no-store" },

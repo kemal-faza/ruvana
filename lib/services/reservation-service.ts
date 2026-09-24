@@ -1,4 +1,5 @@
 import { BATAS_PEMBATALAN_JAM } from "@/config/business";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
 import { lockFacilityById } from "@/lib/db/facilities";
@@ -17,7 +18,14 @@ import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import { expirePendingReservations } from "@/lib/reservations/expiry";
 import type { CancelReservationInput, ReservationCreateInput } from "@/lib/validation/reservation";
 import type { MyReservationListQuery } from "@/lib/validation/reservation-query";
-import { asiaJakartaToUtc, formatDateAsiaJakarta, formatTimeAsiaJakarta } from "@/lib/time/reservation-time";
+import {
+  asiaJakartaToUtc,
+  calendarDateToUtcMidnight,
+  formatDateAsiaJakarta,
+  formatTimeAsiaJakarta,
+} from "@/lib/time/reservation-time";
+
+type PersistSuccess<T> = (tx: Prisma.TransactionClient, result: T) => Promise<void>;
 
 export type ServiceError =
   | { type: "validation"; errors: ProblemFieldError[] }
@@ -93,10 +101,11 @@ export async function createReservationService(
   userId: number,
   input: ReservationCreateInput,
   now: Date = new Date(),
+  persistSuccess?: PersistSuccess<ReservationResult>,
 ): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: ServiceError }> {
   const startsAt = asiaJakartaToUtc(input.date, input.startTime);
   const endsAt = asiaJakartaToUtc(input.date, input.endTime);
-  const tanggal = asiaJakartaToUtc(input.date, "00:00");
+  const tanggal = calendarDateToUtcMidnight(input.date);
 
   if (startsAt.getTime() <= now.getTime()) {
     return {
@@ -170,11 +179,12 @@ export async function createReservationService(
         include: { facility: true },
       });
 
-      return created;
+      const response = toReservationResponse(created as unknown as Parameters<typeof toReservationResponse>[0]);
+      await persistSuccess?.(tx, response);
+      return response;
     });
 
-    const response = toReservationResponse(result as unknown as Parameters<typeof toReservationResponse>[0]);
-    return { ok: true, data: response };
+    return { ok: true, data: result };
   } catch (e: unknown) {
     const err = e as Record<string, unknown>;
     if (err && typeof err === "object" && "kind" in err) {
@@ -264,9 +274,10 @@ export async function cancelMyReservationService(
   id: number,
   input: CancelReservationInput,
   now: Date = new Date(),
+  persistSuccess?: PersistSuccess<ReservationResult>,
 ): Promise<{ ok: true; data: ReservationResult } | { ok: false; error: ServiceError }> {
   try {
-    const updated = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       await expirePendingReservations(tx, now);
       // Kunci baris dulu agar pembatalan bersamaan atas id yang sama terserialisasi.
       await lockReservationById(tx, id);
@@ -299,17 +310,20 @@ export async function cancelMyReservationService(
       if (guard.count === 0) {
         throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat dibatalkan." };
       }
-      return tx.reservation.findFirst({
+      const updated = await tx.reservation.findFirst({
         where: { id: row.id },
         include: { facility: true },
       });
+      if (!updated) return null;
+      const response = toReservationResponse(updated as unknown as Parameters<typeof toReservationResponse>[0]);
+      await persistSuccess?.(tx, response);
+      return response;
     });
-    if (!updated) {
+    if (!result) {
       return { ok: false, error: { type: "not_found" as const, message: "Reservasi tidak ditemukan" } };
     }
 
-    type ReservationRow = Parameters<typeof toReservationResponse>[0];
-    return { ok: true, data: toReservationResponse(updated as unknown as ReservationRow) };
+    return { ok: true, data: result };
   } catch (e: unknown) {
     const err = e as Record<string, unknown>;
     if (err && typeof err === "object" && "kind" in err) {
@@ -547,9 +561,10 @@ export async function rejectReservationService(
   id: number,
   input: CancelReservationInput,
   now: Date = new Date(),
+  persistSuccess?: PersistSuccess<StaffReservationResult>,
 ): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
   try {
-    const { updated, actor } = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       await expirePendingReservations(tx, now);
       // Kunci baris reservasi sebelum membaca status (RES-06): approve dan
       // reject bersamaan atas id yang sama terserialisasi.
@@ -585,16 +600,15 @@ export async function rejectReservationService(
         where: { id: staffId },
         select: { id: true, nama: true, role: true },
       });
-      return {
-        updated,
-        actor: actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
-      };
+      const response = toStaffReservationResponse(
+        updated as unknown as StaffReservationRow,
+        actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
+      );
+      await persistSuccess?.(tx, response);
+      return response;
     });
 
-    return {
-      ok: true,
-      data: toStaffReservationResponse(updated as unknown as StaffReservationRow, actor),
-    };
+    return { ok: true, data: result };
   } catch (e: unknown) {
     const mapped = mapServiceException(e);
     if (mapped) return { ok: false, error: mapped };
@@ -607,9 +621,10 @@ export async function cancelReservationByOfficerService(
   id: number,
   input: CancelReservationInput,
   now: Date = new Date(),
+  persistSuccess?: PersistSuccess<StaffReservationResult>,
 ): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
   try {
-    const { updated, actor } = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Kunci baris reservasi sebelum membaca status agar pembatalan
       // bersamaan atas id yang sama terserialisasi.
       await lockReservationById(tx, id);
@@ -644,16 +659,15 @@ export async function cancelReservationByOfficerService(
         where: { id: staffId },
         select: { id: true, nama: true, role: true },
       });
-      return {
-        updated,
-        actor: actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
-      };
+      const response = toStaffReservationResponse(
+        updated as unknown as StaffReservationRow,
+        actorRow ? { id: actorRow.id, nama: actorRow.nama, role: actorRow.role } : null,
+      );
+      await persistSuccess?.(tx, response);
+      return response;
     });
 
-    return {
-      ok: true,
-      data: toStaffReservationResponse(updated as unknown as StaffReservationRow, actor),
-    };
+    return { ok: true, data: result };
   } catch (e: unknown) {
     const mapped = mapServiceException(e);
     if (mapped) return { ok: false, error: mapped };
