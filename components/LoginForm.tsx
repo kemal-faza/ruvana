@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
 
 export default function LoginForm() {
   const [state, setState] = useState({
@@ -59,12 +60,21 @@ export default function LoginForm() {
             onSubmit={async (event) => {
               event.preventDefault()
               const form = new FormData(event.currentTarget)
+              const password = String(form.get("password") ?? "")
+              if (new TextEncoder().encode(password).length > BATAS_PASSWORD_AKUN_BYTE) {
+                setState({
+                  ok: false,
+                  pesan: "",
+                  fieldErrors: { password: [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`] },
+                })
+                return
+              }
               setPending(true)
               try {
                 const response = await fetch("/api/auth/login", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+                  body: JSON.stringify({ email: form.get("email"), password }),
                 })
                 const result = await response.json()
                 if (response.ok) {
@@ -127,6 +137,9 @@ export default function LoginForm() {
                   autoComplete="current-password"
                   placeholder="Masukkan kata sandi"
                   required
+                  onInput={() => {
+                    if (passwordError) setState({ ok: false, pesan: "", fieldErrors: {} })
+                  }}
                   aria-invalid={passwordError ? true : undefined}
                   aria-describedby={passwordError ? "login-password-error" : undefined}
                   className="h-11 pl-10"
