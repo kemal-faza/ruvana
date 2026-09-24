@@ -10,11 +10,11 @@ vi.mock("next/navigation", () => ({
 afterEach(cleanup)
 
 describe("katalog baseline UI", () => {
-  it("menampilkan katalog Core 6 dan shell statis", () => {
+  it("menampilkan katalog komponen dan shell statis", () => {
     render(<Home />)
 
     expect(screen.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeInTheDocument()
-    expect(screen.getByText("Pratinjau UI")).toBeInTheDocument()
+    expect(screen.getByText("Pratinjau komponen")).toBeInTheDocument()
 
     for (const name of ["Button", "Field", "Card", "Badge", "Skeleton", "Empty state"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument()
