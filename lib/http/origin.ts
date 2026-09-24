@@ -1,75 +1,56 @@
 import type { NextRequest } from "next/server";
+import { csrfOriginRejected } from "@/lib/http/problem";
 
 export interface OriginValidationResult {
   ok: boolean;
   error?: "missing" | "multiple" | "null" | "malformed" | "not_allowed";
 }
 
-/**
- * Validasi header Origin sesuai OpenAPI:
- * - wajib hadir tepat satu kali
- * - menolak missing, malformed, literal "null", multiple values
- * - dibandingkan exact scheme+host+port terhadap allowlist
- */
+/** Validates a single HTTP(S) Origin against an exact scheme, host, and port allowlist. */
 export function validateOrigin(request: NextRequest, allowedOrigins: string[]): OriginValidationResult {
-  // NextRequest.headers adalah Headers yang menggabungkan duplikat dengan ","
-  // Untuk mendeteksi multiple, cek nilai mentah yang mengandung koma di mana Origin tidak boleh mengandung koma.
   const origin = request.headers.get("origin");
+  if (origin === null) return { ok: false, error: "missing" };
+  if (origin.includes(",")) return { ok: false, error: "multiple" };
 
-  if (origin === null) {
-    return { ok: false, error: "missing" };
-  }
-
-  // Jika client mengirim dua header Origin, Headers akan menggabungkan jadi "origin1, origin2"
-  // Deteksi ini sebagai multiple.
-  if (origin.includes(",")) {
-    return { ok: false, error: "multiple" };
-  }
-
-  const trimmed = origin.trim();
-
-  if (trimmed === "" || trimmed.toLowerCase() === "null") {
-    return { ok: false, error: "null" };
-  }
+  const value = origin.trim();
+  if (!value || value.toLowerCase() === "null") return { ok: false, error: "null" };
 
   let parsed: URL;
   try {
-    parsed = new URL(trimmed);
+    parsed = new URL(value);
   } catch {
     return { ok: false, error: "malformed" };
   }
 
-  // Origin harus hanya scheme+host+port tanpa path/query/fragment
-  if (parsed.pathname !== "/" && parsed.pathname !== "") {
-    // URL("https://example.com/path") akan memiliki pathname "/path" -> tolak karena Origin tidak boleh ada path
-    // Namun browser tidak mengirim path pada Origin, tapi kita tetap tolak jika ada
-    if (trimmed !== parsed.origin) {
-      return { ok: false, error: "malformed" };
-    }
-  }
-  if (parsed.search !== "" || parsed.hash !== "") {
+  if ((parsed.protocol !== "http:" && parsed.protocol !== "https:") || parsed.origin !== value) {
     return { ok: false, error: "malformed" };
   }
-
-  // Exact match terhadap allowlist (scheme+host+port)
-  const normalized = parsed.origin;
-  const allowed = allowedOrigins.includes(normalized);
-  if (!allowed) {
-    return { ok: false, error: "not_allowed" };
-  }
-
+  if (!allowedOrigins.includes(parsed.origin)) return { ok: false, error: "not_allowed" };
   return { ok: true };
 }
 
-export function getAllowedOrigins(): string[] {
-  const env = process.env.ALLOWED_ORIGINS;
-  if (env && env.trim().length > 0) {
-    return env
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+export function getAllowedOrigins(request?: NextRequest): string[] {
+  const configured = process.env.ALLOWED_ORIGINS;
+  const candidates = configured?.trim()
+    ? configured.split(",").map((origin) => origin.trim()).filter(Boolean)
+    : [process.env.NEXT_PUBLIC_SITE_URL].filter((origin): origin is string => Boolean(origin));
+
+  if (!configured?.trim() && process.env.NODE_ENV !== "production") {
+    candidates.push("http://127.0.0.1:3000", "http://localhost:3000");
+    if (request) candidates.push(new URL(request.url).origin);
   }
-  // Default untuk lokal dan Vercel preview/production
-  // Host deployment akan mengisi ALLOWED_ORIGINS di production
-  return ["http://127.0.0.1:3000", "http://localhost:3000", "https://app.example.invalid"];
+
+  return [...new Set(candidates.flatMap((candidate) => {
+    try {
+      const parsed = new URL(candidate);
+      return parsed.protocol === "http:" || parsed.protocol === "https:" ? [parsed.origin] : [];
+    } catch {
+      return [];
+    }
+  }))];
+}
+
+export function originError(request: NextRequest) {
+  if (validateOrigin(request, getAllowedOrigins(request)).ok) return null;
+  return csrfOriginRejected(request.nextUrl.pathname);
 }

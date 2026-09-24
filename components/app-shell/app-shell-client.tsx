@@ -10,17 +10,16 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 interface AppShellClientProps {
   navigation: readonly SerializableNavigationGroup[]
-  account: ShellAccount
-  logoutDestination: string
+  account: ShellAccount | null
   children: React.ReactNode
 }
 
-export function AppShellClient({ navigation, account, logoutDestination, children }: AppShellClientProps) {
+export function AppShellClient({ navigation, account, children }: AppShellClientProps) {
   const motionPreference = useMotionPreference()
 
   return (
     <SidebarProvider>
-      <AppSidebar navigation={navigation} account={account} logoutDestination={logoutDestination} />
+      <AppSidebar navigation={navigation} account={account} />
       <SidebarInset>
         <MobileAppBar />
         <motion.div

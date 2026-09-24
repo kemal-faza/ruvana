@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { createSession, destroySession, getSessionUser, getSessionUserId } from "@/lib/auth";
@@ -38,7 +38,21 @@ beforeEach(() => {
   }) as never);
 });
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe("sesi", () => {
+  it("memberi atribut aman pada cookie sesi production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    await createSession(12);
+
+    expect(setCookie).toHaveBeenCalledWith(
+      "ruvana_session",
+      expect.any(String),
+      expect.objectContaining({ httpOnly: true, sameSite: "lax", secure: true, path: "/" }),
+    );
+  });
+
   it("mencabut token lama saat logout meski cookie lama dipakai lagi", async () => {
     await createSession(12);
     const token = cookieValues.get("ruvana_session")!;

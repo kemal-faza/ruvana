@@ -2,20 +2,24 @@
 
 import Link from "next/link"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
-import { useActionState, useEffect } from "react"
+import { useEffect, useState } from "react"
 
-import { login } from "@/app/login/actions"
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function LoginForm() {
-  const [state, action, pending] = useActionState(login, {
+  const [state, setState] = useState({
     ok: false,
     pesan: "",
+    fieldErrors: {} as Record<string, string[]>,
   })
+  const [pending, setPending] = useState(false)
 
   const emailError = state.fieldErrors?.email?.[0]
   const passwordError = state.fieldErrors?.password?.[0]
@@ -53,7 +57,57 @@ export default function LoginForm() {
             </p>
           </div>
 
-          <form action={action} className="flex flex-col gap-5">
+          <form
+            className="flex flex-col gap-5"
+            noValidate
+            onSubmit={async (event) => {
+              event.preventDefault()
+              const form = new FormData(event.currentTarget)
+              const email = String(form.get("email") ?? "").trim()
+              const password = String(form.get("password") ?? "")
+              const passwordBytes = new TextEncoder().encode(password).length
+              const fieldErrors: Record<string, string[]> = {}
+              if (!email) fieldErrors.email = ["Email wajib diisi."]
+              else if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) {
+                fieldErrors.email = ["Format email tidak valid."]
+              }
+              if (!password) fieldErrors.password = ["Kata sandi wajib diisi."]
+              else if (passwordBytes < 8) fieldErrors.password = ["Kata sandi minimal 8 karakter."]
+              else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
+                fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`]
+              }
+              if (Object.keys(fieldErrors).length > 0) {
+                setState({ ok: false, pesan: "", fieldErrors })
+                return
+              }
+              setPending(true)
+              try {
+                const response = await fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, password }),
+                })
+                const result = await response.json()
+                if (response.ok) {
+                  window.location.assign(result.user.role === "admin" ? "/admin" : "/fasilitas")
+                  return
+                }
+                const fieldErrors: Record<string, string[]> = {}
+                if (response.status === 422 && Array.isArray(result.errors)) {
+                  for (const error of result.errors) {
+                    if (typeof error.field === "string" && typeof error.message === "string") {
+                      fieldErrors[error.field] = [error.message]
+                    }
+                  }
+                }
+                setState({ ok: false, pesan: result.detail ?? "Gagal masuk. Coba lagi.", fieldErrors })
+              } catch {
+                setState({ ok: false, pesan: "Gagal terhubung. Coba lagi.", fieldErrors: {} })
+              } finally {
+                setPending(false)
+              }
+            }}
+          >
             <Field data-invalid={emailError ? true : undefined}>
               <FieldLabel htmlFor="login-email" required>
                 Email
@@ -70,6 +124,13 @@ export default function LoginForm() {
                   autoComplete="email"
                   placeholder="nama@ruvana.id"
                   required
+                  onInput={() => {
+                    if (emailError) setState((previous) => ({
+                      ...previous,
+                      pesan: "",
+                      fieldErrors: { ...previous.fieldErrors, email: [] },
+                    }))
+                  }}
                   aria-invalid={emailError ? true : undefined}
                   aria-describedby={emailError ? "login-email-error" : undefined}
                   className="h-11 pl-10"
@@ -94,6 +155,13 @@ export default function LoginForm() {
                   autoComplete="current-password"
                   placeholder="Masukkan kata sandi"
                   required
+                  onInput={() => {
+                    if (passwordError) setState((previous) => ({
+                      ...previous,
+                      pesan: "",
+                      fieldErrors: { ...previous.fieldErrors, password: [] },
+                    }))
+                  }}
                   aria-invalid={passwordError ? true : undefined}
                   aria-describedby={passwordError ? "login-password-error" : undefined}
                   className="h-11 pl-10"
