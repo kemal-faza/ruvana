@@ -135,9 +135,9 @@
   --text-display-md--line-height: 1.15;
   --text-display-sm: clamp(25px, 3.2vw, 40px);
   --text-display-sm--line-height: 1.17;
-  --text-mockup-wordmark: clamp(8px, 1.1vw, 14px);
-  --text-mockup-nav: clamp(5px, 0.72vw, 10px);
-  --text-mockup-badge: clamp(7px, 0.85vw, 11px);
+  --text-mockup-wordmark: clamp(9px, 1.15vw, 14px);
+  --text-mockup-nav: clamp(8px, 2.7vw, 10px);
+  --text-mockup-badge: clamp(8px, 0.9vw, 11px);
   --tracking-display: -0.055em;
   --tracking-heading: -0.05em;
   --tracking-subtitle: -0.035em;
