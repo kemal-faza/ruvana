@@ -65,13 +65,15 @@ export default function LoginForm() {
               const form = new FormData(event.currentTarget)
               const email = String(form.get("email") ?? "").trim()
               const password = String(form.get("password") ?? "")
+              const passwordBytes = new TextEncoder().encode(password).length
               const fieldErrors: Record<string, string[]> = {}
               if (!email) fieldErrors.email = ["Email wajib diisi."]
               else if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) {
                 fieldErrors.email = ["Format email tidak valid."]
               }
               if (!password) fieldErrors.password = ["Kata sandi wajib diisi."]
-              else if (new TextEncoder().encode(password).length > BATAS_PASSWORD_AKUN_BYTE) {
+              else if (passwordBytes < 8) fieldErrors.password = ["Kata sandi minimal 8 karakter."]
+              else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
                 fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`]
               }
               if (Object.keys(fieldErrors).length > 0) {
