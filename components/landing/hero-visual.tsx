@@ -15,7 +15,7 @@ const sidebarItems = ["Ringkasan", "Fasilitas", "Reservasi Saya", "Laporan Saya"
 function DashboardMockup() {
   return (
     <div className="flex h-full">
-      <aside className="w-[29%] shrink-0 border-r border-border bg-muted/70 p-[5%] max-sm:w-[44%] sm:max-xl:min-w-[145px]">
+      <aside className="w-[29%] shrink-0 border-r border-border bg-muted/70 p-[5%] max-sm:w-[44%] sm:max-xl:min-w-36.25">
         <p className="mb-[18%] max-sm:mb-[12%] sm:max-xl:mb-[12%] text-mockup-wordmark font-semibold tracking-tight">
           ruvana
         </p>
