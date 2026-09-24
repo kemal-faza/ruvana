@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
-import { BATAS_PEMBATALAN_JAM } from "@/config/business";
+import { BATAS_ALASAN_MAX, BATAS_PEMBATALAN_JAM } from "@/config/business";
 import { LABEL_TIPE_FASILITAS } from "@/config/labels";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
@@ -201,12 +201,12 @@ export function ReservationDetail({ id }: { id: number }) {
                 id="alasan-batal"
                 value={cancelAlasan}
                 onChange={(e) => setCancelAlasan(e.target.value)}
-                maxLength={500}
+                maxLength={BATAS_ALASAN_MAX}
                 rows={2}
                 placeholder="Contoh: Jadwal kegiatan berubah"
                 className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               />
-              <FieldDescription>{cancelAlasan.length}/500 karakter.</FieldDescription>
+              <FieldDescription>{cancelAlasan.length}/{BATAS_ALASAN_MAX} karakter.</FieldDescription>
               <div>
                 <Button
                   type="button"

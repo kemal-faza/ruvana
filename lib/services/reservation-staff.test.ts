@@ -71,10 +71,12 @@ function mockTx(opts: {
   facilityStatus?: string;
   overlapping?: Array<Record<string, unknown>>;
   approvedOnDate?: Array<Record<string, unknown>>;
+  guardCount?: number;
 } = {}) {
   const row = opts.row === undefined ? makeRow() : opts.row;
+  let lastGuardData: Record<string, unknown> = {};
   const reservation = {
-    findUnique: vi.fn().mockResolvedValue(row),
+    findUnique: vi.fn().mockImplementation(() => Promise.resolve(row ? { ...(row as object), ...lastGuardData } : null)),
     findMany: vi.fn().mockImplementation((args: { where: { tanggal?: unknown } }) => {
       if (args.where.tanggal) return Promise.resolve(opts.approvedOnDate ?? []);
       return Promise.resolve(opts.overlapping ?? []);
@@ -82,7 +84,14 @@ function mockTx(opts: {
     update: vi.fn().mockImplementation((args: { data: Record<string, unknown> }) =>
       Promise.resolve({ ...(row as object), ...args.data }),
     ),
-    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    // Pembedaan expiry vs guard: guard selalu memuat where.id.
+    updateMany: vi.fn().mockImplementation((args: { where: { id?: unknown }; data: Record<string, unknown> }) => {
+      if (args.where && typeof args.where.id !== "undefined") {
+        lastGuardData = args.data;
+        return Promise.resolve({ count: opts.guardCount ?? 1 });
+      }
+      return Promise.resolve({ count: 0 });
+    }),
   };
   const facility = {
     findUnique: vi.fn().mockResolvedValue(
@@ -114,14 +123,23 @@ describe("approveReservationService", () => {
       expect(result.data.processedAt).toBe(now.toISOString());
       expect(result.data.pemohon.nama).toBe("Siti Aminah");
     }
-    // Row lock fasilitas dipegang sebelum final check
+    // Row lock reservasi + fasilitas dipegang sebelum final check
     expect($queryRaw).toHaveBeenCalled();
-    expect(reservation.update).toHaveBeenCalledWith(
+    expect(reservation.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 92 },
+        where: expect.objectContaining({ id: 92, status: "PENDING" }),
         data: expect.objectContaining({ status: "APPROVED", diprosesOleh: 7, waktuDiproses: now }),
       }),
     );
+  });
+
+  it("keputusan kedua yang kalah race ditolak sebagai transition (tepat satu kali)", async () => {
+    mockTx({ guardCount: 0 });
+
+    const result = await approveReservationService(7, 92, now);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("transition");
   });
 
   it("menjalankan expiry idempoten sebelum membaca baris saat approve", async () => {
@@ -154,7 +172,9 @@ describe("approveReservationService", () => {
     } else {
       expect.unreachable("harusnya conflict");
     }
-    expect(reservation.update).not.toHaveBeenCalled();
+    expect(reservation.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: 92 }) }),
+    );
   });
 
   it("menolak approve atas status non-PENDING", async () => {
@@ -164,7 +184,9 @@ describe("approveReservationService", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("transition");
-    expect(reservation.update).not.toHaveBeenCalled();
+    expect(reservation.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: 92 }) }),
+    );
   });
 
   it("mengembalikan not_found untuk id yang tidak ada", async () => {
@@ -189,8 +211,9 @@ describe("rejectReservationService", () => {
       expect(result.data.alasan).toBe("Kapasitas tidak cukup");
       expect(result.data.processedBy).toEqual(actor);
     }
-    expect(reservation.update).toHaveBeenCalledWith(
+    expect(reservation.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.objectContaining({ id: 92, status: "PENDING" }),
         data: expect.objectContaining({ status: "REJECTED", alasan: "Kapasitas tidak cukup" }),
       }),
     );
@@ -203,7 +226,9 @@ describe("rejectReservationService", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("transition");
-    expect(reservation.update).not.toHaveBeenCalled();
+    expect(reservation.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: 92 }) }),
+    );
   });
 
   it("menolak reject tanpa alasan di validation layer", () => {
@@ -229,9 +254,9 @@ describe("cancelReservationByOfficerService", () => {
       expect(result.data.processedBy).toEqual(actor);
       expect(result.data.processedAt).toBe(now.toISOString());
     }
-    expect(reservation.update).toHaveBeenCalledWith(
+    expect(reservation.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 92 },
+        where: expect.objectContaining({ id: 92, status: "APPROVED" }),
         data: expect.objectContaining({
           status: "CANCELLED_BY_OFFICER",
           alasan: "Gedung ditutup darurat",
@@ -248,7 +273,9 @@ describe("cancelReservationByOfficerService", () => {
       const result = await cancelReservationByOfficerService(7, 92, { alasan: "x" }, now);
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.type).toBe("transition");
-      expect(reservation.update).not.toHaveBeenCalled();
+      expect(reservation.updateMany).not.toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ id: 92 }) }),
+      );
     }
   });
 

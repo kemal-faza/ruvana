@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClipboardList } from "lucide-react";
 
+import { BATAS_ALASAN_MAX } from "@/config/business";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -298,13 +299,13 @@ export function ReservationQueue() {
               id="alasan-tolak"
               value={rejectAlasan}
               onChange={(e) => setRejectAlasan(e.target.value)}
-              maxLength={500}
+              maxLength={BATAS_ALASAN_MAX}
               rows={3}
               required
               placeholder="Contoh: Kapasitas tidak mencukupi"
               className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
-            <FieldDescription>{rejectAlasan.length}/500 karakter.</FieldDescription>
+            <FieldDescription>{rejectAlasan.length}/{BATAS_ALASAN_MAX} karakter.</FieldDescription>
           </Field>
           <div className="flex gap-3">
             <Button

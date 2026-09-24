@@ -11,6 +11,7 @@ import {
   listApprovedQueue,
   listMyReservations,
   listPendingQueue,
+  lockReservationById,
 } from "@/lib/db/reservations";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import { expirePendingReservations } from "@/lib/reservations/expiry";
@@ -267,6 +268,8 @@ export async function cancelMyReservationService(
   try {
     const updated = await prisma.$transaction(async (tx) => {
       await expirePendingReservations(tx, now);
+      // Kunci baris dulu agar pembatalan bersamaan atas id yang sama terserialisasi.
+      await lockReservationById(tx, id);
       const row = await tx.reservation.findFirst({
         where: { id, userId },
         include: { facility: true },
@@ -283,16 +286,27 @@ export async function cancelMyReservationService(
           message: `Pembatalan hanya dapat dilakukan paling lambat ${BATAS_PEMBATALAN_JAM} jam sebelum waktu mulai. Hubungi petugas untuk bantuan.`,
         };
       }
-      return tx.reservation.update({
-        where: { id: row.id },
+      // Pembaruan bersyarat: hanya baris yang masih PENDING/APPROVED yang berubah.
+      // Jika kalah race (sudah diproses/dibatalkan), count 0 → tolak sebagai transition.
+      const guard = await tx.reservation.updateMany({
+        where: { id: row.id, status: { in: ["PENDING", "APPROVED"] } },
         data: {
           status: "CANCELLED_BY_USER",
           alasan: input.alasan,
           waktuDiproses: now,
         },
+      });
+      if (guard.count === 0) {
+        throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat dibatalkan." };
+      }
+      return tx.reservation.findFirst({
+        where: { id: row.id },
         include: { facility: true },
       });
     });
+    if (!updated) {
+      return { ok: false, error: { type: "not_found" as const, message: "Reservasi tidak ditemukan" } };
+    }
 
     type ReservationRow = Parameters<typeof toReservationResponse>[0];
     return { ok: true, data: toReservationResponse(updated as unknown as ReservationRow) };
@@ -451,6 +465,10 @@ export async function approveReservationService(
   try {
     const { updated, actor } = await prisma.$transaction(async (tx) => {
       await expirePendingReservations(tx, now);
+      // Kunci baris reservasi SEBELUM membaca status agar approve/reject
+      // bersamaan atas id yang sama terserialisasi; pembaca kedua melihat
+      // status terbaru setelah pemenang commit (RES-06).
+      await lockReservationById(tx, id);
       const row = await tx.reservation.findUnique({
         where: { id },
         include: { facility: true },
@@ -485,13 +503,21 @@ export async function approveReservationService(
           availability,
         };
       }
-      const updated = await tx.reservation.update({
-        where: { id: row.id },
+      // Pembaruan bersyarat: hanya pemenang race yang masih PENDING yang
+      // tercatat; yang kalah mendapat count 0 → transition (RES-06 tepat satu kali).
+      const guard = await tx.reservation.updateMany({
+        where: { id: row.id, status: "PENDING" },
         data: {
           status: "APPROVED",
           waktuDiproses: now,
           diprosesOleh: staffId,
         },
+      });
+      if (guard.count === 0) {
+        throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat disetujui." };
+      }
+      const updated = await tx.reservation.findUnique({
+        where: { id: row.id },
         include: { facility: true, user: true },
       });
       const actorRow = await tx.user.findUnique({
@@ -525,6 +551,9 @@ export async function rejectReservationService(
   try {
     const { updated, actor } = await prisma.$transaction(async (tx) => {
       await expirePendingReservations(tx, now);
+      // Kunci baris reservasi sebelum membaca status (RES-06): approve dan
+      // reject bersamaan atas id yang sama terserialisasi.
+      await lockReservationById(tx, id);
       const row = await tx.reservation.findUnique({
         where: { id },
         include: { facility: true },
@@ -536,14 +565,20 @@ export async function rejectReservationService(
         throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat ditolak." };
       }
       await lockFacilityById(tx, row.facilityId);
-      const updated = await tx.reservation.update({
-        where: { id: row.id },
+      const guard = await tx.reservation.updateMany({
+        where: { id: row.id, status: "PENDING" },
         data: {
           status: "REJECTED",
           alasan: input.alasan,
           waktuDiproses: now,
           diprosesOleh: staffId,
         },
+      });
+      if (guard.count === 0) {
+        throw { kind: "transition" as const, message: "Reservasi tidak berada pada status yang dapat ditolak." };
+      }
+      const updated = await tx.reservation.findUnique({
+        where: { id: row.id },
         include: { facility: true, user: true },
       });
       const actorRow = await tx.user.findUnique({
@@ -575,6 +610,9 @@ export async function cancelReservationByOfficerService(
 ): Promise<{ ok: true; data: StaffReservationResult } | { ok: false; error: ServiceError }> {
   try {
     const { updated, actor } = await prisma.$transaction(async (tx) => {
+      // Kunci baris reservasi sebelum membaca status agar pembatalan
+      // bersamaan atas id yang sama terserialisasi.
+      await lockReservationById(tx, id);
       const row = await tx.reservation.findUnique({
         where: { id },
         include: { facility: true },
@@ -586,14 +624,20 @@ export async function cancelReservationByOfficerService(
         throw { kind: "transition" as const, message: "Hanya reservasi berstatus disetujui yang dapat dibatalkan petugas." };
       }
       await lockFacilityById(tx, row.facilityId);
-      const updated = await tx.reservation.update({
-        where: { id: row.id },
+      const guard = await tx.reservation.updateMany({
+        where: { id: row.id, status: "APPROVED" },
         data: {
           status: "CANCELLED_BY_OFFICER",
           alasan: input.alasan,
           waktuDiproses: now,
           diprosesOleh: staffId,
         },
+      });
+      if (guard.count === 0) {
+        throw { kind: "transition" as const, message: "Hanya reservasi berstatus disetujui yang dapat dibatalkan petugas." };
+      }
+      const updated = await tx.reservation.findUnique({
+        where: { id: row.id },
         include: { facility: true, user: true },
       });
       const actorRow = await tx.user.findUnique({

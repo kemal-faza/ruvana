@@ -1,4 +1,4 @@
-import { JAM_OPERASIONAL } from "@/config/business";
+import { DURASI_SLOT_MENIT, JAM_OPERASIONAL } from "@/config/business";
 
 // Konstanta offset Asia/Jakarta UTC+7 tanpa DST
 const JAKARTA_OFFSET_MINUTES = 7 * 60;
@@ -14,7 +14,7 @@ export function isValidTimeFormat(time: string): boolean {
 
 export function isSlotAligned(time: string): boolean {
   if (!isValidTimeFormat(time)) return false;
-  const minutes = parseTimeToMinutes(time) % 30;
+  const minutes = parseTimeToMinutes(time) % DURASI_SLOT_MENIT;
   return minutes === 0;
 }
 
@@ -83,7 +83,7 @@ export function generateAllSlots(): Array<{ startTime: string; endTime: string }
   let startMin = parseTimeToMinutes(JAM_OPERASIONAL.mulai);
   const endMin = parseTimeToMinutes(JAM_OPERASIONAL.selesai);
   while (startMin < endMin) {
-    const end = startMin + 30;
+    const end = startMin + DURASI_SLOT_MENIT;
     const sH = String(Math.floor(startMin / 60)).padStart(2, "0");
     const sM = String(startMin % 60).padStart(2, "0");
     const eH = String(Math.floor(end / 60)).padStart(2, "0");

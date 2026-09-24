@@ -425,6 +425,10 @@ transaksi sendiri atau memakai singleton Prisma untuk operasi dalam event.
   pemicu tidak menggandakan efek.
 - `payload.waktu` menjadi satu-satunya penanda batas masa depan dan waktu
   proses agar konsisten dalam transaksi yang sama.
+- Dependensi integrasi (bukan blocker PR Modul 3): callsite listener adalah
+  bagian Modul 4 (TASK 4.4). PR Modul 3 hanya menyediakan listener
+  (`lib/reservations/maintenance-listener.ts`); saat integrasi dikerjakan,
+  pemicu Modul 4 wajib menjalankan listener dalam transaksi yang sama.
 
 ### Alternatif yang dipertimbangkan
 

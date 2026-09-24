@@ -19,7 +19,13 @@ import {
 import { cancelMyReservationService } from "@/lib/services/reservation-service";
 import { parseCancelBody } from "@/lib/validation/reservation";
 import { parseReservationId } from "@/lib/validation/reservation-query";
-import { prisma } from "@/lib/prisma";
+import {
+  claimOrGetIdempotencyKey,
+  deleteIdempotencyClaim,
+  isIdempotencySettled,
+  storeIdempotencyResult,
+  waitForIdempotencyResult,
+} from "@/lib/db/idempotency";
 
 export async function POST(request: NextRequest, ctx: RouteContext<"/api/reservations/[reservationId]/cancel">) {
   const instance = new URL(request.url).pathname;
@@ -71,23 +77,45 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
 
   const requestHash = hashCanonicalBody(rawBody);
 
+  // Klaim idempotency sebelum operasi bisnis: duplikat bersamaan menunggu
+  // lalu me-replay hasil pertama, bukan membatalkan dua kali.
+  const idempotencyIdentity = {
+    key: idempotencyKey,
+    principalId: user.id,
+    scope: SCOPE,
+    requestHash,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  };
   try {
-    const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
-    });
-    if (existing) {
-      if (existing.requestHash !== requestHash) {
+    const claim = await claimOrGetIdempotencyKey(idempotencyIdentity);
+    if (!claim.claimed) {
+      if (claim.record.requestHash !== requestHash) {
         return idempotencyConflict(instance);
       }
-      if (existing.responseStatus !== null && existing.responseBody !== null) {
-        return NextResponse.json(existing.responseBody as object, {
-          status: existing.responseStatus,
+      if (isIdempotencySettled(claim.record)) {
+        return NextResponse.json(claim.record.responseBody as object, {
+          status: claim.record.responseStatus ?? 500,
           headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
         });
       }
+      const settled = await waitForIdempotencyResult({
+        key: idempotencyKey,
+        principalId: user.id,
+        scope: SCOPE,
+      });
+      if (settled) {
+        if (settled.requestHash !== requestHash) {
+          return idempotencyConflict(instance);
+        }
+        return NextResponse.json(settled.responseBody as object, {
+          status: settled.responseStatus ?? 500,
+          headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
+        });
+      }
+      return idempotencyConflict(instance, "Permintaan dengan key yang sama sedang diproses, silakan ulangi.");
     }
   } catch (e) {
-    console.error("Gagal lookup idempotency", e);
+    console.error("Gagal klaim idempotency", e);
     return internalError(instance);
   }
 
@@ -103,19 +131,9 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
       errors: parsed.errors,
     };
     try {
-      await prisma.idempotencyKey.create({
-        data: {
-          key: idempotencyKey,
-          principalId: user.id,
-          scope: SCOPE,
-          requestHash,
-          responseStatus: 422,
-          responseBody: body as unknown as object,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 422, responseBody: body });
     } catch {
-      // Jika race duplicate, abaikan
+      // Penyimpanan replay best-effort; respons tetap dikembalikan
     }
     return validationFailed(instance, parsed.errors);
   }
@@ -125,6 +143,9 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
     serviceResult = await cancelMyReservationService(user.id, parsedId.value, parsed.value, new Date());
   } catch (e) {
     console.error("Gagal membatalkan reservasi", e);
+    try {
+      await deleteIdempotencyClaim(idempotencyIdentity);
+    } catch {}
     return internalError(instance);
   }
 
@@ -140,17 +161,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
         code: "NOT_FOUND",
       };
       try {
-        await prisma.idempotencyKey.create({
-          data: {
-            key: idempotencyKey,
-            principalId: user.id,
-            scope: SCOPE,
-            requestHash,
-            responseStatus: 404,
-            responseBody: body as unknown as object,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
-        });
+        await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 404, responseBody: body });
       } catch {}
       return notFound(instance, err.message);
     }
@@ -164,17 +175,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
         code: "INVALID_RESERVATION_TRANSITION",
       };
       try {
-        await prisma.idempotencyKey.create({
-          data: {
-            key: idempotencyKey,
-            principalId: user.id,
-            scope: SCOPE,
-            requestHash,
-            responseStatus: 409,
-            responseBody: body as unknown as object,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
-        });
+        await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 409, responseBody: body });
       } catch {}
       return invalidReservationTransition(instance, err.message);
     }
@@ -183,28 +184,8 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/reserva
 
   const successBody = serviceResult.data;
   try {
-    await prisma.idempotencyKey.create({
-      data: {
-        key: idempotencyKey,
-        principalId: user.id,
-        scope: SCOPE,
-        requestHash,
-        responseStatus: 200,
-        responseBody: successBody as unknown as object,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
-  } catch {
-    const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
-    });
-    if (existing && existing.responseBody) {
-      return NextResponse.json(existing.responseBody as object, {
-        status: existing.responseStatus ?? 200,
-        headers: { "Cache-Control": "no-store" },
-      });
-    }
-  }
+    await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 200, responseBody: successBody });
+  } catch {}
 
   return NextResponse.json(successBody, {
     status: 200,

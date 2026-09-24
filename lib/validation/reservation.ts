@@ -1,5 +1,5 @@
 import type { ProblemFieldError } from "@/lib/http/problem";
-import { BATAS_TUJUAN_MAX, BATAS_TUJUAN_MIN, VALID_END_TIMES, VALID_START_TIMES } from "@/config/business";
+import { BATAS_ALASAN_MAX, BATAS_TUJUAN_MAX, BATAS_TUJUAN_MIN, VALID_END_TIMES, VALID_START_TIMES } from "@/config/business";
 import { isSlotAligned, isValidDateFormat, isWithinOperationalHours, parseTimeToMinutes } from "@/lib/time/reservation-time";
 
 export interface ReservationCreateInput {
@@ -150,10 +150,10 @@ export function parseCancelBody(body: unknown): ParseResult<CancelReservationInp
       errors: [{ field: "alasan", code: "TOO_SHORT", message: "alasan tidak boleh kosong" }],
     };
   }
-  if (trimmed.length > 500) {
+  if (trimmed.length > BATAS_ALASAN_MAX) {
     return {
       ok: false,
-      errors: [{ field: "alasan", code: "TOO_LONG", message: "alasan maksimal 500 karakter" }],
+      errors: [{ field: "alasan", code: "TOO_LONG", message: `alasan maksimal ${BATAS_ALASAN_MAX} karakter` }],
     };
   }
   return { ok: true, value: { alasan: trimmed } };

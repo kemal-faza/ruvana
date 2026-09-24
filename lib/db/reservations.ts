@@ -1,12 +1,17 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { asiaJakartaToUtc } from "@/lib/time/reservation-time";
 
 export interface FindOverlappingApprovedParams {
   facilityId: number;
   startsAt: Date;
   endsAt: Date;
+}
+
+// Kunci baris reservasi agar dua keputusan atas id yang sama terserialisasi.
+// Dipanggil di dalam transaksi sebelum membaca status (RES-06).
+export async function lockReservationById(tx: Prisma.TransactionClient, id: number) {
+  await tx.$queryRaw`SELECT id FROM "reservations" WHERE id = ${id} FOR UPDATE`;
 }
 
 export function findOverlappingApproved(
@@ -29,7 +34,10 @@ export function findApprovedByFacilityAndDate(
   facilityId: number,
   dateStr: string,
 ) {
-  const from: Date = asiaJakartaToUtc(dateStr, "00:00");
+  // tanggal adalah DATE kalender Asia/Jakarta: batas tegas tengah malam UTC
+  // agar tidak bergantung TimeZone sesi database.
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const from = new Date(Date.UTC(year, month - 1, day));
   const until = new Date(from.getTime() + 24 * 60 * 60 * 1000);
   return (txOrPrisma as Prisma.TransactionClient).reservation.findMany({
     where: {

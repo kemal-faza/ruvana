@@ -20,8 +20,9 @@ function makeRow(overrides: Record<string, unknown> = {}) {
     id: 91,
     userId: 42,
     tanggal: new Date("2026-09-14T17:00:00Z"),
-    startTime: new Date(now.getTime() + 5 * 60 * 60 * 1000),
-    endTime: new Date(now.getTime() + 6 * 60 * 60 * 1000),
+    // Default di luar batas H-24 agar lolos (batas diambil dari konfigurasi).
+    startTime: new Date(now.getTime() + LIMIT_MS + 5 * 60 * 60 * 1000),
+    endTime: new Date(now.getTime() + LIMIT_MS + 6 * 60 * 60 * 1000),
     tujuanPenggunaan: "Diskusi kelompok",
     status: "PENDING",
     alasan: null,
@@ -40,15 +41,26 @@ function makeRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function mockTx(row: Record<string, unknown> | null) {
-  const findFirst = vi.fn().mockResolvedValue(row);
+function mockTx(row: Record<string, unknown> | null, opts: { guardCount?: number } = {}) {
+  let lastGuardData: Record<string, unknown> = {};
+  const findFirst = vi
+    .fn()
+    .mockImplementation(() => Promise.resolve(row ? { ...(row as object), ...lastGuardData } : null));
   const update = vi.fn().mockImplementation((args: { data: Record<string, unknown> }) =>
     Promise.resolve({ ...(row as object), ...args.data }),
   );
-  const updateMany = vi.fn().mockResolvedValue({ count: 0 });
-  const tx = { reservation: { findFirst, update, updateMany } };
+  const updateMany = vi.fn().mockImplementation((args: { where: { id?: unknown }; data: Record<string, unknown> }) => {
+    // Guard pembatalan selalu memuat where.id; expiry tidak.
+    if (args.where && typeof args.where.id !== "undefined") {
+      lastGuardData = args.data;
+      return Promise.resolve({ count: opts.guardCount ?? 1 });
+    }
+    return Promise.resolve({ count: 0 });
+  });
+  const $queryRaw = vi.fn().mockResolvedValue([]);
+  const tx = { reservation: { findFirst, update, updateMany }, $queryRaw };
   mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
-  return { findFirst, update, updateMany };
+  return { findFirst, update, updateMany, $queryRaw };
 }
 
 beforeEach(() => {
@@ -69,7 +81,7 @@ describe("cancelMyReservationService", () => {
   });
 
   it("membatalkan reservasi PENDING milik sendiri", async () => {
-    const { update } = mockTx(makeRow());
+    const { updateMany } = mockTx(makeRow());
 
     const result = await cancelMyReservationService(42, 91, { alasan: "Jadwal berubah" }, now);
 
@@ -78,9 +90,9 @@ describe("cancelMyReservationService", () => {
       expect(result.data.status).toBe("CANCELLED_BY_USER");
       expect(result.data.alasan).toBe("Jadwal berubah");
     }
-    expect(update).toHaveBeenCalledWith(
+    expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 91 },
+        where: expect.objectContaining({ id: 91 }),
         data: expect.objectContaining({ status: "CANCELLED_BY_USER", alasan: "Jadwal berubah" }),
       }),
     );
@@ -96,23 +108,27 @@ describe("cancelMyReservationService", () => {
   });
 
   it("memasking baris hilang/milik orang lain sebagai not_found", async () => {
-    const { update } = mockTx(null);
+    const { updateMany } = mockTx(null);
 
     const result = await cancelMyReservationService(42, 999, { alasan: "x" }, now);
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("not_found");
-    expect(update).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: 999 }) }),
+    );
   });
 
   it("menolak status terminal/bukan PENDING-APPROVED", async () => {
     for (const status of ["REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"]) {
-      const { update } = mockTx(makeRow({ status }));
+      const { updateMany } = mockTx(makeRow({ status }));
       const result = await cancelMyReservationService(42, 91, { alasan: "x" }, now);
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error.type).toBe("transition");
-        expect(update).not.toHaveBeenCalled();
+        expect(updateMany).not.toHaveBeenCalledWith(
+          expect.objectContaining({ where: expect.objectContaining({ id: 91 }) }),
+        );
       }
     }
   });
@@ -134,7 +150,7 @@ describe("cancelMyReservationService", () => {
   });
 
   it("menolak sesaat setelah melewati batas waktu", async () => {
-    const { update } = mockTx(makeRow({ startTime: new Date(now.getTime() + LIMIT_MS - 1_000) }));
+    const { updateMany } = mockTx(makeRow({ startTime: new Date(now.getTime() + LIMIT_MS - 1_000) }));
 
     const result = await cancelMyReservationService(42, 91, { alasan: "x" }, now);
 
@@ -145,11 +161,15 @@ describe("cancelMyReservationService", () => {
         expect(result.error.message).toContain("Hubungi petugas");
       }
     }
-    expect(update).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: 91 }) }),
+    );
   });
 
   it("menolak saat kurang dari batas dan saat sudah lewat", async () => {
     for (const startTime of [
+      // 23 jam: lolos di aturan H-2 lama, ditolak di H-24 PRD.
+      new Date(now.getTime() + 23 * 60 * 60 * 1000),
       new Date(now.getTime() + 60 * 60 * 1000),
       new Date(now.getTime() - 60 * 60 * 1000),
     ]) {
@@ -158,5 +178,14 @@ describe("cancelMyReservationService", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.type).toBe("transition");
     }
+  });
+
+  it("pembatalan yang kalah race ditolak sebagai transition", async () => {
+    mockTx(makeRow(), { guardCount: 0 });
+
+    const result = await cancelMyReservationService(42, 91, { alasan: "x" }, now);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("transition");
   });
 });

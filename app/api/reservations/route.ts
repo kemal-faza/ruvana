@@ -18,7 +18,13 @@ import {
 import { parseReservationCreateBody } from "@/lib/validation/reservation";
 import { parseMyReservationListQuery } from "@/lib/validation/reservation-query";
 import { createReservationService, listMyReservationsService } from "@/lib/services/reservation-service";
-import { prisma } from "@/lib/prisma";
+import {
+  claimOrGetIdempotencyKey,
+  deleteIdempotencyClaim,
+  isIdempotencySettled,
+  storeIdempotencyResult,
+  waitForIdempotencyResult,
+} from "@/lib/db/idempotency";
 
 const SCOPE = buildIdempotencyScope("POST", "/api/reservations");
 
@@ -69,25 +75,46 @@ export async function POST(request: NextRequest) {
 
   const requestHash = hashCanonicalBody(rawBody);
 
-  // 7. Idempotency lookup (replay atau mismatch)
+  // 7. Klaim idempotency SEBELUM operasi bisnis. Dua request bersamaan dengan
+  // key yang sama: hanya pemilik klaim yang menjalankan operasi; yang lain
+  // menunggu lalu me-replay hasil pertama (bukan membuat reservasi kedua).
+  const idempotencyIdentity = {
+    key: idempotencyKey,
+    principalId: user.id,
+    scope: SCOPE,
+    requestHash,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  };
   try {
-    const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
-    });
-    if (existing) {
-      if (existing.requestHash !== requestHash) {
+    const claim = await claimOrGetIdempotencyKey(idempotencyIdentity);
+    if (!claim.claimed) {
+      if (claim.record.requestHash !== requestHash) {
         return idempotencyConflict(instance);
       }
-      // Replay hanya untuk hasil deterministik yang pernah disimpan
-      if (existing.responseStatus !== null && existing.responseBody !== null) {
-        return NextResponse.json(existing.responseBody as object, {
-          status: existing.responseStatus,
+      if (isIdempotencySettled(claim.record)) {
+        return NextResponse.json(claim.record.responseBody as object, {
+          status: claim.record.responseStatus ?? 500,
           headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
         });
       }
+      const settled = await waitForIdempotencyResult({
+        key: idempotencyKey,
+        principalId: user.id,
+        scope: SCOPE,
+      });
+      if (settled) {
+        if (settled.requestHash !== requestHash) {
+          return idempotencyConflict(instance);
+        }
+        return NextResponse.json(settled.responseBody as object, {
+          status: settled.responseStatus ?? 500,
+          headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
+        });
+      }
+      return idempotencyConflict(instance, "Permintaan dengan key yang sama sedang diproses, silakan ulangi.");
     }
   } catch (e) {
-    console.error("Gagal lookup idempotency", e);
+    console.error("Gagal klaim idempotency", e);
     return internalError(instance);
   }
 
@@ -104,19 +131,9 @@ export async function POST(request: NextRequest) {
       errors: parsed.errors,
     };
     try {
-      await prisma.idempotencyKey.create({
-        data: {
-          key: idempotencyKey,
-          principalId: user.id,
-          scope: SCOPE,
-          requestHash,
-          responseStatus: 422,
-          responseBody: body as unknown as object,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 422, responseBody: body });
     } catch {
-      // Jika race duplicate, abaikan
+      // Penyimpanan replay best-effort; respons tetap dikembalikan
     }
     return validationFailed(instance, parsed.errors);
   }
@@ -127,6 +144,10 @@ export async function POST(request: NextRequest) {
     serviceResult = await createReservationService(user.id, parsed.value, new Date());
   } catch (e) {
     console.error("Gagal membuat reservasi", e);
+    try {
+      // 5xx tidak disimpan/di-replay: hapus klaim agar retry dapat diproses.
+      await deleteIdempotencyClaim(idempotencyIdentity);
+    } catch {}
     return internalError(instance);
   }
 
@@ -143,17 +164,7 @@ export async function POST(request: NextRequest) {
         errors: err.errors,
       };
       try {
-        await prisma.idempotencyKey.create({
-          data: {
-            key: idempotencyKey,
-            principalId: user.id,
-            scope: SCOPE,
-            requestHash,
-            responseStatus: 422,
-            responseBody: body as unknown as object,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
-        });
+        await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 422, responseBody: body });
       } catch {}
       return validationFailed(instance, err.errors);
     }
@@ -167,17 +178,7 @@ export async function POST(request: NextRequest) {
         code: "NOT_FOUND",
       };
       try {
-        await prisma.idempotencyKey.create({
-          data: {
-            key: idempotencyKey,
-            principalId: user.id,
-            scope: SCOPE,
-            requestHash,
-            responseStatus: 404,
-            responseBody: body as unknown as object,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
-        });
+        await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 404, responseBody: body });
       } catch {}
       return notFound(instance, err.message);
     }
@@ -192,17 +193,7 @@ export async function POST(request: NextRequest) {
         availability: err.availability,
       };
       try {
-        await prisma.idempotencyKey.create({
-          data: {
-            key: idempotencyKey,
-            principalId: user.id,
-            scope: SCOPE,
-            requestHash,
-            responseStatus: 409,
-            responseBody: body as unknown as object,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
-        });
+        await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 409, responseBody: body });
       } catch {}
       return reservationOverlap(instance, err.message, err.availability);
     }
@@ -212,27 +203,9 @@ export async function POST(request: NextRequest) {
   // 10. Sukses 201, simpan untuk replay idempotency
   const successBody = serviceResult.data;
   try {
-    await prisma.idempotencyKey.create({
-      data: {
-        key: idempotencyKey,
-        principalId: user.id,
-        scope: SCOPE,
-        requestHash,
-        responseStatus: 201,
-        responseBody: successBody as unknown as object,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
+    await storeIdempotencyResult(idempotencyIdentity, { responseStatus: 201, responseBody: successBody });
   } catch {
-    const existing = await prisma.idempotencyKey.findFirst({
-      where: { key: idempotencyKey, principalId: user.id, scope: SCOPE },
-    });
-    if (existing && existing.responseBody) {
-      return NextResponse.json(existing.responseBody as object, {
-        status: existing.responseStatus ?? 201,
-        headers: { "Cache-Control": "no-store" },
-      });
-    }
+    // best-effort
   }
 
   return NextResponse.json(successBody, {
