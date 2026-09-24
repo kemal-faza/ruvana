@@ -7,6 +7,7 @@ import { CalendarDays, History, LayoutDashboard, Settings } from "lucide-react"
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
 import type { NavigationGroup } from "@/components/app-shell/types"
+import { staffNavigation } from "@/components/staff/navigation"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 
 const routeState = vi.hoisted(() => ({ pathname: "/reservasi" }))
@@ -162,5 +163,37 @@ describe("AppShell", () => {
       "page",
     )
     expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute("aria-current")
+  })
+
+  it("menandai lokasi dashboard Petugas dan hanya menampilkan tujuan yang tersedia", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    routeState.pathname = "/petugas"
+    const { rerender } = render(
+      <AppShell navigation={staffNavigation} account={{ displayName: "Siti", roleLabel: "Petugas" }}>
+        <p>Dashboard</p>
+      </AppShell>,
+    )
+
+    expect(screen.getAllByRole("link", { name: "Dashboard" })[0]).toHaveAttribute("aria-current", "page")
+    expect(screen.getByRole("link", { name: "Persetujuan reservasi" })).toHaveAttribute(
+      "href",
+      "/petugas/antrian",
+    )
+    expect(screen.getByText("Sistem")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Baseline UI" })).toHaveAttribute("href", "/baseline-ui")
+    expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/petugas/pengaturan")
+    expect(screen.queryByRole("link", { name: "Laporan" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Fasilitas" })).not.toBeInTheDocument()
+
+    routeState.pathname = "/petugas/antrian"
+    rerender(
+      <AppShell navigation={staffNavigation} account={{ displayName: "Siti", roleLabel: "Petugas" }}>
+        <p>Antrean</p>
+      </AppShell>,
+    )
+    expect(screen.getAllByRole("link", { name: "Persetujuan reservasi" })[0]).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
   })
 })

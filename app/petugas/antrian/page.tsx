@@ -1,28 +1,25 @@
-import { Building2, ClipboardList, Inbox, LayoutDashboard } from "lucide-react";
-
 import { AppShell } from "@/components/app-shell/app-shell";
-import type { NavigationGroup } from "@/components/app-shell/types";
 import { ApprovedReservationList } from "@/components/staff/approved-reservation-list";
+import { staffNavigation, staffQueueNavigation } from "@/components/staff/navigation";
 import { ReservationQueue } from "@/components/staff/reservation-queue";
+import { getSessionUser } from "@/lib/auth";
+import { Role } from "@/generated/prisma/enums";
 
 export const dynamic = "force-dynamic";
 
-const navigation: readonly NavigationGroup[] = [
-  {
-    key: "utama",
-    label: "Utama",
-    items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
-      { key: "antrian", label: "Antrean", href: "/petugas/antrian", icon: Inbox },
-      { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
-      { key: "laporan", label: "Laporan", href: "/laporan", icon: ClipboardList },
-    ],
-  },
-];
+export default async function AntrianPage() {
+  const user = await getSessionUser();
+  const navigation = user?.role === Role.petugas
+    ? staffNavigation
+    : user?.role === Role.admin
+      ? staffQueueNavigation
+      : [];
+  const account = user
+    ? { displayName: user.nama, roleLabel: user.role === Role.admin ? "Admin" : user.role === Role.petugas ? "Petugas" : "Pengguna" }
+    : null;
 
-export default function AntrianPage() {
   return (
-    <AppShell navigation={navigation} account={{ displayName: "Petugas Ruvana", roleLabel: "Petugas" }}>
+    <AppShell navigation={navigation} account={account}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-medium tracking-wide text-primary">Petugas</p>

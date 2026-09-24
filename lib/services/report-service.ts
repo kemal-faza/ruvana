@@ -1,14 +1,17 @@
 import type { Role, StatusFasilitas, StatusLaporan, TipeFasilitas } from "@/generated/prisma/enums";
-import { STATUS_LAPORAN } from "@/config/business";
+import { STATUS_LAPORAN, STATUS_LAPORAN_KERJA_PETUGAS } from "@/config/business";
 import {
   countReportsByUser,
+  countStaffReportsByStatus,
   createReport as createReportRow,
   findDefaultReportOwner,
   findFacilityById,
   findReportFacilityOptions,
+  findReportsByStatus,
   findReportsByUser,
   findUsersById,
   type ReportWithFacility,
+  type StaffReportPreviewRow,
 } from "@/lib/db/reports";
 import { removeReportPhoto, saveReportPhoto } from "@/lib/storage/report-photo";
 import { validateReportSubmission, type ReportSubmissionErrors } from "@/lib/validation/report";
@@ -59,6 +62,26 @@ export interface ReportListView {
   totalByStatus: Record<ReportStatus, number>;
 }
 
+export type StaffReportWorkStatus = (typeof STATUS_LAPORAN_KERJA_PETUGAS)[number];
+
+export interface StaffReportPreview {
+  id: number;
+  facilityNama: string;
+  kategori: string;
+  deskripsi: string;
+  status: StaffReportWorkStatus;
+  createdAt: string;
+}
+
+export interface StaffReportWorkStatusSummary {
+  total: number;
+  items: StaffReportPreview[];
+}
+
+export type StaffReportWorkView = Record<StaffReportWorkStatus, StaffReportWorkStatusSummary>;
+
+const STAFF_REPORT_PREVIEW_LIMIT = 3;
+
 const ALL_REPORT_STATUSES: readonly StatusLaporan[] = STATUS_LAPORAN;
 
 // Ambil maksimal 1.000 laporan per panggilan; filter & paginasi saat ini di sisi
@@ -86,6 +109,31 @@ export async function listMyReports({ userId, status }: ListMyReportsParams = {}
   const items = rows.map((row) => toReportItem(row, handlers));
 
   return { userId: owner, items, total, totalByStatus: perStatus };
+}
+
+export async function listStaffReportWork(): Promise<StaffReportWorkView> {
+  const results = await Promise.all(
+    STATUS_LAPORAN_KERJA_PETUGAS.map(async (status) => {
+      const [rows, total] = await Promise.all([
+        findReportsByStatus({ status, skip: 0, take: STAFF_REPORT_PREVIEW_LIMIT }),
+        countStaffReportsByStatus(status),
+      ]);
+      return [status, { total, items: rows.map(toStaffReportPreview) }] as const;
+    }),
+  );
+
+  return Object.fromEntries(results) as StaffReportWorkView;
+}
+
+function toStaffReportPreview(row: StaffReportPreviewRow): StaffReportPreview {
+  return {
+    id: row.id,
+    facilityNama: row.facility.nama,
+    kategori: row.kategori,
+    deskripsi: row.deskripsi,
+    status: row.status as StaffReportWorkStatus,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 async function countPerStatus(userId: number): Promise<Record<ReportStatus, number>> {
