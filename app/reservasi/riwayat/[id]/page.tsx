@@ -25,7 +25,7 @@ export default async function RiwayatDetailPage({ params }: RiwayatDetailPagePro
   if (reservationId === null) notFound();
 
   return (
-    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }} logoutDestination="/keluar">
+    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <Button
           variant="ghost"

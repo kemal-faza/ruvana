@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { problemResponse } from "@/lib/http/problem";
+import { csrfOriginRejected } from "@/lib/http/problem";
 
 export interface OriginValidationResult {
   ok: boolean;
@@ -52,11 +52,5 @@ export function getAllowedOrigins(request?: NextRequest): string[] {
 
 export function originError(request: NextRequest) {
   if (validateOrigin(request, getAllowedOrigins(request)).ok) return null;
-  return problemResponse({
-    status: 403,
-    code: "CSRF_ORIGIN_REJECTED",
-    title: "Permintaan ditolak",
-    detail: "Origin permintaan tidak diizinkan.",
-    instance: request.nextUrl.pathname,
-  });
+  return csrfOriginRejected(request.nextUrl.pathname);
 }

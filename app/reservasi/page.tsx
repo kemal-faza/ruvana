@@ -42,7 +42,7 @@ export default async function ReservasiPage({
     facilityId > 0 ? await computeFacilityAvailability(facilityId, date) : null;
 
   return (
-    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }} logoutDestination="/keluar">
+    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-medium tracking-wide text-primary">Reservasi</p>

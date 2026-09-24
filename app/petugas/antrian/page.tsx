@@ -22,7 +22,7 @@ const navigation: readonly NavigationGroup[] = [
 
 export default function AntrianPage() {
   return (
-    <AppShell navigation={navigation} account={{ displayName: "Petugas Ruvana", roleLabel: "Petugas" }} logoutDestination="/keluar">
+    <AppShell navigation={navigation} account={{ displayName: "Petugas Ruvana", roleLabel: "Petugas" }}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-medium tracking-wide text-primary">Petugas</p>
