@@ -1,4 +1,4 @@
-import { ClipboardList, LayoutDashboard, SwatchBook } from "lucide-react";
+import { ClipboardList, LayoutDashboard, Settings, SwatchBook } from "lucide-react";
 
 import type { NavigationGroup } from "@/components/app-shell/types";
 
@@ -14,7 +14,10 @@ export const staffNavigation: readonly NavigationGroup[] = [
   {
     key: "sistem",
     label: "Sistem",
-    items: [{ key: "baseline-ui", label: "Baseline UI", href: "/baseline-ui", icon: SwatchBook }],
+    items: [
+      { key: "baseline-ui", label: "Baseline UI", href: "/baseline-ui", icon: SwatchBook },
+      { key: "pengaturan", label: "Pengaturan", href: "/petugas/pengaturan", icon: Settings },
+    ],
   },
 ];
 
