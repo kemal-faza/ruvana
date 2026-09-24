@@ -72,3 +72,10 @@ export async function requireAdmin(): Promise<SessionUser> {
   if (user.role !== Role.admin) redirect("/403");
   return user;
 }
+
+export async function requirePetugas(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== Role.petugas) redirect("/403");
+  return user;
+}

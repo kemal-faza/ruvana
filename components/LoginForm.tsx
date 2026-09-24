@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
+import { getPostLoginPath } from "@/lib/auth-routing"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -89,7 +90,7 @@ export default function LoginForm() {
                 })
                 const result = await response.json()
                 if (response.ok) {
-                  window.location.assign(result.user.role === "admin" ? "/admin" : "/fasilitas")
+                  window.location.assign(getPostLoginPath(result.user.role))
                   return
                 }
                 const fieldErrors: Record<string, string[]> = {}
