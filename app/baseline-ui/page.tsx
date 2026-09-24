@@ -53,7 +53,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { navigation, shellAccount } from "@/config/navigation"
+import { navigation, shellAccount, shellAccountFromUser } from "@/config/navigation"
+import { staffNavigation } from "@/components/staff/navigation"
+import { getSessionUser } from "@/lib/auth"
 
 const catalogLinks = [
   { href: "#aksi", label: "Button" },
@@ -66,9 +68,14 @@ const catalogLinks = [
 ]
 const LANDING_ACTION_CLASS = "min-h-11 gap-2.5 px-4 text-sm"
 
-export default function Home() {
+export default async function Home() {
+  const user = await getSessionUser()
+  const isPetugas = user?.role === "petugas"
+  const activeNavigation = isPetugas ? staffNavigation : navigation
+  const account = isPetugas ? shellAccountFromUser(user) : shellAccount
+
   return (
-    <AppShell navigation={navigation} account={shellAccount}>
+    <AppShell navigation={activeNavigation} account={account}>
       <a
         href="#katalog"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-control focus:bg-card focus:px-4 focus:py-3 focus:shadow-subtle"
