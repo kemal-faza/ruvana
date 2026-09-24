@@ -64,6 +64,7 @@ const catalogLinks = [
   { href: "#empty", label: "Empty state" },
   { href: "#overlay", label: "Tooltip dan panel" },
 ]
+const LANDING_ACTION_CLASS = "min-h-11 gap-2.5 px-4 text-sm"
 
 export default function Home() {
   return (
@@ -121,14 +122,13 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3 p-0">
-                <Button>Utama</Button>
-                <Button variant="secondary">Sekunder</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
-                <Button variant="danger">Destruktif</Button>
-                <Button variant="outline" size="sm">Ringkas</Button>
-                <Button disabled>Dinonaktifkan</Button>
-                <Button loading>Memuat</Button>
+                <Button className={LANDING_ACTION_CLASS}>Utama</Button>
+                <Button variant="secondary" className={LANDING_ACTION_CLASS}>Sekunder</Button>
+                <Button variant="outline" className={LANDING_ACTION_CLASS}>Outline</Button>
+                <Button variant="ghost" className={LANDING_ACTION_CLASS}>Ghost</Button>
+                <Button variant="danger" className={LANDING_ACTION_CLASS}>Destruktif</Button>
+                <Button disabled className={LANDING_ACTION_CLASS}>Dinonaktifkan</Button>
+                <Button loading className={LANDING_ACTION_CLASS}>Memuat</Button>
               </CardContent>
             </Card>
           </section>
@@ -221,7 +221,7 @@ export default function Home() {
               <Separator />
               <CardFooter className="justify-between gap-3">
                 <span className="text-sm text-muted-foreground">Informasi pendukung</span>
-                <Button variant="outline" size="sm">Lihat contoh</Button>
+                <Button variant="outline" className={LANDING_ACTION_CLASS}>Lihat contoh</Button>
               </CardFooter>
             </Card>
           </section>
@@ -279,7 +279,7 @@ export default function Home() {
                   <EmptyDescription>Tidak ada contoh untuk ditampilkan.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                  <Button variant="outline">Tambah contoh</Button>
+                  <Button variant="outline" className={LANDING_ACTION_CLASS}>Tambah contoh</Button>
                 </EmptyContent>
               </Empty>
             </Card>
@@ -302,7 +302,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-3">
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger className={buttonVariants({ variant: "outline", className: "min-h-11 px-4" })}>
+                    <TooltipTrigger className={buttonVariants({ variant: "outline", className: LANDING_ACTION_CLASS })}>
                       <CalendarDays aria-hidden="true" />
                       Petunjuk
                     </TooltipTrigger>
@@ -311,7 +311,7 @@ export default function Home() {
                 </TooltipProvider>
 
                 <Sheet>
-                  <SheetTrigger className={buttonVariants({ className: "min-h-11 px-4" })}>
+                  <SheetTrigger className={buttonVariants({ className: LANDING_ACTION_CLASS })}>
                     Buka panel
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-md">
@@ -325,7 +325,7 @@ export default function Home() {
                       Konten panel tetap dapat dijangkau dan ditutup dengan keyboard.
                     </div>
                     <SheetFooter>
-                      <SheetClose className={buttonVariants({ variant: "outline", className: "min-h-11 px-4" })}>
+                      <SheetClose className={buttonVariants({ variant: "outline", className: LANDING_ACTION_CLASS })}>
                         Tutup panel
                       </SheetClose>
                     </SheetFooter>
