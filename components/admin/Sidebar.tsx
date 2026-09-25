@@ -1,6 +1,6 @@
 "use client"
 
-import { LogOut, Users } from "lucide-react"
+import { ChartPie, LogOut, Users } from "lucide-react"
 import { useState } from "react"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
@@ -21,7 +21,10 @@ const NAVIGASI: readonly NavigationGroup[] = [
   {
     key: "kelola",
     label: "Kelola",
-    items: [{ key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users }],
+    items: [
+      { key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users },
+      { key: "admin-analytics", label: "Analitik", href: "/admin/analitik", icon: ChartPie },
+    ],
   },
 ]
 
