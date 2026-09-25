@@ -3,6 +3,7 @@ import { BADGE_STATUS_FASILITAS, LABEL_STATUS_FASILITAS } from "@/config/labels"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import AnalyticsExportActions from "@/components/admin/AnalyticsExportActions";
 import type { AnalyticsSnapshot } from "@/lib/services/admin-analytics-service";
 import type { AnalyticsFilterValues } from "@/lib/validation/admin-analytics";
 import type { ProblemFieldError } from "@/lib/http/problem";
@@ -116,6 +117,16 @@ export default function AdminAnalyticsDashboard({
             ))}
           </ul>
         </div>
+      )}
+
+      {snapshot && (
+        <AnalyticsExportActions
+          filters={{
+            startDate: snapshot.filters.startDate,
+            endDate: snapshot.filters.endDate,
+            location: snapshot.filters.location ?? "",
+          }}
+        />
       )}
 
       {snapshot && (
