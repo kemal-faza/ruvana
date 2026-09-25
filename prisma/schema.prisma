@@ -142,8 +142,9 @@ model Report {
   status          StatusLaporan @default(NEW)
   catatanResolusi String?
   ditanganiOleh   Int?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  // Instant absolut (UTC) untuk batas hari analitik Asia/Jakarta.
+  createdAt       DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(3)
 
   @@map("reports")
 }
