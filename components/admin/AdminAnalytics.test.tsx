@@ -144,4 +144,22 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByText("0 laporan")).toBeInTheDocument();
     expect(screen.getAllByText("Belum ada laporan pada periode dan lokasi ini.")).toHaveLength(3);
   });
+
+  it("renders every aggregate row beyond the usual 1,000-item page size", () => {
+    const byFacility = Array.from({ length: 1001 }, (_, index) => ({
+      facilityId: index + 1,
+      label: `Fasilitas ${index + 1}`,
+      count: 1,
+    }));
+    const largeSnapshot: AnalyticsSnapshot = {
+      ...snapshot,
+      reports: { ...snapshot.reports, total: 1001, byFacility },
+    };
+
+    render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={largeSnapshot} errors={[]} />);
+
+    const table = screen.getByRole("table", { name: "Laporan menurut fasilitas" });
+    expect(within(table).getAllByRole("row")).toHaveLength(1002);
+    expect(within(table).getByText("Fasilitas 1001")).toBeInTheDocument();
+  });
 });

@@ -95,6 +95,22 @@ describe("getAnalyticsSnapshot", () => {
     });
   });
 
+  it("returns zero percent for a valid period with positive capacity and no approved minutes", async () => {
+    sumApprovedReservationMinutes.mockResolvedValue(0);
+
+    const result = await getAnalyticsSnapshot(filters);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.occupancy).toMatchObject({
+      facilityCount: 3,
+      capacityMinutes: 3 * 2 * 780,
+      totalApprovedMinutes: 0,
+      occupancyPercent: 0,
+      unavailableReason: null,
+    });
+  });
+
   it("rejects an unknown location without querying reservation data", async () => {
     const result = await getAnalyticsSnapshot({ ...filters, location: "Tidak ada" });
 
