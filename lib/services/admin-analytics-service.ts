@@ -1,7 +1,13 @@
 import { JAM_OPERASIONAL, JAKARTA_TIMEZONE, STATUS_FASILITAS } from "@/config/business";
-import { listAnalyticsFacilities, sumApprovedReservationMinutes } from "@/lib/db/analytics";
-import type { StatusFasilitas } from "@/generated/prisma/enums";
+import { LABEL_STATUS_LAPORAN } from "@/config/labels";
+import {
+  getReportAnalyticsAggregates,
+  listAnalyticsFacilities,
+  sumApprovedReservationMinutes,
+} from "@/lib/db/analytics";
+import type { StatusFasilitas, StatusLaporan } from "@/generated/prisma/enums";
 import type { ProblemFieldError } from "@/lib/http/problem";
+import { getJakartaAnalyticsDateRange } from "@/lib/time/analytics-date-range";
 import { parseTimeToMinutes } from "@/lib/time/reservation-time";
 import type { AnalyticsFilters } from "@/lib/validation/admin-analytics";
 
@@ -17,10 +23,19 @@ export interface AnalyticsOccupancy {
   unavailableReason: string | null;
 }
 
+export interface AnalyticsReportSummary {
+  total: number;
+  byFacility: Array<{ facilityId: number; label: string; count: number }>;
+  byCategory: Array<{ label: string; count: number }>;
+  byStatus: Array<{ status: StatusLaporan; label: string; count: number }>;
+}
+
 export interface AnalyticsSnapshot {
   filters: AnalyticsFilters;
   locations: string[];
+  metadata: { generatedAt: Date };
   occupancy: AnalyticsOccupancy;
+  reports: AnalyticsReportSummary;
   facilityStatuses: Record<StatusFasilitas, string[]>;
   methodology: {
     timezone: typeof JAKARTA_TIMEZONE;
@@ -29,6 +44,7 @@ export interface AnalyticsSnapshot {
     occupancyFormula: string;
     reservationDateRule: string;
     approvedStatusRule: string;
+    reportCreationDateRule: string;
     facilityStatusNote: string;
   };
 }
@@ -93,20 +109,42 @@ export async function getAnalyticsSnapshot(filters: AnalyticsFilters): Promise<A
   const dayCount = countCalendarDays(filters.startDate, filters.endDate);
   const capacityMinutes = facilitiesInScope.length * dayCount * MINUTES_PER_DAY;
   const facilityIds = facilitiesInScope.map((facility) => facility.id);
-  const totalApprovedMinutes =
+  const generatedAt = new Date();
+  const { startAt, endAtExclusive } = getJakartaAnalyticsDateRange(filters.startDate, filters.endDate);
+  const [totalApprovedMinutes, reportAggregates] = await Promise.all([
     facilityIds.length === 0
-      ? 0
-      : await sumApprovedReservationMinutes({
+      ? Promise.resolve(0)
+      : sumApprovedReservationMinutes({
           facilityIds,
           startDate: filters.startDate,
           endDate: filters.endDate,
-        });
+        }),
+    getReportAnalyticsAggregates({ startAt, endAtExclusive, location: filters.location }),
+  ]);
+  const facilityNameById = new Map(facilitiesInScope.map(({ id, nama }) => [id, nama]));
+  const reports: AnalyticsReportSummary = {
+    total: reportAggregates.total,
+    byFacility: reportAggregates.byFacility
+      .map(({ facilityId, count }) => ({
+        facilityId,
+        label: facilityNameById.get(facilityId) ?? `Fasilitas ${facilityId}`,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count || compareIndonesian(a.label, b.label)),
+    byCategory: reportAggregates.byCategory
+      .map(({ category, count }) => ({ label: category, count }))
+      .sort((a, b) => b.count - a.count || compareIndonesian(a.label, b.label)),
+    byStatus: reportAggregates.byStatus
+      .map(({ status, count }) => ({ status, label: LABEL_STATUS_LAPORAN[status], count }))
+      .sort((a, b) => b.count - a.count || compareIndonesian(a.label, b.label)),
+  };
 
   return {
     ok: true,
     data: {
       filters,
       locations,
+      metadata: { generatedAt },
       occupancy: {
         facilityCount: facilitiesInScope.length,
         dayCount,
@@ -116,6 +154,7 @@ export async function getAnalyticsSnapshot(filters: AnalyticsFilters): Promise<A
         unavailableReason:
           capacityMinutes > 0 ? null : "Tidak ada fasilitas yang cocok dengan lokasi ini, sehingga kapasitas periode sama dengan nol.",
       },
+      reports,
       facilityStatuses,
       methodology: {
         timezone: JAKARTA_TIMEZONE,
@@ -124,6 +163,8 @@ export async function getAnalyticsSnapshot(filters: AnalyticsFilters): Promise<A
         occupancyFormula: "Total menit reservasi APPROVED ÷ kapasitas periode × 100%.",
         reservationDateRule: "Reservasi dihitung berdasarkan tanggal kalender kampus (Asia/Jakarta) dalam rentang inklusif.",
         approvedStatusRule: "Hanya durasi reservasi berstatus APPROVED yang masuk ke pembilang.",
+        reportCreationDateRule:
+          "Laporan dihitung berdasarkan waktu dibuat dalam rentang tanggal kalender Asia/Jakarta, dengan batas akhir eksklusif pada pukul 00.00 hari berikutnya.",
         facilityStatusNote:
           "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
       },

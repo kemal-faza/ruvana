@@ -9,6 +9,7 @@ const filters = { startDate: "2026-09-01", endDate: "2026-09-02", location: "" }
 const snapshot: AnalyticsSnapshot = {
   filters: { startDate: "2026-09-01", endDate: "2026-09-02", location: null },
   locations: ["Gedung A", "Gedung B"],
+  metadata: { generatedAt: new Date("2026-09-02T04:00:00.000Z") },
   occupancy: {
     facilityCount: 3,
     dayCount: 2,
@@ -22,6 +23,22 @@ const snapshot: AnalyticsSnapshot = {
     UNDER_MAINTENANCE: ["Aula Utama"],
     INACTIVE: ["Laboratorium Lama"],
   },
+  reports: {
+    total: 8,
+    byFacility: [
+      { facilityId: 1, label: "Ruang Alfa", count: 4 },
+      { facilityId: 2, label: "Aula Utama", count: 4 },
+    ],
+    byCategory: [
+      { label: "Listrik", count: 5 },
+      { label: "Peralatan", count: 3 },
+    ],
+    byStatus: [
+      { status: "NEW", label: "Baru", count: 4 },
+      { status: "IN_PROGRESS", label: "Diproses", count: 2 },
+      { status: "RESOLVED", label: "Selesai", count: 2 },
+    ],
+  },
   methodology: {
     timezone: "Asia/Jakarta",
     minutesPerDay: 780,
@@ -31,6 +48,7 @@ const snapshot: AnalyticsSnapshot = {
     approvedStatusRule: "Hanya durasi reservasi berstatus APPROVED yang masuk ke pembilang.",
     facilityStatusNote:
       "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
+    reportCreationDateRule: "Laporan dihitung berdasarkan waktu dibuat dalam kalender Asia/Jakarta.",
   },
 };
 
@@ -49,6 +67,20 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByText("4.680 menit")).toBeInTheDocument();
     expect(screen.getByText(/hanya durasi reservasi berstatus approved/i)).toBeInTheDocument();
     expect(screen.getAllByText(/histori status belum tersedia/i)).toHaveLength(2);
+
+    expect(screen.getByText("8 laporan")).toBeInTheDocument();
+    expect(screen.getByText(/waktu dibuat dalam kalender asia\/jakarta/i)).toBeInTheDocument();
+    const facilityReportTable = screen.getByRole("table", { name: "Laporan menurut fasilitas" });
+    expect(facilityReportTable).toHaveTextContent("Aula Utama");
+    expect(within(facilityReportTable).getAllByRole("row")).toHaveLength(3);
+    const categoryReportTable = screen.getByRole("table", { name: "Laporan menurut kategori" });
+    expect(categoryReportTable).toHaveTextContent("Listrik");
+    expect(within(categoryReportTable).getAllByRole("row")).toHaveLength(3);
+    const statusTable = screen.getByRole("table", { name: "Laporan menurut status" });
+    expect(statusTable).toHaveTextContent("Baru");
+    expect(statusTable).toHaveTextContent("Diproses");
+    expect(statusTable).not.toHaveTextContent("IN_PROGRESS");
+    expect(within(statusTable).getAllByRole("row")).toHaveLength(4);
 
     const table = screen.getByRole("table", { name: "Daftar fasilitas menurut status saat ini" });
     const rows = within(table).getAllByRole("row");
@@ -100,6 +132,7 @@ describe("AdminAnalyticsDashboard", () => {
         unavailableReason: "Tidak ada fasilitas yang cocok dengan lokasi ini.",
       },
       facilityStatuses: { ACTIVE: [], UNDER_MAINTENANCE: [], INACTIVE: [] },
+      reports: { total: 0, byFacility: [], byCategory: [], byStatus: [] },
     };
 
     render(<AdminAnalyticsDashboard filters={filters} locations={[]} snapshot={emptySnapshot} errors={[]} />);
@@ -108,5 +141,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByText("Tidak ada fasilitas yang cocok dengan lokasi ini.")).toBeInTheDocument();
     expect(screen.getAllByText(/kapasitas periode/i).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Tidak ada fasilitas untuk lokasi ini.")).toBeInTheDocument();
+    expect(screen.getByText("0 laporan")).toBeInTheDocument();
+    expect(screen.getAllByText("Belum ada laporan pada periode dan lokasi ini.")).toHaveLength(3);
   });
 });

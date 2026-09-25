@@ -50,7 +50,7 @@ export default function AdminAnalyticsDashboard({
         <p className="mb-1 text-sm font-medium text-primary">Administrasi</p>
         <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">Analitik</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tinjau penggunaan fasilitas dan status fasilitas saat ini.
+          Tinjau penggunaan fasilitas, laporan kerusakan, dan status fasilitas saat ini.
         </p>
       </header>
 
@@ -167,6 +167,33 @@ export default function AdminAnalyticsDashboard({
             </Card>
           </section>
 
+          <section aria-label="Rekap laporan kerusakan" className="flex flex-col gap-3">
+            <MetricCard label="Total laporan kerusakan" value={`${formatNumber(snapshot.reports.total)} laporan`} />
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle className="text-base">Frekuensi laporan kerusakan</CardTitle>
+                <CardDescription>{snapshot.methodology.reportCreationDateRule}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 p-0 sm:p-4 xl:grid-cols-3">
+                <ReportBreakdownTable
+                  title="Laporan menurut fasilitas"
+                  ariaLabel="Laporan menurut fasilitas"
+                  rows={snapshot.reports.byFacility}
+                />
+                <ReportBreakdownTable
+                  title="Laporan menurut kategori"
+                  ariaLabel="Laporan menurut kategori"
+                  rows={snapshot.reports.byCategory}
+                />
+                <ReportBreakdownTable
+                  title="Laporan menurut status"
+                  ariaLabel="Laporan menurut status"
+                  rows={snapshot.reports.byStatus}
+                />
+              </CardContent>
+            </Card>
+          </section>
+
           <section aria-label="Status fasilitas saat ini" className="flex flex-col gap-3">
             <div className="grid gap-3 sm:grid-cols-3">
               {STATUS_FASILITAS.map((status) => (
@@ -218,6 +245,48 @@ export default function AdminAnalyticsDashboard({
         </>
       )}
     </main>
+  );
+}
+
+function ReportBreakdownTable({
+  title,
+  ariaLabel,
+  rows,
+}: {
+  title: string;
+  ariaLabel: string;
+  rows: readonly { label: string; count: number }[];
+}) {
+  return (
+    <div className="min-w-0 overflow-hidden rounded-lg border border-border/70">
+      <h3 className="px-4 py-3 text-sm font-semibold">{title}</h3>
+      <div className="overflow-x-auto">
+        <table aria-label={ariaLabel} className="w-full text-sm">
+          <thead>
+            <tr className="border-y border-border bg-muted/40 text-left text-xs text-muted-foreground">
+              <th scope="col" className="px-4 py-3 font-medium">Kelompok</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium">Jumlah</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length > 0 ? (
+              rows.map(({ label, count }) => (
+                <tr key={label} className="border-b border-border/60 last:border-0">
+                  <td className="px-4 py-3 font-medium">{label}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatNumber(count)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
+                  Belum ada laporan pada periode dan lokasi ini.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { listAnalyticsFacilities, sumApprovedReservationMinutes } = vi.hoisted(() => ({
+const { listAnalyticsFacilities, sumApprovedReservationMinutes, getReportAnalyticsAggregates } = vi.hoisted(() => ({
   listAnalyticsFacilities: vi.fn(),
   sumApprovedReservationMinutes: vi.fn(),
+  getReportAnalyticsAggregates: vi.fn(),
 }));
 
 vi.mock("@/lib/db/analytics", () => ({
   listAnalyticsFacilities,
   sumApprovedReservationMinutes,
+  getReportAnalyticsAggregates,
 }));
 
 import { getAnalyticsLocations, getAnalyticsSnapshot } from "@/lib/services/admin-analytics-service";
@@ -28,6 +30,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   listAnalyticsFacilities.mockResolvedValue(facilities);
   sumApprovedReservationMinutes.mockResolvedValue(120);
+  getReportAnalyticsAggregates.mockResolvedValue({
+    total: 0,
+    byFacility: [],
+    byCategory: [],
+    byStatus: [],
+  });
 });
 
 describe("getAnalyticsSnapshot", () => {
@@ -41,6 +49,7 @@ describe("getAnalyticsSnapshot", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
+    expect(result.data.metadata.generatedAt).toBeInstanceOf(Date);
     expect(result.data.occupancy).toEqual({
       facilityCount: 3,
       dayCount: 2,
@@ -53,6 +62,11 @@ describe("getAnalyticsSnapshot", () => {
       facilityIds: [2, 3, 1],
       startDate: "2026-09-01",
       endDate: "2026-09-02",
+    });
+    expect(getReportAnalyticsAggregates).toHaveBeenCalledWith({
+      startAt: new Date("2026-08-31T17:00:00.000Z"),
+      endAtExclusive: new Date("2026-09-02T17:00:00.000Z"),
+      location: null,
     });
   });
 
@@ -74,6 +88,11 @@ describe("getAnalyticsSnapshot", () => {
       startDate: "2026-09-01",
       endDate: "2026-09-01",
     });
+    expect(getReportAnalyticsAggregates).toHaveBeenCalledWith({
+      startAt: new Date("2026-08-31T17:00:00.000Z"),
+      endAtExclusive: new Date("2026-09-01T17:00:00.000Z"),
+      location: "Kampus A",
+    });
   });
 
   it("rejects an unknown location without querying reservation data", async () => {
@@ -87,6 +106,7 @@ describe("getAnalyticsSnapshot", () => {
       expect(result.locations).toEqual(["Kampus A", "Kampus B"]);
     }
     expect(sumApprovedReservationMinutes).not.toHaveBeenCalled();
+    expect(getReportAnalyticsAggregates).not.toHaveBeenCalled();
   });
 
   it("reports zero capacity as not computable and does not query reservations", async () => {
@@ -104,6 +124,7 @@ describe("getAnalyticsSnapshot", () => {
     });
     expect(result.data.facilityStatuses).toEqual({ ACTIVE: [], UNDER_MAINTENANCE: [], INACTIVE: [] });
     expect(sumApprovedReservationMinutes).not.toHaveBeenCalled();
+    expect(result.data.reports).toEqual({ total: 0, byFacility: [], byCategory: [], byStatus: [] });
   });
 
   it("keeps the current-status snapshot independent of the selected date range", async () => {
@@ -114,6 +135,77 @@ describe("getAnalyticsSnapshot", () => {
     if (first.ok && second.ok) {
       expect(second.data.facilityStatuses).toEqual(first.data.facilityStatuses);
       expect(second.data.occupancy.dayCount).not.toBe(first.data.occupancy.dayCount);
+    }
+  });
+
+  it("returns independently aggregated report groupings sorted by count and Indonesian label", async () => {
+    getReportAnalyticsAggregates.mockResolvedValue({
+      total: 9,
+      byFacility: [
+        { facilityId: 1, count: 2 },
+        { facilityId: 2, count: 5 },
+        { facilityId: 3, count: 2 },
+      ],
+      byCategory: [
+        { category: "Peralatan", count: 3 },
+        { category: "Listrik", count: 3 },
+        { category: "Lainnya", count: 3 },
+      ],
+      byStatus: [
+        { status: "RESOLVED", count: 2 },
+        { status: "NEW", count: 3 },
+        { status: "IN_PROGRESS", count: 2 },
+        { status: "REJECTED", count: 2 },
+      ],
+    });
+
+    const result = await getAnalyticsSnapshot(filters);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.reports).toEqual({
+      total: 9,
+      byFacility: [
+        { facilityId: 2, label: "Aula Zeta", count: 5 },
+        { facilityId: 3, label: "Laboratorium", count: 2 },
+        { facilityId: 1, label: "Ruang Alfa", count: 2 },
+      ],
+      byCategory: [
+        { label: "Lainnya", count: 3 },
+        { label: "Listrik", count: 3 },
+        { label: "Peralatan", count: 3 },
+      ],
+      byStatus: [
+        { status: "NEW", label: "Baru", count: 3 },
+        { status: "IN_PROGRESS", label: "Diproses", count: 2 },
+        { status: "REJECTED", label: "Ditolak", count: 2 },
+        { status: "RESOLVED", label: "Selesai", count: 2 },
+      ],
+    });
+    expect(result.data.methodology.reportCreationDateRule).toMatch(/waktu dibuat/i);
+  });
+
+  it("keeps report counts independent from occupancy and current facility status date semantics", async () => {
+    getReportAnalyticsAggregates.mockResolvedValue({
+      total: 4,
+      byFacility: [{ facilityId: 1, count: 4 }],
+      byCategory: [{ category: "Listrik", count: 4 }],
+      byStatus: [{ status: "NEW", count: 4 }],
+    });
+    const first = await getAnalyticsSnapshot(filters);
+    getReportAnalyticsAggregates.mockResolvedValueOnce({
+      total: 2,
+      byFacility: [{ facilityId: 1, count: 2 }],
+      byCategory: [{ category: "Listrik", count: 2 }],
+      byStatus: [{ status: "NEW", count: 2 }],
+    });
+    const second = await getAnalyticsSnapshot({ ...filters, startDate: "2030-01-01", endDate: "2030-01-01" });
+
+    expect(first.ok && second.ok).toBe(true);
+    if (first.ok && second.ok) {
+      expect(first.data.reports.total).toBe(4);
+      expect(second.data.reports.total).toBe(2);
+      expect(second.data.facilityStatuses).toEqual(first.data.facilityStatuses);
     }
   });
 });
