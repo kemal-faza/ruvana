@@ -194,6 +194,8 @@ export function buildAnalyticsExportModel(
         ["Jumlah laporan", String(snapshot.reports.total), "laporan", reportEmptyMessage ?? ""],
         ["Zona waktu", snapshot.methodology.timezone, "", "Zona waktu kalender kampus."],
         ["Metodologi okupansi", snapshot.methodology.occupancyFormula, "", snapshot.methodology.capacityFormula],
+        ["Tanggal reservasi", snapshot.methodology.reservationDateRule, "", ""],
+        ["Status pembilang", snapshot.methodology.approvedStatusRule, "", ""],
         ["Metodologi tanggal laporan", snapshot.methodology.reportCreationDateRule, "", ""],
         ["Status fasilitas", snapshot.methodology.facilityStatusNote, "", ""],
         ...(emptyMessage ? [["Keadaan data", emptyMessage, "", ""]] : []),
