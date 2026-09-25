@@ -2,6 +2,11 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/baseline-ui/page"
+import { getSessionUser } from "@/lib/auth"
+
+vi.mock("@/lib/auth", () => ({
+  getSessionUser: vi.fn().mockResolvedValue(null),
+}))
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/baseline-ui",
@@ -10,8 +15,8 @@ vi.mock("next/navigation", () => ({
 afterEach(cleanup)
 
 describe("katalog baseline UI", () => {
-  it("menampilkan katalog komponen dan shell statis", () => {
-    render(<Home />)
+  it("menampilkan katalog komponen dan shell statis", async () => {
+    render(await Home())
 
     expect(screen.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeInTheDocument()
     expect(screen.getByText("Pratinjau komponen")).toBeInTheDocument()
@@ -33,8 +38,9 @@ describe("katalog baseline UI", () => {
     expect(screen.getByRole("button", { name: "Tambah contoh" })).toBeInTheDocument()
   })
 
-  it("tidak menyisipkan data domain, statistik, atau kontrol peran", () => {
-    render(<Home />)
+  it("tidak menyisipkan data domain, statistik, atau kontrol peran", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(null)
+    render(await Home())
 
     for (const text of [
       "Ruang Sidang",

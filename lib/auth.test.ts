@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { createSession, destroySession, getSessionUser, getSessionUserId } from "@/lib/auth";
+import { createSession, destroySession, getSessionUser, getSessionUserId, requirePetugas } from "@/lib/auth";
+
+const { mockRedirect } = vi.hoisted(() => ({
+  mockRedirect: vi.fn((destination: string) => {
+    throw new Error(`redirect:${destination}`);
+  }),
+}));
+
+vi.mock("next/navigation", () => ({ redirect: mockRedirect }));
 
 const cookieValues = new Map<string, string>();
 const storedSessions = new Map<string, { userId: number; expiresAt: Date }>();
@@ -76,5 +84,39 @@ describe("sesi", () => {
     } as never);
 
     expect(await getSessionUser()).toBeNull();
+  });
+
+  it("hanya mengembalikan akun petugas aktif untuk halaman khusus petugas", async () => {
+    await createSession(12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 12,
+      nama: "Petugas Kampus",
+      email: "petugas@ruvana.test",
+      role: Role.petugas,
+      status: AccountStatus.ACTIVE,
+      waktuDaftar: new Date("2026-09-01T00:00:00Z"),
+      waktuVerifikasi: new Date("2026-09-01T00:00:00Z"),
+    } as never);
+
+    await expect(requirePetugas()).resolves.toMatchObject({ id: 12, role: Role.petugas });
+  });
+
+  it("mengalihkan sesi tanpa login ke login dan peran lain ke akses ditolak", async () => {
+    await expect(requirePetugas()).rejects.toThrow("redirect:/login");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/login");
+
+    await createSession(12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 12,
+      nama: "Admin Kampus",
+      email: "admin@ruvana.test",
+      role: Role.admin,
+      status: AccountStatus.ACTIVE,
+      waktuDaftar: new Date("2026-09-01T00:00:00Z"),
+      waktuVerifikasi: new Date("2026-09-01T00:00:00Z"),
+    } as never);
+
+    await expect(requirePetugas()).rejects.toThrow("redirect:/403");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/403");
   });
 });

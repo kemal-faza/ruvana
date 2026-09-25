@@ -48,7 +48,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-CLAUDE.md
+# Dokumen instruksi dan pembagian tugas lokal (tidak di-commit).
+/CLAUDE.md
+/TASK.md
 
 # Dokumentasi lokal di-ignore secara default. Hanya artefak kontrak tim berikut
 # yang dilacak; direktori induk harus di-unignore agar negasi file bekerja.
@@ -64,6 +66,9 @@ CLAUDE.md
 
 *.pdf
 *.sql
+# SQL bootstrap PostgreSQL (jika ada) harus dapat di-commit.
+!/docker/postgres-init/*.sql
+!/docker/postgres-init/**/*.sql
 
 # --- generated prisma client (tidak di-commit) ---
 generated/
