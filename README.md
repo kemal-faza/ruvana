@@ -69,22 +69,6 @@ Untuk menghentikan PostgreSQL yang dijalankan dengan Docker Compose:
 pnpm db:down
 ```
 
-### Rootless Podman di `/mnt/DATA`
-
-Pada workstation yang memakai Rootless Podman dan memiliki `docker-compose.local.yml`, jalankan PostgreSQL dengan override lokal:
-
-```bash
-podman-compose -f docker-compose.local.yml up -d
-pnpm db:migrate
-pnpm db:seed
-```
-
-Override ini menggunakan penyimpanan sementara. Setelah container dibuat ulang, jalankan kembali migration dan seed. File override bersifat lokal dan tidak disertakan dalam clone baru. Hentikan dengan:
-
-```bash
-podman-compose -f docker-compose.local.yml down
-```
-
 ## Akun demo
 
 Semua akun demo menggunakan password `password123`. Gunakan hanya pada lingkungan development.
