@@ -56,7 +56,7 @@ const snapshot: AnalyticsSnapshot = {
 afterEach(cleanup);
 
 describe("AdminAnalyticsDashboard", () => {
-  it("renders Jakarta filters, occupancy figures, methodology, and the current status table", () => {
+  it("renders Jakarta filters, occupancy figures, and the current status table", () => {
     render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />);
 
     expect(screen.getByRole("heading", { name: "Analitik" })).toBeInTheDocument();
@@ -67,12 +67,8 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByText("2,6%")).toBeInTheDocument();
     expect(screen.getByText("4.680 menit")).toBeInTheDocument();
     expect(screen.getByText("Menit reservasi disetujui")).toBeInTheDocument();
-    expect(screen.queryByText(/APPROVED/)).not.toBeInTheDocument();
-    expect(screen.getByText(/hanya durasi reservasi berstatus disetujui/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/histori status belum tersedia/i)).toHaveLength(2);
 
     expect(screen.getByText("8 laporan")).toBeInTheDocument();
-    expect(screen.getByText(/waktu dibuat dalam kalender asia\/jakarta/i)).toBeInTheDocument();
     const facilityReportTable = screen.getByRole("table", { name: "Laporan menurut fasilitas" });
     expect(facilityReportTable).toHaveTextContent("Aula Utama");
     expect(within(facilityReportTable).getAllByRole("row")).toHaveLength(3);
@@ -167,7 +163,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(rows[1]!).getByText("Jumlah:")).toHaveClass("sr-only");
   });
 
-  it("labels zero capacity as not computable and keeps the reason and method visible", () => {
+  it("labels zero capacity as not computable and keeps the reason visible", () => {
     const emptySnapshot: AnalyticsSnapshot = {
       ...snapshot,
       locations: [],
@@ -187,7 +183,7 @@ describe("AdminAnalyticsDashboard", () => {
 
     expect(screen.getByText("Tidak dapat dihitung")).toBeInTheDocument();
     expect(screen.getByText("Tidak ada fasilitas yang cocok dengan lokasi ini.")).toBeInTheDocument();
-    expect(screen.getAllByText(/kapasitas periode/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Kapasitas periode")).toBeInTheDocument();
     expect(screen.getByText("Tidak ada fasilitas untuk lokasi ini.")).toBeInTheDocument();
     expect(screen.getByText("0 laporan")).toBeInTheDocument();
     expect(screen.getAllByText("Belum ada laporan pada periode dan lokasi ini.")).toHaveLength(3);

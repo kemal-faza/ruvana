@@ -11,7 +11,6 @@ export default function AdminAnalitikLoading() {
         <div className="flex flex-col gap-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-7 w-32" />
-          <Skeleton className="h-4 w-full max-w-md" />
         </div>
         <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
           <Skeleton className="h-11 w-full sm:w-28" />
