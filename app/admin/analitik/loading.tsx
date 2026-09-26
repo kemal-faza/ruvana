@@ -20,7 +20,7 @@ export default function AdminAnalitikLoading() {
       </header>
 
       <Skeleton className="h-19 rounded-card sm:hidden" />
-      <Skeleton className="hidden h-62 rounded-card sm:block xl:h-25.5" />
+      <Skeleton className="hidden h-63 rounded-card sm:block xl:h-26" />
 
       <section aria-hidden="true" className="flex flex-col gap-3">
         <Skeleton className="h-5 w-24" />

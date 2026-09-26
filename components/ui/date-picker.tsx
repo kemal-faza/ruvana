@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "cn"
-import { format, startOfToday } from "date-fns"
+import { format, parseISO, startOfToday } from "date-fns"
 import { id as localeId } from "date-fns/locale"
 import { CalendarDays } from "lucide-react"
 
@@ -17,18 +17,30 @@ const DISPLAY_FORMAT = "d MMM yyyy"
 
 interface DatePickerProps {
   name: string
+  id?: string
   "aria-label": string
   placeholder?: string
+  defaultValue?: string
+  allowPastDates?: boolean
   className?: string
+}
+
+function initialDate(value?: string): Date | undefined {
+  if (!value) return undefined
+  const parsed = parseISO(value)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
 }
 
 export function DatePicker({
   name,
+  id,
   "aria-label": ariaLabel,
   placeholder = "Pilih tanggal",
+  defaultValue,
+  allowPastDates = false,
   className,
 }: DatePickerProps) {
-  const [date, setDate] = React.useState<Date>()
+  const [date, setDate] = React.useState<Date | undefined>(() => initialDate(defaultValue))
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -36,6 +48,7 @@ export function DatePicker({
       <input type="hidden" name={name} value={date ? format(date, ISO_FORMAT) : ""} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
+          id={id}
           type="button"
           aria-label={ariaLabel}
           data-empty={date ? undefined : "true"}
@@ -60,7 +73,7 @@ export function DatePicker({
             mode="single"
             selected={date}
             defaultMonth={date}
-            disabled={{ before: startOfToday() }}
+            disabled={allowPastDates ? undefined : { before: startOfToday() }}
             locale={localeId}
             autoFocus
             className="[--cell-size:--spacing(9)]"

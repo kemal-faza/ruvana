@@ -5,6 +5,9 @@ import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const FILTER_FORM_ID = "filter-analitik";
 
@@ -60,45 +63,47 @@ export default function AnalyticsFilterPanel({
             !expanded && "hidden sm:grid",
           )}
         >
-          <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-            <span>Tanggal awal</span>
-            <input
-              type="date"
+          <Field>
+            <FieldLabel htmlFor="filter-tanggal-awal">Tanggal awal</FieldLabel>
+            <DatePicker
+              id="filter-tanggal-awal"
               name="startDate"
-              defaultValue={startDate}
-              className="h-11 min-w-0 rounded-lg border border-input bg-transparent px-3 text-base font-normal outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm"
               aria-label="Tanggal awal"
+              defaultValue={startDate}
+              allowPastDates
+              className="min-h-11 rounded-lg border border-input px-3 hover:bg-muted"
             />
-          </label>
-          <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-            <span>Tanggal akhir</span>
-            <input
-              type="date"
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="filter-tanggal-akhir">Tanggal akhir</FieldLabel>
+            <DatePicker
+              id="filter-tanggal-akhir"
               name="endDate"
-              defaultValue={endDate}
-              className="h-11 min-w-0 rounded-lg border border-input bg-transparent px-3 text-base font-normal outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm"
               aria-label="Tanggal akhir"
+              defaultValue={endDate}
+              allowPastDates
+              className="min-h-11 rounded-lg border border-input px-3 hover:bg-muted"
             />
-          </label>
-          <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-            <span>Lokasi</span>
-            <select
-              name="location"
-              defaultValue={location}
-              aria-label="Lokasi"
-              className="h-11 min-w-0 rounded-lg border border-input bg-background px-3 text-base font-normal outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm"
-            >
-              <option value="">Semua lokasi</option>
-              {selectedLocationUnavailable && (
-                <option value={location}>Lokasi tidak tersedia: {location}</option>
-              )}
-              {locations.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="filter-lokasi">Lokasi</FieldLabel>
+            <Select name="location" defaultValue={location || null} modal={false}>
+              <SelectTrigger id="filter-lokasi" className="min-h-11 w-full">
+                <SelectValue placeholder="Semua lokasi" />
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                <SelectItem value={null}>Semua lokasi</SelectItem>
+                {selectedLocationUnavailable && (
+                  <SelectItem value={location}>Lokasi tidak tersedia: {location}</SelectItem>
+                )}
+                {locations.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Button type="submit" className="min-h-11 w-full sm:col-span-2 xl:col-span-1">
             Terapkan filter
           </Button>

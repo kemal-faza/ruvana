@@ -57,14 +57,24 @@ const snapshot: AnalyticsSnapshot = {
 afterEach(cleanup);
 
 describe("AdminAnalyticsDashboard", () => {
-  it("renders Jakarta filters, occupancy figures, and the current status table", () => {
-    render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />);
+  it("renders Jakarta filters, occupancy figures, and the facility status board", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />,
+    );
 
     expect(screen.getByRole("heading", { name: "Analitik" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Tanggal awal")).toHaveValue("2026-09-01");
-    expect(screen.getByLabelText("Tanggal akhir")).toHaveValue("2026-09-02");
-    expect(screen.getByLabelText("Lokasi")).toHaveValue("");
-    expect(screen.getByRole("option", { name: "Gedung A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tanggal awal" })).toHaveTextContent("1 Sep 2026");
+    expect(screen.getByRole("button", { name: "Tanggal akhir" })).toHaveTextContent("2 Sep 2026");
+    expect(container.querySelector('input[name="startDate"]')).toHaveValue("2026-09-01");
+    expect(container.querySelector('input[name="endDate"]')).toHaveValue("2026-09-02");
+
+    const locationTrigger = screen.getByRole("combobox", { name: "Lokasi" });
+    expect(locationTrigger).toHaveTextContent("Semua lokasi");
+    await user.click(locationTrigger);
+    expect(await screen.findByRole("option", { name: "Gedung A" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
     expect(screen.getByText("2,6%")).toBeInTheDocument();
     expect(screen.getByText("4.680 menit")).toBeInTheDocument();
     expect(screen.getByText("Menit reservasi disetujui")).toBeInTheDocument();
@@ -108,7 +118,8 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
-  it("keeps the selected location in the filter while date errors are shown", () => {
+  it("keeps the selected location in the filter while date errors are shown", async () => {
+    const user = userEvent.setup();
     render(
       <AdminAnalyticsDashboard
         filters={{ startDate: "2026-09-03", endDate: "2026-09-01", location: "Gedung A" }}
@@ -118,8 +129,11 @@ describe("AdminAnalyticsDashboard", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Lokasi")).toHaveValue("Gedung A");
-    expect(screen.getByRole("option", { name: "Gedung A" })).toBeInTheDocument();
+    const locationTrigger = screen.getByRole("combobox", { name: "Lokasi" });
+    expect(locationTrigger).toHaveTextContent("Gedung A");
+
+    await user.click(locationTrigger);
+    expect(await screen.findByRole("option", { name: "Gedung A" })).toBeInTheDocument();
   });
 
   it("meringkas filter dan membukanya kembali lewat tombol", async () => {
