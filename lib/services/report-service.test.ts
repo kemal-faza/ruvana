@@ -3,23 +3,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createReport as createReportRow,
   findFacilityById,
+  findReportByFoto,
   findReportFacilityOptions,
   findUsersById,
 } from "@/lib/db/reports";
-import { removeReportPhoto, saveReportPhoto } from "@/lib/storage/report-photo";
+import { removeReportPhoto, verifyReportPhotoUpload } from "@/lib/storage/report-photo";
 
 import { createReport, listReportFacilityOptions } from "./report-service";
 
 vi.mock("@/lib/db/reports", () => ({
   createReport: vi.fn(),
   findFacilityById: vi.fn(),
+  findReportByFoto: vi.fn(),
   findReportFacilityOptions: vi.fn(),
   findUsersById: vi.fn(),
 }));
 
 vi.mock("@/lib/storage/report-photo", () => ({
-  saveReportPhoto: vi.fn(),
+  isOwnedReportPhotoPathname: vi.fn(() => true),
   removeReportPhoto: vi.fn(),
+  verifyReportPhotoUpload: vi.fn(),
 }));
 
 const mockFacility = {
@@ -37,7 +40,9 @@ const mockRow = {
   facilityId: 1,
   kategori: "Listrik",
   deskripsi: "AC rusak",
-  foto: "/uploads/reports/abc.jpg",
+  foto: "reports/1/123e4567-e89b-42d3-a456-426614174000.jpg",
+  fotoContentType: "image/jpeg",
+  fotoSize: 3,
   status: "NEW" as const,
   catatanResolusi: null,
   ditanganiOleh: null,
@@ -46,23 +51,25 @@ const mockRow = {
   facility: mockFacility,
 };
 
-const foto = new File([new Uint8Array([0xff, 0xd8, 0xff])], "rusak.jpg", { type: "image/jpeg" });
-
 const input = {
   userId: 1,
   facilityId: 1,
   kategori: "Listrik",
   deskripsi: "AC rusak",
-  foto,
+  foto: {
+    pathname: "reports/1/123e4567-e89b-42d3-a456-426614174000.jpg",
+    contentType: "image/jpeg",
+    size: 3,
+  },
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findFacilityById).mockResolvedValue(mockFacility);
-  vi.mocked(saveReportPhoto).mockResolvedValue({
-    ok: true as const,
-    webPath: "/uploads/reports/abc.jpg",
+  vi.mocked(findReportByFoto).mockResolvedValue(null);
+  vi.mocked(verifyReportPhotoUpload).mockResolvedValue({
     contentType: "image/jpeg",
+    size: 3,
   });
 });
 
@@ -72,7 +79,7 @@ describe("createReport membersihkan foto saat insert gagal", () => {
     vi.mocked(createReportRow).mockRejectedValue(error);
 
     await expect(createReport(input)).rejects.toThrow("koneksi database terputus");
-    expect(removeReportPhoto).toHaveBeenCalledWith("/uploads/reports/abc.jpg");
+    expect(removeReportPhoto).toHaveBeenCalledWith(input.foto.pathname, input.userId);
   });
 
   it("mempertahankan foto ketika laporan berhasil dibuat", async () => {
@@ -84,7 +91,7 @@ describe("createReport membersihkan foto saat insert gagal", () => {
     expect(result.ok).toBe(true);
     expect(removeReportPhoto).not.toHaveBeenCalled();
     if (result.ok) {
-      expect(result.item.fotoPath).toBe("/uploads/reports/abc.jpg");
+      expect(result.item.fotoUrl).toBe("/api/reports/1/photo");
       expect(result.item.status).toBe("NEW");
     }
   });

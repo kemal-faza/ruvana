@@ -19,10 +19,13 @@ const reportUserSelect = {
 
 const reportSelect = {
   id: true,
+  userId: true,
   facilityId: true,
   kategori: true,
   deskripsi: true,
   foto: true,
+  fotoContentType: true,
+  fotoSize: true,
   status: true,
   catatanResolusi: true,
   ditanganiOleh: true,
@@ -95,10 +98,23 @@ export function createReport(data: {
   kategori: string;
   deskripsi: string;
   foto: string | null;
+  fotoContentType: string | null;
+  fotoSize: number | null;
 }) {
   return prisma.report.create({
     data,
     select: reportSelect,
+  });
+}
+
+export function findReportByFoto(foto: string) {
+  return prisma.report.findUnique({ where: { foto }, select: { id: true } });
+}
+
+export function findReportPhotoById(id: number) {
+  return prisma.report.findUnique({
+    where: { id },
+    select: { id: true, userId: true, foto: true, fotoContentType: true, fotoSize: true },
   });
 }
 
@@ -108,17 +124,5 @@ export function findReportFacilityOptions() {
     where: { status: { in: ["ACTIVE", "UNDER_MAINTENANCE"] } },
     orderBy: { nama: "asc" },
     select: reportFacilitySelect,
-  });
-}
-
-/**
- * Stand-in sementara untuk seam sesi Modul Identity & Account (belum terimplementasi).
- * Laporan "milik pengguna" di-resolve ke akun demo pengguna aktif pertama sampai seam sesi tersedia.
- */
-export function findDefaultReportOwner() {
-  return prisma.user.findFirst({
-    where: { role: "pengguna", status: "ACTIVE" },
-    orderBy: { id: "asc" },
-    select: { id: true, nama: true },
   });
 }
