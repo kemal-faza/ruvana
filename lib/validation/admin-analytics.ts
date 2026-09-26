@@ -19,6 +19,12 @@ export type AnalyticsFilterParseResult =
   | { ok: true; value: AnalyticsFilters }
   | { ok: false; errors: ProblemFieldError[]; values: AnalyticsFilterValues };
 
+const LABEL_FIELD_FILTER: Record<string, string> = {
+  startDate: "tanggal awal",
+  endDate: "tanggal akhir",
+  location: "lokasi",
+};
+
 function getSingleValue(
   raw: string | string[] | undefined,
   field: string,
@@ -29,7 +35,7 @@ function getSingleValue(
       errors.push({
         field,
         code: "DUPLICATE_FILTER",
-        message: `Filter ${field} hanya boleh diisi satu kali.`,
+        message: `Filter ${LABEL_FIELD_FILTER[field] ?? field} hanya boleh diisi satu kali.`,
       });
     }
     return raw[0];

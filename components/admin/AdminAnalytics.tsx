@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { STATUS_FASILITAS } from "@/config/business";
@@ -6,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import AnalyticsExportActions from "@/components/admin/AnalyticsExportActions";
+import AnalyticsFilterPanel from "@/components/admin/AnalyticsFilterPanel";
 import AnalyticsReportBreakdownTable from "@/components/admin/AnalyticsReportBreakdownTable";
 import type { AnalyticsSnapshot } from "@/lib/services/admin-analytics-service";
 import type { AnalyticsFilterValues } from "@/lib/validation/admin-analytics";
@@ -69,13 +71,15 @@ export default function AdminAnalyticsDashboard({
   snapshot: AnalyticsSnapshot | null;
   errors: ProblemFieldError[];
 }) {
-  const facilityRows = snapshot
-    ? STATUS_FASILITAS.flatMap((status) =>
-        snapshot.facilityStatuses[status].map((nama) => ({ status, nama })),
-      )
-    : [];
+  const facilityCount = snapshot
+    ? STATUS_FASILITAS.reduce((total, status) => total + snapshot.facilityStatuses[status].length, 0)
+    : 0;
   const selectedLocationUnavailable =
     locations.length > 0 && filters.location !== "" && !locations.includes(filters.location);
+  const periodLabel = snapshot
+    ? `${formatCalendarDate(snapshot.filters.startDate)} – ${formatCalendarDate(snapshot.filters.endDate)}`
+    : `${filters.startDate} – ${filters.endDate}`;
+  const locationLabel = filters.location || "Semua lokasi";
 
   return (
     <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
@@ -110,69 +114,42 @@ export default function AdminAnalyticsDashboard({
         )}
       </header>
 
-      <section aria-label="Filter analitik">
-        <Card size="sm">
-          <CardContent>
-            <form action="/admin/analitik" method="get" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1.4fr_auto] xl:items-end">
-              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-                <span>Tanggal awal</span>
-                <input
-                  type="date"
-                  name="startDate"
-                  defaultValue={filters.startDate}
-                  className="h-10 min-w-0 rounded-lg border border-input bg-transparent px-3 font-normal outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  aria-label="Tanggal awal"
-                />
-              </label>
-              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-                <span>Tanggal akhir</span>
-                <input
-                  type="date"
-                  name="endDate"
-                  defaultValue={filters.endDate}
-                  className="h-10 min-w-0 rounded-lg border border-input bg-transparent px-3 font-normal outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  aria-label="Tanggal akhir"
-                />
-              </label>
-              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-                <span>Lokasi</span>
-                <select
-                  name="location"
-                  defaultValue={filters.location}
-                  aria-label="Lokasi"
-                  className="h-10 min-w-0 rounded-lg border border-input bg-background px-3 font-normal outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  <option value="">Semua lokasi</option>
-                  {selectedLocationUnavailable && (
-                    <option value={filters.location}>Lokasi tidak tersedia: {filters.location}</option>
-                  )}
-                  {locations.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Button type="submit" className="min-h-10 w-full sm:col-span-2 xl:col-span-1">
-                Terapkan filter
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </section>
+      <section aria-label="Filter analitik" className="flex flex-col gap-3">
+        {errors.length > 0 && (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+          >
+            <div className="min-w-0">
+              <p className="font-medium">Filter tidak valid.</p>
+              <ul className="mt-1 list-inside list-disc">
+                {errors.map((error, index) => (
+                  <li key={`${error.field}-${error.code}-${index}`}>{error.message}</li>
+                ))}
+              </ul>
+            </div>
+            <Button
+              variant="outline"
+              className="min-h-11 shrink-0 self-start text-foreground sm:self-auto"
+              nativeButton={false}
+              render={<Link href="/admin/analitik" />}
+            >
+              Pakai rentang bulan ini
+            </Button>
+          </div>
+        )}
 
-      {errors.length > 0 && (
-        <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          <p className="font-medium">Filter tidak valid.</p>
-          <ul className="mt-1 list-inside list-disc">
-            {errors.map((error, index) => (
-              <li key={`${error.field}-${error.code}-${index}`}>
-                <span className="font-medium">{error.field}:</span> {error.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        <AnalyticsFilterPanel
+          startDate={filters.startDate}
+          endDate={filters.endDate}
+          location={filters.location}
+          locations={locations}
+          selectedLocationUnavailable={selectedLocationUnavailable}
+          periodLabel={periodLabel}
+          locationLabel={locationLabel}
+          startExpanded={errors.length > 0}
+        />
+      </section>
 
       {snapshot && (
         <>
@@ -219,40 +196,42 @@ export default function AdminAnalyticsDashboard({
           </section>
 
           <section aria-label="Rekap laporan kerusakan" className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
               <div className="min-w-0">
                 <h2 className="font-heading text-lg font-semibold tracking-tight">Laporan kerusakan</h2>
                 <p className="max-w-2xl text-sm text-muted-foreground">
                   Laporan yang dibuat pada periode dan lokasi terpilih, dikelompokkan per fasilitas, kategori, dan status.
                 </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Total{" "}
-                <span className="text-base font-semibold tabular-nums text-foreground">
+              <dl className="shrink-0">
+                <dt className="text-xs text-muted-foreground">Total periode ini</dt>
+                <dd className="text-lg font-semibold tabular-nums">
                   {formatNumber(snapshot.reports.total)} laporan
-                </span>
-              </p>
+                </dd>
+              </dl>
             </div>
 
-            <div className="grid min-w-0 gap-3 xl:grid-cols-3">
+            <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] xl:items-start">
               <AnalyticsReportBreakdownTable
                 key={`fasilitas-${snapshot.metadata.generatedAt.toISOString()}`}
                 title="Laporan menurut fasilitas"
                 ariaLabel="Laporan menurut fasilitas"
                 rows={snapshot.reports.byFacility}
               />
-              <AnalyticsReportBreakdownTable
-                key={`kategori-${snapshot.metadata.generatedAt.toISOString()}`}
-                title="Laporan menurut kategori"
-                ariaLabel="Laporan menurut kategori"
-                rows={snapshot.reports.byCategory}
-              />
-              <AnalyticsReportBreakdownTable
-                key={`status-${snapshot.metadata.generatedAt.toISOString()}`}
-                title="Laporan menurut status"
-                ariaLabel="Laporan menurut status"
-                rows={snapshot.reports.byStatus}
-              />
+              <div className="grid min-w-0 content-start gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <AnalyticsReportBreakdownTable
+                  key={`kategori-${snapshot.metadata.generatedAt.toISOString()}`}
+                  title="Laporan menurut kategori"
+                  ariaLabel="Laporan menurut kategori"
+                  rows={snapshot.reports.byCategory}
+                />
+                <AnalyticsReportBreakdownTable
+                  key={`status-${snapshot.metadata.generatedAt.toISOString()}`}
+                  title="Laporan menurut status"
+                  ariaLabel="Laporan menurut status"
+                  rows={snapshot.reports.byStatus}
+                />
+              </div>
             </div>
           </section>
 
@@ -263,17 +242,6 @@ export default function AdminAnalyticsDashboard({
             </div>
 
             <Card className="gap-0 overflow-hidden p-0">
-              <div className="grid divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                {STATUS_FASILITAS.map((status) => (
-                  <div key={status} className="flex items-center gap-2.5 px-4 py-3">
-                    <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
-                    <span className="text-xl font-bold tabular-nums">
-                      {formatNumber(snapshot.facilityStatuses[status].length)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
               <div className="overflow-x-auto">
                 <table aria-label="Daftar fasilitas menurut status saat ini" className="w-full text-sm">
                   <thead>
@@ -283,15 +251,36 @@ export default function AdminAnalyticsDashboard({
                     </tr>
                   </thead>
                   <tbody>
-                    {facilityRows.length > 0 ? (
-                      facilityRows.map(({ status, nama }) => (
-                        <tr key={`${status}-${nama}`} className="border-b border-border/60 last:border-0">
-                          <td className="px-4 py-3 align-top">
-                            <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
-                          </td>
-                          <td className="px-4 py-3 font-medium">{nama}</td>
-                        </tr>
-                      ))
+                    {facilityCount > 0 ? (
+                      STATUS_FASILITAS.map((status) => {
+                        const namaFasilitas = snapshot.facilityStatuses[status];
+                        return (
+                          <tr key={status} className="border-b border-border/60 last:border-0">
+                            <td className="px-4 py-3 align-top">
+                              <span className="flex items-baseline gap-2">
+                                <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
+                                <span className="text-base font-semibold tabular-nums">
+                                  <span className="sr-only">Jumlah: </span>
+                                  {formatNumber(namaFasilitas.length)}
+                                </span>
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              {namaFasilitas.length > 0 ? (
+                                <span className="flex flex-wrap gap-x-4 gap-y-1">
+                                  {namaFasilitas.map((nama) => (
+                                    <span key={nama} className="shrink-0 font-medium">
+                                      {nama}
+                                    </span>
+                                  ))}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">Tidak ada</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">

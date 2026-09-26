@@ -58,19 +58,27 @@ export default function AnalyticsExportActions({
   }
 
   return (
-    <section aria-label="Unduh rekap analitik" aria-busy={pendingFormat !== null} className="flex flex-col gap-2 sm:items-end">
-      <div className="flex flex-wrap gap-2">
+    <section
+      aria-label="Unduh rekap analitik"
+      aria-busy={pendingFormat !== null}
+      className="flex w-full flex-col gap-2 sm:w-auto sm:items-end"
+    >
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
         {EXPORT_FORMATS.map((format) => (
           <Button
             key={format}
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={pendingFormat !== null}
             aria-label={`Unduh ${format.toUpperCase()}`}
             onClick={() => void download(format)}
           >
             <Download aria-hidden="true" />
-            {pendingFormat === format ? `Menyiapkan ${format.toUpperCase()}…` : `Unduh ${format.toUpperCase()}`}
+            <span className="sm:hidden">{format.toUpperCase()}</span>
+            <span className="hidden sm:inline">
+              {pendingFormat === format ? `Menyiapkan ${format.toUpperCase()}…` : `Unduh ${format.toUpperCase()}`}
+            </span>
           </Button>
         ))}
       </div>

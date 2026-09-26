@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const ROWS_PER_PAGE = 10;
 const numberFormatter = new Intl.NumberFormat("id-ID");
@@ -23,7 +24,7 @@ export default function AnalyticsReportBreakdownTable({
   const maxCount = rows.reduce((maksimum, row) => Math.max(maksimum, row.count), 0);
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-card border border-border bg-card shadow-subtle">
+    <Card className="min-w-0 gap-0 p-0">
       <h3 className="px-4 py-3 text-sm font-semibold">{title}</h3>
       <div className="overflow-x-auto">
         <table aria-label={ariaLabel} className="w-full text-sm">
@@ -75,7 +76,7 @@ export default function AnalyticsReportBreakdownTable({
             type="button"
             variant="outline"
             size="sm"
-            className="w-full sm:w-auto"
+            className="min-h-11 w-full sm:w-auto"
             disabled={currentPage <= 1}
             onClick={() => setPage(Math.max(1, currentPage - 1))}
           >
@@ -88,7 +89,7 @@ export default function AnalyticsReportBreakdownTable({
             type="button"
             variant="outline"
             size="sm"
-            className="w-full sm:w-auto"
+            className="min-h-11 w-full sm:w-auto"
             disabled={currentPage >= totalPages}
             onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
           >
@@ -96,6 +97,6 @@ export default function AnalyticsReportBreakdownTable({
           </Button>
         </nav>
       )}
-    </div>
+    </Card>
   );
 }

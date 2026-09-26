@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import AdminAnalyticsDashboard from "@/components/admin/AdminAnalytics";
@@ -119,6 +120,51 @@ describe("AdminAnalyticsDashboard", () => {
 
     expect(screen.getByLabelText("Lokasi")).toHaveValue("Gedung A");
     expect(screen.getByRole("option", { name: "Gedung A" })).toBeInTheDocument();
+  });
+
+  it("meringkas filter dan membukanya kembali lewat tombol", async () => {
+    const user = userEvent.setup();
+    render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />);
+
+    const filterRegion = screen.getByRole("region", { name: "Filter analitik" });
+    const toggle = within(filterRegion).getByRole("button", { name: "Ubah filter" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "filter-analitik");
+    expect(within(filterRegion).getByText("1 Sep 2026 – 2 Sep 2026")).toBeInTheDocument();
+    expect(within(filterRegion).getByText("Semua lokasi", { selector: "dd" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tanggal awal").closest("form")).toHaveClass("hidden");
+
+    await user.click(toggle);
+
+    expect(within(filterRegion).getByRole("button", { name: "Tutup filter" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByLabelText("Tanggal awal").closest("form")).not.toHaveClass("hidden");
+  });
+
+  it("membuka filter terlebih dahulu saat validasi gagal", () => {
+    render(
+      <AdminAnalyticsDashboard
+        filters={{ startDate: "2026-09-03", endDate: "2026-09-01", location: "" }}
+        locations={[]}
+        snapshot={null}
+        errors={[{ field: "startDate", code: "DATE_RANGE_INVALID", message: "Tanggal awal harus sebelum tanggal akhir." }]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Tutup filter" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("Tanggal awal").closest("form")).not.toHaveClass("hidden");
+  });
+
+  it("melabeli jumlah fasilitas di kolom status untuk pembaca layar", () => {
+    render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />);
+
+    const table = screen.getByRole("table", { name: "Daftar fasilitas menurut status saat ini" });
+    const rows = within(table).getAllByRole("row");
+
+    expect(within(rows[1]!).getByText("Jumlah:")).toHaveClass("sr-only");
   });
 
   it("labels zero capacity as not computable and keeps the reason and method visible", () => {
