@@ -138,7 +138,9 @@ model Report {
   facilityId      Int
   kategori        String
   deskripsi       String
-  foto            String?
+  foto            String?       @unique(map: "reports_foto_key")
+  fotoContentType String?
+  fotoSize        Int?
   status          StatusLaporan @default(NEW)
   catatanResolusi String?
   ditanganiOleh   Int?
@@ -147,6 +149,16 @@ model Report {
   updatedAt       DateTime      @updatedAt @db.Timestamptz(3)
 
   @@map("reports")
+}
+
+model ReportUploadRateLimit {
+  key             String   @id @db.VarChar(80)
+  windowStartedAt DateTime @db.Timestamptz(3)
+  requestCount    Int      @default(0)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([updatedAt])
+  @@map("report_upload_rate_limits")
 }
 
 model IdempotencyKey {

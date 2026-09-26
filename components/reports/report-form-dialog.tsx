@@ -38,6 +38,7 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
   const [foto, setFoto] = useState<File | null>(null)
   const [fotoPreview, setFotoPreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<ReportSubmissionErrors>({})
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
     }
     setFoto(file)
     setErrors((current) => ({ ...current, foto: undefined }))
+    setSubmissionMessage(null)
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -86,19 +88,72 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
 
     setSubmitting(true)
     setErrors({})
-    const formData = new FormData()
-    formData.set("facilityId", facilityId)
-    formData.set("kategori", kategori)
-    formData.set("deskripsi", deskripsi)
-    if (foto) formData.set("foto", foto)
+    setSubmissionMessage(null)
+    let uploadedPathname: string | null = null
+    try {
+      if (!foto) throw new Error("Foto wajib dilampirkan.")
 
-    const result: CreateReportActionResult = await createReportAction(formData)
-    setSubmitting(false)
-    if (result.ok) {
-      onCreated(result.item)
-    } else {
-      setErrors(result.errors)
-      fokusErrorPertama(result.errors)
+      const tokenResponse = await fetch("/api/reports/photo-uploads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: foto.type, size: foto.size }),
+      })
+      if (!tokenResponse.ok) {
+        const problem = (await tokenResponse.json().catch(() => null)) as { detail?: unknown } | null
+        throw new Error(typeof problem?.detail === "string" ? problem.detail : "Izin unggah foto gagal dibuat.")
+      }
+
+      const upload = (await tokenResponse.json()) as { pathname?: unknown; uploadUrl?: unknown }
+      if (typeof upload.pathname !== "string" || typeof upload.uploadUrl !== "string") {
+        throw new Error("Respons unggah foto tidak valid.")
+      }
+      uploadedPathname = upload.pathname
+
+      const uploadResponse = await fetch(upload.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": foto.type },
+        body: foto,
+      })
+      if (!uploadResponse.ok) throw new Error("Foto gagal disimpan. Silakan coba lagi.")
+
+      const formData = new FormData()
+      formData.set("facilityId", facilityId)
+      formData.set("kategori", kategori)
+      formData.set("deskripsi", deskripsi)
+      formData.set("fotoPathname", upload.pathname)
+      formData.set("fotoType", foto.type)
+      formData.set("fotoSize", String(foto.size))
+
+      const result: CreateReportActionResult = await createReportAction(formData)
+      if (result.ok) {
+        uploadedPathname = null
+        onCreated(result.item)
+      } else {
+        await discardUploadedPhoto(upload.pathname)
+        setErrors(result.errors)
+        setSubmissionMessage(result.message)
+        fokusErrorPertama(result.errors)
+      }
+    } catch (error) {
+      if (uploadedPathname) await discardUploadedPhoto(uploadedPathname)
+      const message = error instanceof Error ? error.message : "Unggahan foto gagal. Silakan coba lagi."
+      setErrors({ foto: message })
+      setSubmissionMessage(message)
+      fokusErrorPertama({ foto: message })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function discardUploadedPhoto(pathname: string) {
+    try {
+      await fetch("/api/reports/photo-uploads", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pathname }),
+      })
+    } catch {
+      // Pembersihan sisi server best-effort; form tetap dapat memberi tahu pengguna.
     }
   }
 
@@ -256,13 +311,20 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                 </FieldContent>
               </Field>
 
-              <div className="mt-2 flex justify-end gap-2 border-t border-border pt-4">
-                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                  Batal
-                </Button>
-                <Button type="submit" loading={submitting}>
-                  {submitting ? null : "Kirim laporan"}
-                </Button>
+              <div className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
+                {submissionMessage && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {submissionMessage}
+                  </p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                    Batal
+                  </Button>
+                  <Button type="submit" loading={submitting}>
+                    {submitting ? null : "Kirim laporan"}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>

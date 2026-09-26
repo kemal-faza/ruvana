@@ -123,6 +123,11 @@ export const KATEGORI_LAPORAN = [
 export const LAPORAN_UPLOAD = {
   tipeDiizinkan: ["image/jpeg", "image/png", "image/webp"] as const,
   maksByte: 5 * 1024 * 1024,
+  masaBerlakuUrlUnggahMs: 10 * 60 * 1000,
+  masaBerlakuUrlBacaMs: 5 * 60 * 1000,
+  jendelaRateLimitMs: 60 * 60 * 1000,
+  maksUnggahPerJamPengguna: 20,
+  maksUnggahPerJamIp: 60,
 } as const
 
 // Deskripsi laporan mengikuti batas global PRD (2.000 karakter).
