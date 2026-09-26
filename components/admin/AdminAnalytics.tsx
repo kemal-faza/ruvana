@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
+
 import { STATUS_FASILITAS } from "@/config/business";
 import { BADGE_STATUS_FASILITAS, LABEL_STATUS_FASILITAS } from "@/config/labels";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import AnalyticsExportActions from "@/components/admin/AnalyticsExportActions";
 import AnalyticsReportBreakdownTable from "@/components/admin/AnalyticsReportBreakdownTable";
 import type { AnalyticsSnapshot } from "@/lib/services/admin-analytics-service";
@@ -21,10 +23,39 @@ function formatCalendarDate(value: string): string {
   const date = new Date(`${value}T00:00:00.000Z`);
   return new Intl.DateTimeFormat("id-ID", {
     day: "numeric",
-    month: "long",
+    month: "short",
     year: "numeric",
     timeZone: "UTC",
   }).format(date);
+}
+
+function formatTimestamp(value: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  }).format(value);
+}
+
+function Figure({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-baseline justify-between gap-4 border-b border-border/60 py-2.5 last:border-0">
+      <dt className="min-w-0 text-sm text-muted-foreground">{label}</dt>
+      <dd className="shrink-0 text-sm font-semibold tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function Rule({ term, children }: { term: string; children: ReactNode }) {
+  return (
+    <>
+      <dt className="text-muted-foreground">{term}</dt>
+      <dd className="min-w-0">{children}</dd>
+    </>
+  );
 }
 
 export default function AdminAnalyticsDashboard({
@@ -48,12 +79,35 @@ export default function AdminAnalyticsDashboard({
 
   return (
     <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <header>
-        <p className="mb-1 text-sm font-medium text-primary">Administrasi</p>
-        <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">Analitik</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tinjau penggunaan fasilitas, laporan kerusakan, dan status fasilitas saat ini.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="mb-1 text-sm font-medium text-primary">Administrasi</p>
+          <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">Analitik</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tinjau penggunaan fasilitas, laporan kerusakan, dan status fasilitas saat ini.
+          </p>
+          {snapshot && (
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">
+                {formatCalendarDate(snapshot.filters.startDate)} – {formatCalendarDate(snapshot.filters.endDate)}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>{snapshot.filters.location ?? "Semua lokasi"}</span>
+              <span aria-hidden="true">·</span>
+              <span>Dihitung {formatTimestamp(snapshot.metadata.generatedAt, snapshot.methodology.timezone)}</span>
+            </p>
+          )}
+        </div>
+
+        {snapshot && (
+          <AnalyticsExportActions
+            filters={{
+              startDate: snapshot.filters.startDate,
+              endDate: snapshot.filters.endDate,
+              location: snapshot.filters.location ?? "",
+            }}
+          />
+        )}
       </header>
 
       <section aria-label="Filter analitik">
@@ -121,155 +175,152 @@ export default function AdminAnalyticsDashboard({
       )}
 
       {snapshot && (
-        <AnalyticsExportActions
-          filters={{
-            startDate: snapshot.filters.startDate,
-            endDate: snapshot.filters.endDate,
-            location: snapshot.filters.location ?? "",
-          }}
-        />
-      )}
-
-      {snapshot && (
         <>
-          <section aria-label="Ringkasan okupansi" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <Card size="sm" className="min-w-0">
-              <CardContent className="flex h-full flex-col justify-center gap-1">
-                <p className="text-xs text-muted-foreground">Okupansi</p>
-                <p className="text-2xl font-bold tabular-nums">
-                  {snapshot.occupancy.occupancyPercent === null
-                    ? "Tidak dapat dihitung"
-                    : `${formatPercent(snapshot.occupancy.occupancyPercent)}%`}
-                </p>
-                {snapshot.occupancy.unavailableReason && (
-                  <p className="text-xs text-muted-foreground">{snapshot.occupancy.unavailableReason}</p>
-                )}
-              </CardContent>
-            </Card>
-            <MetricCard label="Fasilitas dihitung" value={formatNumber(snapshot.occupancy.facilityCount)} />
-            <MetricCard label="Hari kalender" value={formatNumber(snapshot.occupancy.dayCount)} />
-            <MetricCard label="Menit reservasi disetujui" value={`${formatNumber(snapshot.occupancy.totalApprovedMinutes)} menit`} />
-            <MetricCard label="Kapasitas periode" value={`${formatNumber(snapshot.occupancy.capacityMinutes)} menit`} />
-          </section>
+          <section aria-label="Ringkasan okupansi" className="flex flex-col gap-3">
+            <h2 className="font-heading text-lg font-semibold tracking-tight">Okupansi</h2>
 
-          <section aria-label="Metodologi okupansi">
             <Card size="sm">
-              <CardHeader>
-                <CardTitle className="text-base">Cara membaca okupansi</CardTitle>
-                <CardDescription>
-                  Periode {formatCalendarDate(snapshot.filters.startDate)}–{formatCalendarDate(snapshot.filters.endDate)}
-                  {snapshot.filters.location ? ` · ${snapshot.filters.location}` : " · Semua lokasi"} · {snapshot.methodology.timezone}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-                <p>
-                  Kapasitas periode = {formatNumber(snapshot.occupancy.facilityCount)} fasilitas × {formatNumber(snapshot.occupancy.dayCount)} hari × {formatNumber(snapshot.methodology.minutesPerDay)} menit
-                  {" = "}{formatNumber(snapshot.occupancy.capacityMinutes)} menit.
-                </p>
-                <p>
-                  {snapshot.methodology.occupancyFormula} {formatNumber(snapshot.occupancy.totalApprovedMinutes)} ÷ {formatNumber(snapshot.occupancy.capacityMinutes)} menit × 100%
-                  {snapshot.occupancy.occupancyPercent === null
-                    ? " = Tidak dapat dihitung karena kapasitas periode nol."
-                    : ` = ${formatPercent(snapshot.occupancy.occupancyPercent)}%.`}
-                </p>
-                <p>{snapshot.methodology.reservationDateRule}</p>
-                <p>{snapshot.methodology.approvedStatusRule}</p>
-                <p>{snapshot.methodology.facilityStatusNote}</p>
+              <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,9fr)] lg:items-center lg:gap-10">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="text-xs text-muted-foreground">Okupansi periode terpilih</p>
+                  <p
+                    className={`font-bold tabular-nums ${
+                      snapshot.occupancy.occupancyPercent === null ? "text-xl" : "text-4xl"
+                    }`}
+                  >
+                    {snapshot.occupancy.occupancyPercent === null
+                      ? "Tidak dapat dihitung"
+                      : `${formatPercent(snapshot.occupancy.occupancyPercent)}%`}
+                  </p>
+                  {snapshot.occupancy.occupancyPercent !== null && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatNumber(snapshot.occupancy.totalApprovedMinutes)} menit ÷ {formatNumber(snapshot.occupancy.capacityMinutes)} menit × 100%
+                    </p>
+                  )}
+                  {snapshot.occupancy.unavailableReason && (
+                    <p className="text-xs text-muted-foreground">{snapshot.occupancy.unavailableReason}</p>
+                  )}
+                </div>
+
+                <dl className="flex min-w-0 flex-col">
+                  <Figure
+                    label="Menit reservasi disetujui"
+                    value={`${formatNumber(snapshot.occupancy.totalApprovedMinutes)} menit`}
+                  />
+                  <Figure
+                    label="Kapasitas periode"
+                    value={`${formatNumber(snapshot.occupancy.capacityMinutes)} menit`}
+                  />
+                  <Figure label="Fasilitas dihitung" value={formatNumber(snapshot.occupancy.facilityCount)} />
+                  <Figure label="Hari kalender" value={formatNumber(snapshot.occupancy.dayCount)} />
+                </dl>
               </CardContent>
             </Card>
           </section>
 
           <section aria-label="Rekap laporan kerusakan" className="flex flex-col gap-3">
-            <MetricCard label="Total laporan kerusakan" value={`${formatNumber(snapshot.reports.total)} laporan`} />
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle className="text-base">Frekuensi laporan kerusakan</CardTitle>
-                <CardDescription>{snapshot.methodology.reportCreationDateRule}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3 p-0 sm:p-4 xl:grid-cols-3">
-                <AnalyticsReportBreakdownTable
-                  key={`fasilitas-${snapshot.metadata.generatedAt.toISOString()}`}
-                  title="Laporan menurut fasilitas"
-                  ariaLabel="Laporan menurut fasilitas"
-                  rows={snapshot.reports.byFacility}
-                />
-                <AnalyticsReportBreakdownTable
-                  key={`kategori-${snapshot.metadata.generatedAt.toISOString()}`}
-                  title="Laporan menurut kategori"
-                  ariaLabel="Laporan menurut kategori"
-                  rows={snapshot.reports.byCategory}
-                />
-                <AnalyticsReportBreakdownTable
-                  key={`status-${snapshot.metadata.generatedAt.toISOString()}`}
-                  title="Laporan menurut status"
-                  ariaLabel="Laporan menurut status"
-                  rows={snapshot.reports.byStatus}
-                />
-              </CardContent>
-            </Card>
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+              <div className="min-w-0">
+                <h2 className="font-heading text-lg font-semibold tracking-tight">Laporan kerusakan</h2>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Laporan yang dibuat pada periode dan lokasi terpilih, dikelompokkan per fasilitas, kategori, dan status.
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Total{" "}
+                <span className="text-base font-semibold tabular-nums text-foreground">
+                  {formatNumber(snapshot.reports.total)} laporan
+                </span>
+              </p>
+            </div>
+
+            <div className="grid min-w-0 gap-3 xl:grid-cols-3">
+              <AnalyticsReportBreakdownTable
+                key={`fasilitas-${snapshot.metadata.generatedAt.toISOString()}`}
+                title="Laporan menurut fasilitas"
+                ariaLabel="Laporan menurut fasilitas"
+                rows={snapshot.reports.byFacility}
+              />
+              <AnalyticsReportBreakdownTable
+                key={`kategori-${snapshot.metadata.generatedAt.toISOString()}`}
+                title="Laporan menurut kategori"
+                ariaLabel="Laporan menurut kategori"
+                rows={snapshot.reports.byCategory}
+              />
+              <AnalyticsReportBreakdownTable
+                key={`status-${snapshot.metadata.generatedAt.toISOString()}`}
+                title="Laporan menurut status"
+                ariaLabel="Laporan menurut status"
+                rows={snapshot.reports.byStatus}
+              />
+            </div>
           </section>
 
           <section aria-label="Status fasilitas saat ini" className="flex flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-3">
-              {STATUS_FASILITAS.map((status) => (
-                <MetricCard
-                  key={status}
-                  label={LABEL_STATUS_FASILITAS[status]}
-                  value={formatNumber(snapshot.facilityStatuses[status].length)}
-                />
-              ))}
+            <div className="min-w-0">
+              <h2 className="font-heading text-lg font-semibold tracking-tight">Status fasilitas</h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">{snapshot.methodology.facilityStatusNote}</p>
             </div>
 
             <Card className="gap-0 overflow-hidden p-0">
-              <CardHeader className="p-4 sm:p-5">
-                <CardTitle className="text-base">Fasilitas menurut status saat ini</CardTitle>
-                <CardDescription>{snapshot.methodology.facilityStatusNote}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table aria-label="Daftar fasilitas menurut status saat ini" className="w-full text-sm">
-                    <thead>
-                      <tr className="border-y border-border bg-muted/40 text-left text-xs text-muted-foreground">
-                        <th scope="col" className="px-4 py-3 font-medium">Status</th>
-                        <th scope="col" className="px-4 py-3 font-medium">Fasilitas</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {facilityRows.length > 0 ? (
-                        facilityRows.map(({ status, nama }) => (
-                          <tr key={`${status}-${nama}`} className="border-b border-border/60 last:border-0">
-                            <td className="px-4 py-3 align-top">
-                              <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
-                            </td>
-                            <td className="px-4 py-3 font-medium">{nama}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
-                            Tidak ada fasilitas untuk lokasi ini.
+              <div className="grid divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                {STATUS_FASILITAS.map((status) => (
+                  <div key={status} className="flex items-center gap-2.5 px-4 py-3">
+                    <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
+                    <span className="text-xl font-bold tabular-nums">
+                      {formatNumber(snapshot.facilityStatuses[status].length)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table aria-label="Daftar fasilitas menurut status saat ini" className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
+                      <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
+                      <th scope="col" className="px-4 py-2.5 font-medium">Fasilitas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {facilityRows.length > 0 ? (
+                      facilityRows.map(({ status, nama }) => (
+                        <tr key={`${status}-${nama}`} className="border-b border-border/60 last:border-0">
+                          <td className="px-4 py-3 align-top">
+                            <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
                           </td>
+                          <td className="px-4 py-3 font-medium">{nama}</td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
+                          Tidak ada fasilitas untuk lokasi ini.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </Card>
+          </section>
+
+          <section aria-label="Metodologi perhitungan" className="flex flex-col gap-3 border-t border-border pt-6">
+            <h2 className="font-heading text-lg font-semibold tracking-tight">Metodologi perhitungan</h2>
+            <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[11rem_minmax(0,1fr)]">
+              <Rule term="Zona waktu">
+                {snapshot.methodology.timezone} · {formatNumber(snapshot.methodology.minutesPerDay)} menit operasional per hari
+              </Rule>
+              <Rule term="Kapasitas periode">{snapshot.methodology.capacityFormula}</Rule>
+              <Rule term="Rumus okupansi">{snapshot.methodology.occupancyFormula}</Rule>
+              <Rule term="Tanggal reservasi">{snapshot.methodology.reservationDateRule}</Rule>
+              <Rule term="Status dihitung">{snapshot.methodology.approvedStatusRule}</Rule>
+              <Rule term="Rentang laporan">{snapshot.methodology.reportCreationDateRule}</Rule>
+              <Rule term="Status fasilitas">{snapshot.methodology.facilityStatusNote}</Rule>
+            </dl>
           </section>
         </>
       )}
     </main>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card size="sm" className="min-w-0">
-      <CardContent className="flex h-full flex-col justify-center gap-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-      </CardContent>
-    </Card>
   );
 }

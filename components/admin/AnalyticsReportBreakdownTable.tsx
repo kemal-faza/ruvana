@@ -20,9 +20,10 @@ export default function AnalyticsReportBreakdownTable({
   const totalPages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const visibleRows = rows.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+  const maxCount = rows.reduce((maksimum, row) => Math.max(maksimum, row.count), 0);
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-lg border border-border/70">
+    <div className="min-w-0 overflow-hidden rounded-card border border-border bg-card shadow-subtle">
       <h3 className="px-4 py-3 text-sm font-semibold">{title}</h3>
       <div className="overflow-x-auto">
         <table aria-label={ariaLabel} className="w-full text-sm">
@@ -37,8 +38,21 @@ export default function AnalyticsReportBreakdownTable({
               visibleRows.map(({ label, count }) => (
                 <tr key={label} className="border-b border-border/60 last:border-0">
                   <td className="px-4 py-3 font-medium">{label}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {numberFormatter.format(count)}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="block h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-muted"
+                      >
+                        <span
+                          className="block h-full rounded-full bg-primary/70"
+                          style={{ width: `${maxCount > 0 ? (count / maxCount) * 100 : 0}%` }}
+                        />
+                      </span>
+                      <span className="min-w-10 text-right tabular-nums">
+                        {numberFormatter.format(count)}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ))

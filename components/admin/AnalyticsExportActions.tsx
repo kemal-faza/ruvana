@@ -58,7 +58,7 @@ export default function AnalyticsExportActions({
   }
 
   return (
-    <section aria-label="Unduh rekap analitik" aria-busy={pendingFormat !== null} className="flex flex-col gap-2">
+    <section aria-label="Unduh rekap analitik" aria-busy={pendingFormat !== null} className="flex flex-col gap-2 sm:items-end">
       <div className="flex flex-wrap gap-2">
         {EXPORT_FORMATS.map((format) => (
           <Button
