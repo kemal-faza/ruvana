@@ -32,7 +32,7 @@ interface ReportDetailSheetProps {
 export function ReportDetailSheet({ report, open, onOpenChange }: ReportDetailSheetProps) {
   if (!report) return null
 
-  const photo = report.fotoPath ?? getFacilityPhoto(report.facilityNama, report.facilityTipe)
+  const photo = report.fotoUrl ?? getFacilityPhoto(report.facilityNama, report.facilityTipe)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -50,6 +50,7 @@ export function ReportDetailSheet({ report, open, onOpenChange }: ReportDetailSh
                 alt={`Foto ${report.kategori} di ${report.facilityNama}`}
                 fill
                 sizes="(min-width: 640px) 384px, 100vw"
+                unoptimized
                 className="object-cover"
               />
             </div>

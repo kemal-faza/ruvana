@@ -12,7 +12,7 @@ interface ReportCardProps {
 }
 
 export function ReportCard({ report, onSelect }: ReportCardProps) {
-  const photo = report.fotoPath ?? getFacilityPhoto(report.facilityNama, report.facilityTipe)
+  const photo = report.fotoUrl ?? getFacilityPhoto(report.facilityNama, report.facilityTipe)
 
   return (
     <button
@@ -27,6 +27,7 @@ export function ReportCard({ report, onSelect }: ReportCardProps) {
             alt={`Foto ${report.kategori} di ${report.facilityNama}`}
             fill
             sizes="80px"
+            unoptimized
             className="object-cover"
           />
         </span>

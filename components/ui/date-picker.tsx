@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "cn"
-import { format, startOfToday } from "date-fns"
+import { format, parseISO, startOfToday } from "date-fns"
 import { id as localeId } from "date-fns/locale"
 import { CalendarDays } from "lucide-react"
 
@@ -17,29 +17,48 @@ const DISPLAY_FORMAT = "d MMM yyyy"
 
 interface DatePickerProps {
   name: string
+  id?: string
   "aria-label": string
   placeholder?: string
-  className?: string
+  /** Nilai awal sebagai string `yyyy-MM-dd` (mis. dari query param). */
+  defaultValue?: string
+  /** Nilai awal sebagai `Date` (mis. hasil parse manual di zona waktu lokal). */
   defaultDate?: Date
+  allowPastDates?: boolean
+  className?: string
   disabled?: React.ComponentProps<typeof Calendar>["disabled"]
+}
+
+function initialDate(value?: string): Date | undefined {
+  if (!value) return undefined
+  const parsed = parseISO(value)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
 }
 
 export function DatePicker({
   name,
+  id,
   "aria-label": ariaLabel,
   placeholder = "Pilih tanggal",
-  className,
+  defaultValue,
   defaultDate,
-  disabled = { before: startOfToday() },
+  allowPastDates = false,
+  className,
+  disabled,
 }: DatePickerProps) {
-  const [date, setDate] = React.useState<Date | undefined>(defaultDate)
+  const [date, setDate] = React.useState<Date | undefined>(() => defaultDate ?? initialDate(defaultValue))
   const [open, setOpen] = React.useState(false)
+
+  // `disabled` eksplisit menang; kalau tidak diberikan, tanggal lampau hanya
+  // diblokir saat `allowPastDates` tidak diaktifkan.
+  const disabledDays = disabled ?? (allowPastDates ? undefined : { before: startOfToday() })
 
   return (
     <>
       <input type="hidden" name={name} value={date ? format(date, ISO_FORMAT) : ""} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
+          id={id}
           type="button"
           aria-label={ariaLabel}
           data-empty={date ? undefined : "true"}
@@ -64,7 +83,7 @@ export function DatePicker({
             mode="single"
             selected={date}
             defaultMonth={date}
-            disabled={disabled}
+            disabled={disabledDays}
             locale={localeId}
             autoFocus
             className="[--cell-size:--spacing(9)]"

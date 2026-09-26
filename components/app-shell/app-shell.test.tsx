@@ -70,6 +70,21 @@ describe("AppShell", () => {
     expect((await axe(container)).violations).toEqual([])
   })
 
+  it("tidak menambahkan landmark main sendiri agar halaman tetap punya satu main", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    render(
+      <AppShell
+        navigation={navigation}
+        account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
+      >
+        <main>Isi halaman</main>
+      </AppShell>,
+    )
+
+    expect(screen.getAllByRole("main")).toHaveLength(1)
+    expect(screen.getByRole("main")).toHaveTextContent("Isi halaman")
+  })
+
   it("menampilkan masuk dan menyembunyikan logout saat tidak ada sesi", () => {
     setMatchMedia("(max-width: 1023px)", false)
     render(

@@ -88,9 +88,10 @@ export const OFFSET_ZONA_WAKTU_MENIT = 420;
 // Role & TipeFasilitas tetap bahasa Indonesia sesuai dokumen.
 export const ROLE = ["pengguna", "petugas", "admin"] as const;
 export const STATUS_AKUN = ["PENDING", "ACTIVE", "REJECTED", "DISABLED"] as const;
+export const STATUS_RESERVASI_DISETUJUI = "APPROVED" as const;
 export const STATUS_RESERVASI = [
   "PENDING",
-  "APPROVED",
+  STATUS_RESERVASI_DISETUJUI,
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
@@ -126,6 +127,11 @@ export const KATEGORI_LAPORAN = [
 export const LAPORAN_UPLOAD = {
   tipeDiizinkan: ["image/jpeg", "image/png", "image/webp"] as const,
   maksByte: 5 * 1024 * 1024,
+  masaBerlakuUrlUnggahMs: 10 * 60 * 1000,
+  masaBerlakuUrlBacaMs: 5 * 60 * 1000,
+  jendelaRateLimitMs: 60 * 60 * 1000,
+  maksUnggahPerJamPengguna: 20,
+  maksUnggahPerJamIp: 60,
 } as const
 
 // Deskripsi laporan mengikuti batas global PRD (2.000 karakter).
