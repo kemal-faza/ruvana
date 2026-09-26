@@ -52,32 +52,34 @@ export function resetMatchMedia() {
   mediaListeners.clear()
 }
 
-Object.defineProperty(window, "matchMedia", {
-  writable: true,
-  value: (query: string): MediaQueryList => {
-    const listeners = mediaListeners.get(query) ?? new Set<MediaListener>()
-    mediaListeners.set(query, listeners)
-    const mediaList = {
-      matches: mediaState.get(query) ?? false,
-      media: query,
-      onchange: null,
-      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject | null) => {
-        if (typeof listener === "function") listeners.add(listener as MediaListener)
-      },
-      removeEventListener: (_type: string, listener: EventListenerOrEventListenerObject | null) => {
-        if (typeof listener === "function") listeners.delete(listener as MediaListener)
-      },
-      addListener: (listener: ((this: MediaQueryList, ev: MediaQueryListEvent) => unknown) | null) => {
-        if (listener) listeners.add(listener as MediaListener)
-      },
-      removeListener: (listener: ((this: MediaQueryList, ev: MediaQueryListEvent) => unknown) | null) => {
-        if (listener) listeners.delete(listener as MediaListener)
-      },
-      dispatchEvent: () => true,
-    } as MediaQueryList
-    const lists = mediaLists.get(query) ?? new Set()
-    lists.add(mediaList)
-    mediaLists.set(query, lists)
-    return mediaList
-  },
-})
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (query: string): MediaQueryList => {
+      const listeners = mediaListeners.get(query) ?? new Set<MediaListener>()
+      mediaListeners.set(query, listeners)
+      const mediaList = {
+        matches: mediaState.get(query) ?? false,
+        media: query,
+        onchange: null,
+        addEventListener: (_type: string, listener: EventListenerOrEventListenerObject | null) => {
+          if (typeof listener === "function") listeners.add(listener as MediaListener)
+        },
+        removeEventListener: (_type: string, listener: EventListenerOrEventListenerObject | null) => {
+          if (typeof listener === "function") listeners.delete(listener as MediaListener)
+        },
+        addListener: (listener: ((this: MediaQueryList, ev: MediaQueryListEvent) => unknown) | null) => {
+          if (listener) listeners.add(listener as MediaListener)
+        },
+        removeListener: (listener: ((this: MediaQueryList, ev: MediaQueryListEvent) => unknown) | null) => {
+          if (listener) listeners.delete(listener as MediaListener)
+        },
+        dispatchEvent: () => true,
+      } as MediaQueryList
+      const lists = mediaLists.get(query) ?? new Set()
+      lists.add(mediaList)
+      mediaLists.set(query, lists)
+      return mediaList
+    },
+  })
+}

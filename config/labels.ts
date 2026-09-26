@@ -17,7 +17,7 @@ export const LABEL_SATUAN_KAPASITAS: Record<TipeFasilitas, string> = {
 };
 
 export const LABEL_STATUS_FASILITAS: Record<StatusFasilitas, string> = {
-  ACTIVE: "Tersedia",
+  ACTIVE: "Aktif",
   UNDER_MAINTENANCE: "Dalam Perbaikan",
   INACTIVE: "Nonaktif",
 };

@@ -84,9 +84,10 @@ export const VALID_END_TIMES = [
 // Role & TipeFasilitas tetap bahasa Indonesia sesuai dokumen.
 export const ROLE = ["pengguna", "petugas", "admin"] as const;
 export const STATUS_AKUN = ["PENDING", "ACTIVE", "REJECTED", "DISABLED"] as const;
+export const STATUS_RESERVASI_DISETUJUI = "APPROVED" as const;
 export const STATUS_RESERVASI = [
   "PENDING",
-  "APPROVED",
+  STATUS_RESERVASI_DISETUJUI,
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
