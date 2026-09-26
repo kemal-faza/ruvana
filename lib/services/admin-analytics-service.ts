@@ -38,7 +38,7 @@ export interface AnalyticsSnapshot {
   reports: AnalyticsReportSummary;
   facilityStatuses: Record<StatusFasilitas, string[]>;
   methodology: {
-    timezone: typeof JAKARTA_TIMEZONE;
+    timezone: string;
     minutesPerDay: number;
     capacityFormula: string;
     occupancyFormula: string;
@@ -160,11 +160,11 @@ export async function getAnalyticsSnapshot(filters: AnalyticsFilters): Promise<A
         timezone: JAKARTA_TIMEZONE,
         minutesPerDay: MINUTES_PER_DAY,
         capacityFormula: "Jumlah fasilitas × jumlah hari kalender inklusif × menit operasional per hari.",
-        occupancyFormula: "Total menit reservasi APPROVED ÷ kapasitas periode × 100%.",
-        reservationDateRule: "Reservasi dihitung berdasarkan tanggal kalender kampus (Asia/Jakarta) dalam rentang inklusif.",
-        approvedStatusRule: "Hanya durasi reservasi berstatus APPROVED yang masuk ke pembilang.",
+        occupancyFormula: "Total menit reservasi disetujui ÷ kapasitas periode × 100%.",
+        reservationDateRule: `Reservasi dihitung berdasarkan tanggal kalender kampus (${JAKARTA_TIMEZONE}) dalam rentang inklusif.`,
+        approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
         reportCreationDateRule:
-          "Laporan dihitung berdasarkan waktu dibuat dalam rentang tanggal kalender Asia/Jakarta, dengan batas akhir eksklusif pada pukul 00.00 hari berikutnya.",
+          `Laporan dihitung berdasarkan waktu dibuat dalam rentang tanggal kalender ${JAKARTA_TIMEZONE}, dengan batas akhir eksklusif pada pukul 00.00 hari berikutnya.`,
         facilityStatusNote:
           "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
       },

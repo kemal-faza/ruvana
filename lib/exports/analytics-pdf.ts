@@ -76,11 +76,11 @@ function textCell(text: string, isHeader = false): ContentText {
 
 function tableContent(
   section: AnalyticsPdfSection,
-  rows: string[][],
+  rows: AnalyticsPdfSection["rows"],
 ): Content {
   const columns = section.columns.map((column) => cleanText(column));
   const bodyRows = rows.map((row) =>
-    columns.map((_, index) => textCell(row[index] ?? "")),
+    columns.map((_, index) => textCell(String(row[index] ?? ""))),
   );
   return {
     table: {

@@ -50,6 +50,9 @@ describe("getAnalyticsSnapshot", () => {
     if (!result.ok) return;
 
     expect(result.data.metadata.generatedAt).toBeInstanceOf(Date);
+    expect(result.data.methodology.occupancyFormula).toContain("reservasi disetujui");
+    expect(result.data.methodology.approvedStatusRule).toContain("berstatus disetujui");
+    expect(result.data.methodology.approvedStatusRule).not.toContain("APPROVED");
     expect(result.data.occupancy).toEqual({
       facilityCount: 3,
       dayCount: 2,

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import AdminAnalyticsDashboard from "@/components/admin/AdminAnalytics";
@@ -43,9 +43,9 @@ const snapshot: AnalyticsSnapshot = {
     timezone: "Asia/Jakarta",
     minutesPerDay: 780,
     capacityFormula: "Jumlah fasilitas × jumlah hari kalender inklusif × menit operasional per hari.",
-    occupancyFormula: "Total menit reservasi APPROVED ÷ kapasitas periode × 100%.",
+    occupancyFormula: "Total menit reservasi disetujui ÷ kapasitas periode × 100%.",
     reservationDateRule: "Reservasi dihitung berdasarkan tanggal kalender kampus (Asia/Jakarta) dalam rentang inklusif.",
-    approvedStatusRule: "Hanya durasi reservasi berstatus APPROVED yang masuk ke pembilang.",
+    approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
     facilityStatusNote:
       "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
     reportCreationDateRule: "Laporan dihitung berdasarkan waktu dibuat dalam kalender Asia/Jakarta.",
@@ -65,7 +65,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByRole("option", { name: "Gedung A" })).toBeInTheDocument();
     expect(screen.getByText("2,6%")).toBeInTheDocument();
     expect(screen.getByText("4.680 menit")).toBeInTheDocument();
-    expect(screen.getByText(/hanya durasi reservasi berstatus approved/i)).toBeInTheDocument();
+    expect(screen.getByText("Menit reservasi disetujui")).toBeInTheDocument();
+    expect(screen.queryByText(/APPROVED/)).not.toBeInTheDocument();
+    expect(screen.getByText(/hanya durasi reservasi berstatus disetujui/i)).toBeInTheDocument();
     expect(screen.getAllByText(/histori status belum tersedia/i)).toHaveLength(2);
 
     expect(screen.getByText("8 laporan")).toBeInTheDocument();
@@ -145,7 +147,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getAllByText("Belum ada laporan pada periode dan lokasi ini.")).toHaveLength(3);
   });
 
-  it("renders every aggregate row beyond the usual 1,000-item page size", () => {
+  it("paginates every aggregate row without changing the complete report total", () => {
     const byFacility = Array.from({ length: 1001 }, (_, index) => ({
       facilityId: index + 1,
       label: `Fasilitas ${index + 1}`,
@@ -159,7 +161,23 @@ describe("AdminAnalyticsDashboard", () => {
     render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={largeSnapshot} errors={[]} />);
 
     const table = screen.getByRole("table", { name: "Laporan menurut fasilitas" });
-    expect(within(table).getAllByRole("row")).toHaveLength(1002);
+    expect(screen.getByText("1.001 laporan")).toBeInTheDocument();
+    expect(within(table).getAllByRole("row")).toHaveLength(11);
+    expect(within(table).getByText("Fasilitas 1")).toBeInTheDocument();
+    expect(within(table).queryByText("Fasilitas 11")).not.toBeInTheDocument();
+
+    const pagination = screen.getByRole("navigation", {
+      name: "Navigasi halaman laporan menurut fasilitas",
+    });
+    expect(pagination).toHaveTextContent("Halaman 1 dari 101");
+
+    for (let page = 2; page <= 101; page += 1) {
+      fireEvent.click(within(pagination).getByRole("button", { name: "Berikutnya" }));
+    }
+
+    expect(pagination).toHaveTextContent("Halaman 101 dari 101");
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
     expect(within(table).getByText("Fasilitas 1001")).toBeInTheDocument();
+    expect(within(pagination).getByRole("button", { name: "Berikutnya" })).toBeDisabled();
   });
 });

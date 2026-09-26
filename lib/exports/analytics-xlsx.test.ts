@@ -32,9 +32,9 @@ const snapshot: AnalyticsSnapshot = {
     timezone: "Asia/Jakarta",
     minutesPerDay: 780,
     capacityFormula: "Jumlah fasilitas × jumlah hari kalender inklusif × menit operasional per hari.",
-    occupancyFormula: "Total menit reservasi APPROVED ÷ kapasitas periode × 100%.",
+    occupancyFormula: "Total menit reservasi disetujui ÷ kapasitas periode × 100%.",
     reservationDateRule: "Reservasi dihitung berdasarkan tanggal kalender kampus (Asia/Jakarta) dalam rentang inklusif.",
-    approvedStatusRule: "Hanya durasi reservasi berstatus APPROVED yang masuk ke pembilang.",
+    approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
     reportCreationDateRule: "Laporan dihitung berdasarkan waktu dibuat dalam kalender Asia/Jakarta.",
     facilityStatusNote:
       "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
@@ -84,6 +84,13 @@ describe("analytics XLSX serializer", () => {
     expect(summaryValues).toContain("02-09-2026 11:00:00 WIB");
     expect(summaryValues).toContain(snapshot.methodology.occupancyFormula);
     expect(summaryValues).toContain(snapshot.methodology.reportCreationDateRule);
+
+    expect(summary.getCell("B5").value).toBe(2);
+    expect(summary.getCell("B5").type).toBe(ExcelJS.ValueType.Number);
+    expect(workbook.getWorksheet("Okupansi")!.getCell("B2").value).toBe(120);
+    expect(workbook.getWorksheet("Okupansi")!.getCell("B2").type).toBe(ExcelJS.ValueType.Number);
+    expect(workbook.getWorksheet("Laporan per fasilitas")!.getCell("B2").value).toBe(2);
+    expect(workbook.getWorksheet("Laporan per fasilitas")!.getCell("B2").type).toBe(ExcelJS.ValueType.Number);
   });
 
   it("keeps user supplied formula-like text as explicit string cells", async () => {

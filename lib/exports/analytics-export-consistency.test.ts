@@ -43,9 +43,9 @@ const snapshot: AnalyticsSnapshot = {
     timezone: "Asia/Jakarta",
     minutesPerDay: 780,
     capacityFormula: "Jumlah fasilitas × jumlah hari kalender inklusif × menit operasional per hari.",
-    occupancyFormula: "Total menit reservasi APPROVED ÷ kapasitas periode × 100%.",
+    occupancyFormula: "Total menit reservasi disetujui ÷ kapasitas periode × 100%.",
     reservationDateRule: "Reservasi memakai tanggal kalender kampus Asia/Jakarta dalam rentang inklusif.",
-    approvedStatusRule: "Hanya durasi reservasi APPROVED yang masuk ke pembilang.",
+    approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
     reportCreationDateRule: "Laporan memakai waktu dibuat dalam rentang tanggal kalender Asia/Jakarta.",
     facilityStatusNote: "Status fasilitas adalah snapshot saat ini.",
   },
@@ -139,13 +139,13 @@ describe("analytics export consistency", () => {
           ),
         );
       });
-      expect(values).toEqual([section.columns, ...section.rows]);
+      expect(values).toEqual([section.columns, ...section.rows.map((row) => row.map(String))]);
     }
 
     const pdfText = collectPdfText(buildAnalyticsPdfDefinition(model)).join("\n");
     for (const section of model.sections) {
       expect(pdfText).toContain(section.title);
-      for (const value of section.rows.flat()) expect(pdfText).toContain(value);
+      for (const value of section.rows.flat()) expect(pdfText).toContain(String(value));
     }
     expect(pdfText).toContain(model.metadata.createdAtWib);
     expect(pdfText).toContain(snapshot.methodology.reservationDateRule);

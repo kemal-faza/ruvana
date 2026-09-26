@@ -41,9 +41,9 @@ const snapshot: AnalyticsSnapshot = {
     timezone: "Asia/Jakarta",
     minutesPerDay: 780,
     capacityFormula: "Jumlah fasilitas × jumlah hari kalender inklusif × menit operasional per hari.",
-    occupancyFormula: "Total menit reservasi APPROVED ÷ kapasitas periode × 100%.",
+    occupancyFormula: "Total menit reservasi disetujui ÷ kapasitas periode × 100%.",
     reservationDateRule: "Reservasi memakai tanggal kalender kampus dalam rentang inklusif.",
-    approvedStatusRule: "Hanya durasi reservasi berstatus APPROVED yang masuk ke pembilang.",
+    approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
     facilityStatusNote: "Status fasilitas adalah snapshot saat ini.",
     reportCreationDateRule: "Laporan dihitung berdasarkan createdAt dalam Asia/Jakarta.",
   },
@@ -68,7 +68,7 @@ describe("analytics export model", () => {
       createdAtIso: "2026-09-26T02:00:00.000Z",
       createdAtWib: "26-09-2026 09:00:00 WIB",
     });
-    expect(model.sections[0]?.rows).toContainEqual(["Jumlah laporan", "4", "laporan", ""]);
+    expect(model.sections[0]?.rows).toContainEqual(["Jumlah laporan", 4, "laporan", ""]);
   });
 
   it("preserves every snapshot breakdown, status label, and current facility name", () => {
@@ -93,6 +93,17 @@ describe("analytics export model", () => {
     expect(kinds).toContain("METODOLOGI");
   });
 
+  it("uses Indonesian approval terms in user-facing export rows", () => {
+    const model = buildAnalyticsExportModel(snapshot);
+
+    expect(model.csvRows).toContainEqual(expect.objectContaining({
+      jenis_rekap: "OKUPANSI",
+      label: "Menit reservasi disetujui",
+      keterangan: expect.stringContaining("berstatus disetujui"),
+    }));
+    expect(JSON.stringify(model.sections)).not.toContain("APPROVED");
+  });
+
   it("keeps one timestamp and repeated filter metadata on every CSV row", () => {
     const model = buildAnalyticsExportModel({
       ...snapshot,
@@ -106,6 +117,32 @@ describe("analytics export model", () => {
       expect(row.lokasi).toBe("Gedung A");
       expect(row.dibuat_pada_wib).toBe("26-09-2026 09:00:00 WIB");
     }
+  });
+
+  it("formats the export timestamp with the snapshot timezone and Indonesian offset name", () => {
+    const model = buildAnalyticsExportModel({
+      ...snapshot,
+      methodology: { ...snapshot.methodology, timezone: "Asia/Makassar" },
+    });
+
+    expect(model.metadata.createdAtWib).toBe("26-09-2026 10:00:00 WITA");
+    expect(model.csvRows).toContainEqual(expect.objectContaining({
+      label: "Zona waktu",
+      nilai: "Asia/Makassar",
+    }));
+  });
+
+  it("keeps computed report and occupancy values numeric in workbook rows", () => {
+    const model = buildAnalyticsExportModel(snapshot);
+    const summary = model.sections.find(({ key }) => key === "summary")!;
+    const occupancy = model.sections.find(({ key }) => key === "occupancy")!;
+    const reportsByFacility = model.sections.find(({ key }) => key === "reportsByFacility")!;
+    const facilityStatuses = model.sections.find(({ key }) => key === "facilityStatuses")!;
+
+    expect(summary.rows.find(([label]) => label === "Jumlah laporan")?.[1]).toBe(4);
+    expect(occupancy.rows[0]?.[1]).toBe(120);
+    expect(reportsByFacility.rows[0]?.[1]).toBe(3);
+    expect(facilityStatuses.rows[0]?.[1]).toBe(1);
   });
 
   it("keeps empty snapshots valid and carries a clear no-data explanation", () => {

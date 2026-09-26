@@ -25,9 +25,11 @@ export interface AnalyticsExportSection {
   key: AnalyticsExportSectionKey;
   title: string;
   columns: string[];
-  rows: string[][];
+  rows: AnalyticsExportCell[][];
   emptyMessage?: string;
 }
+
+export type AnalyticsExportCell = string | number;
 
 export interface AnalyticsExportModel {
   metadata: AnalyticsExportMetadata;
@@ -41,7 +43,7 @@ const NO_REPORTS_MESSAGE = "Tidak ada laporan kerusakan yang cocok dengan filter
 const NO_FACILITIES_MESSAGE = "Tidak ada fasilitas yang cocok dengan filter lokasi ini.";
 const NO_DATA_MESSAGE = "Tidak ada data laporan atau fasilitas yang cocok dengan filter ini.";
 
-function formatWib(date: Date): string {
+function formatWib(date: Date, timezone: string): string {
   const parts = new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "2-digit",
@@ -50,10 +52,12 @@ function formatWib(date: Date): string {
     minute: "2-digit",
     second: "2-digit",
     hourCycle: "h23",
-    timeZone: "Asia/Jakarta",
+    timeZone: timezone,
+    timeZoneName: "short",
   }).formatToParts(date);
   const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return `${values.day}-${values.month}-${values.year} ${values.hour}:${values.minute}:${values.second} WIB`;
+  const zoneName = values.timeZoneName ?? timezone;
+  return `${values.day}-${values.month}-${values.year} ${values.hour}:${values.minute}:${values.second} ${zoneName}`;
 }
 
 function roundOneDecimal(value: number): number {
@@ -74,7 +78,7 @@ export function buildAnalyticsExportModel(
     endDate: snapshot.filters.endDate,
     location: snapshot.filters.location ?? "Semua lokasi",
     createdAtIso: snapshot.metadata.generatedAt.toISOString(),
-    createdAtWib: formatWib(snapshot.metadata.generatedAt),
+    createdAtWib: formatWib(snapshot.metadata.generatedAt, snapshot.methodology.timezone),
   };
 
   const csvRow = (
@@ -100,7 +104,7 @@ export function buildAnalyticsExportModel(
   });
 
   const occupancyRows: AnalyticsCsvRow[] = [
-    csvRow("OKUPANSI", "metrik", "Menit APPROVED", snapshot.occupancy.totalApprovedMinutes, "menit", snapshot.methodology.approvedStatusRule),
+    csvRow("OKUPANSI", "metrik", "Menit reservasi disetujui", snapshot.occupancy.totalApprovedMinutes, "menit", snapshot.methodology.approvedStatusRule),
     csvRow("OKUPANSI", "metrik", "Fasilitas dalam kapasitas", snapshot.occupancy.facilityCount, "fasilitas", snapshot.methodology.capacityFormula),
     csvRow("OKUPANSI", "metrik", "Hari kalender inklusif", snapshot.occupancy.dayCount, "hari", snapshot.methodology.capacityFormula),
     csvRow("OKUPANSI", "metrik", "Kapasitas periode", snapshot.occupancy.capacityMinutes, "menit", snapshot.methodology.capacityFormula),
@@ -168,19 +172,19 @@ export function buildAnalyticsExportModel(
       : []),
   ];
 
-  const occupancySectionRows = occupancyRows.map(({ label, nilai, satuan, keterangan }) => [
+  const occupancySectionRows: AnalyticsExportCell[][] = occupancyRows.map(({ label, nilai, satuan, keterangan }) => [
     label,
-    String(nilai),
+    nilai,
     satuan,
     keterangan,
   ]);
   const reportRows = (
     rows: readonly AnalyticsCsvRow[],
     noData: string | undefined,
-  ): string[][] =>
+  ): AnalyticsExportCell[][] =>
     rows.length > 0
-      ? rows.map(({ label, nilai }) => [label, String(nilai)])
-      : [[noData ?? "Tidak ada data", "0"]];
+      ? rows.map(({ label, nilai }) => [label, nilai])
+      : [[noData ?? "Tidak ada data", 0]];
 
   const sections: AnalyticsExportSection[] = [
     {
@@ -191,7 +195,7 @@ export function buildAnalyticsExportModel(
         ["Periode", `${metadata.startDate} – ${metadata.endDate}`, "", snapshot.methodology.timezone],
         ["Lokasi", metadata.location, "", ""],
         ["Dibuat pada", metadata.createdAtWib, "", ""],
-        ["Jumlah laporan", String(snapshot.reports.total), "laporan", reportEmptyMessage ?? ""],
+        ["Jumlah laporan", snapshot.reports.total, "laporan", reportEmptyMessage ?? ""],
         ["Zona waktu", snapshot.methodology.timezone, "", "Zona waktu kalender kampus."],
         ["Metodologi okupansi", snapshot.methodology.occupancyFormula, "", snapshot.methodology.capacityFormula],
         ["Tanggal reservasi", snapshot.methodology.reservationDateRule, "", ""],
@@ -236,8 +240,8 @@ export function buildAnalyticsExportModel(
       rows: STATUS_FASILITAS.flatMap((status) => {
         const names = snapshot.facilityStatuses[status];
         return names.length > 0
-          ? names.map((name) => [LABEL_STATUS_FASILITAS[status], String(names.length), name])
-          : [[LABEL_STATUS_FASILITAS[status], "0", "Tidak ada fasilitas"]];
+          ? names.map((name) => [LABEL_STATUS_FASILITAS[status], names.length, name])
+          : [[LABEL_STATUS_FASILITAS[status], 0, "Tidak ada fasilitas"]];
       }),
       ...(facilityEmptyMessage ? { emptyMessage: facilityEmptyMessage } : {}),
     },

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AnalyticsExportActions from "@/components/admin/AnalyticsExportActions";
+import AnalyticsReportBreakdownTable from "@/components/admin/AnalyticsReportBreakdownTable";
 import type { AnalyticsSnapshot } from "@/lib/services/admin-analytics-service";
 import type { AnalyticsFilterValues } from "@/lib/validation/admin-analytics";
 import type { ProblemFieldError } from "@/lib/http/problem";
@@ -147,7 +148,7 @@ export default function AdminAnalyticsDashboard({
             </Card>
             <MetricCard label="Fasilitas dihitung" value={formatNumber(snapshot.occupancy.facilityCount)} />
             <MetricCard label="Hari kalender" value={formatNumber(snapshot.occupancy.dayCount)} />
-            <MetricCard label="Menit APPROVED" value={`${formatNumber(snapshot.occupancy.totalApprovedMinutes)} menit`} />
+            <MetricCard label="Menit reservasi disetujui" value={`${formatNumber(snapshot.occupancy.totalApprovedMinutes)} menit`} />
             <MetricCard label="Kapasitas periode" value={`${formatNumber(snapshot.occupancy.capacityMinutes)} menit`} />
           </section>
 
@@ -186,17 +187,20 @@ export default function AdminAnalyticsDashboard({
                 <CardDescription>{snapshot.methodology.reportCreationDateRule}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 p-0 sm:p-4 xl:grid-cols-3">
-                <ReportBreakdownTable
+                <AnalyticsReportBreakdownTable
+                  key={`fasilitas-${snapshot.metadata.generatedAt.toISOString()}`}
                   title="Laporan menurut fasilitas"
                   ariaLabel="Laporan menurut fasilitas"
                   rows={snapshot.reports.byFacility}
                 />
-                <ReportBreakdownTable
+                <AnalyticsReportBreakdownTable
+                  key={`kategori-${snapshot.metadata.generatedAt.toISOString()}`}
                   title="Laporan menurut kategori"
                   ariaLabel="Laporan menurut kategori"
                   rows={snapshot.reports.byCategory}
                 />
-                <ReportBreakdownTable
+                <AnalyticsReportBreakdownTable
+                  key={`status-${snapshot.metadata.generatedAt.toISOString()}`}
                   title="Laporan menurut status"
                   ariaLabel="Laporan menurut status"
                   rows={snapshot.reports.byStatus}
@@ -256,48 +260,6 @@ export default function AdminAnalyticsDashboard({
         </>
       )}
     </main>
-  );
-}
-
-function ReportBreakdownTable({
-  title,
-  ariaLabel,
-  rows,
-}: {
-  title: string;
-  ariaLabel: string;
-  rows: readonly { label: string; count: number }[];
-}) {
-  return (
-    <div className="min-w-0 overflow-hidden rounded-lg border border-border/70">
-      <h3 className="px-4 py-3 text-sm font-semibold">{title}</h3>
-      <div className="overflow-x-auto">
-        <table aria-label={ariaLabel} className="w-full text-sm">
-          <thead>
-            <tr className="border-y border-border bg-muted/40 text-left text-xs text-muted-foreground">
-              <th scope="col" className="px-4 py-3 font-medium">Kelompok</th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">Jumlah</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map(({ label, count }) => (
-                <tr key={label} className="border-b border-border/60 last:border-0">
-                  <td className="px-4 py-3 font-medium">{label}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatNumber(count)}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
-                  Belum ada laporan pada periode dan lokasi ini.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 

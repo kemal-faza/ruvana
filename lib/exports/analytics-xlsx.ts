@@ -19,8 +19,8 @@ function addSectionWorksheet(workbook: ExcelJS.Workbook, section: AnalyticsExpor
     const row = worksheet.addRow([]);
     values.forEach((value, index) => {
       const cell = row.getCell(index + 1);
-      // Strings are assigned as primitive values, never as formula objects.
-      cell.value = String(value);
+      // User-controlled text stays a primitive string; computed values retain numeric cell types.
+      cell.value = value;
       cell.alignment = { vertical: "top", wrapText: true };
     });
   }
@@ -28,7 +28,7 @@ function addSectionWorksheet(workbook: ExcelJS.Workbook, section: AnalyticsExpor
   section.columns.forEach((column, index) => {
     const longestValue = Math.max(
       column.length,
-      ...section.rows.map((row) => row[index]?.length ?? 0),
+      ...section.rows.map((row) => String(row[index] ?? "").length),
     );
     worksheet.getColumn(index + 1).width = Math.min(Math.max(longestValue + 2, 14), 52);
   });
