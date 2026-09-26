@@ -193,57 +193,45 @@ export default function AdminAnalyticsDashboard({
           <section aria-label="Status fasilitas saat ini" className="flex flex-col gap-3">
             <h2 className="font-heading text-lg font-semibold tracking-tight">Status fasilitas</h2>
 
-            <Card className="gap-0 overflow-hidden p-0">
-              <div className="overflow-x-auto">
-                <table aria-label="Daftar fasilitas menurut status saat ini" className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
-                      <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
-                      <th scope="col" className="px-4 py-2.5 font-medium">Fasilitas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {facilityCount > 0 ? (
-                      STATUS_FASILITAS.map((status) => {
-                        const namaFasilitas = snapshot.facilityStatuses[status];
-                        return (
-                          <tr key={status} className="border-b border-border/60 last:border-0">
-                            <td className="px-4 py-3 align-top">
-                              <span className="flex items-baseline gap-2">
-                                <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
-                                <span className="text-base font-semibold tabular-nums">
-                                  <span className="sr-only">Jumlah: </span>
-                                  {formatNumber(namaFasilitas.length)}
-                                </span>
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              {namaFasilitas.length > 0 ? (
-                                <span className="flex flex-wrap gap-x-4 gap-y-1">
-                                  {namaFasilitas.map((nama) => (
-                                    <span key={nama} className="shrink-0 font-medium">
-                                      {nama}
-                                    </span>
-                                  ))}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">Tidak ada</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
-                          Tidak ada fasilitas untuk lokasi ini.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+            {facilityCount > 0 ? (
+              <Card className="gap-0 overflow-hidden p-0">
+                <ul className="grid divide-y divide-border/60 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+                  {STATUS_FASILITAS.map((status) => {
+                    const namaFasilitas = snapshot.facilityStatuses[status];
+                    return (
+                      <li key={status} className="flex min-w-0 flex-col gap-3 p-4">
+                        <Badge variant={BADGE_STATUS_FASILITAS[status]}>{LABEL_STATUS_FASILITAS[status]}</Badge>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="text-xl font-semibold tabular-nums text-foreground">
+                            {formatNumber(namaFasilitas.length)}
+                          </span>{" "}
+                          fasilitas
+                        </p>
+                        {namaFasilitas.length > 0 && (
+                          <ul
+                            aria-label={`Daftar fasilitas berstatus ${LABEL_STATUS_FASILITAS[status]}`}
+                            className="flex flex-wrap gap-1.5"
+                          >
+                            {namaFasilitas.map((nama) => (
+                              <li
+                                key={nama}
+                                className="rounded-md border border-border/70 bg-muted/40 px-2 py-0.5 text-xs font-medium"
+                              >
+                                {nama}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
+            ) : (
+              <Card className="gap-0 p-4">
+                <p className="text-sm text-muted-foreground">Tidak ada fasilitas untuk lokasi ini.</p>
+              </Card>
+            )}
           </section>
         </>
       )}

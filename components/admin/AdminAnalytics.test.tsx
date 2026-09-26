@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
+import { axe } from "vitest-axe";
 
 import AdminAnalyticsDashboard from "@/components/admin/AdminAnalytics";
 import type { AnalyticsSnapshot } from "@/lib/services/admin-analytics-service";
@@ -81,13 +82,16 @@ describe("AdminAnalyticsDashboard", () => {
     expect(statusTable).not.toHaveTextContent("IN_PROGRESS");
     expect(within(statusTable).getAllByRole("row")).toHaveLength(4);
 
-    const table = screen.getByRole("table", { name: "Daftar fasilitas menurut status saat ini" });
-    const rows = within(table).getAllByRole("row");
-    expect(rows).toHaveLength(4);
-    expect(within(rows[1]!).getByText("Aktif")).toBeInTheDocument();
-    expect(within(rows[2]!).getByText("Dalam Perbaikan")).toBeInTheDocument();
-    expect(within(rows[3]!).getByText("Nonaktif")).toBeInTheDocument();
-    expect(within(table).getByText("Aula Utama")).toBeInTheDocument();
+    for (const status of ["Aktif", "Dalam Perbaikan", "Nonaktif"]) {
+      expect(screen.getByText(status).closest("li")).toHaveTextContent("1 fasilitas");
+    }
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Aktif" })).toHaveTextContent("Ruang Alfa");
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Dalam Perbaikan" })).toHaveTextContent(
+      "Aula Utama",
+    );
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Nonaktif" })).toHaveTextContent(
+      "Laboratorium Lama",
+    );
   });
 
   it("shows field-level filter feedback without rendering a snapshot", () => {
@@ -154,13 +158,35 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByLabelText("Tanggal awal").closest("form")).not.toHaveClass("hidden");
   });
 
-  it("melabeli jumlah fasilitas di kolom status untuk pembaca layar", () => {
-    render(<AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />);
+  it("tidak melanggar pemeriksaan aksesibilitas otomatis", async () => {
+    const { container } = render(
+      <AdminAnalyticsDashboard filters={filters} locations={snapshot.locations} snapshot={snapshot} errors={[]} />,
+    );
 
-    const table = screen.getByRole("table", { name: "Daftar fasilitas menurut status saat ini" });
-    const rows = within(table).getAllByRole("row");
+    expect((await axe(container)).violations).toEqual([]);
+  });
 
-    expect(within(rows[1]!).getByText("Jumlah:")).toHaveClass("sr-only");
+  it("menghitung jumlah fasilitas per status dan melewati status yang kosong", () => {
+    const sebagianKosong: AnalyticsSnapshot = {
+      ...snapshot,
+      facilityStatuses: { ACTIVE: ["Ruang Alfa", "Ruang Beta"], UNDER_MAINTENANCE: [], INACTIVE: [] },
+    };
+    render(
+      <AdminAnalyticsDashboard
+        filters={filters}
+        locations={snapshot.locations}
+        snapshot={sebagianKosong}
+        errors={[]}
+      />,
+    );
+
+    expect(screen.getByText("Aktif").closest("li")).toHaveTextContent("2 fasilitas");
+    expect(screen.getByText("Dalam Perbaikan").closest("li")).toHaveTextContent("0 fasilitas");
+    expect(screen.getByText("Nonaktif").closest("li")).toHaveTextContent("0 fasilitas");
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Aktif" })).toHaveTextContent("Ruang Beta");
+    expect(
+      screen.queryByRole("list", { name: "Daftar fasilitas berstatus Dalam Perbaikan" }),
+    ).not.toBeInTheDocument();
   });
 
   it("labels zero capacity as not computable and keeps the reason visible", () => {

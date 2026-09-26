@@ -43,7 +43,15 @@ export default function AdminAnalitikLoading() {
 
       <section aria-hidden="true" className="flex flex-col gap-3">
         <Skeleton className="h-5 w-32" />
-        <Skeleton className="h-40 rounded-card" />
+        <div className="grid divide-y divide-border/60 rounded-card border border-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+          {[0, 1, 2].map((kolom) => (
+            <div key={kolom} className="flex flex-col gap-3 p-4">
+              <Skeleton className="h-5 w-24 rounded-4xl" />
+              <Skeleton className="h-6 w-28" />
+              <Skeleton className="h-6 w-full" />
+            </div>
+          ))}
+        </div>
       </section>
 
       <span className="sr-only">Memuat analitik…</span>
