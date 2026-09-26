@@ -5,9 +5,17 @@ import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Combobox,
+  ComboboxClear,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const FILTER_FORM_ID = "filter-analitik";
 
@@ -31,6 +39,8 @@ export default function AnalyticsFilterPanel({
   startExpanded: boolean;
 }) {
   const [expanded, setExpanded] = useState(startExpanded);
+  const [selectedLocation, setSelectedLocation] = useState(location);
+  const locationOptions = selectedLocationUnavailable ? [...locations, location] : locations;
 
   return (
     <Card size="sm">
@@ -71,7 +81,7 @@ export default function AnalyticsFilterPanel({
               aria-label="Tanggal awal"
               defaultValue={startDate}
               allowPastDates
-              className="min-h-11 rounded-lg border border-input px-3 hover:bg-muted"
+              className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
             />
           </Field>
           <Field>
@@ -82,27 +92,36 @@ export default function AnalyticsFilterPanel({
               aria-label="Tanggal akhir"
               defaultValue={endDate}
               allowPastDates
-              className="min-h-11 rounded-lg border border-input px-3 hover:bg-muted"
+              className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
             />
           </Field>
           <Field>
             <FieldLabel htmlFor="filter-lokasi">Lokasi</FieldLabel>
-            <Select name="location" defaultValue={location || null} modal={false}>
-              <SelectTrigger id="filter-lokasi" className="min-h-11 w-full">
-                <SelectValue placeholder="Semua lokasi" />
-              </SelectTrigger>
-              <SelectContent align="start" alignItemWithTrigger={false}>
-                <SelectItem value={null}>Semua lokasi</SelectItem>
-                {selectedLocationUnavailable && (
-                  <SelectItem value={location}>Lokasi tidak tersedia: {location}</SelectItem>
-                )}
-                {locations.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              name="location"
+              items={locationOptions}
+              value={selectedLocation || null}
+              modal={false}
+              onValueChange={(value) => setSelectedLocation(value ?? "")}
+            >
+              <ComboboxInput
+                id="filter-lokasi"
+                placeholder="Semua lokasi"
+                triggerLabel="Buka daftar lokasi"
+              >
+                {selectedLocation !== "" && <ComboboxClear aria-label="Hapus pilihan lokasi" />}
+              </ComboboxInput>
+              <ComboboxContent>
+                <ComboboxList>
+                  {(option: string) => (
+                    <ComboboxItem key={option} value={option}>
+                      {option}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+                <ComboboxEmpty>Lokasi tidak ditemukan.</ComboboxEmpty>
+              </ComboboxContent>
+            </Combobox>
           </Field>
           <Button type="submit" className="min-h-11 w-full sm:col-span-2 xl:col-span-1">
             Terapkan filter

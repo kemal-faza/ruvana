@@ -69,10 +69,13 @@ describe("AdminAnalyticsDashboard", () => {
     expect(container.querySelector('input[name="startDate"]')).toHaveValue("2026-09-01");
     expect(container.querySelector('input[name="endDate"]')).toHaveValue("2026-09-02");
 
-    const locationTrigger = screen.getByRole("combobox", { name: "Lokasi" });
-    expect(locationTrigger).toHaveTextContent("Semua lokasi");
-    await user.click(locationTrigger);
-    expect(await screen.findByRole("option", { name: "Gedung A" })).toBeInTheDocument();
+    const locationInput = screen.getByRole("combobox", { name: "Lokasi" });
+    expect(locationInput).toHaveValue("");
+    expect(locationInput).toHaveAttribute("placeholder", "Semua lokasi");
+    await user.click(locationInput);
+    await user.keyboard("Gedung B");
+    expect(await screen.findByRole("option", { name: "Gedung B" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Gedung A" })).not.toBeInTheDocument();
     await user.keyboard("{Escape}");
 
     expect(screen.getByText("2,6%")).toBeInTheDocument();
@@ -129,10 +132,11 @@ describe("AdminAnalyticsDashboard", () => {
       />,
     );
 
-    const locationTrigger = screen.getByRole("combobox", { name: "Lokasi" });
-    expect(locationTrigger).toHaveTextContent("Gedung A");
+    const locationInput = screen.getByRole("combobox", { name: "Lokasi" });
+    expect(locationInput).toHaveValue("Gedung A");
+    expect(screen.getByRole("button", { name: "Hapus pilihan lokasi" })).toBeInTheDocument();
 
-    await user.click(locationTrigger);
+    await user.click(locationInput);
     expect(await screen.findByRole("option", { name: "Gedung A" })).toBeInTheDocument();
   });
 
