@@ -26,7 +26,7 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -155,7 +155,7 @@ export default async function Home() {
                     aria-describedby="contoh-nama-help contoh-nama-error"
                     aria-invalid="true"
                     required
-                    className="min-h-11"
+                    className={INPUT_BASELINE_CLASS}
                   />
                   <FieldDescription id="contoh-nama-help">
                     Label, bantuan, dan pesan kesalahan terhubung secara semantik.
@@ -169,7 +169,7 @@ export default async function Home() {
                     id="contoh-catatan"
                     aria-describedby="contoh-catatan-help"
                     placeholder="Tulis catatan"
-                    className="min-h-11"
+                    className={INPUT_BASELINE_CLASS}
                   />
                   <FieldDescription id="contoh-catatan-help">
                     Contoh isian opsional dengan petunjuk singkat.

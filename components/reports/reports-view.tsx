@@ -7,7 +7,7 @@ import { cn } from "cn"
 
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -118,7 +118,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
               className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
-              className="pl-8"
+              className={cn(INPUT_BASELINE_CLASS, "pl-8")}
               placeholder="Cari laporan..."
               aria-label="Cari laporan"
               value={query}
