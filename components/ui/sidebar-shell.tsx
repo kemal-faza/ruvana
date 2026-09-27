@@ -61,7 +61,7 @@ function SidebarMobile({
         data-slot="sidebar"
         data-mobile="true"
         className={cn(
-          "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground duration-motion-standard ease-motion-standard motion-reduce:transition-none [&>button]:hidden",
+          "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground duration-motion-standard ease-motion-standard motion-reduce:transition-none",
           className
         )}
         overlayClassName="duration-motion-standard motion-reduce:transition-none"

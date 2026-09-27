@@ -90,6 +90,7 @@ describe("aksesibilitas sidebar", () => {
 
     const drawer = await screen.findByRole("dialog", { name: "Navigasi utama" })
     expect(drawer).toHaveClass("duration-motion-standard", "ease-motion-standard", "motion-reduce:transition-none")
+    expect(drawer).not.toHaveClass("[&>button]:hidden")
     expect(document.querySelector('[data-slot="sheet-overlay"]')).toHaveClass(
       "duration-motion-standard",
       "motion-reduce:transition-none",
