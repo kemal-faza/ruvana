@@ -81,4 +81,18 @@ describe("ReportDetailSheet", () => {
     expect(within(dialog).getByRole("heading", { name: heading })).toBeInTheDocument()
     expect(within(dialog).getByText(note)).toBeInTheDocument()
   })
+
+  it("memakai transisi yang sama dengan drawer sidebar", () => {
+    const dialog = renderDetail()
+
+    expect(dialog).toHaveClass(
+      "duration-motion-standard",
+      "ease-motion-standard",
+      "motion-reduce:transition-none",
+    )
+    expect(document.querySelector('[data-slot="sheet-overlay"]')).toHaveClass(
+      "duration-motion-standard",
+      "motion-reduce:transition-none",
+    )
+  })
 })
