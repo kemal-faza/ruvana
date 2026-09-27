@@ -11,13 +11,13 @@ export function ReportsPagination({ page, totalPages, onChange }: ReportsPaginat
 
   return (
     <nav aria-label="Navigasi halaman laporan" className="flex items-center justify-between gap-3">
-      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+      <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
         Sebelumnya
       </Button>
-      <p className="text-sm text-muted-foreground">
-        Halaman {page} dari {totalPages}
+      <p className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
+        {page} / {totalPages}
       </p>
-      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+      <Button type="button" variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
         Berikutnya
       </Button>
     </nav>

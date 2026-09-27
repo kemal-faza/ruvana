@@ -107,13 +107,13 @@ describe("ReportsView controls", () => {
     expect(within(filterGroup).getByRole("button", { name: "Ditolak, 2 laporan" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Berikutnya" }))
-    expect(screen.getByText("Halaman 2 dari 3")).toBeInTheDocument()
+    expect(screen.getByText("2 / 3")).toBeInTheDocument()
 
     await user.click(newFilter)
 
     expect(newFilter).toHaveAttribute("aria-pressed", "true")
     expect(allFilter).toHaveAttribute("aria-pressed", "false")
-    expect(screen.getByText("Halaman 1 dari 2")).toBeInTheDocument()
+    expect(screen.getByText("1 / 2")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Fasilitas 12/ })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /Fasilitas 13/ })).not.toBeInTheDocument()
   })
@@ -134,6 +134,7 @@ describe("ReportsView controls", () => {
     expect(screen.getByText("1 laporan ditemukan")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Fasilitas 05/ })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /Fasilitas 08/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("navigation", { name: "Navigasi halaman laporan" })).not.toBeInTheDocument()
 
     await user.clear(search)
     await user.type(search, "Tidak ada hasil")
@@ -151,8 +152,41 @@ describe("ReportsView controls", () => {
       "true",
     )
     expect(sort).toHaveTextContent("Terbaru")
-    expect(screen.getByText("Halaman 1 dari 3")).toBeInTheDocument()
+    expect(screen.getByText("1 / 3")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Fasilitas 14/ })).toBeInTheDocument()
+  })
+
+  it("menampilkan laporan halaman tujuan dan menjaga tombol pada batas navigasi", async () => {
+    const user = userEvent.setup()
+    renderReports()
+
+    const navigation = screen.getByRole("navigation", { name: "Navigasi halaman laporan" })
+    const previous = within(navigation).getByRole("button", { name: "Sebelumnya" })
+    const next = within(navigation).getByRole("button", { name: "Berikutnya" })
+    expect(previous).toBeDisabled()
+    expect(next).toBeEnabled()
+    expect(screen.getByText("1 / 3")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Fasilitas 14/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Fasilitas 08/ })).not.toBeInTheDocument()
+
+    await user.click(next)
+    expect(screen.getByText("2 / 3")).toBeInTheDocument()
+    expect(previous).toBeEnabled()
+    expect(next).toBeEnabled()
+    expect(screen.getByRole("button", { name: /Fasilitas 08/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Fasilitas 14/ })).not.toBeInTheDocument()
+
+    await user.click(next)
+    expect(screen.getByText("3 / 3")).toBeInTheDocument()
+    expect(previous).toBeEnabled()
+    expect(next).toBeDisabled()
+    expect(screen.getByRole("button", { name: /Fasilitas 02/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Fasilitas 08/ })).not.toBeInTheDocument()
+
+    await user.click(previous)
+    expect(screen.getByText("2 / 3")).toBeInTheDocument()
+    expect(next).toBeEnabled()
+    expect(screen.getByRole("button", { name: /Fasilitas 08/ })).toBeInTheDocument()
   })
 
   it("mengurutkan lewat popup Select Ruvana dengan pointer", async () => {
@@ -160,7 +194,7 @@ describe("ReportsView controls", () => {
     renderReports()
 
     await user.click(screen.getByRole("button", { name: "Berikutnya" }))
-    expect(screen.getByText("Halaman 2 dari 3")).toBeInTheDocument()
+    expect(screen.getByText("2 / 3")).toBeInTheDocument()
 
     const sort = screen.getByRole("combobox", { name: "Urutkan laporan" })
 
@@ -170,7 +204,7 @@ describe("ReportsView controls", () => {
 
     expect(sort).toHaveTextContent("Terlama")
     expect(screen.getByRole("button", { name: /Fasilitas 01/ })).toBeInTheDocument()
-    expect(screen.getByText("Halaman 1 dari 3")).toBeInTheDocument()
+    expect(screen.getByText("1 / 3")).toBeInTheDocument()
   })
 
   it("mendukung pemilihan urutan lewat keyboard", async () => {
@@ -183,10 +217,12 @@ describe("ReportsView controls", () => {
     const sort = screen.getByRole("combobox", { name: "Urutkan laporan" })
     expect(sort).toHaveFocus()
 
-    await user.keyboard("{ArrowDown}{ArrowDown}{Enter}")
+    await user.keyboard("{ArrowDown}")
+    expect(await screen.findByRole("listbox")).toBeInTheDocument()
+    await user.keyboard("{End}{Enter}")
 
     expect(sort).toHaveTextContent("Terlama")
     expect(screen.getByRole("button", { name: /Fasilitas 01/ })).toBeInTheDocument()
-    expect(screen.getByText("Halaman 1 dari 3")).toBeInTheDocument()
+    expect(screen.getByText("1 / 3")).toBeInTheDocument()
   })
 })
