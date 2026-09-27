@@ -6,7 +6,7 @@ import { ImagePlus, Trash2, X } from "lucide-react"
 
 import { KATEGORI_LAPORAN, MAKS_DESKRIPSI_LAPORAN } from "@/config/business"
 import { LABEL_TIPE_FASILITAS } from "@/config/labels"
-import { Button } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createReportAction, type CreateReportActionResult } from "@/app/reports/actions"
@@ -308,9 +308,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
+                          className={BUTTON_ACTION_CLASS}
                           onClick={() => handleFile(null)}
-                          className="w-fit"
                         >
                           <Trash2 aria-hidden="true" />
                           Hapus
@@ -340,10 +339,15 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                   </p>
                 )}
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={BUTTON_ACTION_CLASS}
+                    onClick={() => onOpenChange(false)}
+                  >
                     Batal
                   </Button>
-                  <Button type="submit" loading={submitting}>
+                  <Button type="submit" className={BUTTON_ACTION_CLASS} loading={submitting}>
                     {submitting ? null : "Kirim laporan"}
                   </Button>
                 </div>

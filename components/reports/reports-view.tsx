@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ClipboardList, Plus, Search, SearchX } from "lucide-react"
+import { cn } from "cn"
 
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Button } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FilterTabs, type ReportFilter } from "@/components/reports/filter-tabs"
@@ -92,7 +93,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
           </p>
         </header>
         <Button
-          className="shrink-0"
+          className={cn(BUTTON_ACTION_CLASS, "shrink-0")}
           onClick={() => setFormOpen(true)}
           disabled={!canCreate}
           title={canCreate ? undefined : "Belum ada fasilitas yang tersedia untuk dilaporkan"}
@@ -175,7 +176,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
                 </EmptyDescription>
               </EmptyContent>
             </EmptyHeader>
-            <Button className="min-h-11" onClick={() => setFormOpen(true)} disabled={!canCreate}>
+            <Button className={BUTTON_ACTION_CLASS} onClick={() => setFormOpen(true)} disabled={!canCreate}>
               <Plus aria-hidden="true" />
               Ajukan Laporan
             </Button>
@@ -191,7 +192,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
                 <EmptyDescription>Coba ubah kata kunci pencarian atau pilih filter status lain.</EmptyDescription>
               </EmptyContent>
             </EmptyHeader>
-            <Button variant="outline" className="min-h-11" onClick={resetFilters}>
+            <Button variant="outline" className={BUTTON_ACTION_CLASS} onClick={resetFilters}>
               Reset filter
             </Button>
           </Empty>

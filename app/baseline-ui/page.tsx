@@ -52,7 +52,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button, buttonVariants } from "@/components/ui/button"
 import { navigation, shellAccount, shellAccountFromUser } from "@/config/navigation"
 import { staffNavigation } from "@/components/staff/navigation"
 import { getSessionUser } from "@/lib/auth"
@@ -66,8 +66,6 @@ const catalogLinks = [
   { href: "#empty", label: "Empty state" },
   { href: "#overlay", label: "Tooltip dan panel" },
 ]
-const LANDING_ACTION_CLASS = "min-h-11 gap-2.5 px-4 text-sm"
-
 export default async function Home() {
   const user = await getSessionUser()
   const isPetugas = user?.role === "petugas"
@@ -129,13 +127,13 @@ export default async function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3 p-0">
-                <Button className={LANDING_ACTION_CLASS}>Utama</Button>
-                <Button variant="secondary" className={LANDING_ACTION_CLASS}>Sekunder</Button>
-                <Button variant="outline" className={LANDING_ACTION_CLASS}>Outline</Button>
-                <Button variant="ghost" className={LANDING_ACTION_CLASS}>Ghost</Button>
-                <Button variant="danger" className={LANDING_ACTION_CLASS}>Destruktif</Button>
-                <Button disabled className={LANDING_ACTION_CLASS}>Dinonaktifkan</Button>
-                <Button loading className={LANDING_ACTION_CLASS}>Memuat</Button>
+                <Button className={BUTTON_ACTION_CLASS}>Utama</Button>
+                <Button variant="secondary" className={BUTTON_ACTION_CLASS}>Sekunder</Button>
+                <Button variant="outline" className={BUTTON_ACTION_CLASS}>Outline</Button>
+                <Button variant="ghost" className={BUTTON_ACTION_CLASS}>Ghost</Button>
+                <Button variant="danger" className={BUTTON_ACTION_CLASS}>Destruktif</Button>
+                <Button disabled className={BUTTON_ACTION_CLASS}>Dinonaktifkan</Button>
+                <Button loading className={BUTTON_ACTION_CLASS}>Memuat</Button>
               </CardContent>
             </Card>
           </section>
@@ -228,7 +226,7 @@ export default async function Home() {
               <Separator />
               <CardFooter className="justify-between gap-3">
                 <span className="text-sm text-muted-foreground">Informasi pendukung</span>
-                <Button variant="outline" className={LANDING_ACTION_CLASS}>Lihat contoh</Button>
+                <Button variant="outline" className={BUTTON_ACTION_CLASS}>Lihat contoh</Button>
               </CardFooter>
             </Card>
           </section>
@@ -286,7 +284,7 @@ export default async function Home() {
                   <EmptyDescription>Tidak ada contoh untuk ditampilkan.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                  <Button variant="outline" className={LANDING_ACTION_CLASS}>Tambah contoh</Button>
+                  <Button variant="outline" className={BUTTON_ACTION_CLASS}>Tambah contoh</Button>
                 </EmptyContent>
               </Empty>
             </Card>
@@ -309,7 +307,7 @@ export default async function Home() {
               <div className="flex flex-wrap gap-3">
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger className={buttonVariants({ variant: "outline", className: LANDING_ACTION_CLASS })}>
+                    <TooltipTrigger className={buttonVariants({ variant: "outline", className: BUTTON_ACTION_CLASS })}>
                       <CalendarDays aria-hidden="true" />
                       Petunjuk
                     </TooltipTrigger>
@@ -318,7 +316,7 @@ export default async function Home() {
                 </TooltipProvider>
 
                 <Sheet>
-                  <SheetTrigger className={buttonVariants({ className: LANDING_ACTION_CLASS })}>
+                  <SheetTrigger className={buttonVariants({ className: BUTTON_ACTION_CLASS })}>
                     Buka panel
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-md">
@@ -332,7 +330,7 @@ export default async function Home() {
                       Konten panel tetap dapat dijangkau dan ditutup dengan keyboard.
                     </div>
                     <SheetFooter>
-                      <SheetClose className={buttonVariants({ variant: "outline", className: LANDING_ACTION_CLASS })}>
+                      <SheetClose className={buttonVariants({ variant: "outline", className: BUTTON_ACTION_CLASS })}>
                         Tutup panel
                       </SheetClose>
                     </SheetFooter>

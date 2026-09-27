@@ -1,6 +1,6 @@
 import { cn } from "cn"
 
-import { Button } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { LABEL_STATUS_LAPORAN } from "@/config/labels"
 import type { ReportStatus } from "@/lib/services/report-service"
 
@@ -27,12 +27,11 @@ export function FilterTabs({ active, totalByStatus, total, onChange }: FilterTab
             key={filter}
             type="button"
             variant={selected ? "primary" : "outline"}
-            size="sm"
             aria-pressed={selected}
             aria-label={`${label}, ${count} laporan`}
             onClick={() => onChange(filter)}
             className={cn(
-              "h-7 gap-1.5 px-2.5",
+              BUTTON_ACTION_CLASS,
               !selected && "text-muted-foreground hover:text-foreground",
             )}
           >
