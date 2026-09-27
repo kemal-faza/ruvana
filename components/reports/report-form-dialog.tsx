@@ -8,14 +8,10 @@ import { KATEGORI_LAPORAN, MAKS_DESKRIPSI_LAPORAN } from "@/config/business"
 import { LABEL_TIPE_FASILITAS } from "@/config/labels"
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createReportAction, type CreateReportActionResult } from "@/app/reports/actions"
 import { validateReportSubmission, type ReportSubmissionErrors } from "@/lib/validation/report"
 import type { FacilityReportOption, ReportItem } from "@/lib/services/report-service"
-
-const cx = {
-  control:
-    "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none cursor-pointer placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-}
 
 interface ReportFormDialogProps {
   open: boolean
@@ -28,8 +24,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
   const titleId = useId()
   const descriptionId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const facilityRef = useRef<HTMLSelectElement>(null)
-  const kategoriRef = useRef<HTMLSelectElement>(null)
+  const facilityRef = useRef<HTMLButtonElement>(null)
+  const kategoriRef = useRef<HTMLButtonElement>(null)
   const deskripsiRef = useRef<HTMLTextAreaElement>(null)
   const fotoPreviewRef = useRef<string | null>(null)
   const [facilityId, setFacilityId] = useState(() => facilityOptions[0]?.id.toString() ?? "")
@@ -40,6 +36,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
   const [errors, setErrors] = useState<ReportSubmissionErrors>({})
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const facilityErrorId = `${titleId}-facility-error`
+  const kategoriErrorId = `${titleId}-category-error`
 
   useEffect(() => {
     return () => {
@@ -188,25 +186,39 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                   Fasilitas
                 </FieldLabel>
                 <FieldContent>
-                  <select
-                    ref={facilityRef}
-                    id={`${titleId}-facility`}
-                    className={cx.control}
-                    value={facilityId}
-                    onChange={(event) => setFacilityId(event.target.value)}
-                    aria-invalid={errors.facilityId ? true : undefined}
+                  <Select
+                    name="facilityId"
+                    items={facilityOptions.map((facility) => ({
+                      value: String(facility.id),
+                      label: `${facility.nama} - ${LABEL_TIPE_FASILITAS[facility.tipe]}`,
+                    }))}
+                    value={facilityId || null}
+                    onValueChange={(value) => setFacilityId(value ?? "")}
+                    modal={false}
                     disabled={facilityOptions.length === 0}
                   >
-                    {facilityOptions.map((facility) => (
-                      <option key={facility.id} value={facility.id}>
-                        {facility.nama} - {LABEL_TIPE_FASILITAS[facility.tipe]}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      ref={facilityRef}
+                      id={`${titleId}-facility`}
+                      className="w-full"
+                      aria-required="true"
+                      aria-invalid={errors.facilityId ? true : undefined}
+                      aria-describedby={errors.facilityId ? facilityErrorId : undefined}
+                    >
+                      <SelectValue placeholder="Pilih fasilitas..." />
+                    </SelectTrigger>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      {facilityOptions.map((facility) => (
+                        <SelectItem key={facility.id} value={String(facility.id)}>
+                          {facility.nama} - {LABEL_TIPE_FASILITAS[facility.tipe]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {facilityOptions.length === 0 && (
                     <p className="text-sm text-muted-foreground">Belum ada fasilitas yang tersedia untuk dilaporkan.</p>
                   )}
-                  <FieldError errors={[{ message: errors.facilityId }]} />
+                  <FieldError id={facilityErrorId} errors={[{ message: errors.facilityId }]} />
                 </FieldContent>
               </Field>
 
@@ -215,22 +227,32 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                   Kategori
                 </FieldLabel>
                 <FieldContent>
-                  <select
-                    ref={kategoriRef}
-                    id={`${titleId}-category`}
-                    className={cx.control}
-                    value={kategori}
-                    onChange={(event) => setKategori(event.target.value)}
-                    aria-invalid={errors.kategori ? true : undefined}
+                  <Select
+                    name="kategori"
+                    items={KATEGORI_LAPORAN.map((item) => ({ value: item, label: item }))}
+                    value={kategori || null}
+                    onValueChange={(value) => setKategori(value ?? "")}
+                    modal={false}
                   >
-                    <option value="">Pilih kategori...</option>
-                    {KATEGORI_LAPORAN.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                  <FieldError errors={[{ message: errors.kategori }]} />
+                    <SelectTrigger
+                      ref={kategoriRef}
+                      id={`${titleId}-category`}
+                      className="w-full"
+                      aria-required="true"
+                      aria-invalid={errors.kategori ? true : undefined}
+                      aria-describedby={errors.kategori ? kategoriErrorId : undefined}
+                    >
+                      <SelectValue placeholder="Pilih kategori..." />
+                    </SelectTrigger>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      {KATEGORI_LAPORAN.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError id={kategoriErrorId} errors={[{ message: errors.kategori }]} />
                 </FieldContent>
               </Field>
 
