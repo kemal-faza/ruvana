@@ -1,5 +1,6 @@
 import { cn } from "cn"
 
+import { Button } from "@/components/ui/button"
 import { LABEL_STATUS_LAPORAN } from "@/config/labels"
 import type { ReportStatus } from "@/lib/services/report-service"
 
@@ -22,16 +23,17 @@ export function FilterTabs({ active, totalByStatus, total, onChange }: FilterTab
         const count = filter === "ALL" ? total : totalByStatus[filter]
         const label = filter === "ALL" ? "Semua" : LABEL_STATUS_LAPORAN[filter]
         return (
-          <button
+          <Button
             key={filter}
             type="button"
+            variant={selected ? "primary" : "outline"}
+            size="sm"
             aria-pressed={selected}
+            aria-label={`${label}, ${count} laporan`}
             onClick={() => onChange(filter)}
             className={cn(
-              "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-              selected
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+              "h-7 gap-1.5 px-2.5",
+              !selected && "text-muted-foreground hover:text-foreground",
             )}
           >
             {label}
@@ -43,7 +45,7 @@ export function FilterTabs({ active, totalByStatus, total, onChange }: FilterTab
             >
               {count}
             </span>
-          </button>
+          </Button>
         )
       })}
     </div>
