@@ -3,10 +3,19 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ClipboardList, Plus, Search, SearchX } from "lucide-react"
+import { cn } from "cn"
 
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
+import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import { FilterTabs, type ReportFilter } from "@/components/reports/filter-tabs"
 import { ReportCard } from "@/components/reports/report-card"
 import { ReportDetailSheet } from "@/components/reports/report-detail-sheet"
@@ -15,6 +24,10 @@ import { ReportsPagination } from "@/components/reports/reports-pagination"
 import type { FacilityReportOption, ReportItem, ReportListView } from "@/lib/services/report-service"
 
 const PAGE_SIZE = 6
+const SORT_OPTIONS = [
+  { value: "desc", label: "Terbaru" },
+  { value: "asc", label: "Terlama" },
+]
 
 interface ReportsViewProps {
   view: ReportListView
@@ -87,7 +100,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
           </p>
         </header>
         <Button
-          className="shrink-0"
+          className={cn(BUTTON_ACTION_CLASS, "shrink-0")}
           onClick={() => setFormOpen(true)}
           disabled={!canCreate}
           title={canCreate ? undefined : "Belum ada fasilitas yang tersedia untuk dilaporkan"}
@@ -98,14 +111,14 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xs">
+        <div className="flex w-full min-w-0 items-center justify-between gap-2">
+          <div className="relative min-w-0 w-full flex-1 sm:max-w-xs">
             <Search
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
-              className="pl-8"
+              className={cn(INPUT_BASELINE_CLASS, "pl-8")}
               placeholder="Cari laporan..."
               aria-label="Cari laporan"
               value={query}
@@ -115,23 +128,27 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
               }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="sort-laporan" className="sr-only">
-              Urutkan laporan
-            </label>
-            <select
-              id="sort-laporan"
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value as "desc" | "asc")
-                setPage(1)
-              }}
-              className="h-8 cursor-pointer rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          <Select
+            items={SORT_OPTIONS}
+            value={sort}
+            modal={false}
+            onValueChange={(value) => {
+              if (value !== "asc" && value !== "desc") return
+              setSort(value)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger
+              aria-label="Urutkan laporan"
+              className={`${SELECT_TRIGGER_ACTION_CLASS} w-24 shrink-0`}
             >
-              <option value="desc">Terbaru</option>
-              <option value="asc">Terlama</option>
-            </select>
-          </div>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end" alignItemWithTrigger={false}>
+              <SelectItem value="desc">Terbaru</SelectItem>
+              <SelectItem value="asc">Terlama</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <FilterTabs
@@ -169,7 +186,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
                 </EmptyDescription>
               </EmptyContent>
             </EmptyHeader>
-            <Button className="min-h-11" onClick={() => setFormOpen(true)} disabled={!canCreate}>
+            <Button className={BUTTON_ACTION_CLASS} onClick={() => setFormOpen(true)} disabled={!canCreate}>
               <Plus aria-hidden="true" />
               Ajukan Laporan
             </Button>
@@ -185,7 +202,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
                 <EmptyDescription>Coba ubah kata kunci pencarian atau pilih filter status lain.</EmptyDescription>
               </EmptyContent>
             </EmptyHeader>
-            <Button variant="outline" className="min-h-11" onClick={resetFilters}>
+            <Button variant="outline" className={BUTTON_ACTION_CLASS} onClick={resetFilters}>
               Reset filter
             </Button>
           </Empty>

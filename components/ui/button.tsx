@@ -3,6 +3,8 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { LoaderCircle } from "lucide-react"
 
+export const BUTTON_ACTION_CLASS = "min-h-11 gap-2.5 px-4 text-sm"
+
 // Panah penanda arah bergeser saat tombol di-hover atau di-fokus keyboard.
 // Penandanya `data-motion-icon`, bukan `data-icon`, supaya padding varian size
 // Button (`has-data-[icon=inline-end]`) tidak ikut berubah. Durasi, easing, dan
