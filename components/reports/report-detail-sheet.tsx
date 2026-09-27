@@ -38,7 +38,8 @@ export function ReportDetailSheet({ report, open, onOpenChange }: ReportDetailSh
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-x-hidden overflow-y-auto sm:max-w-md md:max-w-lg lg:max-w-xl"
+        className="w-full overflow-x-hidden overflow-y-auto data-ending-style:duration-motion-standard sm:max-w-md md:max-w-lg lg:max-w-xl"
+        overlayClassName="data-ending-style:duration-motion-standard"
       >
         <SheetHeader>
           <SheetTitle>Detail laporan</SheetTitle>
