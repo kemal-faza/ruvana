@@ -8,7 +8,14 @@ import { KATEGORI_LAPORAN, MAKS_DESKRIPSI_LAPORAN } from "@/config/business"
 import { LABEL_TIPE_FASILITAS } from "@/config/labels"
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import { createReportAction, type CreateReportActionResult } from "@/app/reports/actions"
 import { validateReportSubmission, type ReportSubmissionErrors } from "@/lib/validation/report"
 import type { FacilityReportOption, ReportItem } from "@/lib/services/report-service"
@@ -200,7 +207,7 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                     <SelectTrigger
                       ref={facilityRef}
                       id={`${titleId}-facility`}
-                      className="w-full"
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
                       aria-required="true"
                       aria-invalid={errors.facilityId ? true : undefined}
                       aria-describedby={errors.facilityId ? facilityErrorId : undefined}
@@ -237,7 +244,7 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                     <SelectTrigger
                       ref={kategoriRef}
                       id={`${titleId}-category`}
-                      className="w-full"
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
                       aria-required="true"
                       aria-invalid={errors.kategori ? true : undefined}
                       aria-describedby={errors.kategori ? kategoriErrorId : undefined}

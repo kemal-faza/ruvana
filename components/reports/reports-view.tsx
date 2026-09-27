@@ -8,7 +8,14 @@ import { cn } from "cn"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import { FilterTabs, type ReportFilter } from "@/components/reports/filter-tabs"
 import { ReportCard } from "@/components/reports/report-card"
 import { ReportDetailSheet } from "@/components/reports/report-detail-sheet"
@@ -131,7 +138,10 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
               setPage(1)
             }}
           >
-            <SelectTrigger aria-label="Urutkan laporan" className="h-8 w-24 shrink-0">
+            <SelectTrigger
+              aria-label="Urutkan laporan"
+              className={`${SELECT_TRIGGER_ACTION_CLASS} w-24 shrink-0`}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end" alignItemWithTrigger={false}>

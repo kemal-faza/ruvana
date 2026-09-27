@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import {
   Sheet,
   SheetClose,
@@ -178,7 +179,10 @@ export default async function Home() {
                 <Field>
                   <FieldLabel htmlFor="contoh-select">Pilihan</FieldLabel>
                   <Select name="pilihan-contoh" defaultValue="opsi-satu" modal={false}>
-                    <SelectTrigger id="contoh-select" className="min-h-11 w-full">
+                    <SelectTrigger
+                      id="contoh-select"
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+                    >
                       <SelectValue placeholder="Pilih salah satu" />
                     </SelectTrigger>
                     <SelectContent align="start" alignItemWithTrigger={false}>
