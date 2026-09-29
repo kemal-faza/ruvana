@@ -12,7 +12,7 @@ export function AuthPhotoPanel() {
           alt="Gedung Fakultas Sains dan Matematika Universitas Diponegoro"
           fill
           priority
-          sizes="(min-width: 768px) 50vw, 100vw"
+          sizes="(min-width: 768px) 100vh, 100vw"
           className="object-cover"
         />
         <div
