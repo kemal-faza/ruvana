@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ReservationForm } from "@/components/reservation/reservation-form";
 import { reservasiNavigation } from "./navigation";
+import { shellAccountFromUser } from "@/config/navigation";
+import { requirePengguna } from "@/lib/auth";
 import { computeFacilityAvailability } from "@/lib/reservations/availability";
 import { listPublicFacilities } from "@/lib/services/facility-service";
 import { isValidDateFormat } from "@/lib/time/reservation-time";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Ajukan reservasi — Ruvana",
+  description: "Pilih fasilitas, tanggal, dan slot waktu untuk mengajukan reservasi.",
+};
 
 async function getFacilities() {
   const { items } = await listPublicFacilities({ page: 1, perPage: 500 });
@@ -20,6 +29,11 @@ export default async function ReservasiPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // Guard server dulu (IAM-03): tanpa sesi ke /login, petugas ke /petugas,
+  // admin ke /admin — sebelum data apa pun dibaca.
+  const pengguna = await requirePengguna();
+  const account = shellAccountFromUser(pengguna);
+  // Data fasilitas dibaca lewat service, bukan Prisma di View.
   const facilities = await getFacilities();
   const query = await searchParams;
 
@@ -42,7 +56,7 @@ export default async function ReservasiPage({
     facilityId > 0 ? await computeFacilityAvailability(facilityId, date) : null;
 
   return (
-    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}>
+    <AppShell navigation={reservasiNavigation} account={account}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-medium tracking-wide text-primary">Reservasi</p>

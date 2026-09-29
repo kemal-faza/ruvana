@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -6,8 +7,15 @@ import { AppShell } from "@/components/app-shell/app-shell";
 import { ReservationDetail } from "@/components/reservation/reservation-detail";
 import { Button } from "@/components/ui/button";
 import { reservasiNavigation } from "../../navigation";
+import { shellAccountFromUser } from "@/config/navigation";
+import { requirePengguna } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Detail reservasi — Ruvana",
+  description: "Lihat detail reservasi milik Anda dan batalkan bila masih memenuhi batas waktu.",
+};
 
 interface RiwayatDetailPageProps {
   params: Promise<{ id: string }>;
@@ -20,12 +28,15 @@ function parseId(raw: string): number | null {
 }
 
 export default async function RiwayatDetailPage({ params }: RiwayatDetailPageProps) {
+  // Guard server dulu (IAM-03) sebelum id diproses.
+  const pengguna = await requirePengguna();
+  const account = shellAccountFromUser(pengguna);
   const { id } = await params;
   const reservationId = parseId(id);
   if (reservationId === null) notFound();
 
   return (
-    <AppShell navigation={reservasiNavigation} account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}>
+    <AppShell navigation={reservasiNavigation} account={account}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <Button
           variant="ghost"

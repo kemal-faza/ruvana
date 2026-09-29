@@ -1,22 +1,27 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ApprovedReservationList } from "@/components/staff/approved-reservation-list";
 import { staffNavigation, staffQueueNavigation } from "@/components/staff/navigation";
 import { ReservationQueue } from "@/components/staff/reservation-queue";
-import { getSessionUser } from "@/lib/auth";
+import { shellAccountFromUser } from "@/config/navigation";
+import { requirePetugasAtauAdmin } from "@/lib/auth";
 import { Role } from "@/generated/prisma/enums";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "Antrean reservasi — Ruvana",
+  description: "Setujui atau tolak reservasi menunggu sebagai petugas.",
+};
+
 export default async function AntrianPage() {
-  const user = await getSessionUser();
-  const navigation = user?.role === Role.petugas
-    ? staffNavigation
-    : user?.role === Role.admin
-      ? staffQueueNavigation
-      : [];
-  const account = user
-    ? { displayName: user.nama, roleLabel: user.role === Role.admin ? "Admin" : user.role === Role.petugas ? "Petugas" : "Pengguna" }
-    : null;
+  // Guard server dulu (RES-05, IAM-03): tanpa sesi ke /login,
+  // peran selain petugas/admin ke /403. Data antrean dibaca
+  // komponen klien lewat API yang dijaga guardStaff.
+  const user = await requirePetugasAtauAdmin();
+  const navigation = user.role === Role.petugas ? staffNavigation : staffQueueNavigation;
+  const account = shellAccountFromUser(user);
 
   return (
     <AppShell navigation={navigation} account={account}>

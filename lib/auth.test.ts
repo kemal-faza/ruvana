@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { createSession, destroySession, getSessionUser, getSessionUserId, requirePetugas } from "@/lib/auth";
+import { createSession, destroySession, getSessionUser, getSessionUserId, requirePengguna, requirePetugas, requirePetugasAtauAdmin } from "@/lib/auth";
 
 const { mockRedirect } = vi.hoisted(() => ({
   mockRedirect: vi.fn((destination: string) => {
@@ -117,6 +117,77 @@ describe("sesi", () => {
     } as never);
 
     await expect(requirePetugas()).rejects.toThrow("redirect:/403");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/403");
+  });
+});
+
+describe("requirePengguna", () => {
+  async function loginSebagai(role: Role) {
+    await createSession(12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 12,
+      nama: "Akun Uji",
+      email: "akun@ruvana.test",
+      role,
+      status: AccountStatus.ACTIVE,
+      waktuDaftar: new Date("2026-09-01T00:00:00Z"),
+      waktuVerifikasi: new Date("2026-09-01T00:00:00Z"),
+    } as never);
+  }
+
+  it("mengizinkan pengguna aktif masuk ke halaman reservasi", async () => {
+    await loginSebagai(Role.pengguna);
+
+    await expect(requirePengguna()).resolves.toMatchObject({ id: 12, role: Role.pengguna });
+  });
+
+  it("mengalihkan pengunjung tanpa sesi ke halaman masuk", async () => {
+    await expect(requirePengguna()).rejects.toThrow("redirect:/login");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/login");
+  });
+
+  it("mengalihkan petugas ke dasbor petugas dan admin ke dasbor admin", async () => {
+    await loginSebagai(Role.petugas);
+    await expect(requirePengguna()).rejects.toThrow("redirect:/petugas");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/petugas");
+
+    await loginSebagai(Role.admin);
+    await expect(requirePengguna()).rejects.toThrow("redirect:/admin");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/admin");
+  });
+});
+
+describe("requirePetugasAtauAdmin", () => {
+  async function loginSebagai(role: Role) {
+    await createSession(12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 12,
+      nama: "Akun Uji",
+      email: "akun@ruvana.test",
+      role,
+      status: AccountStatus.ACTIVE,
+      waktuDaftar: new Date("2026-09-01T00:00:00Z"),
+      waktuVerifikasi: new Date("2026-09-01T00:00:00Z"),
+    } as never);
+  }
+
+  it("mengizinkan petugas dan admin membuka antrean persetujuan", async () => {
+    await loginSebagai(Role.petugas);
+    await expect(requirePetugasAtauAdmin()).resolves.toMatchObject({ role: Role.petugas });
+
+    await loginSebagai(Role.admin);
+    await expect(requirePetugasAtauAdmin()).resolves.toMatchObject({ role: Role.admin });
+  });
+
+  it("mengalihkan pengunjung tanpa sesi ke halaman masuk", async () => {
+    await expect(requirePetugasAtauAdmin()).rejects.toThrow("redirect:/login");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/login");
+  });
+
+  it("menolak pengguna dengan halaman akses ditolak", async () => {
+    await loginSebagai(Role.pengguna);
+
+    await expect(requirePetugasAtauAdmin()).rejects.toThrow("redirect:/403");
     expect(mockRedirect).toHaveBeenLastCalledWith("/403");
   });
 });
