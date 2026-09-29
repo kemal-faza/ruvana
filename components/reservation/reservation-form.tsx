@@ -7,6 +7,7 @@ import {
   getValidEndTimes,
   type FacilityAvailability,
 } from "@/lib/reservations/slot-range";
+import { pesanSuksesPengajuan, ringkasGalatPengajuan } from "@/lib/reservations/reservation-display";
 import { parseTimeToMinutes } from "@/lib/time/reservation-time";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; msg: string; detail?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
   // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
@@ -162,18 +163,15 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        setResult({ ok: true, msg: `Reservasi PENDING dibuat (id ${data?.id ?? "-"})`, detail: JSON.stringify(data, null, 2) });
+        setResult({ ok: true, msg: pesanSuksesPengajuan() });
         setStartTime("");
         setEndTime("");
       } else {
-        // tampilkan problem+json
-        const detail = data?.detail || data?.title || `Gagal ${res.status}`;
-        const errors = data?.errors ? ` - ${JSON.stringify(data.errors)}` : "";
-        const avail = data?.availability ? `\nAvailability: ${JSON.stringify(data.availability).slice(0, 400)}...` : "";
-        setResult({ ok: false, msg: `${detail}${errors}`, detail: JSON.stringify(data, null, 2) + avail });
+        // tampilkan ringkasan aman: tanpa enum, id, dump JSON, atau kunci internal.
+        setResult({ ok: false, msg: ringkasGalatPengajuan(data, res.status) });
       }
-    } catch (err) {
-      setResult({ ok: false, msg: `Error jaringan: ${String(err)}` });
+    } catch {
+      setResult({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setLoading(false);
     }
@@ -347,9 +345,8 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
           </section>
 
           {result && (
-            <div className={`rounded-md border p-3 text-sm ${result.ok ? "border-green-200 bg-green-50 text-green-900" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
+            <div aria-live="polite" className={`rounded-md border p-3 text-sm ${result.ok ? "border-success-subdued bg-success-subdued text-success-subdued-foreground" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
               <p className="font-medium">{result.msg}</p>
-              {result.detail && <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word text-xs opacity-80">{result.detail}</pre>}
             </div>
           )}
         </form>

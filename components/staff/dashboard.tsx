@@ -13,8 +13,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { ReportWorkSummaries } from "@/components/staff/report-work-summaries";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
+import type { StatusReservasi } from "@/generated/prisma/enums";
 
 interface DashboardQueueResponse {
   items: StaffReservationResult[];
@@ -117,9 +119,12 @@ export function StaffDashboard({ reservations, totalReservations, initialError =
               <ul className="flex min-w-0 flex-col divide-y">
                 {items.map((item) => (
                   <li key={item.id} className="min-w-0 py-3 first:pt-0 last:pb-0">
-                    <p className="wrap-break-word text-sm font-medium">
-                      {item.facility.nama} · {formatTanggal(item.date)} · {item.startTime}–{item.endTime}
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="wrap-break-word text-sm font-medium">
+                        {item.facility.nama} · {formatTanggal(item.date)} · {item.startTime}–{item.endTime}
+                      </p>
+                      <ReservationStatusBadge status={item.status as StatusReservasi} />
+                    </div>
                     <p className="mt-1 wrap-break-word text-sm text-muted-foreground">
                       {item.pemohon.nama} · {item.tujuanPenggunaan}
                     </p>

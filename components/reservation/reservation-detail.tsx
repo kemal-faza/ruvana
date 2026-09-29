@@ -5,31 +5,13 @@ import { CalendarDays } from "lucide-react";
 
 import { BATAS_ALASAN_MAX, BATAS_PEMBATALAN_JAM } from "@/config/business";
 import { LABEL_TIPE_FASILITAS } from "@/config/labels";
+import { tampilanReservasi } from "@/lib/reservations/reservation-display";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi, TipeFasilitas } from "@/generated/prisma/enums";
-
-function formatTanggal(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(
-    new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
-  );
-}
-
-function formatInstant(iso: string | null): string {
-  if (!iso) return "-";
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Jakarta",
-  }).format(new Date(iso));
-}
 
 export function ReservationDetail({ id }: { id: number }) {
   const [data, setData] = useState<ReservationResult | null>(null);
@@ -99,7 +81,7 @@ export function ReservationDetail({ id }: { id: number }) {
         await loadDetail();
       }
     } catch {
-      setCancelResult({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setCancelResult({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setCancelLoading(false);
     }
@@ -145,6 +127,15 @@ export function ReservationDetail({ id }: { id: number }) {
     return <p className="text-sm text-destructive">Gagal memuat detail. Silakan coba lagi.</p>;
   }
 
+  const tampil = tampilanReservasi({
+    status: data.status as StatusReservasi,
+    date: data.date,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    submittedAt: data.submittedAt,
+    processedAt: data.processedAt,
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center gap-3">
@@ -160,13 +151,19 @@ export function ReservationDetail({ id }: { id: number }) {
           </dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4">
+          <dt className="text-sm text-muted-foreground">Tanggal</dt>
+          <dd className="font-medium">{tampil.tanggal}</dd>
+        </div>
+        <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Waktu</dt>
-          <dd className="font-medium">
-            {formatTanggal(data.date)} · {data.startTime}–{data.endTime}
-          </dd>
+          <dd className="font-medium">{tampil.waktu}</dd>
+        </div>
+        <div className="rounded-card border border-border bg-card p-4">
+          <dt className="text-sm text-muted-foreground">Status</dt>
+          <dd className="font-medium">{tampil.labelStatus}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4 sm:col-span-2">
-          <dt className="text-sm text-muted-foreground">Tujuan penggunaan</dt>
+          <dt className="text-sm text-muted-foreground">Tujuan</dt>
           <dd className="font-medium">{data.tujuanPenggunaan}</dd>
         </div>
         {data.alasan && (
@@ -177,11 +174,11 @@ export function ReservationDetail({ id }: { id: number }) {
         )}
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Diajukan pada</dt>
-          <dd className="font-medium">{formatInstant(data.submittedAt)}</dd>
+          <dd className="font-medium">{tampil.diajukanPada}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Diproses pada</dt>
-          <dd className="font-medium">{formatInstant(data.processedAt)}</dd>
+          <dd className="font-medium">{tampil.diprosesPada}</dd>
         </div>
       </dl>
 
@@ -223,7 +220,7 @@ export function ReservationDetail({ id }: { id: number }) {
               <p className="text-sm">
                 Yakin membatalkan reservasi <span className="font-medium">{data.facility.nama}</span> pada{" "}
                 <span className="font-medium">
-                  {formatTanggal(data.date)} · {data.startTime}–{data.endTime}
+                  {tampil.tanggal} · {tampil.waktu}
                 </span>
                 ? Tindakan ini tidak dapat dibatalkan.
               </p>
@@ -244,7 +241,7 @@ export function ReservationDetail({ id }: { id: number }) {
             </div>
           )}
           {cancelResult && (
-            <p className={`text-sm font-medium ${cancelResult.ok ? "text-green-700" : "text-destructive"}`}>
+            <p className={`text-sm font-medium ${cancelResult.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
               {cancelResult.msg}
             </p>
           )}

@@ -81,22 +81,25 @@ export function ReservationQueue() {
     setRejectAlasan("");
   }
 
-  async function submitApprove(id: number) {
+  async function submitApprove(item: StaffReservationResult) {
     if (actingId !== null) return;
-    setActingId(id);
+    setActingId(item.id);
     setNotice(null);
     try {
-      const res = await fetch(`/api/staff/reservations/${id}/approve`, { method: "POST" });
+      const res = await fetch(`/api/staff/reservations/${item.id}/approve`, { method: "POST" });
       const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
       if (res.ok) {
-        setNotice({ ok: true, msg: `Reservasi #${id} disetujui.` });
+        setNotice({
+          ok: true,
+          msg: `Reservasi ${item.facility.nama} pada ${formatTanggal(item.date)} pukul ${item.startTime}–${item.endTime} telah disetujui.`,
+        });
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || `Gagal menyetujui (${res.status})` });
+      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal menyetujui. Silakan coba lagi." });
       await load(page);
     } catch {
-      setNotice({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setActingId(null);
     }
@@ -117,16 +120,19 @@ export function ReservationQueue() {
       });
       const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
       if (res.ok) {
-        setNotice({ ok: true, msg: `Reservasi #${rejectTarget.id} ditolak.` });
+        setNotice({
+          ok: true,
+          msg: `Reservasi ${rejectTarget.facility.nama} pada ${formatTanggal(rejectTarget.date)} pukul ${rejectTarget.startTime}–${rejectTarget.endTime} telah ditolak.`,
+        });
         closeRejectModal();
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || `Gagal menolak (${res.status})` });
+      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal menolak. Silakan coba lagi." });
       closeRejectModal();
       await load(page);
     } catch {
-      setNotice({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setActingId(null);
     }
@@ -169,11 +175,11 @@ export function ReservationQueue() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">
-        Urutan FIFO: pengajuan paling lama menunggu diproses lebih dulu.
+        Diurutkan dari pengajuan terlama; yang paling lama menunggu diproses lebih dulu.
       </p>
 
       {notice && (
-        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-green-700" : "text-destructive"}`}>
+        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
           {notice.msg}
         </p>
       )}
@@ -230,7 +236,7 @@ export function ReservationQueue() {
                   type="button"
                   loading={actingId === item.id}
                   disabled={actingId !== null}
-                  onClick={() => void submitApprove(item.id)}
+                  onClick={() => void submitApprove(item)}
                 >
                   Setujui
                 </Button>
@@ -290,7 +296,11 @@ export function ReservationQueue() {
           }}
         >
           <div>
-            <h2 className="font-heading text-lg font-semibold">Tolak reservasi #{rejectTarget?.id}</h2>
+            <h2 className="font-heading text-lg font-semibold">
+              {rejectTarget
+                ? `Tolak reservasi ${rejectTarget.facility.nama} · ${formatTanggal(rejectTarget.date)}`
+                : "Tolak reservasi"}
+            </h2>
             <p className="text-sm text-muted-foreground">Alasan wajib diisi dan akan terlihat oleh pemohon.</p>
           </div>
           <Field>
