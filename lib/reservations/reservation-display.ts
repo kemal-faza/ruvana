@@ -94,6 +94,36 @@ export function tampilanReservasi(masukan: MasukanTampilanReservasi): TampilanRe
   };
 }
 
+export interface GalatFieldTampil {
+  idKontrol: "jam-mulai" | "jam-selesai" | "tujuan" | null;
+  label: string;
+}
+
+// Nama field teknis dari galat validasi server ke kontrol form dan istilah
+// domain. Field tanpa kontrol (fasilitas, tanggal) tetap dilaporkan lewat
+// ringkasan dengan idKontrol null.
+const FIELD_KE_KONTROL: Record<string, GalatFieldTampil> = {
+  facilityId: { idKontrol: null, label: "Fasilitas" },
+  date: { idKontrol: null, label: "Tanggal" },
+  startTime: { idKontrol: "jam-mulai", label: "Jam mulai" },
+  endTime: { idKontrol: "jam-selesai", label: "Jam selesai" },
+  tujuanPenggunaan: { idKontrol: "tujuan", label: "Tujuan" },
+  alasan: { idKontrol: null, label: "Alasan" },
+};
+
+export function petakanGalatField(errors: unknown): GalatFieldTampil[] {
+  if (!Array.isArray(errors)) return [];
+  const hasil: GalatFieldTampil[] = [];
+  for (const item of errors as { field?: unknown }[]) {
+    const pemetaan =
+      typeof item?.field === "string" ? FIELD_KE_KONTROL[item.field] : undefined;
+    if (pemetaan && !hasil.some((h) => h.label === pemetaan.label)) {
+      hasil.push({ ...pemetaan });
+    }
+  }
+  return hasil;
+}
+
 // Pesan sukses pengajuan memakai label domain "Menunggu" tanpa enum,
 // id teknis, atau dump JSON.
 export function pesanSuksesPengajuan(): string {

@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ReservationDetail } from "@/components/reservation/reservation-detail";
+import { ReservationSuccessBanner } from "@/components/reservation/reservation-success-banner";
 import { Button } from "@/components/ui/button";
 import { reservasiNavigation } from "../../navigation";
 import { shellAccountFromUser } from "@/config/navigation";
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 
 interface RiwayatDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 function parseId(raw: string): number | null {
@@ -27,17 +29,24 @@ function parseId(raw: string): number | null {
   return id >= 1 ? id : null;
 }
 
-export default async function RiwayatDetailPage({ params }: RiwayatDetailPageProps) {
+export default async function RiwayatDetailPage({ params, searchParams }: RiwayatDetailPageProps) {
   // Guard server dulu (IAM-03) sebelum id diproses.
   const pengguna = await requirePengguna();
   const account = shellAccountFromUser(pengguna);
   const { id } = await params;
   const reservationId = parseId(id);
   if (reservationId === null) notFound();
+  // Banner konfirmasi hanya tampil untuk navigasi sukses barusan
+  // (?baru=1 dari form pengajuan). Nilai lain diabaikan agar banner tidak
+  // muncul saat halaman dibuka dari riwayat.
+  const query = await searchParams;
+  const penanda = Array.isArray(query.baru) ? query.baru[0] : query.baru;
+  const dariPengajuan = penanda === "1";
 
   return (
     <AppShell navigation={reservasiNavigation} account={account}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+        {dariPengajuan && <ReservationSuccessBanner />}
         <Button
           variant="ghost"
           className="min-h-11 w-fit -ml-3"

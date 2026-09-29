@@ -4,6 +4,7 @@ import { LABEL_STATUS_RESERVASI } from "@/config/labels"
 import type { StatusReservasi } from "@/generated/prisma/enums"
 import {
   pesanSuksesPengajuan,
+  petakanGalatField,
   ringkasGalatPengajuan,
   tampilanReservasi,
 } from "@/lib/reservations/reservation-display"
@@ -54,6 +55,25 @@ describe("tampilanReservasi", () => {
     expect(
       tampilanReservasi({ ...dasar, processedAt: "2026-11-30T03:00:00.000Z" }).diprosesPada,
     ).not.toBe("-")
+  })
+})
+
+describe("petakanGalatField", () => {
+  it("memetakan field server ke kontrol form dan label domain", () => {
+    expect(
+      petakanGalatField([
+        { field: "startTime", code: "INVALID_TIME", message: "startTime wajib diisi" },
+        { field: "tujuanPenggunaan", code: "TOO_SHORT", message: "tujuanPenggunaan tidak boleh kosong" },
+      ]),
+    ).toEqual([
+      { idKontrol: "jam-mulai", label: "Jam mulai" },
+      { idKontrol: "tujuan", label: "Tujuan" },
+    ])
+  })
+
+  it("mengembalikan daftar kosong untuk galat tak dikenal", () => {
+    expect(petakanGalatField([{ field: "kolomAsing" }])).toEqual([])
+    expect(petakanGalatField(null)).toEqual([])
   })
 })
 

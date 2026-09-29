@@ -420,6 +420,9 @@ Pengguna memilih satu atau beberapa slot berurutan pada satu fasilitas dan tangg
 - Tujuan wajib diisi sesuai batas input yang ditetapkan.
 - Pengajuan valid membuat tepat satu reservasi `PENDING` milik pengguna yang sedang login.
 - Waktu pengajuan dicatat oleh server saat reservasi berhasil dibuat dan tidak dapat ditentukan oleh klien.
+- Pengajuan sukses mengarahkan ke halaman detail reservasi yang baru dibuat dan menampilkan banner konfirmasi `role="status"` berjudul `Reservasi berhasil diajukan`, status label domain `Menunggu`, penjelasan peninjauan petugas, dan tautan `Lihat riwayat reservasi`; banner tidak tampil saat detail dibuka dari riwayat.
+- Layar konfirmasi dan form tidak menampilkan data mentah database (enum, id, dump JSON).
+- Fokus dikelola setelah navigasi ke detail; tombol kirim mempertahankan ukuran, menampilkan label proses, dan mencegah submit ganda.
 
 #### RES-02 — Validasi reservasi
 

@@ -1,15 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
 import {
   blockedByLabel,
   getValidEndTimes,
   type FacilityAvailability,
 } from "@/lib/reservations/slot-range";
-import { pesanSuksesPengajuan, ringkasGalatPengajuan } from "@/lib/reservations/reservation-display";
+import {
+  pesanSuksesPengajuan,
+  petakanGalatField,
+  ringkasGalatPengajuan,
+} from "@/lib/reservations/reservation-display";
 import { parseTimeToMinutes } from "@/lib/time/reservation-time";
-import { Button } from "@/components/ui/button";
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -31,7 +36,13 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; msg: string; konflik?: boolean } | null>(null);
+  const [galatField, setGalatField] = useState<{ jamMulai?: string; jamSelesai?: string; tujuan?: string }>({});
+  const [ringkasan, setRingkasan] = useState<string | null>(null);
+  // Penjaga submit ganda di luar state agar klik kedua yang datang sebelum
+  // render ulang tetap ditolak (tombol juga dinonaktifkan saat loading).
+  const mengirimRef = useRef(false);
+  const router = useRouter();
 
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
   // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
@@ -107,43 +118,63 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     );
   }
 
+  function fokusKe(id: string | null) {
+    if (!id) return;
+    document.getElementById(id)?.focus();
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mengirimRef.current) return;
     setResult(null);
+    setGalatField({});
+    setRingkasan(null);
 
-    // validasi client
-    if (!selectedFacilityId || selectedFacilityId < 1) {
-      setResult({ ok: false, msg: "Pilih fasilitas terlebih dahulu" });
-      return;
-    }
-    if (!date) {
-      setResult({ ok: false, msg: "Tanggal wajib diisi" });
-      return;
+    // validasi client: kumpulkan galat per field, tampilkan di dekat field,
+    // ringkas di atas, dan fokus ke field invalid pertama.
+    const fieldBaru: typeof galatField = {};
+    let fokusPertama: string | null = null;
+    const labelRingkasan: string[] = [];
+    function catat(kunci: keyof typeof fieldBaru, id: string, label: string, pesan: string) {
+      fieldBaru[kunci] = pesan;
+      labelRingkasan.push(label);
+      fokusPertama ??= id;
     }
     if (!startTime) {
-      setResult({ ok: false, msg: "Pilih jam mulai" });
-      return;
+      catat("jamMulai", "jam-mulai", "Jam mulai", "Jam mulai wajib dipilih.");
     }
     if (!endTime) {
-      setResult({ ok: false, msg: "Pilih jam selesai" });
-      return;
+      catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
     }
     // pertahanan terakhir di client: rentang tidak boleh melewati slot yang tidak tersedia.
     // Dilewati bila availability bukan milik fasilitas terpilih (server yang memvalidasi).
-    if (availabilityForSelected && !getValidEndTimes(startTime, availabilityForSelected.slots).includes(endTime)) {
-      setResult({ ok: false, msg: "Rentang waktu melewati slot yang tidak tersedia" });
-      return;
+    if (
+      startTime &&
+      endTime &&
+      availabilityForSelected &&
+      !getValidEndTimes(startTime, availabilityForSelected.slots).includes(endTime)
+    ) {
+      catat(
+        "jamSelesai",
+        "jam-selesai",
+        "Jam selesai",
+        "Rentang waktu melewati slot yang tidak tersedia. Pilih jam selesai lain.",
+      );
     }
     if (!tujuan.trim()) {
-      setResult({ ok: false, msg: "Tujuan penggunaan wajib diisi" });
-      return;
+      catat("tujuan", "tujuan", "Tujuan", "Tujuan wajib diisi.");
+    } else if (tujuan.trim().length > BATAS_TUJUAN_MAX) {
+      catat("tujuan", "tujuan", "Tujuan", `Tujuan maksimal ${BATAS_TUJUAN_MAX} karakter.`);
     }
-    if (tujuan.trim().length > BATAS_TUJUAN_MAX) {
-      setResult({ ok: false, msg: `Tujuan maksimal ${BATAS_TUJUAN_MAX} karakter` });
+    if (labelRingkasan.length > 0) {
+      setGalatField(fieldBaru);
+      setRingkasan(`Periksa kembali isian berikut: ${labelRingkasan.join(", ")}.`);
+      fokusKe(fokusPertama);
       return;
     }
     // cek jam operasional sudah dijamin oleh opsi dropdown
 
+    mengirimRef.current = true;
     setLoading(true);
     try {
       const body = {
@@ -163,16 +194,41 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        setResult({ ok: true, msg: pesanSuksesPengajuan() });
-        setStartTime("");
-        setEndTime("");
+        // Konfirmasi ditampilkan sebagai banner di halaman detail (satu-satunya
+        // bukti sukses); tidak ada dump JSON atau enum di layar form.
+        const idBaru =
+          typeof data === "object" && data !== null && typeof (data as { id?: unknown }).id === "number"
+            ? (data as { id: number }).id
+            : null;
+        if (idBaru === null) {
+          setResult({ ok: true, msg: pesanSuksesPengajuan() });
+        } else {
+          router.push(`/reservasi/riwayat/${idBaru}?baru=1`);
+        }
       } else {
-        // tampilkan ringkasan aman: tanpa enum, id, dump JSON, atau kunci internal.
-        setResult({ ok: false, msg: ringkasGalatPengajuan(data, res.status) });
+        // Input dipertahankan agar pengguna dapat memperbaiki dan mencoba lagi.
+        const konflik = res.status === 409;
+        const body = data as { errors?: unknown } | null;
+        const pemetaan = petakanGalatField(body?.errors);
+        if (pemetaan.length > 0) {
+          const fieldServer: typeof galatField = {};
+          for (const item of pemetaan) {
+            if (item.idKontrol === "jam-mulai") fieldServer.jamMulai = "Nilai jam mulai tidak valid. Periksa kembali.";
+            if (item.idKontrol === "jam-selesai") fieldServer.jamSelesai = "Nilai jam selesai tidak valid. Periksa kembali.";
+            if (item.idKontrol === "tujuan") fieldServer.tujuan = "Nilai tujuan tidak valid. Periksa kembali.";
+          }
+          setGalatField(fieldServer);
+          setRingkasan(`Periksa kembali isian berikut: ${pemetaan.map((item) => item.label).join(", ")}.`);
+          fokusKe(pemetaan.find((item) => item.idKontrol !== null)?.idKontrol ?? null);
+        } else {
+          // tampilkan ringkasan aman: tanpa enum, id, dump JSON, atau kunci internal.
+          setResult({ ok: false, msg: ringkasGalatPengajuan(data, res.status), konflik });
+        }
       }
     } catch {
       setResult({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
+      mengirimRef.current = false;
       setLoading(false);
     }
   }
@@ -228,14 +284,19 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               </Field>
             </div>
             <div>
-              <Button type="submit" variant="outline">
+              <Button type="submit" variant="outline" className={BUTTON_ACTION_CLASS}>
                 Tampilkan ketersediaan
               </Button>
             </div>
           </form>
         </section>
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-6">
+        <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+          {ringkasan && (
+            <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <p className="font-medium">{ringkasan}</p>
+            </div>
+          )}
           <section aria-label="Waktu" className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
@@ -264,7 +325,8 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                     })}
                   </SelectContent>
                 </Select>
-                {!startTime && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {!startTime && !galatField.jamMulai && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
               </Field>
 
               <Field>
@@ -291,6 +353,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                 ) : validEndTimes.length === 0 ? (
                   <FieldDescription>Tidak ada jam selesai yang tersedia setelah jam ini.</FieldDescription>
                 ) : null}
+                {galatField.jamSelesai && <FieldError>{galatField.jamSelesai}</FieldError>}
               </Field>
             </div>
             {!availabilityForSelected && (
@@ -325,7 +388,11 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               <FieldDescription>
                 {tujuan.length}/{BATAS_TUJUAN_MAX} karakter.
               </FieldDescription>
-              {tujuan.length > BATAS_TUJUAN_MAX && <FieldError>Tujuan melebihi batas</FieldError>}
+              {galatField.tujuan ? (
+                <FieldError>{galatField.tujuan}</FieldError>
+              ) : (
+                tujuan.length > BATAS_TUJUAN_MAX && <FieldError>Tujuan melebihi batas</FieldError>
+              )}
             </Field>
 
             {summary && (
@@ -334,11 +401,22 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               </p>
             )}
 
-            <div className="flex gap-3">
-              <Button type="submit" loading={loading} disabled={loading}>
-                Ajukan reservasi
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit" loading={loading} disabled={loading} className={`${BUTTON_ACTION_CLASS} min-w-44`}>
+                {loading ? "Mengajukan..." : "Ajukan reservasi"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => { setStartTime(""); setEndTime(""); setResult(null); }}>
+              <Button
+                type="button"
+                variant="outline"
+                className={BUTTON_ACTION_CLASS}
+                onClick={() => {
+                  setStartTime("");
+                  setEndTime("");
+                  setResult(null);
+                  setGalatField({});
+                  setRingkasan(null);
+                }}
+              >
                 Reset waktu
               </Button>
             </div>
@@ -347,6 +425,21 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
           {result && (
             <div aria-live="polite" className={`rounded-md border p-3 text-sm ${result.ok ? "border-success-subdued bg-success-subdued text-success-subdued-foreground" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
               <p className="font-medium">{result.msg}</p>
+              {result.konflik && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p>Pilih slot lain yang masih tersedia, atau muat ulang slot terbaru tanpa mengulang isian Anda.</p>
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={BUTTON_ACTION_CLASS}
+                      onClick={() => router.refresh()}
+                    >
+                      Segarkan slot
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </form>
