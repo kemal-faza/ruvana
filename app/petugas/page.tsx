@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 import { StaffDashboard } from "@/components/staff/dashboard";
 import { staffNavigation } from "@/components/staff/navigation";
@@ -5,6 +7,10 @@ import { requirePetugas } from "@/lib/auth";
 import { listStaffQueueService, type StaffReservationResult } from "@/lib/services/reservation-service";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Dashboard Petugas | ruvana",
+};
 
 export default async function PetugasDashboardPage() {
   const petugas = await requirePetugas();

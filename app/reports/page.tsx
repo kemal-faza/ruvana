@@ -11,7 +11,7 @@ const description =
   "Pantau laporan kerusakan fasilitas kampus yang telah Anda ajukan beserta progres penanganannya."
 
 export const metadata: Metadata = {
-  title: "Laporan",
+  title: "Laporan | ruvana",
   description,
   alternates: {
     canonical: "/reports",

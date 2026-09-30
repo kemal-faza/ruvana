@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 import { staffNavigation } from "@/components/staff/navigation";
 import { requirePetugas } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Pengaturan petugas | ruvana",
+};
 
 export default async function PengaturanPetugasPage() {
   const petugas = await requirePetugas();

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
@@ -8,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { reservasiNavigation } from "../../navigation";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Detail reservasi | ruvana",
+};
 
 interface RiwayatDetailPageProps {
   params: Promise<{ id: string }>;

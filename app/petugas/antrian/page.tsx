@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ApprovedReservationList } from "@/components/staff/approved-reservation-list";
 import { staffNavigation, staffQueueNavigation } from "@/components/staff/navigation";
@@ -6,6 +8,10 @@ import { getSessionUser } from "@/lib/auth";
 import { Role } from "@/generated/prisma/enums";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Antrean reservasi | ruvana",
+};
 
 export default async function AntrianPage() {
   const user = await getSessionUser();

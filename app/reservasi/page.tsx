@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 
 import { AppShell } from "@/components/app-shell/app-shell"
 import { ReservationContent } from "./reservation-content"
@@ -6,6 +7,10 @@ import { ReservationContentSkeleton } from "./reservation-content-skeleton"
 import { reservasiNavigation } from "./navigation"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "Ajukan reservasi | ruvana",
+}
 
 export default function ReservationPage({
   searchParams,

@@ -8,7 +8,7 @@ import { parseAnalyticsFilters, type AnalyticsFilterSearchParams } from "@/lib/v
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Analitik | Ruvana",
+  title: "Analitik | ruvana",
   description: "Rekap okupansi dan status fasilitas saat ini.",
 };
 
