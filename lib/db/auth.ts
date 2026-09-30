@@ -24,6 +24,42 @@ export function findUserForLogin(email: string) {
   });
 }
 
+export function findPasswordHashByUserId(id: number) {
+  return prisma.user.findUnique({ where: { id }, select: { password: true } });
+}
+
+export function updateUserName(id: number, nama: string) {
+  return prisma.user.updateMany({
+    where: { id, status: AccountStatus.ACTIVE },
+    data: { nama },
+  });
+}
+
+export async function updatePasswordAndRevokeOtherSessions(
+  userId: number,
+  password: string,
+  currentTokenHash: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const update = await tx.user.updateMany({
+      where: { id: userId, status: AccountStatus.ACTIVE },
+      data: { password },
+    });
+    if (update.count === 1) {
+      await tx.session.deleteMany({
+        where: { userId, tokenHash: { not: currentTokenHash } },
+      });
+    }
+    return update.count;
+  });
+}
+
+export function deleteOtherAuthSessions(userId: number, currentTokenHash: string) {
+  return prisma.session.deleteMany({
+    where: { userId, tokenHash: { not: currentTokenHash } },
+  });
+}
+
 export function findSessionUser(id: number) {
   return prisma.user.findUnique({
     where: { id },
