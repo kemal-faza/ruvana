@@ -1,3 +1,4 @@
+import type { PublicFacilityFilters } from "@/lib/db/facilities";
 import { countPublicFacilities, findPublicFacilities, findPublicFacilityById } from "@/lib/db/facilities";
 import type { TipeFasilitas } from "@/generated/prisma/enums";
 
@@ -23,12 +24,17 @@ export interface PublicFacilityCollection {
   meta: PageMeta;
 }
 
-export async function listPublicFacilities({ page, perPage }: { page: number; perPage: number }): Promise<PublicFacilityCollection> {
+export interface PublicFacilityListQuery extends PublicFacilityFilters {
+  page: number;
+  perPage: number;
+}
+
+export async function listPublicFacilities({ page, perPage, ...filters }: PublicFacilityListQuery): Promise<PublicFacilityCollection> {
   const skip = (page - 1) * perPage;
 
   const [items, totalItems] = await Promise.all([
-    findPublicFacilities({ skip, take: perPage }),
-    countPublicFacilities(),
+    findPublicFacilities({ skip, take: perPage, ...filters }),
+    countPublicFacilities(filters),
   ]);
 
   return {
