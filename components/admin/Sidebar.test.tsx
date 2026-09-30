@@ -53,6 +53,8 @@ describe("AdminSidebar", () => {
     const tautan = screen.getByRole("link", { name: "Kelola Pengguna" })
     expect(tautan).toHaveAttribute("href", "/admin/pengguna")
     expect(tautan).toHaveAttribute("aria-current", "page")
+    expect(screen.getByText("Sistem")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/admin/pengaturan")
 
     expect(screen.getByRole("link", { name: "Ruvana" })).toHaveAttribute("href", "/")
     expect(screen.queryByText("Administrasi")).not.toBeInTheDocument()
@@ -114,6 +116,20 @@ describe("AdminSidebar", () => {
 
     const tautan = screen.getByRole("link", { name: "Analitik" })
     expect(tautan).toHaveAttribute("href", "/admin/analitik")
+    expect(tautan).toHaveAttribute("aria-current", "page")
+  })
+
+  it("menandai Pengaturan aktif pada halaman pengaturan admin", () => {
+    mockPathname.mockReturnValue("/admin/pengaturan")
+    setMatchMedia("(max-width: 1023px)", false)
+    render(
+      <SidebarProvider>
+        <AdminSidebar admin={{ id: 1, nama: "Ayu Pratama", email: "ayu@kampus.ac.id", role: "admin" }} />
+      </SidebarProvider>,
+    )
+
+    const tautan = screen.getByRole("link", { name: "Pengaturan" })
+    expect(tautan).toHaveAttribute("href", "/admin/pengaturan")
     expect(tautan).toHaveAttribute("aria-current", "page")
   })
 })

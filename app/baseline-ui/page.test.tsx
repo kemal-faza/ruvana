@@ -28,6 +28,7 @@ describe("katalog baseline UI", () => {
     for (const name of ["Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
       expect(screen.getAllByRole("link", { name }).length).toBeGreaterThan(0)
     }
+    expect(screen.queryByRole("link", { name: "Baseline UI" })).not.toBeInTheDocument()
 
     const input = screen.getByRole("textbox", { name: /nama contoh/i })
     expect(input).toBeRequired()

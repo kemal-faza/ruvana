@@ -2,8 +2,8 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  History,
   Settings,
-  SwatchBook,
 } from "lucide-react"
 
 import type { NavigationGroup, ShellAccount } from "@/components/app-shell/types"
@@ -14,6 +14,7 @@ export const navigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
+      { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
       { key: "laporan", label: "Laporan", href: "/reports", icon: ClipboardList },
@@ -23,7 +24,6 @@ export const navigation: readonly NavigationGroup[] = [
     key: "sistem",
     label: "Sistem",
     items: [
-      { key: "baseline-ui", label: "Baseline UI", href: "/baseline-ui", icon: SwatchBook },
       { key: "pengaturan", label: "Pengaturan", href: "/pengaturan", icon: Settings },
     ],
   },
