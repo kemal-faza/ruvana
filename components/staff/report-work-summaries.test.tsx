@@ -62,6 +62,17 @@ describe("ringkasan pekerjaan laporan Petugas", () => {
     expect(screen.getByRole("link", { name: "Lihat laporan baru" })).toBeInTheDocument();
   });
 
+  it("aksi tunggal pada kotak galat memakai varian primary", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Jaringan gagal")));
+    render(<ReportWorkSummaries />);
+
+    const tombol = await screen.findAllByRole("button", { name: "Coba lagi" });
+    expect(tombol.length).toBeGreaterThan(0);
+    for (const item of tombol) {
+      expect(item).toHaveClass("bg-primary-subdued");
+    }
+  });
+
   it("menampilkan error dan dapat memuat ulang", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn()

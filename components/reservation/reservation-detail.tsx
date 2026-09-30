@@ -212,7 +212,8 @@ export function ReservationDetail({ id }: { id: number }) {
               <div>
                 <Button
                   type="button"
-                  variant="danger"
+                  variant="danger-soft"
+                  className="min-h-11"
                   disabled={!cancelAlasan.trim() || cancelLoading}
                   onClick={() => setConfirming(true)}
                 >
@@ -233,13 +234,14 @@ export function ReservationDetail({ id }: { id: number }) {
                 <Button
                   type="button"
                   variant="danger"
+                  className="min-h-11"
                   loading={cancelLoading}
                   disabled={cancelLoading}
                   onClick={submitCancel}
                 >
                   Ya, batalkan
                 </Button>
-                <Button type="button" variant="outline" disabled={cancelLoading} onClick={() => setConfirming(false)}>
+                <Button type="button" variant="outline" className="min-h-11" disabled={cancelLoading} onClick={() => setConfirming(false)}>
                   Kembali
                 </Button>
               </div>

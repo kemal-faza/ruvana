@@ -153,10 +153,6 @@ export function ApprovedReservationList() {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-muted-foreground">
-        Urut waktu mulai terdekat. Pembatalan mendesak membutuhkan alasan dan langsung membebaskan slot.
-      </p>
-
       {notice && (
         <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
           {notice.msg}
@@ -225,7 +221,8 @@ export function ApprovedReservationList() {
               <CardFooter className="flex gap-3">
                 <Button
                   type="button"
-                  variant="danger"
+                  variant="danger-soft"
+                  className="min-h-11"
                   loading={actingId === item.id}
                   disabled={actingId !== null}
                   onClick={() => openCancelModal(item)}
@@ -243,6 +240,7 @@ export function ApprovedReservationList() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -254,6 +252,7 @@ export function ApprovedReservationList() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
@@ -285,9 +284,7 @@ export function ApprovedReservationList() {
                 ? `Batalkan mendesak ${cancelTarget.facility.nama} · ${formatTanggal(cancelTarget.date)}`
                 : "Batalkan mendesak"}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Alasan wajib diisi dan akan terlihat oleh pemilik reservasi. Slot langsung tersedia lagi.
-            </p>
+            <p className="text-sm text-muted-foreground">Slot langsung tersedia lagi.</p>
           </div>
           <Field>
             <FieldLabel htmlFor="alasan-batal-petugas">Alasan pembatalan mendesak</FieldLabel>
@@ -307,12 +304,13 @@ export function ApprovedReservationList() {
             <Button
               type="submit"
               variant="danger"
+              className="min-h-11"
               loading={actingId !== null}
               disabled={!cancelAlasan.trim() || actingId !== null}
             >
               Batalkan reservasi
             </Button>
-            <Button type="button" variant="outline" disabled={actingId !== null} onClick={closeCancelModal}>
+            <Button type="button" variant="outline" className="min-h-11" disabled={actingId !== null} onClick={closeCancelModal}>
               Kembali
             </Button>
           </div>

@@ -45,6 +45,12 @@ describe("ReservationSuccessBanner", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
   })
 
+  it("aksi lanjutan banner memakai varian primary yang mencolok", () => {
+    render(<ReservationSuccessBanner />)
+
+    expect(screen.getByRole("link", { name: "Lihat riwayat reservasi" })).toHaveClass("bg-primary-subdued")
+  })
+
   it("lolos pemeriksaan aksesibilitas", async () => {
     const { container } = render(<ReservationSuccessBanner />)
 

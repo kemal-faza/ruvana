@@ -96,6 +96,57 @@ describe("ReservationQueue", () => {
 })
 
 
+describe("ReservationQueue hierarki tombol", () => {
+  it("Setujui primary, Tolak danger, dan keduanya memenuhi target sentuh", async () => {
+    mockFetch()
+    render(<ReservationQueue />)
+
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00")
+    const setujui = screen.getByRole("button", { name: "Setujui" })
+    const tolak = screen.getByRole("button", { name: "Tolak" })
+    expect(setujui).toHaveClass("bg-primary")
+    expect(setujui).toHaveClass("min-h-11")
+    expect(tolak).toHaveClass("bg-destructive-subdued")
+    expect(tolak).toHaveClass("min-h-11")
+  })
+
+  it("tombol paginasi dan dialog memenuhi target sentuh minimal", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        if (String(url).includes("/approve") || String(url).includes("/reject")) {
+          return { ok: true, status: 200, json: async () => ({}) } as Response
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ items: [item], meta: { page: 1, perPage: 10, totalItems: 11, totalPages: 2 } }),
+        } as Response
+      }),
+    )
+    if (typeof HTMLDialogElement.prototype.showModal !== "function") {
+      Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+        value: vi.fn(),
+        configurable: true,
+        writable: true,
+      })
+    } else {
+      vi.spyOn(HTMLDialogElement.prototype, "showModal").mockImplementation(() => undefined)
+    }
+    render(<ReservationQueue />)
+
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00")
+    for (const nama of ["Sebelumnya", "Berikutnya"]) {
+      expect(screen.getByRole("button", { name: nama })).toHaveClass("min-h-11")
+    }
+    await user.click(screen.getByRole("button", { name: "Tolak" }))
+    document.querySelector("dialog")?.setAttribute("open", "")
+    expect(screen.getByRole("button", { name: "Tolak reservasi" })).toHaveClass("min-h-11")
+    expect(screen.getByRole("button", { name: "Batal" })).toHaveClass("min-h-11")
+  })
+})
+
 describe("ReservationQueue loading", () => {
   it("menampilkan skeleton dan status sebelum antrean tiba", async () => {
     let rilisRespons: ((value: Response) => void) | undefined;
