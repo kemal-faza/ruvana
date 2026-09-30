@@ -1,8 +1,13 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { SearchX } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+
+export const metadata: Metadata = {
+  title: "Fasilitas tidak ditemukan | ruvana",
+}
 
 export default function FasilitasNotFound() {
   return (

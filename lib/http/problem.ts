@@ -124,6 +124,16 @@ export function invalidReservationTransition(instance: string, detail: string) {
   });
 }
 
+export function invalidFacilityTransition(instance: string, detail: string) {
+  return problemResponse({
+    status: 409,
+    code: "INVALID_FACILITY_TRANSITION",
+    title: "Transisi fasilitas tidak valid",
+    detail,
+    instance,
+  });
+}
+
 export function approvalConflict(instance: string, detail: string, availability: unknown) {
   return problemResponse({
     status: 409,

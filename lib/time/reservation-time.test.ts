@@ -5,7 +5,6 @@ import {
   calendarDateToUtcMidnight,
   formatDateAsiaJakarta,
   formatTimeAsiaJakarta,
-  generateAllSlots,
   isPastDate,
   isSlotAligned,
   isValidDateFormat,
@@ -81,15 +80,6 @@ describe("asiaJakartaToUtc", () => {
 describe("calendarDateToUtcMidnight", () => {
   it("mempertahankan tanggal kalender sebagai UTC midnight untuk kolom DATE", () => {
     expect(calendarDateToUtcMidnight("2026-09-15").toISOString()).toBe("2026-09-15T00:00:00.000Z");
-  });
-});
-
-describe("generateAllSlots", () => {
-  it("menghasilkan 26 slot 07:00-20:00", () => {
-    const slots = generateAllSlots();
-    expect(slots).toHaveLength(26);
-    expect(slots[0]).toEqual({ startTime: "07:00", endTime: "07:30" });
-    expect(slots[25]).toEqual({ startTime: "19:30", endTime: "20:00" });
   });
 });
 

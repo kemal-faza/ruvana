@@ -7,10 +7,12 @@ import { ArrowRight } from "lucide-react";
 import { ReportStatusBadge } from "@/components/reports/report-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   STATUS_LAPORAN_BARU,
   STATUS_LAPORAN_DIPROSES,
   STATUS_LAPORAN_KERJA_PETUGAS,
+  ZONA_WAKTU,
 } from "@/config/business";
 import type { StaffReportWorkStatus, StaffReportWorkView } from "@/lib/services/report-service";
 
@@ -40,7 +42,7 @@ const FORMAT_TANGGAL = new Intl.DateTimeFormat("id-ID", {
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "Asia/Jakarta",
+  timeZone: ZONA_WAKTU,
 });
 
 async function requestSummary(): Promise<StaffReportWorkView> {
@@ -113,7 +115,17 @@ export function ReportWorkSummaries() {
                 <CardDescription>{item.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex min-w-0 flex-col gap-4">
-                {loading && <p role="status" className="text-sm text-muted-foreground">Memuat ringkasan laporan…</p>}
+                {loading && (
+                  <div role="status" aria-busy="true" className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3" aria-hidden="true">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                    <p className="sr-only">Memuat ringkasan laporan</p>
+                  </div>
+                )}
                 {error && !loading && (
                   <div className="flex flex-col items-start gap-3">
                     <p role="alert" className="text-sm text-destructive">Gagal memuat ringkasan laporan.</p>
@@ -140,7 +152,12 @@ export function ReportWorkSummaries() {
                     ))}
                   </ul>
                 )}
-                <Button render={<Link href={`/petugas/laporan?status=${item.status}`} />} variant="outline" className="min-h-11 self-start gap-2.5 px-4 text-sm">
+                <Button
+                  render={<Link href={`/petugas/laporan?status=${item.status}`} />}
+                  variant="outline"
+                  className="min-h-11 self-start gap-2.5 px-4 text-sm"
+                  hidden={loading}
+                >
                   {item.linkText}
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
                 </Button>

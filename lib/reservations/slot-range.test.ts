@@ -65,7 +65,7 @@ describe("getValidEndTimes", () => {
 describe("blockedByLabel", () => {
   it("memetakan alasan blokir ke keterangan singkat", () => {
     expect(blockedByLabel("APPROVED")).toBe("sudah disetujui");
-    expect(blockedByLabel("MAINTENANCE")).toBe("dalam perbaikan");
+    expect(blockedByLabel("MAINTENANCE")).toBe("dalam pemeliharaan");
     expect(blockedByLabel(null)).toBeNull();
   });
 });

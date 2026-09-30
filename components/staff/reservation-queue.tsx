@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClipboardList } from "lucide-react";
 
-import { BATAS_ALASAN_MAX } from "@/config/business";
+import { BATAS_ALASAN_MAX, ZONA_WAKTU } from "@/config/business";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
@@ -81,22 +82,25 @@ export function ReservationQueue() {
     setRejectAlasan("");
   }
 
-  async function submitApprove(id: number) {
+  async function submitApprove(item: StaffReservationResult) {
     if (actingId !== null) return;
-    setActingId(id);
+    setActingId(item.id);
     setNotice(null);
     try {
-      const res = await fetch(`/api/staff/reservations/${id}/approve`, { method: "POST" });
+      const res = await fetch(`/api/staff/reservations/${item.id}/approve`, { method: "POST" });
       const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
       if (res.ok) {
-        setNotice({ ok: true, msg: `Reservasi #${id} disetujui.` });
+        setNotice({
+          ok: true,
+          msg: `Reservasi ${item.facility.nama} pada ${formatTanggal(item.date)} pukul ${item.startTime}–${item.endTime} telah disetujui.`,
+        });
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || `Gagal menyetujui (${res.status})` });
+      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal menyetujui. Silakan coba lagi." });
       await load(page);
     } catch {
-      setNotice({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setActingId(null);
     }
@@ -117,16 +121,19 @@ export function ReservationQueue() {
       });
       const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
       if (res.ok) {
-        setNotice({ ok: true, msg: `Reservasi #${rejectTarget.id} ditolak.` });
+        setNotice({
+          ok: true,
+          msg: `Reservasi ${rejectTarget.facility.nama} pada ${formatTanggal(rejectTarget.date)} pukul ${rejectTarget.startTime}–${rejectTarget.endTime} telah ditolak.`,
+        });
         closeRejectModal();
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || `Gagal menolak (${res.status})` });
+      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal menolak. Silakan coba lagi." });
       closeRejectModal();
       await load(page);
     } catch {
-      setNotice({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setActingId(null);
     }
@@ -169,16 +176,31 @@ export function ReservationQueue() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">
-        Urutan FIFO: pengajuan paling lama menunggu diproses lebih dulu.
+        Diurutkan dari pengajuan terlama; yang paling lama menunggu diproses lebih dulu.
       </p>
 
       {notice && (
-        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-green-700" : "text-destructive"}`}>
+        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
           {notice.msg}
         </p>
       )}
 
-      {loading && <p className="text-sm text-muted-foreground">Memuat antrean…</p>}
+      {loading && (
+        <div role="status" aria-busy="true" className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="flex flex-col gap-3 rounded-card border border-border bg-card p-5" aria-hidden="true">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-40" />
+              <div className="flex gap-3">
+                <Skeleton className="h-11 w-28" />
+                <Skeleton className="h-11 w-24" />
+              </div>
+            </div>
+          ))}
+          <p className="sr-only">Memuat antrean</p>
+        </div>
+      )}
 
       {!loading && access === "error" && (
         <p className="text-sm text-destructive">Gagal memuat antrean. Silakan coba lagi.</p>
@@ -221,7 +243,7 @@ export function ReservationQueue() {
                     month: "short",
                     hour: "2-digit",
                     minute: "2-digit",
-                    timeZone: "Asia/Jakarta",
+                    timeZone: ZONA_WAKTU,
                   }).format(new Date(item.submittedAt))}
                 </p>
               </CardContent>
@@ -230,7 +252,7 @@ export function ReservationQueue() {
                   type="button"
                   loading={actingId === item.id}
                   disabled={actingId !== null}
-                  onClick={() => void submitApprove(item.id)}
+                  onClick={() => void submitApprove(item)}
                 >
                   Setujui
                 </Button>
@@ -290,7 +312,11 @@ export function ReservationQueue() {
           }}
         >
           <div>
-            <h2 className="font-heading text-lg font-semibold">Tolak reservasi #{rejectTarget?.id}</h2>
+            <h2 className="font-heading text-lg font-semibold">
+              {rejectTarget
+                ? `Tolak reservasi ${rejectTarget.facility.nama} · ${formatTanggal(rejectTarget.date)}`
+                : "Tolak reservasi"}
+            </h2>
             <p className="text-sm text-muted-foreground">Alasan wajib diisi dan akan terlihat oleh pemohon.</p>
           </div>
           <Field>

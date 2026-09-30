@@ -36,6 +36,13 @@ describe("dashboard Petugas", () => {
     );
   });
 
+  it("menampilkan badge status domain pada antrean terbaru", () => {
+    render(<StaffDashboard reservations={[reservation]} totalReservations={4} />);
+
+    expect(screen.getByText("Menunggu")).toBeInTheDocument();
+    expect(screen.queryByText("PENDING")).not.toBeInTheDocument();
+  });
+
   it("menjelaskan antrean kosong", () => {
     render(<StaffDashboard reservations={[]} totalReservations={0} />);
 

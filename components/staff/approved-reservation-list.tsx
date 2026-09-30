@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CalendarX2 } from "lucide-react";
 
-import { BATAS_ALASAN_MAX } from "@/config/business";
+import { BATAS_ALASAN_MAX, ZONA_WAKTU } from "@/config/business";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
@@ -98,16 +99,19 @@ export function ApprovedReservationList() {
       });
       const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
       if (res.ok) {
-        setNotice({ ok: true, msg: `Reservasi #${cancelTarget.id} dibatalkan. Slot kembali tersedia.` });
+        setNotice({
+          ok: true,
+          msg: `Reservasi ${cancelTarget.facility.nama} pada ${formatTanggal(cancelTarget.date)} pukul ${cancelTarget.startTime}–${cancelTarget.endTime} telah dibatalkan. Slot kembali tersedia.`,
+        });
         closeCancelModal();
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || `Gagal membatalkan (${res.status})` });
+      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal membatalkan. Silakan coba lagi." });
       closeCancelModal();
       await load(page);
     } catch {
-      setNotice({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setActingId(null);
     }
@@ -154,12 +158,24 @@ export function ApprovedReservationList() {
       </p>
 
       {notice && (
-        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-green-700" : "text-destructive"}`}>
+        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
           {notice.msg}
         </p>
       )}
 
-      {loading && <p className="text-sm text-muted-foreground">Memuat reservasi disetujui…</p>}
+      {loading && (
+        <div role="status" aria-busy="true" className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="flex flex-col gap-3 rounded-card border border-border bg-card p-5" aria-hidden="true">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-11 w-40" />
+            </div>
+          ))}
+          <p className="sr-only">Memuat reservasi disetujui</p>
+        </div>
+      )}
 
       {!loading && access === "error" && (
         <p className="text-sm text-destructive">Gagal memuat daftar. Silakan coba lagi.</p>
@@ -202,7 +218,7 @@ export function ApprovedReservationList() {
                     month: "short",
                     hour: "2-digit",
                     minute: "2-digit",
-                    timeZone: "Asia/Jakarta",
+                    timeZone: ZONA_WAKTU,
                   }).format(new Date(item.submittedAt))}
                 </p>
               </CardContent>
@@ -264,7 +280,11 @@ export function ApprovedReservationList() {
           }}
         >
           <div>
-            <h2 className="font-heading text-lg font-semibold">Batalkan mendesak #{cancelTarget?.id}</h2>
+            <h2 className="font-heading text-lg font-semibold">
+              {cancelTarget
+                ? `Batalkan mendesak ${cancelTarget.facility.nama} · ${formatTanggal(cancelTarget.date)}`
+                : "Batalkan mendesak"}
+            </h2>
             <p className="text-sm text-muted-foreground">
               Alasan wajib diisi dan akan terlihat oleh pemilik reservasi. Slot langsung tersedia lagi.
             </p>

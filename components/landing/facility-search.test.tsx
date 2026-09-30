@@ -9,24 +9,24 @@ import { TIPE_FASILITAS_LABEL } from "@/config/business"
 afterEach(cleanup)
 
 describe("FacilitySearch", () => {
-  it("mengirim form pencarian ke rute fasilitas dengan method get", () => {
+  it("mengirim form pencarian ke rute reservasi dengan method get", () => {
     const { container } = render(<FacilitySearch />)
 
     const form = container.querySelector("form")
     expect(form).toHaveAttribute("method", "get")
-    expect(form).toHaveAttribute("action", "/fasilitas")
+    expect(form).toHaveAttribute("action", "/reservasi")
   })
 
-  it("mengirim tipe terpilih lewat field bernama tipe", async () => {
+  it("mengirim tipe terpilih lewat field bernama type", async () => {
     const user = userEvent.setup()
     const { container } = render(<FacilitySearch />)
 
-    expect(container.querySelector('input[name="tipe"]')).toHaveValue("")
+    expect(container.querySelector('input[name="type"]')).toHaveValue("")
 
     await user.click(screen.getByRole("combobox", { name: "Pilih tipe fasilitas" }))
     await user.click(await screen.findByRole("option", { name: TIPE_FASILITAS_LABEL.aula }))
 
-    expect(container.querySelector('input[name="tipe"]')).toHaveValue("aula")
+    expect(container.querySelector('input[name="type"]')).toHaveValue("aula")
   })
 
   it("menampilkan placeholder di trigger tanpa menjadikannya opsi terpilih", async () => {
@@ -48,7 +48,7 @@ describe("FacilitySearch", () => {
     const { container } = render(<FacilitySearch />)
 
     expect(screen.getByLabelText("Pilih tanggal")).toHaveTextContent("Pilih tanggal")
-    expect(container.querySelector('input[name="tanggal"]')).toHaveAttribute("type", "hidden")
+    expect(container.querySelector('input[name="date"]')).toHaveAttribute("type", "hidden")
   })
 
   it("mengisi field tanggal dengan format ISO saat hari dipilih", async () => {
@@ -64,7 +64,7 @@ describe("FacilitySearch", () => {
     expect(dayButton).not.toBeNull()
     await user.click(dayButton as HTMLButtonElement)
 
-    expect(container.querySelector('input[name="tanggal"]')).toHaveValue(iso)
+    expect(container.querySelector('input[name="date"]')).toHaveValue(iso)
   })
 
   it("menjadikan tombol Jelajahi sebagai submit form", () => {

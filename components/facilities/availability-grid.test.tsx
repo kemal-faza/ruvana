@@ -49,12 +49,12 @@ describe("AvailabilityGrid", () => {
     }))
     render(<AvailabilityGrid slots={slots} />)
 
-    expect(screen.getByText(/sedang dalam perbaikan/i)).toBeInTheDocument()
+    expect(screen.getByText(/sedang dalam pemeliharaan/i)).toBeInTheDocument()
   })
 
   it("tidak menampilkan pesan maintenance ketika fasilitas aktif", () => {
     render(<AvailabilityGrid slots={availableSlots} />)
 
-    expect(screen.queryByText(/sedang dalam perbaikan/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sedang dalam pemeliharaan/i)).not.toBeInTheDocument()
   })
 })

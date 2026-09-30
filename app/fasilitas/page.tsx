@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 import { FacilityFilterForm } from "@/components/facilities/facility-filter-form"
 import { FacilityList } from "@/components/facilities/facility-list"
@@ -12,7 +13,7 @@ const description =
   "Lihat fasilitas kampus yang tersedia lengkap dengan lokasi, kapasitas, dan status terkini."
 
 export const metadata: Metadata = {
-  title: "ruvana",
+  title: "Fasilitas | ruvana",
   description,
   alternates: {
     canonical: "/fasilitas",
@@ -43,8 +44,6 @@ export default async function FasilitasPage({ searchParams }: FasilitasPageProps
   const parsed = parsePublicListQuery(cleanSearchParams(params))
   const query = parsed.ok ? parsed.value : { page: 1, perPage: 20 }
 
-  const { items, meta } = await listPublicFacilities(query)
-
   const hasActiveFilters = Boolean(query.search || query.type || query.location || query.minCapacity)
 
   const filterValue = {
@@ -55,10 +54,21 @@ export default async function FasilitasPage({ searchParams }: FasilitasPageProps
   }
 
   const paginationQuery = {
-    search: query.search,
-    type: query.type,
-    location: query.location,
-    minCapacity: query.minCapacity,
+    ...filterValue,
+    ...(query.perPage !== 20 ? { perPage: query.perPage } : {}),
+  }
+
+  const { items, meta } = await listPublicFacilities(query)
+
+  if (meta.totalPages > 0 && query.page > meta.totalPages) {
+    const canonicalParams = new URLSearchParams()
+    for (const [key, value] of Object.entries(paginationQuery)) {
+      if (value !== undefined && value !== "") {
+        canonicalParams.set(key, String(value))
+      }
+    }
+    canonicalParams.set("page", String(meta.totalPages))
+    redirect(`/fasilitas?${canonicalParams.toString()}`)
   }
 
   return (

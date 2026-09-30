@@ -1,4 +1,5 @@
 import { CalendarDays, Inbox } from "lucide-react"
+import type { Metadata } from "next"
 
 import { AppShell } from "@/components/app-shell/app-shell"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +58,10 @@ import { BUTTON_ACTION_CLASS, Button, buttonVariants } from "@/components/ui/but
 import { navigation, shellAccount, shellAccountFromUser } from "@/config/navigation"
 import { staffNavigation } from "@/components/staff/navigation"
 import { getSessionUser } from "@/lib/auth"
+
+export const metadata: Metadata = {
+  title: "Pratinjau komponen | ruvana",
+}
 
 const catalogLinks = [
   { href: "#aksi", label: "Button" },

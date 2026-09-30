@@ -16,15 +16,15 @@ export interface FacilityStatusChangedPayload {
 }
 
 // Dokumentasi kontrak (dipakai Modul 3 & 4):
-// - Pemicu (Modul 4, TASK 4.4): buka satu transaksi, ubah status fasilitas, teruskan
-//   client transaksi + payload ke listener, tunggu listener sebelum commit.
+// - Pemicu (Modul 4): lib/services/facility-status-service.ts membuka satu
+//   transaksi, menyimpan status + provenance, meneruskan client transaksi yang
+//   sama + payload ke listener, dan menunggu listener sebelum commit. Route
+//   REP-04 = PATCH /api/staff/facilities/{facilityId}/status.
 // - Listener (Modul 3, sudah diimplementasikan di
 //   lib/reservations/maintenance-listener.ts): saat payload statusBaru =
 //   'UNDER_MAINTENANCE', batalkan reservasi masa depan berstatus 'APPROVED'
 //   pada facilityId tsb (alasan otomatis). Listener tidak boleh membuka
 //   transaksi sendiri.
-// - Ketiadaan callsite di PR Modul 3 adalah dependensi integrasi yang
-//   dikerjakan Modul 4, bukan blocker PR ini.
 export type FacilityStatusChangedListener = (
   transaction: Prisma.TransactionClient,
   payload: FacilityStatusChangedPayload,

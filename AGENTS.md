@@ -14,7 +14,7 @@ Single-package campus facility reservation app built with Next.js 16 App Router,
 React 19, Prisma 7, PostgreSQL 16, Tailwind CSS v4, and pnpm 10.
 
 `docs/PRD.md` is the source of truth for scope, behavior, business rules, and
-acceptance criteria; `docs/DESIGN.md` governs visual and interaction decisions.
+acceptance criteria; `DESIGN.md` governs visual and interaction decisions.
 Read the relevant section there before implementation. The repository has moved
 past the Fase-0 shell: `app/` now contains the landing page and facility
 discovery routes. PRD acceptance criteria override older Fase-0 notes under
@@ -135,5 +135,6 @@ Prisma types from `generated/prisma`, never directly from `@prisma/client`.
 - PDFs, `generated/`, and local compose overrides are ignored and may not appear
   in normal `git status`.
 - Most of `docs/` is local-only. The tracked exceptions are `docs/PRD.md`,
-  `docs/DESIGN.md`, `docs/superpowers/DECISION.md`, and `docs/api/openapi.yaml`.
+  `docs/DECISION.md`, and `docs/api/openapi.yaml`; the design contract lives at
+  the repository root as `DESIGN.md`.
 - Never commit `.env` or local database credentials.

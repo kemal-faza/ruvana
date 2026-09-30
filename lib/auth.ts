@@ -25,6 +25,12 @@ function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+export async function getCurrentSessionTokenHash(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  return token ? hashToken(token) : null;
+}
+
 export async function createSession(userId: number) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + MAX_AGE * 1000);
@@ -77,5 +83,24 @@ export async function requirePetugas(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
   if (user.role !== Role.petugas) redirect("/403");
+  return user;
+}
+
+// Guard halaman pengguna (RES-01 s.d. RES-04, IAM-03):
+// tanpa sesi ke /login; role lain mendapat akses ditolak.
+export async function requirePengguna(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== Role.pengguna) redirect("/403");
+  return user;
+}
+
+// Guard halaman Persetujuan Reservasi (RES-05, IAM-03):
+// tanpa sesi ke /login; peran selain petugas/admin ke /403.
+// Admin tetap boleh memproses antrean, tetapi menunya tidak ditambah di mana pun.
+export async function requirePetugasAtauAdmin(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== Role.petugas && user.role !== Role.admin) redirect("/403");
   return user;
 }
