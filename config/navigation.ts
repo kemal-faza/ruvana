@@ -15,7 +15,7 @@ export const navigation: readonly NavigationGroup[] = [
     label: "Utama",
     items: [
       { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
+      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
       { key: "laporan", label: "Laporan", href: "/reports", icon: ClipboardList },
     ],

@@ -8,6 +8,7 @@ import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
 import type { NavigationGroup } from "@/components/app-shell/types"
 import { staffNavigation } from "@/components/staff/navigation"
+import { navigation as penggunaNavigation } from "@/config/navigation"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 
 const routeState = vi.hoisted(() => ({ pathname: "/reservasi" }))
@@ -156,6 +157,27 @@ describe("AppShell", () => {
       "page",
     )
     expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute("aria-current")
+  })
+
+  it("memakai satu menu aktif pada navigasi pengguna produksi di Reservasi Saya", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    routeState.pathname = "/reservasi/riwayat"
+    render(
+      <AppShell
+        navigation={penggunaNavigation}
+        account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
+      >
+        <p>Riwayat reservasi</p>
+      </AppShell>,
+    )
+
+    expect(screen.getAllByRole("link", { name: "Reservasi Saya" })[0]).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute(
+      "aria-current",
+    )
   })
 
   it("memindahkan active state ketika pathname berubah tanpa filter role", () => {
