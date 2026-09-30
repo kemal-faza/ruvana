@@ -17,16 +17,16 @@ describe("FacilitySearch", () => {
     expect(form).toHaveAttribute("action", "/fasilitas")
   })
 
-  it("mengirim tipe terpilih lewat field bernama tipe", async () => {
+  it("mengirim tipe terpilih lewat field bernama type", async () => {
     const user = userEvent.setup()
     const { container } = render(<FacilitySearch />)
 
-    expect(container.querySelector('input[name="tipe"]')).toHaveValue("")
+    expect(container.querySelector('input[name="type"]')).toHaveValue("")
 
     await user.click(screen.getByRole("combobox", { name: "Pilih tipe fasilitas" }))
     await user.click(await screen.findByRole("option", { name: TIPE_FASILITAS_LABEL.aula }))
 
-    expect(container.querySelector('input[name="tipe"]')).toHaveValue("aula")
+    expect(container.querySelector('input[name="type"]')).toHaveValue("aula")
   })
 
   it("menampilkan placeholder di trigger tanpa menjadikannya opsi terpilih", async () => {
