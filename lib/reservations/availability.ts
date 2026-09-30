@@ -1,15 +1,11 @@
-import type { Prisma } from "@/generated/prisma/client";
-import type { StatusFasilitas } from "@/generated/prisma/enums";
+import { ZONA_WAKTU } from "@/config/business";
+import { computeAvailability, type FacilityAvailability } from "@/lib/availability/slots";
+import { findApprovedIntervals, type AvailabilityDbClient } from "@/lib/db/availability";
 import { prisma } from "@/lib/prisma";
-import {
-  asiaJakartaToUtc,
-  calendarDateToUtcMidnight,
-  generateAllSlots,
-  isValidDateFormat,
-} from "@/lib/time/reservation-time";
-import type { AvailabilityBlockedBy, FacilityAvailability } from "./slot-range";
+import type { StatusFasilitas } from "@/generated/prisma/enums";
+import { jakartaDayRangeUtc, parseCalendarDate } from "@/lib/time/jakarta";
 
-export type AvailabilityClient = Prisma.TransactionClient | typeof prisma;
+export type AvailabilityClient = AvailabilityDbClient;
 
 export interface ComputeAvailabilityOptions {
   /**
@@ -28,10 +24,11 @@ export interface ComputeAvailabilityOptions {
 }
 
 /**
- * Hitung ketersediaan 26 slot untuk satu fasilitas pada satu tanggal
- * kalender Asia/Jakarta. Hanya reservasi APPROVED yang memblokir;
- * PENDING tidak dianggap konflik. Fasilitas UNDER_MAINTENANCE membuat
- * seluruh slot tidak tersedia (blockedBy MAINTENANCE).
+ * Ketersediaan 26 slot untuk satu fasilitas pada satu tanggal kalender
+ * Asia/Jakarta. Mesin dan tipe hasilnya sama dengan jalur publik
+ * (lib/availability/slots.ts + lib/db/availability.ts): hanya reservasi
+ * APPROVED yang memblokir, PENDING tidak dianggap konflik, dan
+ * UNDER_MAINTENANCE membuat seluruh slot tidak tersedia.
  *
  * Mengembalikan null bila masukan tidak valid atau fasilitas tidak
  * ditemukan / INACTIVE (dimasking seperti data hilang) — pemanggil
@@ -44,7 +41,9 @@ export async function computeFacilityAvailability(
   options: ComputeAvailabilityOptions = {},
 ): Promise<FacilityAvailability | null> {
   if (!Number.isInteger(facilityId) || facilityId < 1) return null;
-  if (!isValidDateFormat(date)) return null;
+
+  const calendarDate = parseCalendarDate(date);
+  if (!calendarDate) return null;
 
   const client = options.client ?? prisma;
 
@@ -56,39 +55,10 @@ export async function computeFacilityAvailability(
   }
   if (status === "INACTIVE") return null;
 
-  const allSlots = generateAllSlots();
+  const { start, end } = jakartaDayRangeUtc(calendarDate);
+  const approvedIntervals =
+    status === "UNDER_MAINTENANCE" ? [] : await findApprovedIntervals(facilityId, start, end, client);
+  const slots = computeAvailability({ date: calendarDate, status, approvedIntervals });
 
-  if (status === "UNDER_MAINTENANCE") {
-    const blockedBy: AvailabilityBlockedBy = "MAINTENANCE";
-    return {
-      facilityId,
-      date,
-      timezone: "Asia/Jakarta",
-      slots: allSlots.map((slot) => ({ ...slot, available: false, blockedBy })),
-    };
-  }
-
-  const dayStart = calendarDateToUtcMidnight(date);
-  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-  const approved = await client.reservation.findMany({
-    where: {
-      facilityId,
-      status: "APPROVED",
-      tanggal: { gte: dayStart, lt: dayEnd },
-    },
-    select: { startTime: true, endTime: true },
-  });
-
-  const slots = allSlots.map((slot) => {
-    const slotStart = asiaJakartaToUtc(date, slot.startTime);
-    const slotEnd = asiaJakartaToUtc(date, slot.endTime);
-    const blocked = approved.some((r) => r.startTime < slotEnd && r.endTime > slotStart);
-    return {
-      ...slot,
-      available: !blocked,
-      blockedBy: blocked ? ("APPROVED" as const) : null,
-    };
-  });
-
-  return { facilityId, date, timezone: "Asia/Jakarta", slots };
+  return { facilityId, date, timezone: ZONA_WAKTU, slots };
 }
