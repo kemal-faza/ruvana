@@ -195,7 +195,7 @@ describe("AppShell", () => {
       "/petugas/antrian",
     )
     expect(screen.getByText("Sistem")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Baseline UI" })).toHaveAttribute("href", "/baseline-ui")
+    expect(screen.queryByRole("link", { name: "Baseline UI" })).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/petugas/pengaturan")
     expect(screen.queryByRole("link", { name: "Laporan" })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Fasilitas" })).not.toBeInTheDocument()
