@@ -15,6 +15,10 @@ describe("navigasi petugas", () => {
     expect(semuaHref(staffNavigation)).toContain("/petugas/antrian");
   });
 
+  it("tidak menautkan katalog baseline dari navigasi petugas", () => {
+    expect(semuaHref(staffNavigation)).not.toContain("/baseline-ui");
+  });
+
   it("navigasi antrean admin tidak menambah menu lain", () => {
     expect(semuaHref(staffQueueNavigation)).toEqual(["/petugas/antrian"]);
   });

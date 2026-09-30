@@ -4,7 +4,7 @@ import Image from "next/image"
 import { CalendarClock, ClipboardCheck, FileImage, MapPin, UserRound } from "lucide-react"
 
 import { getFacilityPhoto } from "@/config/facility-photos"
-import { LABEL_TIPE_FASILITAS } from "@/config/labels"
+import { LABEL_STATUS_FASILITAS, LABEL_TIPE_FASILITAS } from "@/config/labels"
 import { formatWaktu } from "@/components/reports/format"
 import { ReportStatusBadge } from "@/components/reports/report-status-badge"
 import {
@@ -15,13 +15,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import type { ReportItem } from "@/lib/services/report-service"
-import type { StatusFasilitas } from "@/generated/prisma/enums"
-
-const LABEL_STATUS_FASILITAS_DETAIL: Record<StatusFasilitas, string> = {
-  ACTIVE: "Aktif",
-  UNDER_MAINTENANCE: "Perawatan",
-  INACTIVE: "Nonaktif",
-}
 
 interface ReportDetailSheetProps {
   report: ReportItem | null
@@ -74,7 +67,7 @@ export function ReportDetailSheet({ report, open, onOpenChange }: ReportDetailSh
               {report.facilityNama}
             </h2>
             <p className="wrap-break-word text-sm text-muted-foreground">
-              {LABEL_TIPE_FASILITAS[report.facilityTipe]} - {LABEL_STATUS_FASILITAS_DETAIL[report.facilityStatus]}
+              {LABEL_TIPE_FASILITAS[report.facilityTipe]} - {LABEL_STATUS_FASILITAS[report.facilityStatus]}
             </p>
           </div>
 

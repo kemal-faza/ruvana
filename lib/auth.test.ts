@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { createSession, destroySession, getSessionUser, getSessionUserId, requirePengguna, requirePetugas, requirePetugasAtauAdmin } from "@/lib/auth";
+import { createSession, destroySession, getSessionUser, getSessionUserId, requireAdmin, requirePengguna, requirePetugas, requirePetugasAtauAdmin } from "@/lib/auth";
 
 const { mockRedirect } = vi.hoisted(() => ({
   mockRedirect: vi.fn((destination: string) => {
@@ -121,6 +121,44 @@ describe("sesi", () => {
   });
 });
 
+describe("requireAdmin", () => {
+  it("menolak petugas dan pengguna yang membuka halaman khusus admin", async () => {
+    for (const role of [Role.petugas, Role.pengguna]) {
+      await createSession(12);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: 12,
+        nama: "Akun Uji",
+        email: "akun@ruvana.test",
+        role,
+        status: AccountStatus.ACTIVE,
+        waktuDaftar: new Date("2026-09-01T00:00:00Z"),
+        waktuVerifikasi: null,
+      } as never);
+
+      await expect(requireAdmin()).rejects.toThrow("redirect:/403");
+      expect(mockRedirect).toHaveBeenLastCalledWith("/403");
+    }
+  });
+});
+
+describe("akses halaman khusus petugas", () => {
+  it("mengirim pengguna aktif ke halaman akses ditolak", async () => {
+    await createSession(12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 12,
+      nama: "Akun Pengguna",
+      email: "pengguna@ruvana.test",
+      role: Role.pengguna,
+      status: AccountStatus.ACTIVE,
+      waktuDaftar: new Date("2026-09-01T00:00:00Z"),
+      waktuVerifikasi: null,
+    } as never);
+
+    await expect(requirePetugas()).rejects.toThrow("redirect:/403");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/403");
+  });
+});
+
 describe("requirePengguna", () => {
   async function loginSebagai(role: Role) {
     await createSession(12);
@@ -146,14 +184,14 @@ describe("requirePengguna", () => {
     expect(mockRedirect).toHaveBeenLastCalledWith("/login");
   });
 
-  it("mengalihkan petugas ke dasbor petugas dan admin ke dasbor admin", async () => {
+  it("menolak petugas dan admin yang membuka halaman khusus pengguna", async () => {
     await loginSebagai(Role.petugas);
-    await expect(requirePengguna()).rejects.toThrow("redirect:/petugas");
-    expect(mockRedirect).toHaveBeenLastCalledWith("/petugas");
+    await expect(requirePengguna()).rejects.toThrow("redirect:/403");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/403");
 
     await loginSebagai(Role.admin);
-    await expect(requirePengguna()).rejects.toThrow("redirect:/admin");
-    expect(mockRedirect).toHaveBeenLastCalledWith("/admin");
+    await expect(requirePengguna()).rejects.toThrow("redirect:/403");
+    expect(mockRedirect).toHaveBeenLastCalledWith("/403");
   });
 });
 

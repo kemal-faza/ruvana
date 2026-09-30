@@ -1,4 +1,4 @@
-import { DURASI_SLOT_MENIT, JAM_OPERASIONAL } from "@/config/business";
+import { DURASI_SLOT_MENIT, JAM_OPERASIONAL, ZONA_WAKTU } from "@/config/business";
 import type { CalendarDate } from "@/lib/time/jakarta";
 import { jakartaToUtc } from "@/lib/time/jakarta";
 
@@ -12,6 +12,14 @@ export type BlockedBy = "APPROVED" | "MAINTENANCE" | null;
 export interface AvailabilitySlot extends SlotWindow {
   available: boolean;
   blockedBy: BlockedBy;
+}
+
+/** Bentuk hasil ketersediaan yang dipakai bersama jalur publik dan reservasi. */
+export interface FacilityAvailability {
+  facilityId: number;
+  date: string;
+  timezone: typeof ZONA_WAKTU;
+  slots: AvailabilitySlot[];
 }
 
 export interface ApprovedInterval {

@@ -1,7 +1,7 @@
-import { JAKARTA_TIMEZONE } from "@/config/business";
+import { ZONA_WAKTU } from "@/config/business";
 
 const offsetFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: JAKARTA_TIMEZONE,
+  timeZone: ZONA_WAKTU,
   timeZoneName: "longOffset",
 });
 

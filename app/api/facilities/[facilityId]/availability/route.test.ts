@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getFacilityAvailability } from "@/lib/services/availability-service";
+import type { AvailabilityResponse } from "@/lib/services/availability-service";
 
 import { GET } from "./route";
 
@@ -9,7 +10,7 @@ vi.mock("@/lib/services/availability-service", () => ({
   getFacilityAvailability: vi.fn(),
 }));
 
-const mockAvailability = {
+const mockAvailability: AvailabilityResponse = {
   facilityId: 1,
   date: "2026-09-15",
   timezone: "Asia/Jakarta",

@@ -18,8 +18,6 @@ export const BATAS_TUJUAN_MIN = 1;
 export const BATAS_TUJUAN_MAX = 500;
 export const BATAS_ALASAN_MAX = 500;
 
-export const JAKARTA_TIMEZONE = "Asia/Jakarta" as const;
-
 // Daftar waktu mulai yang valid 07:00..19:30 tiap 30 menit
 export const VALID_START_TIMES = [
   "07:00",
@@ -79,8 +77,10 @@ export const VALID_END_TIMES = [
   "20:00",
 ] as const;
 
-// WIB = UTC+7 tetap sepanjang tahun (tanpa DST), jadi offset tetap aman dipakai langsung.
-export const ZONA_WAKTU = "Asia/Jakarta";
+// Zona waktu tunggal aplikasi: WIB = UTC+7 tetap sepanjang tahun (tanpa DST),
+// jadi offset tetap aman dipakai langsung. Jangan hardcode "Asia/Jakarta"/420
+// di modul lain — impor dari sini.
+export const ZONA_WAKTU = "Asia/Jakarta" as const;
 export const OFFSET_ZONA_WAKTU_MENIT = 420;
 
 // Daftar role & status (nilai aktual enum di Prisma; konstanta untuk UI/logika)
@@ -104,6 +104,20 @@ export const STATUS_LAPORAN_KERJA_PETUGAS = [STATUS_LAPORAN_BARU, STATUS_LAPORAN
 export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, "RESOLVED", "REJECTED"] as const;
 export const STATUS_FASILITAS = ["ACTIVE", "UNDER_MAINTENANCE", "INACTIVE"] as const;
 export const TIPE_FASILITAS = ["ruang_kelas", "aula", "laboratorium", "alat", "lapangan"] as const;
+
+// Status yang boleh dikelola lewat jalur petugas/admin REP-04; INACTIVE hanya
+// lewat jalur admin FAC-05.
+export const STATUS_FASILITAS_OPERASIONAL = ["ACTIVE", "UNDER_MAINTENANCE"] as const;
+export type StatusFasilitasOperasional = (typeof STATUS_FASILITAS_OPERASIONAL)[number];
+
+// Matriks transisi REP-04: ACTIVE <-> UNDER_MAINTENANCE; INACTIVE selalu ditolak.
+export const TRANSISI_STATUS_FASILITAS_OPERASIONAL: Record<
+  StatusFasilitasOperasional,
+  StatusFasilitasOperasional
+> = {
+  ACTIVE: "UNDER_MAINTENANCE",
+  UNDER_MAINTENANCE: "ACTIVE",
+};
 
 // Label Indonesia untuk tipe fasilitas; nilai enum tetap bahasa Inggris-teknis.
 export const TIPE_FASILITAS_LABEL: Record<(typeof TIPE_FASILITAS)[number], string> = {

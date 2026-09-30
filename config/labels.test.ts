@@ -4,7 +4,7 @@ import { STATUS_RESERVASI } from "@/config/business"
 import { LABEL_STATUS_RESERVASI } from "@/config/labels"
 import { StatusReservasi } from "@/generated/prisma/enums"
 
-// Label persis docs/DESIGN.md bagian Desain konten.
+// Label persis DESIGN.md bagian Desain konten.
 const LABEL_DESIGN: Record<string, string> = {
   PENDING: "Menunggu",
   APPROVED: "Disetujui",

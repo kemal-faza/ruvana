@@ -1,16 +1,14 @@
 import { ZONA_WAKTU } from "@/config/business";
+import { computeAvailability, type FacilityAvailability } from "@/lib/availability/slots";
 import { findApprovedIntervals } from "@/lib/db/availability";
 import { findPublicFacilityById } from "@/lib/db/facilities";
-import type { AvailabilitySlot } from "@/lib/availability/slots";
-import { computeAvailability } from "@/lib/availability/slots";
 import { jakartaDayRangeUtc, parseCalendarDate } from "@/lib/time/jakarta";
 
-export interface AvailabilityResponse {
-  facilityId: number;
-  date: string;
-  timezone: string;
-  slots: AvailabilitySlot[];
-}
+/**
+ * DTO endpoint publik. Tipe ketersediaan ini sama dengan yang dipakai jalur
+ * reservasi (lib/reservations/availability.ts) — satu mesin, bukan dua.
+ */
+export type AvailabilityResponse = FacilityAvailability;
 
 /**
  * date wajib sudah tervalidasi (lib/validation/facility-query.ts#parseAvailabilityDate)
