@@ -6,8 +6,8 @@ import NotFound, { metadata } from "@/app/not-found"
 afterEach(cleanup)
 
 describe("halaman tidak ditemukan", () => {
-  it("memakai judul halaman ruvana saja", () => {
-    expect(metadata.title).toBe("ruvana")
+  it("memakai judul halaman diikuti brand", () => {
+    expect(metadata.title).toBe("Halaman tidak ditemukan | ruvana")
   })
 
   it("menawarkan jalan kembali ke beranda", () => {

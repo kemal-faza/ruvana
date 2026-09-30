@@ -42,19 +42,24 @@ describe("ringkasan pekerjaan laporan Petugas", () => {
     );
   });
 
-  it("menampilkan loading lalu keadaan kosong untuk kedua status", async () => {
+  it("menampilkan skeleton loading lalu keadaan kosong untuk kedua status", async () => {
     let resolveResponse: ((value: { ok: boolean; json: () => Promise<unknown> }) => void) | undefined;
     vi.stubGlobal("fetch", vi.fn(() => new Promise((resolve) => { resolveResponse = resolve; })));
     render(<ReportWorkSummaries />);
 
-    expect(screen.getAllByRole("status")).toHaveLength(2);
+    const status = screen.getAllByRole("status");
+    expect(status).toHaveLength(2);
+    expect(status[0]).toHaveTextContent("Memuat ringkasan laporan");
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Lihat laporan baru" })).not.toBeInTheDocument();
+
     resolveResponse?.({
       ok: true,
       json: async () => ({ NEW: { total: 0, items: [] }, IN_PROGRESS: { total: 0, items: [] } }),
     });
 
     expect(await screen.findByText("Belum ada laporan baru.")).toBeInTheDocument();
-    expect(screen.getByText("Belum ada laporan yang sedang dikerjakan.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lihat laporan baru" })).toBeInTheDocument();
   });
 
   it("menampilkan error dan dapat memuat ulang", async () => {
