@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
-import { CalendarDays, History, LayoutDashboard, Settings } from "lucide-react"
+import { CalendarDays, History, Settings } from "lucide-react"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
@@ -22,7 +22,6 @@ const navigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
       { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
     ],

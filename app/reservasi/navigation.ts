@@ -1,4 +1,4 @@
-import { Building2, CalendarDays, ClipboardList, History, LayoutDashboard, Settings } from "lucide-react";
+import { Building2, CalendarDays, ClipboardList, History, Settings } from "lucide-react";
 
 import type { NavigationGroup } from "@/components/app-shell/types";
 
@@ -8,7 +8,6 @@ export const reservasiNavigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
       { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },

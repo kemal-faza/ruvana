@@ -2,7 +2,6 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
-  LayoutDashboard,
   Settings,
   SwatchBook,
 } from "lucide-react"
@@ -15,7 +14,6 @@ export const navigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays },
       { key: "fasilitas", label: "Fasilitas", href: "/fasilitas", icon: Building2 },
       { key: "laporan", label: "Laporan", href: "/reports", icon: ClipboardList },

@@ -25,7 +25,7 @@ describe("katalog baseline UI", () => {
       expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument()
     }
 
-    for (const name of ["Ringkasan", "Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
+    for (const name of ["Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
       expect(screen.getAllByRole("link", { name }).length).toBeGreaterThan(0)
     }
 
