@@ -130,7 +130,7 @@ export async function getStaffMonthlyRecapService(month: string): Promise<StaffM
     methodology: {
       timezone: JAKARTA_TIMEZONE,
       groupingRule: `Dikelompokkan berdasarkan tanggal pemakaian (kolom tanggal) dalam kalender ${JAKARTA_TIMEZONE}, bukan waktu pengajuan.`,
-      statusRule: "Seluruh status reservasi dihitung; bulan tanpa data menampilkan 0.",
+      statusRule: "Seluruh status reservasi dihitung.",
       trendRule: "Tren memuat 6 bulan terakhir termasuk bulan terpilih.",
       exportNote: "Ekspor rekap berada di luar scope.",
     },

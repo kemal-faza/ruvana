@@ -43,7 +43,7 @@ export function StaffMonthlyRecap({
             Rekap bulanan
           </CardTitle>
           <CardDescription>
-            Jumlah reservasi per status, per fasilitas, dan tren 6 bulan terakhir.
+            Jumlah reservasi per status, per fasilitas, dan 6 bulan terakhir.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex min-w-0 flex-col gap-6">
@@ -136,9 +136,9 @@ export function StaffMonthlyRecap({
           </div>
 
           <div className="min-w-0">
-            <h3 className="mb-2 text-sm font-semibold">Tren 6 bulan terakhir</h3>
+            <h3 className="mb-2 text-sm font-semibold">Jumlah reservasi 6 bulan terakhir</h3>
             <div className="overflow-x-auto rounded-control border border-border">
-              <table aria-label="Tren 6 bulan terakhir" className="w-full text-sm">
+              <table aria-label="Jumlah reservasi 6 bulan terakhir" className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
                     <th scope="col" className="px-4 py-3 font-medium">Bulan</th>
@@ -171,11 +171,7 @@ export function StaffMonthlyRecap({
           <div className="min-w-0 border-t border-border pt-4">
             <h3 className="mb-2 text-sm font-semibold">Metodologi</h3>
             <ul className="flex min-w-0 list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
-              <li>Zona waktu {recap.methodology.timezone}.</li>
-              <li>{recap.methodology.groupingRule}</li>
-              <li>{recap.methodology.statusRule}</li>
-              <li>{recap.methodology.trendRule}</li>
-              <li>{recap.methodology.exportNote}</li>
+              <li>Dihitung berdasarkan tanggal pemakaian (Asia/Jakarta), bukan waktu pengajuan.</li>
             </ul>
           </div>
         </CardContent>

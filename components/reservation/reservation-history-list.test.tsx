@@ -258,6 +258,45 @@ describe("ReservationHistoryList hardening", () => {
 })
 
 
+describe("ReservationHistoryList filter status tampil label domain (RES-03)", () => {
+  const PASANGAN: Array<{ enum: string; label: string }> = [
+    { enum: "PENDING", label: "Menunggu" },
+    { enum: "APPROVED", label: "Disetujui" },
+    { enum: "REJECTED", label: "Ditolak" },
+    { enum: "CANCELLED_BY_USER", label: "Dibatalkan Pengguna" },
+    { enum: "CANCELLED_BY_OFFICER", label: "Dibatalkan Petugas" },
+    { enum: "EXPIRED", label: "Kedaluwarsa" },
+  ]
+
+  it("nilai awal menampilkan Semua status, bukan enum", async () => {
+    mockFetchRiwayat()
+    render(<ReservationHistoryList />)
+
+    await screen.findByText("RK-102")
+    const trigger = screen.getByRole("combobox", { name: "Filter status" })
+    expect(trigger).toHaveTextContent("Semua status")
+  })
+
+  it.each(PASANGAN)("memilih $label menampilkan label, bukan enum $enum", async ({ label }) => {
+    const user = userEvent.setup()
+    const fetchMock = mockFetchRiwayat()
+    render(<ReservationHistoryList />)
+
+    await screen.findByText("RK-102")
+    await user.click(screen.getByRole("combobox", { name: "Filter status" }))
+    await user.click(await screen.findByRole("option", { name: label }))
+
+    const trigger = screen.getByRole("combobox", { name: "Filter status" })
+    await waitFor(() => {
+      expect(trigger).toHaveTextContent(label)
+    })
+    for (const { enum: enumMentah } of PASANGAN) {
+      expect(trigger.textContent ?? "").not.toContain(enumMentah)
+    }
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("status="))
+  }, 20000)
+})
+
 describe("ReservationHistoryList loading", () => {
   it("menampilkan skeleton dan status saat data belum tiba", async () => {
     let rilisRespons: ((value: Response) => void) | undefined;

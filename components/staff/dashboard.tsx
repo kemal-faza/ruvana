@@ -108,7 +108,7 @@ export function StaffDashboard({
                   Rekap bulanan
                 </CardTitle>
                 <CardDescription>
-                  Jumlah reservasi per status, per fasilitas, dan tren 6 bulan terakhir.
+                  Jumlah reservasi per status, per fasilitas, dan 6 bulan terakhir.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-start gap-3">
@@ -150,7 +150,6 @@ export function StaffDashboard({
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Antrean terbaru</CardTitle>
-            <CardDescription>Urutan sama dengan antrean FIFO pada halaman persetujuan.</CardDescription>
           </CardHeader>
           <CardContent className="min-w-0">
             {loading && <p role="status" className="text-sm text-muted-foreground">Memuat antrean…</p>}

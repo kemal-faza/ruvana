@@ -175,10 +175,6 @@ export function ReservationQueue() {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-muted-foreground">
-        Diurutkan dari pengajuan terlama; yang paling lama menunggu diproses lebih dulu.
-      </p>
-
       {notice && (
         <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
           {notice.msg}

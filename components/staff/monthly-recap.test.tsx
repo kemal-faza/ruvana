@@ -101,7 +101,7 @@ describe("StaffMonthlyRecap", () => {
   it("menampilkan tren 6 bulan sebagai tabel berlabel, periode, dan satuan", () => {
     render(<StaffMonthlyRecap recap={buatRekap()} currentMonth="2026-09" warning={null} />);
 
-    const tabel = screen.getByRole("table", { name: "Tren 6 bulan terakhir" });
+    const tabel = screen.getByRole("table", { name: "Jumlah reservasi 6 bulan terakhir" });
     const baris = within(tabel).getAllByRole("row");
     // 1 baris kepala + 6 baris bulan.
     expect(baris).toHaveLength(7);

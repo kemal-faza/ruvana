@@ -546,7 +546,7 @@ Petugas dapat melihat rekap reservasi per bulan pada dashboard petugas, ditampil
 
 **Acceptance criteria:**
 
-- Rekap memuat ringkasan tertulis, jumlah per status (seluruh status reservasi), jumlah per fasilitas, dan tren 6 bulan terakhir termasuk bulan terpilih yang disajikan sebagai tabel (label, periode, satuan) tanpa chart.
+- Rekap memuat ringkasan tertulis, jumlah per status (seluruh status reservasi), jumlah per fasilitas, dan jumlah reservasi 6 bulan terakhir termasuk bulan terpilih yang disajikan sebagai tabel (label, periode, satuan) tanpa chart.
 - Dasar pengelompokan adalah tanggal pemakaian (kolom `tanggal`), bukan waktu pengajuan.
 - Bulan dipilih lewat query param `?bulan=YYYY-MM` pada form `GET` berlabel yang dapat dipakai keyboard; default adalah bulan berjalan menurut kalender `Asia/Jakarta`.
 - Nilai bulan yang tidak valid jatuh ke default dengan pesan yang jelas, bukan error.

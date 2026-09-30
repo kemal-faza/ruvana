@@ -41,6 +41,19 @@ interface HistoryItemView {
 const PER_PAGE = 10;
 const SEMUA = "SEMUA";
 
+// Pemetaan value->label untuk Base UI Select: tanpa `items`, <SelectValue/>
+// merender string value mentah (enum) di trigger. Daftar ini memakai
+// LABEL_STATUS_RESERVASI yang sama dengan opsi dropdown, jadi trigger selalu
+// menampilkan label domain Indonesia sedangkan value (enum) tetap dipakai
+// untuk query API.
+const ITEM_FILTER_STATUS: Array<{ value: string; label: string }> = [
+  { value: SEMUA, label: "Semua status" },
+  ...STATUS_RESERVASI.map((status) => ({
+    value: status,
+    label: LABEL_STATUS_RESERVASI[status as StatusReservasi],
+  })),
+];
+
 function toHistoryItemView(item: ReservationResult): HistoryItemView {
   const tampilan = tampilanReservasi({
     status: item.status,
@@ -162,6 +175,7 @@ export function ReservationHistoryList() {
       <Field className="max-w-xs">
         <FieldLabel htmlFor="filter-status">Filter status</FieldLabel>
         <Select
+          items={ITEM_FILTER_STATUS}
           value={statusFilter || SEMUA}
           onValueChange={gantiFilter}
         >
