@@ -56,6 +56,12 @@ describe("ReservationSummaryCard", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("aksi tunggal pada kotak galat memakai varian primary", () => {
+    render(<ReservationSummaryCard ringkasan={null} gagal onRetry={() => undefined} />);
+
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toHaveClass("bg-primary-subdued");
+  });
+
   it("membedakan kegagalan dari ringkasan kosong dan menyediakan coba lagi", async () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();

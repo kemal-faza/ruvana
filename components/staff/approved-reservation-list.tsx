@@ -221,7 +221,8 @@ export function ApprovedReservationList() {
               <CardFooter className="flex gap-3">
                 <Button
                   type="button"
-                  variant="danger"
+                  variant="danger-soft"
+                  className="min-h-11"
                   loading={actingId === item.id}
                   disabled={actingId !== null}
                   onClick={() => openCancelModal(item)}
@@ -239,6 +240,7 @@ export function ApprovedReservationList() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -250,6 +252,7 @@ export function ApprovedReservationList() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
@@ -301,12 +304,13 @@ export function ApprovedReservationList() {
             <Button
               type="submit"
               variant="danger"
+              className="min-h-11"
               loading={actingId !== null}
               disabled={!cancelAlasan.trim() || actingId !== null}
             >
               Batalkan reservasi
             </Button>
-            <Button type="button" variant="outline" disabled={actingId !== null} onClick={closeCancelModal}>
+            <Button type="button" variant="outline" className="min-h-11" disabled={actingId !== null} onClick={closeCancelModal}>
               Kembali
             </Button>
           </div>

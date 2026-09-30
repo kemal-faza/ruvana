@@ -67,7 +67,7 @@ export function ReservationSuccessBanner() {
           <div>
             <Button
               type="button"
-              variant="outline"
+              variant="soft"
               className={BUTTON_ACTION_CLASS}
               render={<Link href="/reservasi/riwayat" />}
             >

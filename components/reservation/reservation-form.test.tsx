@@ -49,6 +49,17 @@ async function isiWaktuDanTujuan(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
 }
 
+describe("ReservationForm hierarki tombol", () => {
+  it("aksi utama tiap area memakai varian primary yang mencolok", () => {
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} />,
+    )
+
+    expect(screen.getByRole("button", { name: "Tampilkan ketersediaan" })).toHaveClass("bg-primary-subdued")
+    expect(screen.getByRole("button", { name: "Ajukan reservasi" })).toHaveClass("bg-primary")
+  })
+})
+
 describe("ReservationForm facilityId", () => {
   it("mengirim facilityId default saat pilihan tidak diubah", async () => {
     const user = userEvent.setup()

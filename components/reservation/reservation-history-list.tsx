@@ -221,7 +221,7 @@ export function ReservationHistoryList() {
           <p className="text-sm font-medium text-destructive">Sesi Anda berakhir. Silakan masuk lagi.</p>
           <Button
             type="button"
-            variant="outline"
+            variant="soft"
             className="min-h-11"
             render={<Link href="/login" />}
           >
@@ -233,7 +233,7 @@ export function ReservationHistoryList() {
       {!loading && galat === "jaringan" && (
         <div role="alert" className="flex flex-col items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3">
           <p className="text-sm font-medium text-destructive">Riwayat belum dapat dimuat.</p>
-          <Button type="button" variant="outline" className="min-h-11" onClick={cobaLagi}>
+          <Button type="button" variant="soft" className="min-h-11" onClick={cobaLagi}>
             Coba lagi
           </Button>
         </div>
@@ -299,6 +299,7 @@ export function ReservationHistoryList() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -310,6 +311,7 @@ export function ReservationHistoryList() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >

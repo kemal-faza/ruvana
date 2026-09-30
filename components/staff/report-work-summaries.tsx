@@ -128,7 +128,7 @@ export function ReportWorkSummaries() {
                 {error && !loading && (
                   <div className="flex flex-col items-start gap-3">
                     <p role="alert" className="text-sm text-destructive">Gagal memuat ringkasan laporan.</p>
-                    <Button type="button" variant="outline" className="min-h-11 gap-2.5 px-4 text-sm" onClick={() => void retryLoad()}>
+                    <Button type="button" variant="soft" className="min-h-11 gap-2.5 px-4 text-sm" onClick={() => void retryLoad()}>
                       Coba lagi
                     </Button>
                   </div>

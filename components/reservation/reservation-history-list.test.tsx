@@ -297,6 +297,35 @@ describe("ReservationHistoryList filter status tampil label domain (RES-03)", ()
   }, 20000)
 })
 
+describe("ReservationHistoryList hierarki tombol", () => {
+  it("aksi tunggal pada kotak sesi dan galat memakai varian primary", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 401 })))
+    const { unmount } = render(<ReservationHistoryList />)
+
+    expect(await screen.findByRole("link", { name: "Masuk" })).toHaveClass("bg-primary-subdued")
+    unmount()
+    cleanup()
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })))
+    render(<ReservationHistoryList />)
+
+    expect(await screen.findByRole("button", { name: "Coba lagi" })).toHaveClass("bg-primary-subdued")
+  })
+
+  it("tombol paginasi memenuhi target sentuh minimal", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(BODY_DUA_HALAMAN(1)), { status: 200 })),
+    )
+    render(<ReservationHistoryList />)
+
+    await screen.findByText("RK-102")
+    for (const nama of ["Sebelumnya", "Berikutnya"]) {
+      expect(screen.getByRole("button", { name: nama })).toHaveClass("min-h-11")
+    }
+  })
+})
+
 describe("ReservationHistoryList loading", () => {
   it("menampilkan skeleton dan status saat data belum tiba", async () => {
     let rilisRespons: ((value: Response) => void) | undefined;

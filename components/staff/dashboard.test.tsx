@@ -131,6 +131,16 @@ describe("dashboard Petugas", () => {
     expect(screen.getByText(/Pada September 2026 terdapat 5 reservasi/)).toBeInTheDocument();
   });
 
+  it("aksi tunggal pada kotak galat memakai varian primary", () => {
+    render(<StaffDashboard reservations={[]} totalReservations={0} rekapGagal />);
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toHaveClass("bg-primary-subdued");
+
+    cleanup();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
+    render(<StaffDashboard reservations={[]} totalReservations={0} initialError />);
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toHaveClass("bg-primary-subdued");
+  });
+
   it("membedakan kegagalan rekap dari rekap kosong", () => {
     render(<StaffDashboard reservations={[]} totalReservations={0} rekapGagal />);
 

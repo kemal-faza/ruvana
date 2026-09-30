@@ -70,7 +70,7 @@ export function ReservationSummaryCard({
               </p>
               <Button
                 type="button"
-                variant="outline"
+                variant="soft"
                 className="min-h-11 gap-2.5 px-4 text-sm"
                 onClick={onRetry}
               >

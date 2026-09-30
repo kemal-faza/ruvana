@@ -246,6 +246,7 @@ export function ReservationQueue() {
               <CardFooter className="flex gap-3">
                 <Button
                   type="button"
+                  className="min-h-11"
                   loading={actingId === item.id}
                   disabled={actingId !== null}
                   onClick={() => void submitApprove(item)}
@@ -254,7 +255,8 @@ export function ReservationQueue() {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="danger-soft"
+                  className="min-h-11"
                   disabled={actingId !== null}
                   onClick={() => openRejectModal(item)}
                 >
@@ -271,6 +273,7 @@ export function ReservationQueue() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -282,6 +285,7 @@ export function ReservationQueue() {
           <Button
             type="button"
             variant="outline"
+            className="min-h-11"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
@@ -333,12 +337,13 @@ export function ReservationQueue() {
             <Button
               type="submit"
               variant="danger"
+              className="min-h-11"
               loading={actingId !== null}
               disabled={!rejectAlasan.trim() || actingId !== null}
             >
               Tolak reservasi
             </Button>
-            <Button type="button" variant="outline" disabled={actingId !== null} onClick={closeRejectModal}>
+            <Button type="button" variant="outline" className="min-h-11" disabled={actingId !== null} onClick={closeRejectModal}>
               Batal
             </Button>
           </div>

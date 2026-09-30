@@ -117,7 +117,7 @@ export function StaffDashboard({
                 </p>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="soft"
                   className="min-h-11 gap-2.5 px-4 text-sm"
                   onClick={() => window.location.reload()}
                 >
@@ -156,7 +156,7 @@ export function StaffDashboard({
             {error && !loading && (
               <div className="flex flex-col items-start gap-3">
                 <p role="alert" className="text-sm text-destructive">Gagal memuat antrean reservasi.</p>
-                <Button type="button" variant="outline" onClick={() => void retryLoad()}>
+                <Button type="button" variant="soft" className="min-h-11" onClick={() => void retryLoad()}>
                   Coba lagi
                 </Button>
               </div>
