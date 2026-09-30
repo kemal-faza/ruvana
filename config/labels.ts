@@ -28,6 +28,17 @@ export const BADGE_STATUS_FASILITAS: Record<StatusFasilitas, "success" | "pendin
   INACTIVE: "neutral",
 };
 
+export const LABEL_STATUS_SLOT = {
+  available: "Tersedia",
+  blockedApproved: "Tidak tersedia",
+  blockedMaintenance: "Tidak tersedia (perbaikan)",
+} as const;
+
+// Label filter kapasitas mengikuti tipe: ruangan/lapangan dihitung dalam orang,
+// sedangkan alat dihitung dalam jumlah unit.
+export const LABEL_FILTER_KAPASITAS_RUANG = "Kapasitas minimum (orang)";
+export const LABEL_FILTER_JUMLAH_ALAT = "Jumlah minimum (unit)";
+
 export const LABEL_STATUS_LAPORAN: Record<StatusLaporan, string> = {
   NEW: "Baru",
   IN_PROGRESS: "Diproses",

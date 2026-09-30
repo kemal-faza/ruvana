@@ -20,9 +20,13 @@ interface DatePickerProps {
   id?: string
   "aria-label": string
   placeholder?: string
+  /** Nilai awal sebagai string `yyyy-MM-dd` (mis. dari query param). */
   defaultValue?: string
+  /** Nilai awal sebagai `Date` (mis. hasil parse manual di zona waktu lokal). */
+  defaultDate?: Date
   allowPastDates?: boolean
   className?: string
+  disabled?: React.ComponentProps<typeof Calendar>["disabled"]
 }
 
 function initialDate(value?: string): Date | undefined {
@@ -37,11 +41,17 @@ export function DatePicker({
   "aria-label": ariaLabel,
   placeholder = "Pilih tanggal",
   defaultValue,
+  defaultDate,
   allowPastDates = false,
   className,
+  disabled,
 }: DatePickerProps) {
-  const [date, setDate] = React.useState<Date | undefined>(() => initialDate(defaultValue))
+  const [date, setDate] = React.useState<Date | undefined>(() => defaultDate ?? initialDate(defaultValue))
   const [open, setOpen] = React.useState(false)
+
+  // `disabled` eksplisit menang; kalau tidak diberikan, tanggal lampau hanya
+  // diblokir saat `allowPastDates` tidak diaktifkan.
+  const disabledDays = disabled ?? (allowPastDates ? undefined : { before: startOfToday() })
 
   return (
     <>
@@ -73,7 +83,7 @@ export function DatePicker({
             mode="single"
             selected={date}
             defaultMonth={date}
-            disabled={allowPastDates ? undefined : { before: startOfToday() }}
+            disabled={disabledDays}
             locale={localeId}
             autoFocus
             className="[--cell-size:--spacing(9)]"

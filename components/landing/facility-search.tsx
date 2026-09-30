@@ -58,7 +58,7 @@ export function FacilitySearch() {
           {/* `modal={false}` mencegah Base UI mengunci scroll halaman. Kunci itu menulis
               `overflow: hidden` ke scroller viewport sehingga scrollbar hilang, dan karena
               tipografi landing page memakai `vw`, ukuran font ikut berubah. */}
-          <Select name="tipe" items={tipeOptions} modal={false}>
+          <Select name="type" items={tipeOptions} modal={false}>
             <SelectTrigger
               aria-label="Pilih tipe fasilitas"
               className="h-auto min-h-12 w-full border-0 bg-transparent p-0 text-xs text-foreground focus-visible:border-0 focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent dark:hover:bg-transparent cursor-pointer"
