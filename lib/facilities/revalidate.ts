@@ -1,17 +1,15 @@
 import { revalidatePath } from "next/cache";
 
 /**
- * Invalidasi representasi publik dan admin sebuah fasilitas setelah statusnya
- * berubah, supaya daftar `/fasilitas`, detail `/fasilitas/{id}`, dan grid
- * ketersediaannya tidak menyajikan data basi (FAC-04).
+ * Invalidasi representasi publik sebuah fasilitas setelah statusnya berubah,
+ * supaya daftar `/fasilitas` dan detail `/fasilitas/{id}` tidak menyajikan data
+ * basi (FAC-04).
  *
- * Pemanggil: FAC-05 (CRUD fasilitas admin) dan Modul 4 (REP-04 perubahan status
- * maintenance). Realtime tanpa refetch di luar scope; klien lain melihat status
- * terbaru pada navigasi atau refetch berikutnya.
+ * Pemanggil saat ini: Modul 4 (REP-04) lewat PATCH status operasional fasilitas.
+ * View admin `/admin/fasilitas` menyusul bersama FAC-05; tambahkan path-nya di
+ * sini ketika route tersebut benar-benar ada.
  */
 export function revalidateFacilityViews(facilityId: number): void {
   revalidatePath("/fasilitas");
   revalidatePath(`/fasilitas/${facilityId}`);
-  revalidatePath("/admin/fasilitas");
-  revalidatePath(`/admin/fasilitas/${facilityId}`);
 }
