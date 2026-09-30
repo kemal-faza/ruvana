@@ -36,7 +36,7 @@ export function FacilitySearch() {
     >
       <form
         method="get"
-        action="/fasilitas"
+        action="/reservasi"
         className={cn(
           "grid grid-cols-1 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-subtle",
           "max-lg:grid-cols-2 max-md:p-search-inset",
@@ -78,7 +78,8 @@ export function FacilitySearch() {
         </div>
 
         <div data-slot="search-field" className={fieldClass}>
-          <DatePicker name="tanggal" aria-label="Pilih tanggal" />
+          {/* Tanggal diteruskan ke alur reservasi; tipe menyaring pilihan fasilitas di sana. */}
+          <DatePicker name="date" aria-label="Pilih tanggal" />
         </div>
 
         <button

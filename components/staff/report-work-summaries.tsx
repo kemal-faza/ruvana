@@ -12,6 +12,7 @@ import {
   STATUS_LAPORAN_BARU,
   STATUS_LAPORAN_DIPROSES,
   STATUS_LAPORAN_KERJA_PETUGAS,
+  ZONA_WAKTU,
 } from "@/config/business";
 import type { StaffReportWorkStatus, StaffReportWorkView } from "@/lib/services/report-service";
 
@@ -41,7 +42,7 @@ const FORMAT_TANGGAL = new Intl.DateTimeFormat("id-ID", {
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "Asia/Jakarta",
+  timeZone: ZONA_WAKTU,
 });
 
 async function requestSummary(): Promise<StaffReportWorkView> {

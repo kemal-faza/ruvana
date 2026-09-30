@@ -17,8 +17,8 @@ export const LABEL_SATUAN_KAPASITAS: Record<TipeFasilitas, string> = {
 };
 
 export const LABEL_STATUS_FASILITAS: Record<StatusFasilitas, string> = {
-  ACTIVE: "Aktif",
-  UNDER_MAINTENANCE: "Dalam Perbaikan",
+  ACTIVE: "Tersedia",
+  UNDER_MAINTENANCE: "Dalam Pemeliharaan",
   INACTIVE: "Nonaktif",
 };
 
@@ -31,7 +31,7 @@ export const BADGE_STATUS_FASILITAS: Record<StatusFasilitas, "success" | "pendin
 export const LABEL_STATUS_SLOT = {
   available: "Tersedia",
   blockedApproved: "Tidak tersedia",
-  blockedMaintenance: "Tidak tersedia (perbaikan)",
+  blockedMaintenance: "Tidak tersedia (pemeliharaan)",
 } as const;
 
 // Label filter kapasitas mengikuti tipe: ruangan/lapangan dihitung dalam orang,

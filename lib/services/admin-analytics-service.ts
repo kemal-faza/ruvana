@@ -1,4 +1,4 @@
-import { JAM_OPERASIONAL, JAKARTA_TIMEZONE, STATUS_FASILITAS } from "@/config/business";
+import { JAM_OPERASIONAL, ZONA_WAKTU, STATUS_FASILITAS } from "@/config/business";
 import { LABEL_STATUS_LAPORAN } from "@/config/labels";
 import {
   getReportAnalyticsAggregates,
@@ -157,16 +157,16 @@ export async function getAnalyticsSnapshot(filters: AnalyticsFilters): Promise<A
       reports,
       facilityStatuses,
       methodology: {
-        timezone: JAKARTA_TIMEZONE,
+        timezone: ZONA_WAKTU,
         minutesPerDay: MINUTES_PER_DAY,
         capacityFormula: "Jumlah fasilitas × jumlah hari kalender inklusif × menit operasional per hari.",
         occupancyFormula: "Total menit reservasi disetujui ÷ kapasitas periode × 100%.",
-        reservationDateRule: `Reservasi dihitung berdasarkan tanggal kalender kampus (${JAKARTA_TIMEZONE}) dalam rentang inklusif.`,
+        reservationDateRule: `Reservasi dihitung berdasarkan tanggal kalender kampus (${ZONA_WAKTU}) dalam rentang inklusif.`,
         approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
         reportCreationDateRule:
-          `Laporan dihitung berdasarkan waktu dibuat dalam rentang tanggal kalender ${JAKARTA_TIMEZONE}, dengan batas akhir eksklusif pada pukul 00.00 hari berikutnya.`,
+          `Laporan dihitung berdasarkan waktu dibuat dalam rentang tanggal kalender ${ZONA_WAKTU}, dengan batas akhir eksklusif pada pukul 00.00 hari berikutnya.`,
         facilityStatusNote:
-          "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
+          "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam pemeliharaan dan nonaktif tetap masuk kapasitas.",
       },
     },
   };

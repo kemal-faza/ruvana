@@ -1,4 +1,4 @@
-import { BATAS_PEMBATALAN_JAM } from "@/config/business";
+import { BATAS_PEMBATALAN_JAM, ZONA_WAKTU } from "@/config/business";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
@@ -83,7 +83,7 @@ function toReservationResponse(row: {
       status: row.facility.status,
     },
     date: formatDateAsiaJakarta(row.tanggal),
-    timezone: "Asia/Jakarta",
+    timezone: ZONA_WAKTU,
     startTime: formatTimeAsiaJakarta(row.startTime),
     endTime: formatTimeAsiaJakarta(row.endTime),
     startsAt: row.startTime.toISOString(),
