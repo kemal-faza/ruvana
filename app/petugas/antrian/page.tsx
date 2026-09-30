@@ -2,14 +2,19 @@ import type { Metadata } from "next";
 
 import { ApprovedReservationList } from "@/components/staff/approved-reservation-list";
 import { ReservationQueue } from "@/components/staff/reservation-queue";
+import { requirePetugasAtauAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Antrean reservasi | ruvana",
+  description: "Setujui atau tolak reservasi menunggu sebagai petugas.",
 };
 
-export default function AntrianPage() {
+export default async function AntrianPage() {
+  // Layout menyiapkan shell; guard ini tetap memastikan hanya petugas/admin yang mengakses halaman.
+  await requirePetugasAtauAdmin();
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-col gap-2">

@@ -99,16 +99,19 @@ export function ApprovedReservationList() {
       });
       const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
       if (res.ok) {
-        setNotice({ ok: true, msg: `Reservasi #${cancelTarget.id} dibatalkan. Slot kembali tersedia.` });
+        setNotice({
+          ok: true,
+          msg: `Reservasi ${cancelTarget.facility.nama} pada ${formatTanggal(cancelTarget.date)} pukul ${cancelTarget.startTime}–${cancelTarget.endTime} telah dibatalkan. Slot kembali tersedia.`,
+        });
         closeCancelModal();
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || `Gagal membatalkan (${res.status})` });
+      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal membatalkan. Silakan coba lagi." });
       closeCancelModal();
       await load(page);
     } catch {
-      setNotice({ ok: false, msg: "Error jaringan. Silakan coba lagi." });
+      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
       setActingId(null);
     }
@@ -155,7 +158,7 @@ export function ApprovedReservationList() {
       </p>
 
       {notice && (
-        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-green-700" : "text-destructive"}`}>
+        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
           {notice.msg}
         </p>
       )}
@@ -277,7 +280,11 @@ export function ApprovedReservationList() {
           }}
         >
           <div>
-            <h2 className="font-heading text-lg font-semibold">Batalkan mendesak #{cancelTarget?.id}</h2>
+            <h2 className="font-heading text-lg font-semibold">
+              {cancelTarget
+                ? `Batalkan mendesak ${cancelTarget.facility.nama} · ${formatTanggal(cancelTarget.date)}`
+                : "Batalkan mendesak"}
+            </h2>
             <p className="text-sm text-muted-foreground">
               Alasan wajib diisi dan akan terlihat oleh pemilik reservasi. Slot langsung tersedia lagi.
             </p>

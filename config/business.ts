@@ -88,9 +88,10 @@ export const OFFSET_ZONA_WAKTU_MENIT = 420;
 // Role & TipeFasilitas tetap bahasa Indonesia sesuai dokumen.
 export const ROLE = ["pengguna", "petugas", "admin"] as const;
 export const STATUS_AKUN = ["PENDING", "ACTIVE", "REJECTED", "DISABLED"] as const;
+export const STATUS_RESERVASI_MENUNGGU = "PENDING" as const;
 export const STATUS_RESERVASI_DISETUJUI = "APPROVED" as const;
 export const STATUS_RESERVASI = [
-  "PENDING",
+  STATUS_RESERVASI_MENUNGGU,
   STATUS_RESERVASI_DISETUJUI,
   "REJECTED",
   "CANCELLED_BY_USER",

@@ -4,10 +4,19 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { ReservationForm } from "@/components/reservation/reservation-form"
 
+const pushMock = vi.fn()
+const refreshMock = vi.fn()
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+}))
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  pushMock.mockClear()
+  refreshMock.mockClear()
 })
 
 const facilities = [
@@ -56,8 +65,7 @@ describe("ReservationForm facilityId", () => {
     expect(body.facilityId).toBe(3)
   }, 20000)
 
-  it("mengirim facilityId yang baru dipilih user, bukan default Aula", async () => {
-    const user = userEvent.setup()
+  it("mengirim facilityId yang baru dipilih user, bukan default Aula", async () => {    const user = userEvent.setup()
     const fetchMock = mockFetchOk()
     const { container } = render(
       <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} />,
@@ -74,5 +82,125 @@ describe("ReservationForm facilityId", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
     expect(body.facilityId).toBe(4)
+  }, 20000)
+})
+
+describe("ReservationForm label domain", () => {
+  it("sukses mengarahkan ke halaman detail baru tanpa data mentah di layar", async () => {
+    const user = userEvent.setup()
+    const fetchMock = mockFetchOk()
+    const { container } = render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} />,
+    )
+
+    await isiWaktuDanTujuan(user)
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi/riwayat/99?baru=1"))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(container.textContent ?? "").not.toContain("PENDING")
+    expect(container.querySelector("pre")).not.toBeInTheDocument()
+  }, 20000)
+
+  it("memetakan galat validasi ke istilah domain tanpa nama field mentah", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              title: "Validasi gagal",
+              detail: "Satu atau lebih field tidak memenuhi aturan validasi",
+              errors: [
+                { field: "tujuanPenggunaan", code: "TOO_SHORT", message: "tujuanPenggunaan tidak boleh kosong" },
+              ],
+            }),
+            { status: 422 },
+          ),
+      ),
+    )
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-1111-4111-8111-111111111111")
+    const { container } = render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} />,
+    )
+
+    await isiWaktuDanTujuan(user)
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    expect(await screen.findByText(/Periksa kembali isian berikut/)).toBeInTheDocument()
+    expect(screen.getByText(/Periksa kembali isian berikut: Tujuan/)).toBeInTheDocument()
+    expect(container.textContent ?? "").not.toContain("tujuanPenggunaan")
+    expect(container.textContent ?? "").not.toContain("Availability")
+  }, 20000)
+})
+
+describe("ReservationForm konfirmasi pengajuan", () => {
+  function mockFetchMenunggu(status: number, body: unknown) {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const fetchMock = vi.fn(async () => {
+      await gate
+      return new Response(JSON.stringify(body), { status })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-1111-4111-8111-111111111111")
+    return { fetchMock, release }
+  }
+
+  it("menampilkan label proses dan mencegah submit ganda saat mengirim", async () => {
+    const user = userEvent.setup()
+    const { fetchMock, release } = mockFetchMenunggu(201, { id: 77 })
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} />,
+    )
+
+    await isiWaktuDanTujuan(user)
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    const tombolProses = await screen.findByRole("button", { name: "Mengajukan..." })
+    expect(tombolProses).toBeDisabled()
+    await user.click(tombolProses)
+    release()
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi/riwayat/77?baru=1"))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(pushMock).toHaveBeenCalledTimes(1)
+  }, 20000)
+
+  it("menampilkan galat di dekat field beserta ringkasan dan fokus ke field pertama", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    const ringkasan = await screen.findByText(/Periksa kembali isian berikut/)
+    expect(ringkasan).toHaveTextContent("Periksa kembali isian berikut: Jam mulai, Jam selesai, Tujuan.")
+    expect(screen.getByText("Jam mulai wajib dipilih.")).toBeInTheDocument()
+    expect(document.activeElement?.id).toBe("jam-mulai")
+  }, 20000)
+
+  it("konflik menjelaskan penyebab, menawarkan segarkan slot, dan mempertahankan input", async () => {
+    const user = userEvent.setup()
+    mockFetchMenunggu(409, {
+      title: "Reservasi bertabrakan",
+      detail: "Slot bertabrakan dengan reservasi yang telah disetujui.",
+      availability: { slots: [] },
+    }).release()
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} />,
+    )
+
+    await isiWaktuDanTujuan(user)
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    expect(await screen.findByText(/bertabrakan/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Segarkan slot" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Tujuan penggunaan")).toHaveValue("Diskusi kelompok")
+    expect(document.body.textContent ?? "").not.toContain("Availability")
   }, 20000)
 })
