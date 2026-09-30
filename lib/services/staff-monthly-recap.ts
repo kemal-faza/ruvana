@@ -4,7 +4,7 @@
 // lib/db/analytics.ts maupun admin-analytics-service.
 // Dasar pengelompokan: tanggal pemakaian (kolom tanggal, DATE kalender
 // Asia/Jakarta), bukan waktu pengajuan.
-import { JAKARTA_TIMEZONE, STATUS_RESERVASI } from "@/config/business";
+import { STATUS_RESERVASI, ZONA_WAKTU } from "@/config/business";
 import { LABEL_STATUS_RESERVASI } from "@/config/labels";
 import { prisma } from "@/lib/prisma";
 import {
@@ -128,8 +128,8 @@ export async function getStaffMonthlyRecapService(month: string): Promise<StaffM
     perFacility,
     trend,
     methodology: {
-      timezone: JAKARTA_TIMEZONE,
-      groupingRule: `Dikelompokkan berdasarkan tanggal pemakaian (kolom tanggal) dalam kalender ${JAKARTA_TIMEZONE}, bukan waktu pengajuan.`,
+      timezone: ZONA_WAKTU,
+      groupingRule: `Dikelompokkan berdasarkan tanggal pemakaian (kolom tanggal) dalam kalender ${ZONA_WAKTU}, bukan waktu pengajuan.`,
       statusRule: "Seluruh status reservasi dihitung.",
       trendRule: "Tren memuat 6 bulan terakhir termasuk bulan terpilih.",
       exportNote: "Ekspor rekap berada di luar scope.",
