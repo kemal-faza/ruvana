@@ -1,12 +1,14 @@
 import { ReservationForm } from "@/components/reservation/reservation-form"
+import { TIPE_FASILITAS } from "@/config/business"
 import { computeFacilityAvailability } from "@/lib/reservations/availability"
 import { listPublicFacilities } from "@/lib/services/facility-service"
 import { isValidDateFormat } from "@/lib/time/reservation-time"
 
-async function getFacilities() {
+async function getFacilities(tipe?: string) {
   const { items } = await listPublicFacilities({ page: 1, perPage: 500 })
   return items
     .filter((facility) => facility.status === "ACTIVE")
+    .filter((facility) => !tipe || facility.tipe === tipe)
     .map((facility) => ({ id: facility.id, nama: facility.nama, lokasi: facility.lokasi }))
     .sort((a, b) => a.nama.localeCompare(b.nama, "id"))
 }
@@ -16,8 +18,11 @@ export async function ReservationContent({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const facilities = await getFacilities()
   const query = await searchParams
+
+  const rawType = Array.isArray(query.type) ? query.type[0] : query.type
+  const tipe = rawType && (TIPE_FASILITAS as readonly string[]).includes(rawType) ? rawType : undefined
+  const facilities = await getFacilities(tipe)
 
   const rawFacilityId = Array.isArray(query.facilityId) ? query.facilityId[0] : query.facilityId
   const rawDate = Array.isArray(query.date) ? query.date[0] : query.date
