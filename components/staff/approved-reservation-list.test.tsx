@@ -73,6 +73,52 @@ describe("ApprovedReservationList", () => {
 })
 
 
+describe("ApprovedReservationList hierarki tombol", () => {
+  it("Batalkan mendesak memakai varian danger dan target sentuh minimal", async () => {
+    mockFetch()
+    render(<ApprovedReservationList />)
+
+    await screen.findByText("Aula Utama · 4 Des 2026 · 09:00–10:00")
+    const batalkan = screen.getByRole("button", { name: "Batalkan mendesak" })
+    expect(batalkan).toHaveClass("bg-destructive-subdued")
+    expect(batalkan).toHaveClass("min-h-11")
+  })
+
+  it("tombol dialog memenuhi target sentuh minimal", async () => {
+    const user = userEvent.setup()
+    mockFetch()
+    render(<ApprovedReservationList />)
+
+    await screen.findByText("Aula Utama · 4 Des 2026 · 09:00–10:00")
+    await user.click(screen.getByRole("button", { name: "Batalkan mendesak" }))
+    document.querySelector("dialog")?.setAttribute("open", "")
+    expect(screen.getByRole("button", { name: "Batalkan reservasi" })).toHaveClass("min-h-11")
+    expect(screen.getByRole("button", { name: "Kembali" })).toHaveClass("min-h-11")
+  })
+
+  it("tombol paginasi memenuhi target sentuh minimal", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        if (String(url).includes("/cancel")) {
+          return { ok: true, status: 200, json: async () => ({}) } as Response
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ items: [item], meta: { page: 1, perPage: 10, totalItems: 11, totalPages: 2 } }),
+        } as Response
+      }),
+    )
+    render(<ApprovedReservationList />)
+
+    await screen.findByText("Aula Utama · 4 Des 2026 · 09:00–10:00")
+    for (const nama of ["Sebelumnya", "Berikutnya"]) {
+      expect(screen.getByRole("button", { name: nama })).toHaveClass("min-h-11")
+    }
+  })
+})
+
 describe("ApprovedReservationList loading", () => {
   it("menampilkan skeleton dan status sebelum daftar tiba", async () => {
     let rilisRespons: ((value: Response) => void) | undefined;

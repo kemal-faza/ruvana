@@ -284,7 +284,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               </Field>
             </div>
             <div>
-              <Button type="submit" variant="outline" className={BUTTON_ACTION_CLASS}>
+              <Button type="submit" variant="soft" className={BUTTON_ACTION_CLASS}>
                 Tampilkan ketersediaan
               </Button>
             </div>

@@ -66,6 +66,16 @@ describe("ReservationDetail", () => {
     }
   })
 
+  it("tombol destruktif memakai varian danger dan target sentuh minimal", async () => {
+    mockFetchOk()
+    render(<ReservationDetail id={91} />)
+
+    await screen.findByText("Aula Utama")
+    const batalkan = screen.getByRole("button", { name: "Batalkan reservasi" })
+    expect(batalkan).toHaveClass("bg-destructive-subdued")
+    expect(batalkan).toHaveClass("min-h-11")
+  })
+
   it("lolos pemeriksaan aksesibilitas", async () => {
     mockFetchOk()
     const { container } = render(<ReservationDetail id={91} />)
