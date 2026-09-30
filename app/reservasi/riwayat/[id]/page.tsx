@@ -14,7 +14,7 @@ import { requirePengguna } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Detail reservasi — Ruvana",
+  title: "Detail reservasi | ruvana",
   description: "Lihat detail reservasi milik Anda dan batalkan bila masih memenuhi batas waktu.",
 };
 

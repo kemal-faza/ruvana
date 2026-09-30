@@ -1,0 +1,34 @@
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+const { getPublicFacility } = vi.hoisted(() => ({ getPublicFacility: vi.fn() }))
+
+vi.mock("@/lib/services/facility-service", () => ({ getPublicFacility }))
+
+import { generateMetadata } from "./page"
+
+describe("metadata title detail fasilitas", () => {
+  beforeEach(() => {
+    getPublicFacility.mockResolvedValue({
+      id: 8,
+      nama: "Laboratorium Kimia",
+      tipe: "laboratorium",
+      lokasi: "Gedung Sains",
+      kapasitas: 24,
+      deskripsi: "Laboratorium untuk praktikum kimia.",
+      status: "ACTIVE",
+    })
+  })
+
+  it("memakai nama fasilitas diikuti brand", async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ facilityId: "8" }) })
+
+    expect(metadata.title).toBe("Laboratorium Kimia | ruvana")
+  })
+
+  it("memberi title sesuai halaman not-found fasilitas", async () => {
+    const page = await import("./not-found")
+    const metadata = "metadata" in page ? page.metadata : undefined
+
+    expect(metadata?.title).toBe("Fasilitas tidak ditemukan | ruvana")
+  })
+})

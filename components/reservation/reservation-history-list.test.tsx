@@ -8,6 +8,7 @@ import { ReservationHistoryList } from "@/components/reservation/reservation-his
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 // Body disalin persis dari respons nyata GET /api/reservations
@@ -255,3 +256,27 @@ describe("ReservationHistoryList hardening", () => {
     expect((await axe(container)).violations).toEqual([])
   }, 20000)
 })
+
+
+describe("ReservationHistoryList loading", () => {
+  it("menampilkan skeleton dan status saat data belum tiba", async () => {
+    let rilisRespons: ((value: Response) => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => { rilisRespons = resolve; })),
+    );
+
+    render(<ReservationHistoryList />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Memuat riwayat reservasi");
+    expect(screen.queryByText("Memuat riwayat reservasi…")).not.toBeInTheDocument();
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
+
+    rilisRespons?.(new Response(JSON.stringify({
+      items: [],
+      meta: { page: 1, perPage: 10, totalItems: 0, totalPages: 0 },
+    }), { status: 200 }));
+
+    expect(await screen.findByText("Belum ada reservasi")).toBeInTheDocument();
+  });
+});

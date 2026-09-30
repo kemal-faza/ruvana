@@ -8,6 +8,7 @@ import type { StaffReservationResult } from "@/lib/services/reservation-service"
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 const item = {
@@ -70,3 +71,27 @@ describe("ApprovedReservationList", () => {
     expect(notice.textContent ?? "").not.toMatch(/#93/)
   })
 })
+
+
+describe("ApprovedReservationList loading", () => {
+  it("menampilkan skeleton dan status sebelum daftar tiba", async () => {
+    let rilisRespons: ((value: Response) => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => { rilisRespons = resolve; })),
+    );
+
+    render(<ApprovedReservationList />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Memuat reservasi disetujui");
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Batalkan mendesak" })).not.toBeInTheDocument();
+
+    rilisRespons?.(new Response(JSON.stringify({
+      items: [],
+      meta: { page: 1, perPage: 10, totalItems: 0, totalPages: 0 },
+    }), { status: 200 }));
+
+    expect(await screen.findByText("Tidak ada reservasi disetujui")).toBeInTheDocument();
+  });
+});

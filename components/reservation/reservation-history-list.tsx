@@ -13,6 +13,7 @@ import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
@@ -179,7 +180,22 @@ export function ReservationHistoryList() {
         </Select>
       </Field>
 
-      {loading && <p className="text-sm text-muted-foreground">Memuat riwayat reservasi…</p>}
+      {loading && (
+        <div role="status" aria-busy="true" className="flex flex-col gap-4">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2" aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex flex-col gap-4 rounded-card border border-border bg-card p-6">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-11 w-full" />
+              </div>
+            ))}
+          </div>
+          <p className="sr-only">Memuat riwayat reservasi</p>
+        </div>
+      )}
 
       {pemberitahuan && (
         <p aria-live="polite" className="text-sm text-muted-foreground">

@@ -10,6 +10,7 @@ import { ReservationStatusBadge } from "@/components/reservation/reservation-sta
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi, TipeFasilitas } from "@/generated/prisma/enums";
 
@@ -88,7 +89,23 @@ export function ReservationDetail({ id }: { id: number }) {
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Memuat detail reservasi…</p>;
+    return (
+      <div role="status" aria-busy="true" className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center gap-3" aria-hidden="true">
+          <Skeleton className="h-9 w-64 max-w-full" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2" aria-hidden="true">
+          <Skeleton className="h-16 w-full rounded-card" />
+          <Skeleton className="h-16 w-full rounded-card" />
+          <Skeleton className="h-16 w-full rounded-card sm:col-span-2" />
+          <Skeleton className="h-16 w-full rounded-card" />
+          <Skeleton className="h-16 w-full rounded-card" />
+        </div>
+        <Skeleton className="h-40 w-full rounded-card" />
+        <p className="sr-only">Memuat detail reservasi</p>
+      </div>
+    );
   }
 
   if (state === "login") {

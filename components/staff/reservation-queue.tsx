@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
@@ -184,7 +185,22 @@ export function ReservationQueue() {
         </p>
       )}
 
-      {loading && <p className="text-sm text-muted-foreground">Memuat antrean…</p>}
+      {loading && (
+        <div role="status" aria-busy="true" className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="flex flex-col gap-3 rounded-card border border-border bg-card p-5" aria-hidden="true">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-40" />
+              <div className="flex gap-3">
+                <Skeleton className="h-11 w-28" />
+                <Skeleton className="h-11 w-24" />
+              </div>
+            </div>
+          ))}
+          <p className="sr-only">Memuat antrean</p>
+        </div>
+      )}
 
       {!loading && access === "error" && (
         <p className="text-sm text-destructive">Gagal memuat antrean. Silakan coba lagi.</p>

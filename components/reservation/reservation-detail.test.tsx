@@ -8,6 +8,7 @@ import type { ReservationResult } from "@/lib/services/reservation-service"
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 const data = {
@@ -73,3 +74,15 @@ describe("ReservationDetail", () => {
     expect((await axe(container)).violations).toEqual([])
   })
 })
+
+
+describe("ReservationDetail loading", () => {
+  it("menampilkan skeleton dan status sebelum detail tiba", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+
+    render(<ReservationDetail id={7} />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Memuat detail reservasi");
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
+  });
+});

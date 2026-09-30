@@ -9,7 +9,7 @@ import { requirePengguna } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Reservasi saya — Ruvana",
+  title: "Reservasi Saya | ruvana",
   description: "Lihat status dan detail seluruh reservasi milik Anda.",
 };
 
