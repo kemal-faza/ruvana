@@ -5,7 +5,7 @@ import { ArrowRight, Compass } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 
 export const metadata: Metadata = {
-  title: "ruvana",
+  title: "Halaman tidak ditemukan | ruvana",
   robots: {
     index: false,
     follow: false,

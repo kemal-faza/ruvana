@@ -53,6 +53,7 @@ export async function generateMetadata({ params }: FasilitasDetailPageProps): Pr
   const path = `/fasilitas/${facility.id}`
 
   return {
+    title: `${facility.nama} | ruvana`,
     description,
     alternates: {
       canonical: path,

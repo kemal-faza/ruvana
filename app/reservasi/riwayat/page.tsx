@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ReservationHistoryList } from "@/components/reservation/reservation-history-list";
 import { reservasiNavigation } from "../navigation";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Reservasi Saya | ruvana",
+};
 
 export default function RiwayatReservasiPage() {
   return (

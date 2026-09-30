@@ -12,7 +12,7 @@ const description =
   "Lihat fasilitas kampus yang tersedia lengkap dengan lokasi, kapasitas, dan status terkini."
 
 export const metadata: Metadata = {
-  title: "ruvana",
+  title: "Fasilitas | ruvana",
   description,
   alternates: {
     canonical: "/fasilitas",
