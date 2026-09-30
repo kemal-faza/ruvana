@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { STATUS_RESERVASI_MENUNGGU } from "@/config/business";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -45,7 +46,7 @@ export function ReservationSuccessBanner() {
               <h2 id="banner-pengajuan-judul" className="text-lg font-medium">
                 Reservasi berhasil diajukan
               </h2>
-              <ReservationStatusBadge status="PENDING" />
+              <ReservationStatusBadge status={STATUS_RESERVASI_MENUNGGU} />
             </div>
             <Button
               type="button"

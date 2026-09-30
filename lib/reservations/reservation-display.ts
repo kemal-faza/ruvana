@@ -5,13 +5,21 @@
 // Kontrak API lama tidak diubah; presenter hanya menurunkan string tampilan
 // dari DTO yang sudah ada agar komponen client merender istilah domain.
 
-import { LABEL_STATUS_RESERVASI } from "@/config/labels";
-import type { StatusReservasi } from "@/generated/prisma/enums";
+import {
+  STATUS_RESERVASI_DISETUJUI,
+  STATUS_RESERVASI_MENUNGGU,
+} from "@/config/business";
+import {
+  BADGE_STATUS_RESERVASI,
+  LABEL_STATUS_RESERVASI,
+  LABEL_TIPE_FASILITAS,
+} from "@/config/labels";
+import type { StatusReservasi, TipeFasilitas } from "@/generated/prisma/enums";
 
 const ZONA_JAKARTA = "Asia/Jakarta";
 
 export interface MasukanTampilanReservasi {
-  status: StatusReservasi;
+  status: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -19,8 +27,11 @@ export interface MasukanTampilanReservasi {
   processedAt: string | null;
 }
 
+export type VarianBadgeReservasi = (typeof BADGE_STATUS_RESERVASI)[StatusReservasi];
+
 export interface TampilanReservasi {
   labelStatus: string;
+  varianStatus: VarianBadgeReservasi;
   tanggal: string;
   waktu: string;
   diajukanPada: string;
@@ -81,16 +92,56 @@ export function formatRentangWaktu(startTime: string, endTime: string): string {
   return `${startTime}–${endTime}`;
 }
 
-// Menurunkan seluruh string siap-tampil dari satu DTO reservasi. Nilai
-// status mentah hanya dipakai sebagai kunci LABEL_STATUS_RESERVASI dan
-// tidak pernah diteruskan ke teks tampil.
+// Memvalidasi status API lalu menurunkan nilai siap-tampil. Enum teknis
+// hanya dipakai sebagai kunci label/varian dan tidak diteruskan ke View.
+function statusReservasi(value: string): StatusReservasi {
+  if (Object.prototype.hasOwnProperty.call(LABEL_STATUS_RESERVASI, value)) {
+    return value as StatusReservasi;
+  }
+  throw new Error("Status reservasi tidak dikenal.");
+}
+
 export function tampilanReservasi(masukan: MasukanTampilanReservasi): TampilanReservasi {
+  const status = statusReservasi(masukan.status);
   return {
-    labelStatus: LABEL_STATUS_RESERVASI[masukan.status],
+    labelStatus: LABEL_STATUS_RESERVASI[status],
+    varianStatus: BADGE_STATUS_RESERVASI[status],
     tanggal: formatTanggalSingkat(masukan.date),
     waktu: formatRentangWaktu(masukan.startTime, masukan.endTime),
     diajukanPada: awalanUntuk(masukan.submittedAt),
     diprosesPada: awalanUntuk(masukan.processedAt),
+  };
+}
+
+export interface MasukanTampilanDetailReservasi extends MasukanTampilanReservasi {
+  facility: { nama: string; tipe: string; lokasi: string };
+  tujuanPenggunaan: string;
+  alasan: string | null;
+}
+
+export interface TampilanDetailReservasi extends TampilanReservasi {
+  namaFasilitas: string;
+  ringkasanFasilitas: string;
+  tujuan: string;
+  alasan: string | null;
+  dapatDibatalkan: boolean;
+}
+
+export function tampilanDetailReservasi(
+  masukan: MasukanTampilanDetailReservasi,
+): TampilanDetailReservasi {
+  const status = statusReservasi(masukan.status);
+  const labelTipe = LABEL_TIPE_FASILITAS[masukan.facility.tipe as TipeFasilitas];
+  if (!labelTipe) throw new Error("Tipe fasilitas tidak dikenal.");
+
+  return {
+    ...tampilanReservasi(masukan),
+    namaFasilitas: masukan.facility.nama,
+    ringkasanFasilitas: `${labelTipe} · ${masukan.facility.lokasi}`,
+    tujuan: masukan.tujuanPenggunaan,
+    alasan: masukan.alasan,
+    dapatDibatalkan:
+      status === STATUS_RESERVASI_MENUNGGU || status === STATUS_RESERVASI_DISETUJUI,
   };
 }
 

@@ -6,6 +6,7 @@ import {
   pesanSuksesPengajuan,
   petakanGalatField,
   ringkasGalatPengajuan,
+  tampilanDetailReservasi,
   tampilanReservasi,
 } from "@/lib/reservations/reservation-display"
 
@@ -57,6 +58,45 @@ describe("tampilanReservasi", () => {
     ).not.toBe("-")
   })
 })
+
+describe("tampilanDetailReservasi", () => {
+  const detailDasar = {
+    ...dasar,
+    facility: { nama: "Aula Utama", tipe: "ruang_kelas", lokasi: "Gedung Serbaguna" },
+    tujuanPenggunaan: "Diskusi kelompok",
+    alasan: "Jadwal kegiatan berubah",
+  };
+
+  it("menghasilkan data siap tampil dan tidak meneruskan DTO mentah", () => {
+    const tampil = tampilanDetailReservasi(detailDasar);
+
+    expect(tampil).toMatchObject({
+      namaFasilitas: "Aula Utama",
+      ringkasanFasilitas: "Ruang kelas · Gedung Serbaguna",
+      labelStatus: "Menunggu",
+      varianStatus: "pending",
+      tujuan: "Diskusi kelompok",
+      alasan: "Jadwal kegiatan berubah",
+      dapatDibatalkan: true,
+    });
+    expect(tampil).not.toHaveProperty("status");
+    expect(tampil).not.toHaveProperty("facility");
+    expect(tampil).not.toHaveProperty("tujuanPenggunaan");
+  });
+
+  it.each(["REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"] as StatusReservasi[])(
+    "%s tidak menampilkan aksi pembatalan",
+    (status) => {
+      expect(tampilanDetailReservasi({ ...detailDasar, status }).dapatDibatalkan).toBe(false);
+    },
+  );
+
+  it("menolak status API yang tidak dikenal", () => {
+    expect(() =>
+      tampilanDetailReservasi({ ...detailDasar, status: "UNKNOWN_STATUS" }),
+    ).toThrow("Status reservasi tidak dikenal.");
+  });
+});
 
 describe("petakanGalatField", () => {
   it("memetakan field server ke kontrol form dan label domain", () => {

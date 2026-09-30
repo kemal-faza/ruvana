@@ -7,7 +7,7 @@ import { CalendarDays } from "lucide-react";
 import { STATUS_RESERVASI } from "@/config/business";
 import { LABEL_STATUS_RESERVASI } from "@/config/labels";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
-import { tampilanReservasi } from "@/lib/reservations/reservation-display";
+import { tampilanReservasi, type VarianBadgeReservasi } from "@/lib/reservations/reservation-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -32,8 +32,8 @@ interface HistoryItemView {
   facilityName: string;
   tanggal: string;
   waktu: string;
-  status: StatusReservasi;
   labelStatus: string;
+  varianStatus: VarianBadgeReservasi;
   tujuan: string;
   alasan: string | null;
 }
@@ -42,9 +42,8 @@ const PER_PAGE = 10;
 const SEMUA = "SEMUA";
 
 function toHistoryItemView(item: ReservationResult): HistoryItemView {
-  const status = item.status as StatusReservasi;
   const tampilan = tampilanReservasi({
-    status,
+    status: item.status,
     date: item.date,
     startTime: item.startTime,
     endTime: item.endTime,
@@ -57,8 +56,8 @@ function toHistoryItemView(item: ReservationResult): HistoryItemView {
     facilityName: item.facility.nama,
     tanggal: tampilan.tanggal,
     waktu: tampilan.waktu,
-    status,
     labelStatus: tampilan.labelStatus,
+    varianStatus: tampilan.varianStatus,
     tujuan: item.tujuanPenggunaan,
     alasan: item.alasan,
   };
@@ -254,7 +253,7 @@ export function ReservationHistoryList() {
                   {item.tanggal} · {item.waktu}
                 </CardDescription>
                 <CardAction>
-                  <ReservationStatusBadge status={item.status} label={item.labelStatus} />
+                  <ReservationStatusBadge label={item.labelStatus} variant={item.varianStatus} />
                 </CardAction>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">

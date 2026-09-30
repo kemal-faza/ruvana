@@ -4,18 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
 import { BATAS_ALASAN_MAX, BATAS_PEMBATALAN_JAM } from "@/config/business";
-import { LABEL_TIPE_FASILITAS } from "@/config/labels";
-import { tampilanReservasi } from "@/lib/reservations/reservation-display";
+import { tampilanDetailReservasi } from "@/lib/reservations/reservation-display";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ReservationResult } from "@/lib/services/reservation-service";
-import type { StatusReservasi, TipeFasilitas } from "@/generated/prisma/enums";
 
 export function ReservationDetail({ id }: { id: number }) {
-  const [data, setData] = useState<ReservationResult | null>(null);
+  const [data, setData] = useState<ReturnType<typeof tampilanDetailReservasi> | null>(null);
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState<"ok" | "login" | "missing" | "error">("ok");
   const [cancelAlasan, setCancelAlasan] = useState("");
@@ -39,7 +37,8 @@ export function ReservationDetail({ id }: { id: number }) {
         setState("error");
         return;
       }
-      setData((await res.json()) as ReservationResult);
+      const reservation = (await res.json()) as ReservationResult;
+      setData(tampilanDetailReservasi(reservation));
       setState("ok");
     } catch {
       setState("error");
@@ -144,44 +143,33 @@ export function ReservationDetail({ id }: { id: number }) {
     return <p className="text-sm text-destructive">Gagal memuat detail. Silakan coba lagi.</p>;
   }
 
-  const tampil = tampilanReservasi({
-    status: data.status as StatusReservasi,
-    date: data.date,
-    startTime: data.startTime,
-    endTime: data.endTime,
-    submittedAt: data.submittedAt,
-    processedAt: data.processedAt,
-  });
-
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">{data.facility.nama}</h1>
-        <ReservationStatusBadge status={data.status as StatusReservasi} />
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">{data.namaFasilitas}</h1>
+        <ReservationStatusBadge label={data.labelStatus} variant={data.varianStatus} />
       </header>
 
       <dl className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Fasilitas</dt>
-          <dd className="font-medium">
-            {LABEL_TIPE_FASILITAS[data.facility.tipe as TipeFasilitas]} · {data.facility.lokasi}
-          </dd>
+          <dd className="font-medium">{data.ringkasanFasilitas}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Tanggal</dt>
-          <dd className="font-medium">{tampil.tanggal}</dd>
+          <dd className="font-medium">{data.tanggal}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Waktu</dt>
-          <dd className="font-medium">{tampil.waktu}</dd>
+          <dd className="font-medium">{data.waktu}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Status</dt>
-          <dd className="font-medium">{tampil.labelStatus}</dd>
+          <dd className="font-medium">{data.labelStatus}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4 sm:col-span-2">
           <dt className="text-sm text-muted-foreground">Tujuan</dt>
-          <dd className="font-medium">{data.tujuanPenggunaan}</dd>
+          <dd className="font-medium">{data.tujuan}</dd>
         </div>
         {data.alasan && (
           <div className="rounded-card border border-border bg-card p-4 sm:col-span-2">
@@ -191,15 +179,15 @@ export function ReservationDetail({ id }: { id: number }) {
         )}
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Diajukan pada</dt>
-          <dd className="font-medium">{tampil.diajukanPada}</dd>
+          <dd className="font-medium">{data.diajukanPada}</dd>
         </div>
         <div className="rounded-card border border-border bg-card p-4">
           <dt className="text-sm text-muted-foreground">Diproses pada</dt>
-          <dd className="font-medium">{tampil.diprosesPada}</dd>
+          <dd className="font-medium">{data.diprosesPada}</dd>
         </div>
       </dl>
 
-      {(data.status === "PENDING" || data.status === "APPROVED") && (
+      {data.dapatDibatalkan && (
         <section aria-label="Batalkan reservasi" className="flex flex-col gap-4 rounded-card border border-border bg-card p-4">
           <div>
             <h2 className="font-heading text-lg font-semibold">Batalkan reservasi</h2>
@@ -235,9 +223,9 @@ export function ReservationDetail({ id }: { id: number }) {
           ) : (
             <div className="flex flex-col gap-3" role="group" aria-label="Konfirmasi pembatalan">
               <p className="text-sm">
-                Yakin membatalkan reservasi <span className="font-medium">{data.facility.nama}</span> pada{" "}
+                Yakin membatalkan reservasi <span className="font-medium">{data.namaFasilitas}</span> pada{" "}
                 <span className="font-medium">
-                  {tampil.tanggal} · {tampil.waktu}
+                  {data.tanggal} · {data.waktu}
                 </span>
                 ? Tindakan ini tidak dapat dibatalkan.
               </p>
