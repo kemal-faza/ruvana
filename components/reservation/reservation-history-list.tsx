@@ -7,6 +7,7 @@ import { CalendarDays } from "lucide-react";
 import { STATUS_RESERVASI } from "@/config/business";
 import { LABEL_STATUS_RESERVASI } from "@/config/labels";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
+import { tampilanReservasi } from "@/lib/reservations/reservation-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -16,18 +17,50 @@ import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
 interface HistoryResponse {
-  items: ReservationResult[];
+  items: HistoryItemView[];
   meta: { page: number; perPage: number; totalItems: number; totalPages: number };
+}
+
+interface HistoryApiResponse {
+  items: ReservationResult[];
+  meta: HistoryResponse["meta"];
+}
+
+interface HistoryItemView {
+  id: number;
+  facilityName: string;
+  tanggal: string;
+  waktu: string;
+  status: StatusReservasi;
+  labelStatus: string;
+  tujuan: string;
+  alasan: string | null;
 }
 
 const PER_PAGE = 10;
 const SEMUA = "SEMUA";
 
-function formatTanggal(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(
-    new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
-  );
+function toHistoryItemView(item: ReservationResult): HistoryItemView {
+  const status = item.status as StatusReservasi;
+  const tampilan = tampilanReservasi({
+    status,
+    date: item.date,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    submittedAt: item.submittedAt,
+    processedAt: item.processedAt,
+  });
+
+  return {
+    id: item.id,
+    facilityName: item.facility.nama,
+    tanggal: tampilan.tanggal,
+    waktu: tampilan.waktu,
+    status,
+    labelStatus: tampilan.labelStatus,
+    tujuan: item.tujuanPenggunaan,
+    alasan: item.alasan,
+  };
 }
 
 export function ReservationHistoryList() {
@@ -81,7 +114,7 @@ export function ReservationHistoryList() {
         setGalat("jaringan");
         return;
       }
-      const badan = (await res.json().catch(() => null)) as HistoryResponse | null;
+      const badan = (await res.json().catch(() => null)) as HistoryApiResponse | null;
       if (!masihBaru()) return;
       // Validasi bentuk kontrak sebelum render: respons 200 yang kehilangan
       // meta/items tidak boleh crash (totalPages diakses saat render).
@@ -97,7 +130,7 @@ export function ReservationHistoryList() {
         setGalat("jaringan");
         return;
       }
-      setData(badan);
+      setData({ ...badan, items: badan.items.map(toHistoryItemView) });
     } catch {
       if (masihBaru()) setGalat("jaringan");
     } finally {
@@ -200,16 +233,16 @@ export function ReservationHistoryList() {
           {data.items.map((item) => (
             <Card key={item.id}>
               <CardHeader>
-                <CardTitle className="text-lg font-heading">{item.facility.nama}</CardTitle>
+                <CardTitle className="text-lg font-heading">{item.facilityName}</CardTitle>
                 <CardDescription>
-                  {formatTanggal(item.date)} · {item.startTime}–{item.endTime}
+                  {item.tanggal} · {item.waktu}
                 </CardDescription>
                 <CardAction>
-                  <ReservationStatusBadge status={item.status as StatusReservasi} />
+                  <ReservationStatusBadge status={item.status} label={item.labelStatus} />
                 </CardAction>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                <p className="line-clamp-2">{item.tujuanPenggunaan}</p>
+                <p className="line-clamp-2">{item.tujuan}</p>
                 {item.alasan && (
                   <p className="mt-1 line-clamp-2">
                     <span className="font-medium text-foreground">Alasan: </span>

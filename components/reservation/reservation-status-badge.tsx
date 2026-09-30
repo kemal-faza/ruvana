@@ -4,8 +4,9 @@ import type { StatusReservasi } from "@/generated/prisma/enums";
 
 interface ReservationStatusBadgeProps {
   status: StatusReservasi;
+  label?: string;
 }
 
-export function ReservationStatusBadge({ status }: ReservationStatusBadgeProps) {
-  return <Badge variant={BADGE_STATUS_RESERVASI[status]}>{LABEL_STATUS_RESERVASI[status]}</Badge>;
+export function ReservationStatusBadge({ status, label }: ReservationStatusBadgeProps) {
+  return <Badge variant={BADGE_STATUS_RESERVASI[status]}>{label ?? LABEL_STATUS_RESERVASI[status]}</Badge>;
 }
