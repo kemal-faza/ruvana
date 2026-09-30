@@ -92,3 +92,7 @@ output/
 # uploads runtime (foto laporan hasil unggah) — tidak untuk di-commit
 /public/uploads/
 /.local-storage/report-photos/
+
+.openchamber/
+.agents/
+skills-lock.json
