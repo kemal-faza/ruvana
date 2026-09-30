@@ -9,6 +9,7 @@ import { Reveal } from "@/components/motion/reveal"
 import { StaggerGroup, StaggerItem } from "@/components/motion/stagger-group"
 import { SiteFooter } from "@/components/site/site-footer"
 import { SiteHeader } from "@/components/site/site-header"
+import { CookieConsentBanner } from "@/components/site/cookie-consent-banner"
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
@@ -221,6 +222,7 @@ export default function Home() {
       </main>
 
       <SiteFooter />
+      <CookieConsentBanner />
     </>
   )
 }
