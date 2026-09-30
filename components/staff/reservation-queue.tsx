@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClipboardList } from "lucide-react";
 
-import { BATAS_ALASAN_MAX } from "@/config/business";
+import { BATAS_ALASAN_MAX, ZONA_WAKTU } from "@/config/business";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -243,7 +243,7 @@ export function ReservationQueue() {
                     month: "short",
                     hour: "2-digit",
                     minute: "2-digit",
-                    timeZone: "Asia/Jakarta",
+                    timeZone: ZONA_WAKTU,
                   }).format(new Date(item.submittedAt))}
                 </p>
               </CardContent>

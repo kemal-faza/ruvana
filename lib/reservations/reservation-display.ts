@@ -8,6 +8,7 @@
 import {
   STATUS_RESERVASI_DISETUJUI,
   STATUS_RESERVASI_MENUNGGU,
+  ZONA_WAKTU,
 } from "@/config/business";
 import {
   BADGE_STATUS_RESERVASI,
@@ -15,8 +16,6 @@ import {
   LABEL_TIPE_FASILITAS,
 } from "@/config/labels";
 import type { StatusReservasi, TipeFasilitas } from "@/generated/prisma/enums";
-
-const ZONA_JAKARTA = "Asia/Jakarta";
 
 export interface MasukanTampilanReservasi {
   status: string;
@@ -77,7 +76,7 @@ function awalanUntuk(iso: string | null): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: ZONA_JAKARTA,
+    timeZone: ZONA_WAKTU,
   }).format(new Date(iso));
 }
 
