@@ -20,7 +20,10 @@ describe("metadata title detail fasilitas", () => {
   })
 
   it("memakai nama fasilitas diikuti brand", async () => {
-    const metadata = await generateMetadata({ params: Promise.resolve({ facilityId: "8" }) })
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ facilityId: "8" }),
+      searchParams: Promise.resolve({}),
+    })
 
     expect(metadata.title).toBe("Laboratorium Kimia | ruvana")
   })
