@@ -22,8 +22,8 @@ const NAVIGASI: readonly NavigationGroup[] = [
     key: "kelola",
     label: "Kelola",
     items: [
-      { key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users },
       { key: "admin-analytics", label: "Analitik", href: "/admin/analitik", icon: ChartPie },
+      { key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users },
     ],
   },
   {

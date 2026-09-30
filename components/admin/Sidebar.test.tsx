@@ -53,6 +53,11 @@ describe("AdminSidebar", () => {
     const tautan = screen.getByRole("link", { name: "Kelola Pengguna" })
     expect(tautan).toHaveAttribute("href", "/admin/pengguna")
     expect(tautan).toHaveAttribute("aria-current", "page")
+    expect(
+      Array.from(screen.getByRole("navigation", { name: "Navigasi utama" }).querySelectorAll("a"), (link) =>
+        link.textContent?.trim(),
+      ),
+    ).toEqual(["Analitik", "Kelola Pengguna", "Pengaturan"])
     expect(screen.getByText("Sistem")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/admin/pengaturan")
 
