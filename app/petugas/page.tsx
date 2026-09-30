@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 
-import { AppShell } from "@/components/app-shell/app-shell";
 import { StaffDashboard } from "@/components/staff/dashboard";
-import { staffNavigation } from "@/components/staff/navigation";
 import { requirePetugas } from "@/lib/auth";
 import { listStaffQueueService, type StaffReservationResult } from "@/lib/services/reservation-service";
 
@@ -13,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PetugasDashboardPage() {
-  const petugas = await requirePetugas();
+  await requirePetugas();
 
   let reservations: StaffReservationResult[] = [];
   let totalReservations = 0;
@@ -28,12 +26,10 @@ export default async function PetugasDashboardPage() {
   }
 
   return (
-    <AppShell navigation={staffNavigation} account={{ displayName: petugas.nama, roleLabel: "Petugas" }}>
-      <StaffDashboard
-        reservations={reservations}
-        totalReservations={totalReservations}
-        initialError={initialError}
-      />
-    </AppShell>
+    <StaffDashboard
+      reservations={reservations}
+      totalReservations={totalReservations}
+      initialError={initialError}
+    />
   );
 }
