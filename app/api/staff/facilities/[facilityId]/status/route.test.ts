@@ -9,6 +9,7 @@ import {
   storeIdempotencyResult,
   waitForIdempotencyResult,
 } from "@/lib/db/idempotency";
+import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
 import { hashCanonicalBody } from "@/lib/http/idempotency";
 import { updateFacilityOperationalStatusService } from "@/lib/services/facility-status-service";
 
@@ -22,6 +23,7 @@ vi.mock("@/lib/db/idempotency", () => ({
   storeIdempotencyResult: vi.fn(),
   waitForIdempotencyResult: vi.fn(),
 }));
+vi.mock("@/lib/facilities/revalidate", () => ({ revalidateFacilityViews: vi.fn() }));
 vi.mock("@/lib/services/facility-status-service", () => ({
   updateFacilityOperationalStatusService: vi.fn(),
 }));
@@ -101,6 +103,7 @@ describe("PATCH /api/staff/facilities/[facilityId]/status", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await response.json()).toEqual(facilityResult);
+    expect(revalidateFacilityViews).toHaveBeenCalledWith(1);
     expect(updateFacilityOperationalStatusService).toHaveBeenCalledWith(
       7,
       1,
@@ -200,6 +203,7 @@ describe("PATCH /api/staff/facilities/[facilityId]/status", () => {
     expect(response.status).toBe(409);
     const body = await response.json();
     expect(body.code).toBe("INVALID_FACILITY_TRANSITION");
+    expect(revalidateFacilityViews).not.toHaveBeenCalled();
     expect(storeIdempotencyResult).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ responseStatus: 409 }),

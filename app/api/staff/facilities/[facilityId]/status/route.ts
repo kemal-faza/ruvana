@@ -10,6 +10,7 @@ import {
   storeIdempotencyResult,
   waitForIdempotencyResult,
 } from "@/lib/db/idempotency";
+import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
 import { buildIdempotencyScope, hashCanonicalBody, isValidIdempotencyKey } from "@/lib/http/idempotency";
 import { getAllowedOrigins, validateOrigin } from "@/lib/http/origin";
 import {
@@ -189,6 +190,7 @@ export async function PATCH(
     return internalError(instance);
   }
 
+  revalidateFacilityViews(parsedId.value);
   return NextResponse.json(serviceResult.data, {
     status: 200,
     headers: { "Cache-Control": "no-store" },
