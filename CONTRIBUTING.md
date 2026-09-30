@@ -4,7 +4,7 @@ Terima kasih sudah berkontribusi ke Ruvana. Panduan ini menjelaskan alur kerja
 Git dan GitHub yang digunakan tim, mulai dari menyiapkan repository sampai
 mengirim pull request (PR).
 
-Aturan produk pada `docs/PRD.md`, aturan desain pada `docs/DESIGN.md`, dan aturan
+Aturan produk pada `docs/PRD.md`, aturan desain pada `DESIGN.md`, dan aturan
 teknis pada `AGENTS.md` tetap menjadi sumber utama. Jika panduan ini berbeda
 dengan ketiganya, ikuti aturan yang lebih spesifik dan terbaru.
 

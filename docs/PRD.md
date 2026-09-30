@@ -51,8 +51,8 @@
 | Artefak | Menjadi sumber kebenaran untuk |
 |---|---|
 | `docs/PRD.md` | Scope, perilaku, aturan bisnis, dan acceptance criteria |
-| `docs/DESIGN.md` | Visual, layout, komponen, dan interaksi UI |
-| `docs/superpowers/DECISION.md` | Keputusan arsitektur lintas modul dan konsekuensinya |
+| `DESIGN.md` | Visual, layout, komponen, dan interaksi UI |
+| `docs/DECISION.md` | Keputusan arsitektur lintas modul dan konsekuensinya |
 | `docs/api/openapi.yaml` | Kontrak HTTP antara frontend dan backend |
 | `prisma/schema.prisma` | Bentuk schema database yang telah diimplementasikan |
 | `README.md` | Setup, operasi lokal, akun demo, dan deployment |
@@ -228,8 +228,8 @@ View tidak boleh menjalankan query Prisma atau memiliki aturan bisnis. Folder `/
 - `docs/api/openapi.yaml` menggunakan OpenAPI 3.1.2 dalam format YAML dan menjadi kontrak seluruh route handler HTTP yang digunakan frontend.
 - Kode frontend yang berjalan di browser memanggil route handler sesuai kontrak OpenAPI. Route handler menangani batas HTTP, lalu mendelegasikan aturan bisnis dan akses data kepada service di `lib/`.
 - Server Component boleh memanggil service read-only yang sama secara langsung dan tidak melakukan HTTP request ke route handler milik aplikasi sendiri. Bentuk data yang tampil tetap mengikuti istilah domain dan aturan akses yang sama.
-- `docs/superpowers/DECISION.md` mencatat keputusan teknis lintas modul yang tidak dapat diwakili oleh PRD, OpenAPI, atau Prisma schema. Dokumen dibuat ketika keputusan pertama perlu dicatat dan tidak menduplikasi isi dokumen lain.
-- `DESIGN.md` dari repository prototipe menjadi sumber kebenaran visual setelah disalin ke `docs/DESIGN.md`. Header snapshot wajib mencatat URL repository sumber dan commit hash agar versi desain dapat ditelusuri.
+- `docs/DECISION.md` mencatat keputusan teknis lintas modul yang tidak dapat diwakili oleh PRD, OpenAPI, atau Prisma schema. Dokumen dibuat ketika keputusan pertama perlu dicatat dan tidak menduplikasi isi dokumen lain.
+- `DESIGN.md` dari repository prototipe menjadi sumber kebenaran visual setelah disalin ke root repository. Header snapshot wajib mencatat URL repository sumber dan commit hash agar versi desain dapat ditelusuri.
 - `README.md` tetap menjadi panduan setup dan operasi lokal. Checklist UAT dibuat terpisah menjelang rilis, bukan pada fase desain awal.
 
 **Acceptance criteria dokumentasi:**
@@ -237,8 +237,8 @@ View tidak boleh menjalankan query Prisma atau memiliki aturan bisnis. Folder `/
 - OpenAPI lolos parser/linter yang mendukung OpenAPI 3.1.2.
 - Setiap route handler yang dipanggil frontend tercantum beserta autentikasi, parameter, request, success response, dan bentuk error-nya.
 - Perubahan kontrak HTTP dan OpenAPI diperbarui dalam perubahan repository yang sama.
-- `docs/superpowers/DECISION.md` hanya memuat keputusan yang telah disetujui, alasan, konsekuensi, dan tanggal keputusan; tidak menjadi salinan PRD.
-- Review visual dan penerimaan UI tidak dapat diselesaikan sebelum snapshot `docs/DESIGN.md` mempunyai sumber dan commit hash yang dapat diverifikasi.
+- `docs/DECISION.md` hanya memuat keputusan yang telah disetujui, alasan, konsekuensi, dan tanggal keputusan; tidak menjadi salinan PRD.
+- Review visual dan penerimaan UI tidak dapat diselesaikan sebelum snapshot `DESIGN.md` mempunyai sumber dan commit hash yang dapat diverifikasi.
 - README dinyatakan lengkap jika memuat prasyarat, environment variable tanpa secret, instalasi dependency, Prisma generate, migration, seed, cara menjalankan lokal, akun demo, pemeriksaan CI, dan ringkasan deployment production.
 
 ## 8. Aturan Bisnis Global
@@ -522,7 +522,7 @@ Saat fasilitas berubah menjadi `UNDER_MAINTENANCE`, semua reservasi masa depan b
 - Service meneruskan `Prisma.TransactionClient` yang sama kepada listener `facility.status.changed` dan menunggu listener sebelum commit.
 - Respons berhasil hanya diberikan setelah perubahan status dan seluruh pembatalan wajib tersimpan.
 - Kegagalan salah satu operasi me-roll back seluruh perubahan.
-- Kontrak listener fase awal diubah ke signature pada Bagian 7.3 dan keputusan dicatat pada `docs/superpowers/DECISION.md` sebelum implementasi.
+- Kontrak listener fase awal diubah ke signature pada Bagian 7.3 dan keputusan dicatat pada `docs/DECISION.md` sebelum implementasi.
 - Hanya reservasi `APPROVED` dengan waktu mulai setelah instant perubahan status yang dibatalkan.
 - Reservasi fasilitas lain dan histori masa lalu tidak berubah.
 - Pemicu yang diproses ulang tidak menggandakan pembatalan atau alasan.
@@ -880,4 +880,4 @@ Rilis selesai jika dan hanya jika:
 8. **Tidak ada folder `/views` literal.** Struktur App Router dan `components/` merupakan lapisan View dalam arsitektur M/C/V.
 9. **PM memiliki kontribusi teknis.** PM menjadi owner platform/data, analitik/ekspor, integrasi, UAT, dan release, sesuai kontribusi awal pada setup dan schema.
 10. **Kontrak HTTP menggunakan OpenAPI 3.1.2 dalam YAML.** Format ini dipilih untuk kompatibilitas tooling dan kemudahan review manusia; hanya route handler yang benar-benar digunakan frontend yang menjadi bagian kontrak.
-11. **Dokumentasi dibuat secara proporsional.** PRD, snapshot `docs/DESIGN.md`, `docs/superpowers/DECISION.md`, OpenAPI, dan README menjadi set inti; checklist UAT dibuat menjelang rilis dan engineering specification besar tidak dibuat.
+11. **Dokumentasi dibuat secara proporsional.** PRD, snapshot `DESIGN.md`, `docs/DECISION.md`, OpenAPI, dan README menjadi set inti; checklist UAT dibuat menjelang rilis dan engineering specification besar tidak dibuat.

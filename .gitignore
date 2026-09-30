@@ -56,7 +56,6 @@ next-env.d.ts
 # yang dilacak; direktori induk harus di-unignore agar negasi file bekerja.
 /docs/*
 !/docs/PRD.md
-!/docs/DESIGN.md
 !/docs/api/
 /docs/api/*
 !/docs/api/openapi.yaml
