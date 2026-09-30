@@ -2,12 +2,13 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
-import { CalendarDays, History, LayoutDashboard, Settings } from "lucide-react"
+import { CalendarDays, History, Settings } from "lucide-react"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
 import type { NavigationGroup } from "@/components/app-shell/types"
 import { staffNavigation } from "@/components/staff/navigation"
+import { navigation as penggunaNavigation } from "@/config/navigation"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 
 const routeState = vi.hoisted(() => ({ pathname: "/reservasi" }))
@@ -22,7 +23,6 @@ const navigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
-      { key: "ringkasan", label: "Ringkasan", href: "/", icon: LayoutDashboard },
       { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
       { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
     ],
@@ -159,6 +159,27 @@ describe("AppShell", () => {
     expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute("aria-current")
   })
 
+  it("memakai satu menu aktif pada navigasi pengguna produksi di Reservasi Saya", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    routeState.pathname = "/reservasi/riwayat"
+    render(
+      <AppShell
+        navigation={penggunaNavigation}
+        account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
+      >
+        <p>Riwayat reservasi</p>
+      </AppShell>,
+    )
+
+    expect(screen.getAllByRole("link", { name: "Reservasi Saya" })[0]).toHaveAttribute(
+      "aria-current",
+      "page",
+    )
+    expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute(
+      "aria-current",
+    )
+  })
+
   it("memindahkan active state ketika pathname berubah tanpa filter role", () => {
     setMatchMedia("(max-width: 1023px)", false)
     const view = renderFixture()
@@ -195,7 +216,7 @@ describe("AppShell", () => {
       "/petugas/antrian",
     )
     expect(screen.getByText("Sistem")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Baseline UI" })).toHaveAttribute("href", "/baseline-ui")
+    expect(screen.queryByRole("link", { name: "Baseline UI" })).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/petugas/pengaturan")
     expect(screen.queryByRole("link", { name: "Laporan" })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Fasilitas" })).not.toBeInTheDocument()

@@ -32,7 +32,7 @@
 15. [Ownership Tim](#15-ownership-tim)
 16. [Urutan Milestone](#16-urutan-milestone)
 17. [Risiko dan Mitigasi](#17-risiko-dan-mitigasi)
-18. [Traceability 17 User Story](#18-traceability-17-user-story)
+18. [Traceability 19 User Story](#18-traceability-19-user-story)
 19. [Definition of Done Rilis UTS](#19-definition-of-done-rilis-uts)
 20. [Keputusan Final dan Resolusi Konflik](#20-keputusan-final-dan-resolusi-konflik)
 
@@ -63,7 +63,7 @@ Perubahan yang menyentuh lebih dari satu batas harus memperbarui seluruh artefak
 
 Ruvana adalah aplikasi web reservasi dan pelaporan fasilitas kampus. Aplikasi menyediakan informasi fasilitas dan ketersediaannya kepada publik, memungkinkan pengguna terverifikasi mengajukan reservasi dan laporan kerusakan, membantu petugas memproses antrean operasional, serta memberi admin sarana mengelola akun, fasilitas, dan rekap penggunaan.
 
-Rilis UTS mencakup seluruh 17 user story pada dokumen proyek. Produk harus dapat dijalankan secara lokal dan melalui deployment Vercel. Batas sumber kebenaran setiap artefak dijelaskan pada bagian Cara Membaca Dokumen.
+Rilis UTS mencakup seluruh 19 user story pada dokumen proyek. Produk harus dapat dijalankan secara lokal dan melalui deployment Vercel. Batas sumber kebenaran setiap artefak dijelaskan pada bagian Cara Membaca Dokumen.
 
 ## 2. Latar Belakang dan Masalah
 
@@ -88,7 +88,7 @@ Ruvana menyatukan discovery, reservasi, pelaporan, maintenance, dan rekap dalam 
 
 ### 3.2 Indikator keberhasilan rilis
 
-- Seluruh 17 user story lulus User Acceptance Test (UAT).
+- Seluruh 19 user story lulus User Acceptance Test (UAT).
 - Semua pemeriksaan role dan ownership lulus pengujian negatif.
 - Pengujian konkurensi membuktikan paling banyak satu reservasi bertabrakan yang dapat disetujui.
 - Dataset pada dashboard, CSV, XLSX, dan PDF konsisten untuk filter yang sama.
@@ -338,6 +338,30 @@ Admin dapat mencari dan memfilter akun serta menonaktifkan atau mengaktifkan kem
 - Hasil tidak pernah memuat password hash atau kredensial sesi.
 - Akun `DISABLED` tidak dapat membuat sesi baru atau melanjutkan operasi terlindungi.
 - Aktivasi kembali hanya mengubah akun `DISABLED` menjadi `ACTIVE` dan tidak mengubah role atau histori akun.
+
+#### IAM-08 — Pengaturan akun
+
+Pengguna, petugas, dan admin dapat mengelola profil, keamanan masuk, bahasa, tampilan, dan informasi pembaruan sesuai perannya.
+
+**Acceptance criteria:**
+
+- Setiap role hanya dapat membuka halaman pengaturannya sendiri melalui pemeriksaan otoritas di server.
+- Nama profil dapat diperbarui; perubahan email belum tersedia karena belum ada alur verifikasi email baru.
+- Pengguna dapat mengganti kata sandi setelah memasukkan kata sandi saat ini. Kata sandi baru harus 8–72 byte UTF-8, disimpan sebagai hash, dan perubahan mengakhiri sesi lain tanpa mengakhiri sesi saat ini.
+- Pengguna dapat mengakhiri sesi di perangkat lain tanpa mengakhiri sesi saat ini.
+- Bagian notifikasi hanya menjelaskan tempat untuk memantau pembaruan sesuai role. Notifikasi otomatis email, WhatsApp, dan push tetap di luar cakupan rilis ini.
+- Bahasa antarmuka yang tersedia pada rilis ini adalah Bahasa Indonesia.
+- Tema terang/gelap tersedia melalui pengaturan tampilan.
+
+#### PRIV-01 — Persetujuan cookie pengunjung
+
+Pengunjung beranda mendapat penjelasan mengenai cookie yang digunakan dan dapat menyimpan pilihannya pada browser.
+
+**Acceptance criteria:**
+
+- Banner menjelaskan bahwa cookie sesi diperlukan untuk autentikasi dan keamanan akun.
+- Pengunjung dapat menyetujui penggunaan cookie atau memilih hanya cookie wajib; pilihan disimpan di `localStorage` pada browser.
+- Rilis ini tidak menggunakan cookie analitik atau iklan. Pilihan cookie wajib tidak mematikan cookie sesi yang diperlukan untuk login.
 
 **Transisi status akun:**
 
@@ -774,7 +798,7 @@ Implementasi mengikuti siklus TDD: RED, GREEN, REFACTOR.
 
 ### UAT dan pemeriksaan rilis
 
-- PM memelihara matriks 17 user story dan bukti hasil.
+- PM memelihara matriks 19 user story dan bukti hasil.
 - UAT dijalankan pada lingkungan lokal dan Vercel.
 - Urutan pemeriksaan teknis mengikuti CI repository: generate Prisma, lint, banned-word check, Next type generation, TypeScript, test suite, dan build.
 
@@ -816,7 +840,7 @@ Ownership bukan silo. Perubahan pada kontrak lintas modul harus ditinjau oleh pe
 
 Dokumen Word, screenshot, dan materi presentasi adalah artefak pengumpulan mata kuliah. Ketiganya bukan sumber kebenaran requirement atau kontrak teknis aplikasi.
 
-PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17 user story.
+PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 19 user story.
 
 ## 17. Risiko dan Mitigasi
 
@@ -828,7 +852,7 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 - **Beban modul tidak seimbang:** PM mengalihkan bantuan berdasarkan progres tanpa mengubah accountability.
 - **Perbedaan dokumen:** bagian keputusan final PRD ini mengungguli ketentuan lama yang bertentangan.
 
-## 18. Traceability 17 User Story
+## 18. Traceability 19 User Story
 
 | US | Ringkasan | Requirement | Owner utama |
 |---|---|---|---|
@@ -849,6 +873,8 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 | US-15 | Memverifikasi registrasi mandiri | IAM-01, IAM-06 | Developer 1 |
 | US-16 | Mengelola fasilitas | FAC-05 | Developer 2 |
 | US-17 | Melihat dan mengekspor rekap | ANA-01, ANA-02 | PM |
+| US-18 | Mengelola pengaturan profil dan keamanan akun | IAM-08 | Developer 1 |
+| US-19 | Menyimpan pilihan cookie beranda | PRIV-01 | PM + Developer 1 |
 
 Authentication wajib (registrasi, login, logout) juga dilacak melalui IAM-01 sampai IAM-03 sebagai requirement global, bukan user story tambahan.
 
@@ -856,7 +882,7 @@ Authentication wajib (registrasi, login, logout) juga dilacak melalui IAM-01 sam
 
 Rilis selesai jika dan hanya jika:
 
-1. seluruh 17 user story dan requirement global autentikasi lulus UAT;
+1. seluruh 19 user story dan requirement global autentikasi lulus UAT;
 2. tidak ada konflik reservasi `APPROVED` pada pengujian normal maupun konkurensi;
 3. pemeriksaan role dan ownership lulus;
 4. foto private hanya dapat diakses pihak berwenang;
@@ -870,7 +896,7 @@ Rilis selesai jika dan hanya jika:
 
 ## 20. Keputusan Final dan Resolusi Konflik
 
-1. **Semua 17 user story wajib sebelum UTS.** Tidak ada pembagian MVP versus opsional untuk rilis ini.
+1. **Semua 19 user story wajib sebelum UTS.** Tidak ada pembagian MVP versus opsional untuk rilis ini.
 2. **Registrasi mandiri wajib.** Akun menunggu verifikasi admin sebelum dapat login.
 3. **Batas pembatalan adalah H−24 jam.** Nilai ini menggantikan H−2 jam pada `TASK.md` dan `config/business.ts`; implementasi harus menyelaraskan konfigurasi, logika, UI, dan test.
 4. **Target lingkungan adalah lokal dan Vercel.** Keduanya harus lulus smoke test.

@@ -1,9 +1,8 @@
 import type { Metadata } from "next"
 
 import { ReportsView } from "@/components/reports/reports-view"
-import { getSessionUser } from "@/lib/auth"
+import { requirePengguna } from "@/lib/auth"
 import { listMyReports, listReportFacilityOptions } from "@/lib/services/report-service"
-import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
@@ -25,8 +24,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ReportsPage() {
-  const user = await getSessionUser()
-  if (!user) redirect("/login")
+  const user = await requirePengguna()
 
   const [view, facilityOptions] = await Promise.all([
     listMyReports({ userId: user.id }),

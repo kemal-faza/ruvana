@@ -4,8 +4,6 @@ const footerLinks = [
   { label: "Beranda", href: "/" },
   { label: "Fasilitas", href: "/fasilitas" },
   { label: "Jadwal", href: "#jadwal" },
-  { label: "Kebijakan Privasi", href: "/kebijakan-privasi" },
-  { label: "Syarat & Ketentuan", href: "/syarat-ketentuan" },
 ] as const
 
 export function SiteFooter() {

@@ -23,8 +23,6 @@ describe("SiteFooter", () => {
       ["/", "Beranda"],
       ["/fasilitas", "Fasilitas"],
       ["#jadwal", "Jadwal"],
-      ["/kebijakan-privasi", "Kebijakan Privasi"],
-      ["/syarat-ketentuan", "Syarat & Ketentuan"],
     ] as const
 
     for (const [href, label] of expected) {
