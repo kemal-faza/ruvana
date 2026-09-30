@@ -540,6 +540,21 @@ Petugas dapat melihat ringkasan jumlah reservasi per kelompok pada dashboard pet
 - Ringkasan hanya dapat diakses oleh petugas; peran lain ditolak mengikuti guard halaman dashboard petugas.
 - Nilai nol tetap ditampilkan dengan jelas beserta penjelasan ketika belum ada reservasi.
 
+#### RES-11 — Rekap bulanan
+
+Petugas dapat melihat rekap reservasi per bulan pada dashboard petugas, ditampilkan setelah ringkasan (RES-10).
+
+**Acceptance criteria:**
+
+- Rekap memuat ringkasan tertulis, jumlah per status (seluruh status reservasi), jumlah per fasilitas, dan tren 6 bulan terakhir termasuk bulan terpilih yang disajikan sebagai tabel (label, periode, satuan) tanpa chart.
+- Dasar pengelompokan adalah tanggal pemakaian (kolom `tanggal`), bukan waktu pengajuan.
+- Bulan dipilih lewat query param `?bulan=YYYY-MM` pada form `GET` berlabel yang dapat dipakai keyboard; default adalah bulan berjalan menurut kalender `Asia/Jakarta`.
+- Nilai bulan yang tidak valid jatuh ke default dengan pesan yang jelas, bukan error.
+- Bulan tanpa data menampilkan angka 0 beserta penjelasan dan aksi berikutnya, bukan error.
+- Metodologi pengelompokan ditampilkan pada halaman.
+- Rekap hanya dapat diakses oleh petugas; peran lain ditolak mengikuti guard halaman dashboard petugas.
+- Ekspor rekap berada di luar scope.
+
 **Transisi status reservasi:**
 
 - `PENDING → APPROVED | REJECTED | EXPIRED | CANCELLED_BY_USER`
@@ -853,7 +868,7 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 | US-06 | Melihat riwayat/detail reservasi | RES-03 | Developer 3 |
 | US-07 | Mengirim laporan kerusakan | REP-01 | Developer 4 |
 | US-08 | Memantau laporan | REP-02 | Developer 4 |
-| US-09 | Memproses antrean reservasi | RES-05, RES-06, RES-07, RES-08, RES-10 | Developer 3 |
+| US-09 | Memproses antrean reservasi | RES-05, RES-06, RES-07, RES-08, RES-10, RES-11 | Developer 3 |
 | US-10 | Mencegah persetujuan konflik | RES-06 | Developer 3 |
 | US-11 | Memproses laporan kerusakan | REP-03 | Developer 4 |
 | US-12 | Mengelola status maintenance | REP-04, RES-09, FAC-04 | Developer 4 + Developer 3 |

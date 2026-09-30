@@ -4,6 +4,8 @@ import { StaffDashboard } from "@/components/staff/dashboard";
 import { requirePetugas } from "@/lib/auth";
 import { listStaffQueueService, type StaffReservationResult } from "@/lib/services/reservation-service";
 import { getStaffReservationSummaryService, type StaffReservationSummary } from "@/lib/services/reservation-summary";
+import { getStaffMonthlyRecapService, type StaffMonthlyRecap } from "@/lib/services/staff-monthly-recap";
+import { parseStaffRecapMonth } from "@/lib/validation/staff-recap-month";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +13,11 @@ export const metadata: Metadata = {
   title: "Dashboard Petugas | ruvana",
 };
 
-export default async function PetugasDashboardPage() {
+export default async function PetugasDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requirePetugas();
 
   let reservations: StaffReservationResult[] = [];
@@ -35,6 +41,19 @@ export default async function PetugasDashboardPage() {
     ringkasanGagal = true;
   }
 
+  const { month: bulanRekap, warning: peringatanBulan } = parseStaffRecapMonth(
+    (await searchParams) ?? {},
+  );
+
+  let rekap: StaffMonthlyRecap | null = null;
+  let rekapGagal = false;
+  try {
+    rekap = await getStaffMonthlyRecapService(bulanRekap);
+  } catch (error) {
+    console.error("Gagal memuat rekap bulanan Petugas", error);
+    rekapGagal = true;
+  }
+
   return (
     <StaffDashboard
       reservations={reservations}
@@ -42,6 +61,10 @@ export default async function PetugasDashboardPage() {
       initialError={initialError}
       ringkasan={ringkasan}
       ringkasanGagal={ringkasanGagal}
+      rekap={rekap}
+      rekapBulan={bulanRekap}
+      rekapPeringatan={peringatanBulan}
+      rekapGagal={rekapGagal}
     />
   );
 }

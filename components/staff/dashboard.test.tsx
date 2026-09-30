@@ -75,4 +75,62 @@ describe("dashboard Petugas", () => {
     expect(await screen.findByText("Belum ada reservasi menunggu.")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/staff/reservations?page=1&perPage=3");
   });
+
+  it("menampilkan rekap bulanan setelah ringkasan", () => {
+    render(
+      <StaffDashboard
+        reservations={[]}
+        totalReservations={0}
+        ringkasan={{
+          menunggu: 0,
+          disetujui: 0,
+          sedangBerlangsung: 0,
+          ditolak: 0,
+          lainnya: 0,
+          total: 0,
+        }}
+        rekap={{
+          month: "2026-09",
+          monthLabel: "September 2026",
+          total: 5,
+          perStatus: [
+            { status: "PENDING", label: "Menunggu", count: 2 },
+            { status: "APPROVED", label: "Disetujui", count: 3 },
+            { status: "REJECTED", label: "Ditolak", count: 0 },
+            { status: "CANCELLED_BY_USER", label: "Dibatalkan Pengguna", count: 0 },
+            { status: "CANCELLED_BY_OFFICER", label: "Dibatalkan Petugas", count: 0 },
+            { status: "EXPIRED", label: "Kedaluwarsa", count: 0 },
+          ],
+          perFacility: [{ facilityId: 1, facilityName: "Aula Utama", count: 5 }],
+          trend: [
+            { month: "2026-04", label: "April 2026", count: 1 },
+            { month: "2026-05", label: "Mei 2026", count: 2 },
+            { month: "2026-06", label: "Juni 2026", count: 0 },
+            { month: "2026-07", label: "Juli 2026", count: 3 },
+            { month: "2026-08", label: "Agustus 2026", count: 4 },
+            { month: "2026-09", label: "September 2026", count: 5 },
+          ],
+          methodology: {
+            timezone: "Asia/Jakarta",
+            groupingRule: "Tanggal pemakaian.",
+            statusRule: "Semua status.",
+            trendRule: "6 bulan.",
+            exportNote: "Tanpa ekspor.",
+          },
+        }}
+        rekapBulan="2026-09"
+      />,
+    );
+
+    expect(screen.getByText("Ringkasan reservasi")).toBeInTheDocument();
+    expect(screen.getByText("Rekap bulanan")).toBeInTheDocument();
+    expect(screen.getByText(/Pada September 2026 terdapat 5 reservasi/)).toBeInTheDocument();
+  });
+
+  it("membedakan kegagalan rekap dari rekap kosong", () => {
+    render(<StaffDashboard reservations={[]} totalReservations={0} rekapGagal />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Gagal memuat rekap bulanan.");
+    expect(screen.queryByText("Rekap bulanan", { selector: "caption" })).not.toBeInTheDocument();
+  });
 });
