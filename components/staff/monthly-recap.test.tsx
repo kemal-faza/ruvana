@@ -1,6 +1,12 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
+
+// Island pemilih bulan memakai useRouter; navigasi tidak diuji di sini
+// (lihat recap-month-picker.test.tsx), jadi cukup mock agar stabil.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+}));
 
 import { StaffMonthlyRecap } from "@/components/staff/monthly-recap";
 import type { StaffMonthlyRecap as Rekap } from "@/lib/services/staff-monthly-recap";

@@ -1,6 +1,5 @@
 import { BADGE_STATUS_RESERVASI } from "@/config/labels";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,9 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
+import { RecapMonthPicker } from "@/components/staff/recap-month-picker";
 import type { StaffMonthlyRecap as RekapBulanan } from "@/lib/services/staff-monthly-recap";
 
 const numberFormatter = new Intl.NumberFormat("id-ID");
@@ -47,21 +45,7 @@ export function StaffMonthlyRecap({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex min-w-0 flex-col gap-6">
-          <form aria-label="Pilih bulan rekap" action="/petugas" method="get" className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label htmlFor="rekap-bulan">Bulan</Label>
-              <Input
-                id="rekap-bulan"
-                name="bulan"
-                type="month"
-                defaultValue={currentMonth}
-                className="min-h-11"
-              />
-            </div>
-            <Button type="submit" className="min-h-11 gap-2.5 px-4 text-sm sm:w-auto">
-              Tampilkan rekap
-            </Button>
-          </form>
+          <RecapMonthPicker currentMonth={currentMonth} />
           {warning && (
             <p role="status" className="text-sm text-muted-foreground">
               {warning}

@@ -2,6 +2,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+}));
+
 import { StaffDashboard } from "@/components/staff/dashboard";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
 
