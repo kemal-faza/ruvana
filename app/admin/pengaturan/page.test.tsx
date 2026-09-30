@@ -20,8 +20,8 @@ describe("PengaturanAdminPage", () => {
     render(await PengaturanAdminPage());
 
     expect(requireAdmin).toHaveBeenCalledOnce();
-    expect(screen.getByText("Admin Kampus")).toBeInTheDocument();
-    expect(screen.getByText("admin@kampus.ac.id")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nama/)).toHaveValue("Admin Kampus");
+    expect(screen.getByLabelText("Email")).toHaveValue("admin@kampus.ac.id");
   });
 
   it("meneruskan penolakan guard sebelum membuat halaman", async () => {

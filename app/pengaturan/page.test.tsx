@@ -20,8 +20,8 @@ describe("PengaturanAkunPage", () => {
     render(await PengaturanAkunPage());
 
     expect(requirePengguna).toHaveBeenCalledOnce();
-    expect(screen.getByText("Siti Aminah")).toBeInTheDocument();
-    expect(screen.getByText("siti@kampus.ac.id")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nama/)).toHaveValue("Siti Aminah");
+    expect(screen.getByLabelText("Email")).toHaveValue("siti@kampus.ac.id");
   });
 
   it("meneruskan penolakan guard sebelum membuat halaman", async () => {

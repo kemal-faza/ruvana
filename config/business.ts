@@ -105,6 +105,20 @@ export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, "RESOLVED", "REJ
 export const STATUS_FASILITAS = ["ACTIVE", "UNDER_MAINTENANCE", "INACTIVE"] as const;
 export const TIPE_FASILITAS = ["ruang_kelas", "aula", "laboratorium", "alat", "lapangan"] as const;
 
+// Status yang boleh dikelola lewat jalur petugas/admin REP-04; INACTIVE hanya
+// lewat jalur admin FAC-05.
+export const STATUS_FASILITAS_OPERASIONAL = ["ACTIVE", "UNDER_MAINTENANCE"] as const;
+export type StatusFasilitasOperasional = (typeof STATUS_FASILITAS_OPERASIONAL)[number];
+
+// Matriks transisi REP-04: ACTIVE <-> UNDER_MAINTENANCE; INACTIVE selalu ditolak.
+export const TRANSISI_STATUS_FASILITAS_OPERASIONAL: Record<
+  StatusFasilitasOperasional,
+  StatusFasilitasOperasional
+> = {
+  ACTIVE: "UNDER_MAINTENANCE",
+  UNDER_MAINTENANCE: "ACTIVE",
+};
+
 // Label Indonesia untuk tipe fasilitas; nilai enum tetap bahasa Inggris-teknis.
 export const TIPE_FASILITAS_LABEL: Record<(typeof TIPE_FASILITAS)[number], string> = {
   ruang_kelas: "Ruang kelas",

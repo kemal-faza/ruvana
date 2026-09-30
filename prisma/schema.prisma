@@ -33,9 +33,10 @@ model User {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  reservations Reservation[]
-  reports      Report[]
-  sessions     Session[]
+  reservations          Reservation[]
+  reports               Report[]
+  sessions              Session[]
+  facilityStatusChanges Facility[]    @relation("FacilityStatusChangedBy")
 
   @@map("users")
 }
@@ -75,15 +76,19 @@ enum StatusFasilitas {
 }
 
 model Facility {
-  id        Int            @id @default(autoincrement())
-  nama      String         @unique
-  tipe      TipeFasilitas
-  lokasi    String
-  kapasitas Int
-  deskripsi String?
-  status    StatusFasilitas @default(ACTIVE)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id                Int             @id @default(autoincrement())
+  nama              String          @unique
+  tipe              TipeFasilitas
+  lokasi            String
+  kapasitas         Int
+  deskripsi         String?
+  status            StatusFasilitas @default(ACTIVE)
+  // Provenance status terbaru (PRD Bagian 10, REP-04): aktor + satu instant server.
+  statusChangedAt   DateTime?       @db.Timestamptz(3)
+  statusChangedBy   User?           @relation("FacilityStatusChangedBy", fields: [statusChangedById], references: [id])
+  statusChangedById Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   reservations Reservation[]
   reports      Report[]
