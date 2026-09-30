@@ -79,3 +79,23 @@ export async function requirePetugas(): Promise<SessionUser> {
   if (user.role !== Role.petugas) redirect("/403");
   return user;
 }
+
+// Guard halaman reservasi pengguna (RES-01 s.d. RES-04, IAM-03):
+// tanpa sesi ke /login; petugas/admin dikembalikan ke dasbor perannya.
+export async function requirePengguna(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role === Role.pengguna) return user;
+  if (user.role === Role.petugas) redirect("/petugas");
+  redirect("/admin");
+}
+
+// Guard halaman Persetujuan Reservasi (RES-05, IAM-03):
+// tanpa sesi ke /login; peran selain petugas/admin ke /403.
+// Admin tetap boleh memproses antrean, tetapi menunya tidak ditambah di mana pun.
+export async function requirePetugasAtauAdmin(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== Role.petugas && user.role !== Role.admin) redirect("/403");
+  return user;
+}

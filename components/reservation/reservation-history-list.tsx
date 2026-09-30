@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
 import { STATUS_RESERVASI } from "@/config/business";
 import { LABEL_STATUS_RESERVASI } from "@/config/labels";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
+import { tampilanReservasi, type VarianBadgeReservasi } from "@/lib/reservations/reservation-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -17,18 +18,49 @@ import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
 interface HistoryResponse {
-  items: ReservationResult[];
+  items: HistoryItemView[];
   meta: { page: number; perPage: number; totalItems: number; totalPages: number };
+}
+
+interface HistoryApiResponse {
+  items: ReservationResult[];
+  meta: HistoryResponse["meta"];
+}
+
+interface HistoryItemView {
+  id: number;
+  facilityName: string;
+  tanggal: string;
+  waktu: string;
+  labelStatus: string;
+  varianStatus: VarianBadgeReservasi;
+  tujuan: string;
+  alasan: string | null;
 }
 
 const PER_PAGE = 10;
 const SEMUA = "SEMUA";
 
-function formatTanggal(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(
-    new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
-  );
+function toHistoryItemView(item: ReservationResult): HistoryItemView {
+  const tampilan = tampilanReservasi({
+    status: item.status,
+    date: item.date,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    submittedAt: item.submittedAt,
+    processedAt: item.processedAt,
+  });
+
+  return {
+    id: item.id,
+    facilityName: item.facility.nama,
+    tanggal: tampilan.tanggal,
+    waktu: tampilan.waktu,
+    labelStatus: tampilan.labelStatus,
+    varianStatus: tampilan.varianStatus,
+    tujuan: item.tujuanPenggunaan,
+    alasan: item.alasan,
+  };
 }
 
 export function ReservationHistoryList() {
@@ -36,31 +68,73 @@ export function ReservationHistoryList() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<HistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [needsLogin, setNeedsLogin] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  // Jenis kegagalan dibaca dari status HTTP dan bentuk respons, bukan dari
+  // string pesan server: "sesi" (401), "jaringan" (gagal fetch/5xx/200 tak
+  // sesuai kontrak). 422 khusus field status ditangani terpisah di bawah.
+  const [galat, setGalat] = useState<"sesi" | "jaringan" | null>(null);
+  const [pemberitahuan, setPemberitahuan] = useState<string | null>(null);
+  // Penomoran request: respons basi (filter/page sudah berganti) diabaikan
+  // agar tidak menimpa hasil terbaru.
+  const requestRef = useRef(0);
 
   const load = useCallback(async (status: string, targetPage: number) => {
+    const nomor = ++requestRef.current;
+    const masihBaru = () => nomor === requestRef.current;
     setLoading(true);
-    setLoadError(false);
+    setGalat(null);
     try {
       const qs = new URLSearchParams({ page: String(targetPage), perPage: String(PER_PAGE) });
       if (status) qs.set("status", status);
       const res = await fetch(`/api/reservations?${qs.toString()}`);
+      if (!masihBaru()) return;
       if (res.status === 401) {
-        setNeedsLogin(true);
+        setGalat("sesi");
         setData(null);
         return;
       }
       if (!res.ok) {
-        setLoadError(true);
+        if (res.status === 422) {
+          const badan = (await res.json().catch(() => null)) as {
+            errors?: Array<{ field?: unknown }>;
+          } | null;
+          const galatList = badan?.errors;
+          if (
+            Array.isArray(galatList) &&
+            galatList.length > 0 &&
+            galatList.every((item) => item?.field === "status")
+          ) {
+            // Nilai filter tak dikenal server: kembali ke Semua status dan
+            // muat ulang tanpa filter, bukan menampilkan kotak error.
+            setStatusFilter("");
+            setPage(1);
+            setPemberitahuan("Filter status tidak dikenal. Menampilkan semua reservasi.");
+            return;
+          }
+        }
+        setGalat("jaringan");
         return;
       }
-      setNeedsLogin(false);
-      setData((await res.json()) as HistoryResponse);
+      const badan = (await res.json().catch(() => null)) as HistoryApiResponse | null;
+      if (!masihBaru()) return;
+      // Validasi bentuk kontrak sebelum render: respons 200 yang kehilangan
+      // meta/items tidak boleh crash (totalPages diakses saat render).
+      if (
+        !badan ||
+        !Array.isArray(badan.items) ||
+        !badan.meta ||
+        typeof badan.meta.page !== "number" ||
+        typeof badan.meta.perPage !== "number" ||
+        typeof badan.meta.totalItems !== "number" ||
+        typeof badan.meta.totalPages !== "number"
+      ) {
+        setGalat("jaringan");
+        return;
+      }
+      setData({ ...badan, items: badan.items.map(toHistoryItemView) });
     } catch {
-      setLoadError(true);
+      if (masihBaru()) setGalat("jaringan");
     } finally {
-      setLoading(false);
+      if (masihBaru()) setLoading(false);
     }
   }, []);
 
@@ -70,22 +144,15 @@ export function ReservationHistoryList() {
     void load(statusFilter, page);
   }, [load, statusFilter, page]);
 
-  if (needsLogin) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <CalendarDays aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle>Masuk untuk melihat riwayat</EmptyTitle>
-          <EmptyContent>
-            <EmptyDescription>
-              Riwayat reservasi hanya tersedia untuk pengguna yang masuk. Silakan masuk terlebih dahulu.
-            </EmptyDescription>
-          </EmptyContent>
-        </EmptyHeader>
-      </Empty>
-    );
+  function gantiFilter(nilai: string | null) {
+    setStatusFilter(nilai && nilai !== SEMUA ? nilai : "");
+    setPage(1);
+    setPemberitahuan(null);
+  }
+
+  function cobaLagi() {
+    setPemberitahuan(null);
+    void load(statusFilter, page);
   }
 
   const totalPages = data?.meta.totalPages ?? 0;
@@ -96,10 +163,7 @@ export function ReservationHistoryList() {
         <FieldLabel htmlFor="filter-status">Filter status</FieldLabel>
         <Select
           value={statusFilter || SEMUA}
-          onValueChange={(v: string | null) => {
-            setStatusFilter(v && v !== SEMUA ? v : "");
-            setPage(1);
-          }}
+          onValueChange={gantiFilter}
         >
           <SelectTrigger id="filter-status" className="w-full">
             <SelectValue placeholder="Semua status" />
@@ -132,11 +196,36 @@ export function ReservationHistoryList() {
         </div>
       )}
 
-      {!loading && loadError && (
-        <p className="text-sm text-destructive">Gagal memuat riwayat. Silakan coba lagi.</p>
+      {pemberitahuan && (
+        <p aria-live="polite" className="text-sm text-muted-foreground">
+          {pemberitahuan}
+        </p>
       )}
 
-      {!loading && !loadError && data && data.items.length === 0 && (
+      {!loading && galat === "sesi" && (
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3">
+          <p className="text-sm font-medium text-destructive">Sesi Anda berakhir. Silakan masuk lagi.</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            render={<Link href="/login" />}
+          >
+            Masuk
+          </Button>
+        </div>
+      )}
+
+      {!loading && galat === "jaringan" && (
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3">
+          <p className="text-sm font-medium text-destructive">Riwayat belum dapat dimuat.</p>
+          <Button type="button" variant="outline" className="min-h-11" onClick={cobaLagi}>
+            Coba lagi
+          </Button>
+        </div>
+      )}
+
+      {!loading && !galat && data && data.items.length === 0 && (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -154,21 +243,21 @@ export function ReservationHistoryList() {
         </Empty>
       )}
 
-      {!loading && !loadError && data && data.items.length > 0 && (
+      {!loading && !galat && data && data.items.length > 0 && (
         <div className="grid min-w-0 gap-4 sm:grid-cols-2">
           {data.items.map((item) => (
             <Card key={item.id}>
               <CardHeader>
-                <CardTitle className="text-lg font-heading">{item.facility.nama}</CardTitle>
+                <CardTitle className="text-lg font-heading">{item.facilityName}</CardTitle>
                 <CardDescription>
-                  {formatTanggal(item.date)} · {item.startTime}–{item.endTime}
+                  {item.tanggal} · {item.waktu}
                 </CardDescription>
                 <CardAction>
-                  <ReservationStatusBadge status={item.status as StatusReservasi} />
+                  <ReservationStatusBadge label={item.labelStatus} variant={item.varianStatus} />
                 </CardAction>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                <p className="line-clamp-2">{item.tujuanPenggunaan}</p>
+                <p className="line-clamp-2">{item.tujuan}</p>
                 {item.alasan && (
                   <p className="mt-1 line-clamp-2">
                     <span className="font-medium text-foreground">Alasan: </span>
@@ -191,7 +280,7 @@ export function ReservationHistoryList() {
         </div>
       )}
 
-      {!loading && !loadError && data && totalPages > 1 && (
+      {!loading && !galat && data && totalPages > 1 && (
         <div className="flex items-center justify-between gap-3">
           <Button
             type="button"

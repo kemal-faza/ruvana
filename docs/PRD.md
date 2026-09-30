@@ -420,6 +420,9 @@ Pengguna memilih satu atau beberapa slot berurutan pada satu fasilitas dan tangg
 - Tujuan wajib diisi sesuai batas input yang ditetapkan.
 - Pengajuan valid membuat tepat satu reservasi `PENDING` milik pengguna yang sedang login.
 - Waktu pengajuan dicatat oleh server saat reservasi berhasil dibuat dan tidak dapat ditentukan oleh klien.
+- Pengajuan sukses mengarahkan ke halaman detail reservasi yang baru dibuat dan menampilkan banner konfirmasi `role="status"` berjudul `Reservasi berhasil diajukan`, status label domain `Menunggu`, penjelasan peninjauan petugas, dan tautan `Lihat riwayat reservasi`; banner tidak tampil saat detail dibuka dari riwayat.
+- Layar konfirmasi dan form tidak menampilkan data mentah database (enum, id, dump JSON).
+- Fokus dikelola setelah navigasi ke detail; tombol kirim mempertahankan ukuran, menampilkan label proses, dan mencegah submit ganda.
 
 #### RES-02 — Validasi reservasi
 
@@ -449,6 +452,10 @@ Pengguna dapat melihat status dan detail seluruh reservasi miliknya, termasuk al
 
 - Daftar memuat seluruh status reservasi milik pengguna dan dapat dibuka ke detail.
 - Detail menampilkan fasilitas, tanggal, waktu, tujuan, status, dan alasan yang tersedia.
+- Status tampil menggunakan label domain Indonesia (`Menunggu`, `Disetujui`, `Ditolak`, `Dibatalkan Pengguna`, `Dibatalkan Petugas`, `Kedaluwarsa`) sesuai `DESIGN.md` bagian Desain konten dan `LABEL_STATUS_RESERVASI`; enum teknis tidak tampil di UI.
+- Alasan tampil dengan label `Alasan` berbahasa Indonesia.
+- Header dan field tampil menggunakan istilah domain Indonesia (`Fasilitas`, `Tanggal`, `Waktu`, `Tujuan`, `Status`, `Alasan`).
+- Komponen client hanya menerima data siap tampil melalui presenter `lib/reservations/reservation-display.ts`; kontrak API lama dipertahankan tanpa penghapusan field.
 - Pengguna tidak dapat membaca reservasi milik pengguna lain dengan mengganti identifier.
 - Keadaan tanpa riwayat ditampilkan sebagai keadaan kosong, bukan error.
 
