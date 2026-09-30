@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { StaffDashboard } from "@/components/staff/dashboard";
 import { requirePetugas } from "@/lib/auth";
 import { listStaffQueueService, type StaffReservationResult } from "@/lib/services/reservation-service";
+import { getStaffReservationSummaryService, type StaffReservationSummary } from "@/lib/services/reservation-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,22 @@ export default async function PetugasDashboardPage() {
     initialError = true;
   }
 
+  let ringkasan: StaffReservationSummary | null = null;
+  let ringkasanGagal = false;
+  try {
+    ringkasan = await getStaffReservationSummaryService();
+  } catch (error) {
+    console.error("Gagal memuat ringkasan reservasi Petugas", error);
+    ringkasanGagal = true;
+  }
+
   return (
     <StaffDashboard
       reservations={reservations}
       totalReservations={totalReservations}
       initialError={initialError}
+      ringkasan={ringkasan}
+      ringkasanGagal={ringkasanGagal}
     />
   );
 }

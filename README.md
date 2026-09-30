@@ -9,6 +9,7 @@ Ruvana adalah aplikasi web untuk reservasi dan pelaporan kerusakan fasilitas kam
 - Riwayat dan detail reservasi pengguna.
 - Laporan kerusakan dengan foto dan pemantauan status.
 - Antrean reservasi dan laporan untuk petugas.
+- Ringkasan reservasi petugas (menunggu, disetujui termasuk yang sedang berlangsung, ditolak, lainnya).
 - Pengelolaan akun dan verifikasi pendaftaran oleh admin.
 - Dashboard analitik penggunaan dan kerusakan dengan ekspor CSV, XLSX, dan PDF.
 

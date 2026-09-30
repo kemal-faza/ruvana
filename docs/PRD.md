@@ -122,7 +122,7 @@ Merupakan akun `ACTIVE` dengan role `pengguna`. Dapat membuat dan melihat reserv
 
 ### 5.3 Petugas
 
-Merupakan akun `ACTIVE` dengan role `petugas`. Dapat memproses reservasi dan laporan, membatalkan reservasi secara mendesak, serta mengubah status maintenance fasilitas. Petugas tidak dapat mendaftar mandiri.
+Merupakan akun `ACTIVE` dengan role `petugas`. Dapat memproses reservasi dan laporan, membatalkan reservasi secara mendesak, mengubah status maintenance fasilitas, serta melihat ringkasan dan rekap bulanan reservasi. Petugas tidak dapat mendaftar mandiri.
 
 ### 5.4 Admin
 
@@ -527,6 +527,19 @@ Saat fasilitas berubah menjadi `UNDER_MAINTENANCE`, semua reservasi masa depan b
 - Reservasi fasilitas lain dan histori masa lalu tidak berubah.
 - Pemicu yang diproses ulang tidak menggandakan pembatalan atau alasan.
 
+#### RES-10 — Ringkasan reservasi petugas
+
+Petugas dapat melihat ringkasan jumlah reservasi per kelompok pada dashboard petugas.
+
+**Acceptance criteria:**
+
+- Ringkasan memuat jumlah per kelompok: `Menunggu` (`PENDING` yang belum kedaluwarsa), `Disetujui` (`APPROVED`, dengan rincian `Sedang berlangsung` = waktu mulai <= waktu sekarang < waktu selesai), `Ditolak` (`REJECTED`), dan `Lainnya` (`Dibatalkan Pengguna`, `Dibatalkan Petugas`, `Kedaluwarsa`).
+- `Sedang berlangsung` adalah indikator turunan dari reservasi `APPROVED`, bukan status baru.
+- Total seluruh kelompok selalu sama dengan jumlah seluruh reservasi.
+- Proses expiry idempoten (RES-08) dijalankan sebelum penghitungan sehingga `PENDING` yang sudah lewat tidak terhitung sebagai `Menunggu`.
+- Ringkasan hanya dapat diakses oleh petugas; peran lain ditolak mengikuti guard halaman dashboard petugas.
+- Nilai nol tetap ditampilkan dengan jelas beserta penjelasan ketika belum ada reservasi.
+
 **Transisi status reservasi:**
 
 - `PENDING → APPROVED | REJECTED | EXPIRED | CANCELLED_BY_USER`
@@ -840,7 +853,7 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 | US-06 | Melihat riwayat/detail reservasi | RES-03 | Developer 3 |
 | US-07 | Mengirim laporan kerusakan | REP-01 | Developer 4 |
 | US-08 | Memantau laporan | REP-02 | Developer 4 |
-| US-09 | Memproses antrean reservasi | RES-05, RES-06, RES-07, RES-08 | Developer 3 |
+| US-09 | Memproses antrean reservasi | RES-05, RES-06, RES-07, RES-08, RES-10 | Developer 3 |
 | US-10 | Mencegah persetujuan konflik | RES-06 | Developer 3 |
 | US-11 | Memproses laporan kerusakan | REP-03 | Developer 4 |
 | US-12 | Mengelola status maintenance | REP-04, RES-09, FAC-04 | Developer 4 + Developer 3 |

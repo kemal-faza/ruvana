@@ -15,6 +15,8 @@ import {
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { ReportWorkSummaries } from "@/components/staff/report-work-summaries";
+import { ReservationSummaryCard } from "@/components/staff/reservation-summary-card";
+import type { StaffReservationSummary } from "@/lib/services/reservation-summary";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
@@ -27,6 +29,8 @@ interface StaffDashboardProps {
   reservations: StaffReservationResult[];
   totalReservations: number;
   initialError?: boolean;
+  ringkasan?: StaffReservationSummary | null;
+  ringkasanGagal?: boolean;
 }
 
 function formatTanggal(date: string): string {
@@ -36,7 +40,13 @@ function formatTanggal(date: string): string {
   );
 }
 
-export function StaffDashboard({ reservations, totalReservations, initialError = false }: StaffDashboardProps) {
+export function StaffDashboard({
+  reservations,
+  totalReservations,
+  initialError = false,
+  ringkasan = null,
+  ringkasanGagal = false,
+}: StaffDashboardProps) {
   const [items, setItems] = useState(reservations);
   const [total, setTotal] = useState(totalReservations);
   const [loading, setLoading] = useState(false);
@@ -70,6 +80,12 @@ export function StaffDashboard({ reservations, totalReservations, initialError =
           Reservasi dan laporan yang perlu ditangani.
         </p>
       </header>
+
+      <ReservationSummaryCard
+        ringkasan={ringkasan}
+        gagal={ringkasanGagal}
+        onRetry={() => window.location.reload()}
+      />
 
       <section aria-labelledby="reservasi-pending-title" className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
         <Card className="min-w-0">
