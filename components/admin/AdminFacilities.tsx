@@ -433,12 +433,13 @@ function FormFasilitas({
   const title = facility ? "Ubah fasilitas" : "Tambah fasilitas";
   return (
     <Sheet open={open} onOpenChange={(value) => !value && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
+      <SheetContent side="right" className="gap-0 data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b border-border/60 pr-12">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>Nama fasilitas harus unik, kapasitas minimal&nbsp;1.</SheetDescription>
         </SheetHeader>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-y-auto p-5" noValidate>
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           <Field>
             <FieldLabel htmlFor="nama">Nama</FieldLabel>
             <Input id="nama" name="nama" defaultValue={facility?.nama ?? ""} maxLength={100} required aria-invalid={Boolean(errors.nama)} />
@@ -507,8 +508,9 @@ function FormFasilitas({
             />
             {errors.deskripsi && <FieldError>{errors.deskripsi}</FieldError>}
           </Field>
+          </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 border-t border-border/60 p-4">
             <Button type="button" variant="ghost" className="min-h-11" onClick={onClose}>
               Batal
             </Button>
@@ -540,12 +542,13 @@ function SheetStatus({
 
   return (
     <Sheet open={facility !== null} onOpenChange={(value) => !value && onClose()}>
-      <SheetContent side="right">
-        <SheetHeader>
+      <SheetContent side="right" className="gap-0 data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b border-border/60 pr-12">
           <SheetTitle>Ubah status fasilitas</SheetTitle>
           <SheetDescription>{facility?.nama}</SheetDescription>
         </SheetHeader>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-y-auto p-5" noValidate>
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           {facility && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               Status saat ini:
@@ -590,8 +593,9 @@ function SheetStatus({
             halaman publik.
           </p>
           {errors.status && <FieldError>{errors.status}</FieldError>}
+          </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 border-t border-border/60 p-4">
             <Button type="button" variant="ghost" className="min-h-11" onClick={onClose}>
               Batal
             </Button>
