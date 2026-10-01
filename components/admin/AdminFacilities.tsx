@@ -547,9 +547,11 @@ function SheetStatus({
         </SheetHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-y-auto p-5" noValidate>
           {facility && (
-            <p className="text-sm text-muted-foreground">
-              Status saat ini:{" "}
-              <span className="font-medium text-foreground">{LABEL_STATUS_FASILITAS[facility.status]}</span>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              Status saat ini:
+              <Badge variant={BADGE_STATUS_FASILITAS[facility.status]}>
+                {LABEL_STATUS_FASILITAS[facility.status]}
+              </Badge>
             </p>
           )}
 
@@ -573,9 +575,7 @@ function SheetStatus({
                 <ComboboxList>
                   {(option: string) => (
                     <ComboboxItem key={option} value={option}>
-                      <Badge variant={BADGE_STATUS_FASILITAS[option as StatusFasilitas]}>
-                        {LABEL_STATUS_FASILITAS[option as StatusFasilitas]}
-                      </Badge>
+                      {LABEL_STATUS_FASILITAS[option as StatusFasilitas]}
                     </ComboboxItem>
                   )}
                 </ComboboxList>
