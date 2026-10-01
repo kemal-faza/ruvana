@@ -573,7 +573,9 @@ function SheetStatus({
                 <ComboboxList>
                   {(option: string) => (
                     <ComboboxItem key={option} value={option}>
-                      {LABEL_STATUS_FASILITAS[option as StatusFasilitas]}
+                      <Badge variant={BADGE_STATUS_FASILITAS[option as StatusFasilitas]}>
+                        {LABEL_STATUS_FASILITAS[option as StatusFasilitas]}
+                      </Badge>
                     </ComboboxItem>
                   )}
                 </ComboboxList>
