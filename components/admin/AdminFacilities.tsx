@@ -436,7 +436,7 @@ function FormFasilitas({
       <SheetContent side="right">
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>Nama fasilitas harus unik dan kapasitas minimal 1.</SheetDescription>
+          <SheetDescription>Nama fasilitas harus unik, kapasitas minimal&nbsp;1.</SheetDescription>
         </SheetHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-y-auto p-5" noValidate>
           <Field>
