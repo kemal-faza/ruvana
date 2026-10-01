@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pencil, Plus, Search, Wrench } from "lucide-react";
 
-import { TIPE_FASILITAS } from "@/config/business";
+import { STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import {
   BADGE_STATUS_FASILITAS,
   LABEL_SATUAN_KAPASITAS,
   LABEL_STATUS_FASILITAS,
   LABEL_TIPE_FASILITAS,
 } from "@/config/labels";
+import type { StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import { allowedTransitions } from "@/lib/facilities/status-transition";
 import type { AdminFacility, AdminFacilityCollection } from "@/lib/services/admin-facility-service";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,8 @@ function bacaDeskripsi(fd: FormData): string | null {
 export default function AdminFacilities({ items, meta, locations, filters }: AdminFacilitiesProps) {
   const router = useRouter();
   const [selectedLocation, setSelectedLocation] = useState(filters.location ?? "");
+  const [selectedType, setSelectedType] = useState(filters.type ?? "");
+  const [selectedStatus, setSelectedStatus] = useState(filters.status ?? "");
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<AdminFacility | null>(null);
   const [statusTarget, setStatusTarget] = useState<AdminFacility | null>(null);
@@ -204,14 +207,28 @@ export default function AdminFacilities({ items, meta, locations, filters }: Adm
 
             <Field>
               <FieldLabel htmlFor="type">Tipe</FieldLabel>
-              <select id="type" name="type" defaultValue={filters.type ?? ""} className={controlClass}>
-                <option value="">Semua tipe</option>
-                {TIPE_FASILITAS.map((tipe) => (
-                  <option key={tipe} value={tipe}>
-                    {LABEL_TIPE_FASILITAS[tipe]}
-                  </option>
-                ))}
-              </select>
+              <Combobox
+                name="type"
+                items={TIPE_FASILITAS}
+                value={selectedType || null}
+                modal={false}
+                itemToStringLabel={(value) => LABEL_TIPE_FASILITAS[value as TipeFasilitas]}
+                onValueChange={(value) => setSelectedType(value ?? "")}
+              >
+                <ComboboxInput id="type" placeholder="Semua tipe" triggerLabel="Buka daftar tipe">
+                  {selectedType !== "" && <ComboboxClear aria-label="Hapus pilihan tipe" />}
+                </ComboboxInput>
+                <ComboboxContent>
+                  <ComboboxList>
+                    {(option: string) => (
+                      <ComboboxItem key={option} value={option}>
+                        {LABEL_TIPE_FASILITAS[option as TipeFasilitas]}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                  <ComboboxEmpty>Tipe tidak ditemukan.</ComboboxEmpty>
+                </ComboboxContent>
+              </Combobox>
             </Field>
 
             <Field>
@@ -241,12 +258,28 @@ export default function AdminFacilities({ items, meta, locations, filters }: Adm
 
             <Field>
               <FieldLabel htmlFor="status">Status</FieldLabel>
-              <select id="status" name="status" defaultValue={filters.status ?? ""} className={controlClass}>
-                <option value="">Semua status</option>
-                <option value="ACTIVE">{LABEL_STATUS_FASILITAS.ACTIVE}</option>
-                <option value="UNDER_MAINTENANCE">{LABEL_STATUS_FASILITAS.UNDER_MAINTENANCE}</option>
-                <option value="INACTIVE">{LABEL_STATUS_FASILITAS.INACTIVE}</option>
-              </select>
+              <Combobox
+                name="status"
+                items={STATUS_FASILITAS}
+                value={selectedStatus || null}
+                modal={false}
+                itemToStringLabel={(value) => LABEL_STATUS_FASILITAS[value as StatusFasilitas]}
+                onValueChange={(value) => setSelectedStatus(value ?? "")}
+              >
+                <ComboboxInput id="status" placeholder="Semua status" triggerLabel="Buka daftar status">
+                  {selectedStatus !== "" && <ComboboxClear aria-label="Hapus pilihan status" />}
+                </ComboboxInput>
+                <ComboboxContent>
+                  <ComboboxList>
+                    {(option: string) => (
+                      <ComboboxItem key={option} value={option}>
+                        {LABEL_STATUS_FASILITAS[option as StatusFasilitas]}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                  <ComboboxEmpty>Status tidak ditemukan.</ComboboxEmpty>
+                </ComboboxContent>
+              </Combobox>
             </Field>
 
             <div className="flex items-end gap-2">
@@ -413,13 +446,30 @@ function FormFasilitas({
 
           <Field>
             <FieldLabel htmlFor="tipe">Tipe</FieldLabel>
-            <select id="tipe" name="tipe" defaultValue={facility?.tipe ?? "ruang_kelas"} className={controlClass}>
-              {TIPE_FASILITAS.map((tipe) => (
-                <option key={tipe} value={tipe}>
-                  {LABEL_TIPE_FASILITAS[tipe]}
-                </option>
-              ))}
-            </select>
+            <Combobox
+              name="tipe"
+              items={TIPE_FASILITAS}
+              defaultValue={facility?.tipe ?? "ruang_kelas"}
+              modal={false}
+              itemToStringLabel={(value) => LABEL_TIPE_FASILITAS[value as TipeFasilitas]}
+            >
+              <ComboboxInput
+                id="tipe"
+                placeholder="Pilih tipe"
+                triggerLabel="Buka daftar tipe"
+                aria-invalid={Boolean(errors.tipe)}
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  {(option: string) => (
+                    <ComboboxItem key={option} value={option}>
+                      {LABEL_TIPE_FASILITAS[option as TipeFasilitas]}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+                <ComboboxEmpty>Tipe tidak ditemukan.</ComboboxEmpty>
+              </ComboboxContent>
+            </Combobox>
             {errors.tipe && <FieldError>{errors.tipe}</FieldError>}
           </Field>
 
@@ -495,13 +545,30 @@ function SheetStatus({
         <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-y-auto p-5" noValidate>
           <Field>
             <FieldLabel htmlFor="status-baru">Status baru</FieldLabel>
-            <select id="status-baru" name="status" defaultValue={options[0] ?? ""} className={controlClass}>
-              {options.map((status) => (
-                <option key={status} value={status}>
-                  {LABEL_STATUS_FASILITAS[status]}
-                </option>
-              ))}
-            </select>
+            <Combobox
+              name="status"
+              items={options}
+              defaultValue={options[0] ?? null}
+              modal={false}
+              itemToStringLabel={(value) => LABEL_STATUS_FASILITAS[value as StatusFasilitas]}
+            >
+              <ComboboxInput
+                id="status-baru"
+                placeholder="Pilih status"
+                triggerLabel="Buka daftar status"
+                aria-invalid={Boolean(errors.status)}
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  {(option: string) => (
+                    <ComboboxItem key={option} value={option}>
+                      {LABEL_STATUS_FASILITAS[option as StatusFasilitas]}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+                <ComboboxEmpty>Status tidak ditemukan.</ComboboxEmpty>
+              </ComboboxContent>
+            </Combobox>
           </Field>
 
           <p className="text-sm text-muted-foreground">
