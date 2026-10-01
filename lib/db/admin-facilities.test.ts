@@ -7,6 +7,7 @@ import {
   createAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
+  findAdminFacilityLocations,
 } from "./admin-facilities";
 
 vi.mock("@/lib/prisma", () => ({
@@ -76,6 +77,15 @@ describe("query admin", () => {
 
     expect(prisma.facility.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: { nama: "Aula", tipe: "aula", lokasi: "Gedung", kapasitas: 1 } }),
+    );
+  });
+
+  it("findAdminFacilityLocations mengambil lokasi unik terurut", async () => {
+    vi.mocked(prisma.facility.findMany).mockResolvedValue([] as never);
+    await findAdminFacilityLocations();
+
+    expect(prisma.facility.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ select: { lokasi: true }, distinct: ["lokasi"], orderBy: { lokasi: "asc" } }),
     );
   });
 });

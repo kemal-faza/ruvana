@@ -6,6 +6,7 @@ import {
   createAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
+  findAdminFacilityLocations,
   updateAdminFacility,
   type AdminFacilityFilters,
 } from "@/lib/db/admin-facilities";
@@ -101,6 +102,11 @@ export async function listAdminFacilities(query: AdminListQuery): Promise<AdminF
 export async function getAdminFacility(id: number): Promise<AdminFacility | null> {
   const row = await findAdminFacilityById(id);
   return row ? toAdminFacility(row) : null;
+}
+
+export async function listAdminLocations(): Promise<string[]> {
+  const rows = await findAdminFacilityLocations();
+  return rows.map((row) => row.lokasi);
 }
 
 export async function createFacility(

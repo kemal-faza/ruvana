@@ -17,6 +17,15 @@ import type { AdminFacility, AdminFacilityCollection } from "@/lib/services/admi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Combobox,
+  ComboboxClear,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +39,7 @@ import {
 interface AdminFacilitiesProps {
   items: AdminFacilityCollection["items"];
   meta: AdminFacilityCollection["meta"];
+  locations: string[];
   filters: { search?: string; type?: string; location?: string; status?: string };
 }
 
@@ -53,8 +63,9 @@ function bacaDeskripsi(fd: FormData): string | null {
   return value === "" ? null : value;
 }
 
-export default function AdminFacilities({ items, meta, filters }: AdminFacilitiesProps) {
+export default function AdminFacilities({ items, meta, locations, filters }: AdminFacilitiesProps) {
   const router = useRouter();
+  const [selectedLocation, setSelectedLocation] = useState(filters.location ?? "");
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<AdminFacility | null>(null);
   const [statusTarget, setStatusTarget] = useState<AdminFacility | null>(null);
@@ -205,14 +216,27 @@ export default function AdminFacilities({ items, meta, filters }: AdminFacilitie
 
             <Field>
               <FieldLabel htmlFor="location">Lokasi</FieldLabel>
-              <Input
-                id="location"
+              <Combobox
                 name="location"
-                defaultValue={filters.location ?? ""}
-                maxLength={200}
-                placeholder="Gedung A"
-                className={controlClass}
-              />
+                items={locations}
+                value={selectedLocation || null}
+                modal={false}
+                onValueChange={(value) => setSelectedLocation(value ?? "")}
+              >
+                <ComboboxInput id="location" placeholder="Semua lokasi" triggerLabel="Buka daftar lokasi">
+                  {selectedLocation !== "" && <ComboboxClear aria-label="Hapus pilihan lokasi" />}
+                </ComboboxInput>
+                <ComboboxContent>
+                  <ComboboxList>
+                    {(option: string) => (
+                      <ComboboxItem key={option} value={option}>
+                        {option}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                  <ComboboxEmpty>Lokasi tidak ditemukan.</ComboboxEmpty>
+                </ComboboxContent>
+              </Combobox>
             </Field>
 
             <Field>

@@ -35,9 +35,10 @@ const items: AdminFacility[] = [
 
 const meta: AdminFacilityCollection["meta"] = { page: 1, perPage: 20, totalItems: 2, totalPages: 1 };
 const filters = {};
+const locations = ["Gedung A Lt.1", "Gedung B Lt.2"];
 
 function renderFixture(list: AdminFacility[] = items, metaValue: AdminFacilityCollection["meta"] = meta) {
-  return render(<AdminFacilities items={list} meta={metaValue} filters={filters} />);
+  return render(<AdminFacilities items={list} meta={metaValue} locations={locations} filters={filters} />);
 }
 
 afterEach(cleanup);

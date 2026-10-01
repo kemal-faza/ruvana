@@ -62,6 +62,16 @@ export function findAdminFacilityById(id: number) {
   return prisma.facility.findUnique({ where: { id }, select: adminFacilitySelect });
 }
 
+/** Nama lokasi unik untuk pilihan filter admin. */
+export function findAdminFacilityLocations() {
+  return prisma.facility.findMany({
+    where: { lokasi: { not: "" } },
+    select: { lokasi: true },
+    distinct: ["lokasi"],
+    orderBy: { lokasi: "asc" },
+  });
+}
+
 export function createAdminFacility(data: CreateFacilityData) {
   return prisma.facility.create({ data, select: adminFacilitySelect });
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import AdminFacilities from "@/components/admin/AdminFacilities";
 import { requireAdmin } from "@/lib/auth";
-import { listAdminFacilities } from "@/lib/services/admin-facility-service";
+import { listAdminFacilities, listAdminLocations } from "@/lib/services/admin-facility-service";
 import { cleanSearchParams } from "@/lib/validation/facility-query";
 import { parseAdminListQuery } from "@/lib/validation/admin-facility";
 
@@ -28,12 +28,16 @@ export default async function AdminFasilitasPage({ searchParams }: AdminFasilita
 
   const parsed = parseAdminListQuery(cleanSearchParams(params));
   const query = parsed.ok ? parsed.value : { page: 1, perPage: 20 };
-  const { items, meta } = await listAdminFacilities(query);
+  const [{ items, meta }, locations] = await Promise.all([
+    listAdminFacilities(query),
+    listAdminLocations(),
+  ]);
 
   return (
     <AdminFacilities
       items={items}
       meta={meta}
+      locations={locations}
       filters={{
         search: query.search,
         type: query.type,
