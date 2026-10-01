@@ -401,6 +401,7 @@ export default function AdminFacilities({ items, meta, locations, filters }: Adm
       />
 
       <SheetStatus
+        key={statusTarget ? `status-${statusTarget.id}` : "status-closed"}
         facility={statusTarget}
         errors={errors}
         pending={pending}
