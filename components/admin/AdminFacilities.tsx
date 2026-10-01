@@ -433,7 +433,11 @@ function FormFasilitas({
   const title = facility ? "Ubah fasilitas" : "Tambah fasilitas";
   return (
     <Sheet open={open} onOpenChange={(value) => !value && onClose()}>
-      <SheetContent side="right" className="gap-0 data-[side=right]:sm:max-w-md">
+      <SheetContent
+        side="right"
+        overlayClassName="bg-black/5"
+        className="gap-0 overflow-hidden data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:h-[calc(100%-2rem)] data-[side=right]:rounded-2xl data-[side=right]:border data-[side=right]:shadow-xl data-[side=right]:sm:max-w-md"
+      >
         <SheetHeader className="border-b border-border/60 pr-12">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>Nama fasilitas harus unik, kapasitas minimal&nbsp;1.</SheetDescription>
@@ -542,7 +546,11 @@ function SheetStatus({
 
   return (
     <Sheet open={facility !== null} onOpenChange={(value) => !value && onClose()}>
-      <SheetContent side="right" className="gap-0 data-[side=right]:sm:max-w-md">
+      <SheetContent
+        side="right"
+        overlayClassName="bg-black/5"
+        className="gap-0 overflow-hidden data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:h-[calc(100%-2rem)] data-[side=right]:rounded-2xl data-[side=right]:border data-[side=right]:shadow-xl data-[side=right]:sm:max-w-md"
+      >
         <SheetHeader className="border-b border-border/60 pr-12">
           <SheetTitle>Ubah status fasilitas</SheetTitle>
           <SheetDescription>{facility?.nama}</SheetDescription>
