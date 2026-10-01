@@ -244,7 +244,7 @@ Setiap komponen yang relevan harus mendefinisikan keadaan default, hover, focus-
 | Toast | Ringkas, tidak mengganggu tugas | Tidak berlaku | Bukan satu-satunya bukti success; error menawarkan pemulihan |
 | Upload | Format dan batasan jelas; progress terlihat | Disabled selama proses yang tidak boleh digandakan | Success/error dan retry |
 | Kartu fasilitas | Identitas, tipe, lokasi, kapasitas, status, fasilitas pendukung, akses jadwal | Skeleton kartu | Empty/error tetap menjelaskan fasilitas atau pemulihan |
-| Pemilih slot | Tersedia, Dipilih, Tidak tersedia; kontrol dinonaktifkan; pilihan berurutan | Dinonaktifkan saat data disegarkan | Konflik mengikuti alur pemulihan di bagian Alur utama |
+| Pemilih slot | Tersedia, Dipilih, Tidak tersedia; kontrol dinonaktifkan; pilihan berurutan; slot dalam jendela 24 jam sebelum mulai ikut dinonaktifkan dengan teks bantu `Reservasi minimal 24 jam sebelum waktu mulai` tanpa menyiratkan slot terisi; disabled selalu disertai teks, bukan hanya warna | Dinonaktifkan saat data disegarkan | Konflik mengikuti alur pemulihan di bagian Alur utama |
 | Ringkasan reservasi | Fasilitas, tanggal, rentang waktu, status, aksi yang relevan | Skeleton atau action loading | Status dan error dapat dipindai |
 | Ringkasan laporan | Fasilitas, kategori, waktu, status, foto, catatan bila ada | Skeleton atau action loading | Empty/error memiliki langkah berikutnya |
 | Visualisasi data | Nilai utama, label, periode, konteks, alternatif teks | Skeleton mempertahankan struktur | Empty/error menyediakan ringkasan teks |
@@ -263,7 +263,7 @@ Istilah **available**, **selected**, **loading**, **success**, **error**, **empt
 
 ### 2. Reservasi
 
-1. Pengguna memilih fasilitas, tanggal, satu atau lebih interval berurutan, lalu memasukkan tujuan.
+1. Pengguna memilih fasilitas, tanggal, satu atau lebih interval berurutan, lalu memasukkan tujuan. Pengajuan hanya dapat dilakukan minimal 24 jam sebelum waktu mulai (H−1).
 2. Slot terdiri dari 26 interval setengah jam, mulai **07.00–07.30** dan berakhir **19.30–20.00**.
 3. Pengguna meninjau ringkasan dan mengirim permintaan; status awalnya **Menunggu**.
 4. Hanya reservasi **Disetujui** yang memblokir ketersediaan publik. Permintaan menunggu boleh bertumpang tindih.

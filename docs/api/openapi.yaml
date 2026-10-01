@@ -520,7 +520,7 @@ paths:
       operationId: createReservation
       tags: [Reservations]
       summary: Mengajukan reservasi fasilitas
-      description: Hanya role=pengguna dengan status=ACTIVE yang dapat membuat satu reservasi PENDING; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. date, startTime, dan endTime adalah waktu lokal Asia/Jakarta; slot harus berurutan pada kelipatan 30 menit dalam 07:00–20:00. Tanggal lampau, slot yang sudah mulai, fasilitas tidak tersedia, dan konflik APPROVED ditolak. PENDING lain tidak dianggap konflik. Relasi endTime > startTime dan pemeriksaan current server time tetap wajib di server.
+      description: Hanya role=pengguna dengan status=ACTIVE yang dapat membuat satu reservasi PENDING; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. date, startTime, dan endTime adalah waktu lokal Asia/Jakarta; slot harus berurutan pada kelipatan 30 menit dalam 07:00–20:00. Pengajuan hanya diterima bila waktu mulai masih sekurang-kurangnya 24 jam dari instant pengajuan (tepat 24 jam diterima); pelanggaran ditolak dengan 422 berkode INSUFFICIENT_LEAD_TIME dan detail Reservasi minimal 24 jam sebelum waktu mulai. Tanggal lampau, slot yang sudah mulai, fasilitas tidak tersedia, dan konflik APPROVED ditolak. PENDING lain tidak dianggap konflik. Relasi endTime > startTime dan pemeriksaan current server time tetap wajib di server.
       x-requirement-ids: [RES-01, RES-02, IAM-03]
       security:
         - cookieAuth: []

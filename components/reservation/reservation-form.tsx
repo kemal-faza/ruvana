@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
+import { BATAS_PENGAJUAN_JAM, BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
 import {
   blockedByLabel,
   getValidEndTimes,
@@ -13,7 +13,7 @@ import {
   petakanGalatField,
   ringkasGalatPengajuan,
 } from "@/lib/reservations/reservation-display";
-import { parseTimeToMinutes } from "@/lib/time/reservation-time";
+import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -29,9 +29,13 @@ interface ReservationFormProps {
   facilityId: number;
   date: string;
   availability: FacilityAvailability | null;
+  /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 24 jam, bukan jam klien. */
+  serverNow: string;
 }
 
-export function ReservationForm({ facilities, facilityId, date, availability }: ReservationFormProps) {
+const PESAN_BATAS_PENGAJUAN = `Reservasi minimal ${BATAS_PENGAJUAN_JAM} jam sebelum waktu mulai.`;
+
+export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
@@ -66,6 +70,19 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     }
     return map;
   }, [availabilityForSelected]);
+
+  // Slot dalam jendela pengajuan H-1 dihitung dari waktu server, bukan jam
+  // klien. Aturan yang sama ditegakkan otoritatif oleh service saat submit.
+  const mepetByStart = useMemo(() => {
+    const acuan = new Date(serverNow);
+    const map = new Map<string, boolean>();
+    for (const time of VALID_START_TIMES) {
+      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(date, time), acuan));
+    }
+    return map;
+  }, [date, serverNow]);
+
+  const adaSlotMepet = useMemo(() => [...mepetByStart.values()].some(Boolean), [mepetByStart]);
 
   // Opsi jam selesai: setelah jam mulai & seluruh slot di antaranya tersedia
   const validEndTimes = useMemo(
@@ -142,6 +159,10 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     }
     if (!startTime) {
       catat("jamMulai", "jam-mulai", "Jam mulai", "Jam mulai wajib dipilih.");
+    } else if (mepetByStart.get(startTime)) {
+      // pertahanan client memakai waktu server saat render: slot dalam
+      // jendela H-1 langsung ditolak tanpa menunggu respons server.
+      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN);
     }
     if (!endTime) {
       catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
@@ -210,10 +231,21 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
         const konflik = res.status === 409;
         const body = data as { errors?: unknown } | null;
         const pemetaan = petakanGalatField(body?.errors);
+        // Kode aturan dari server agar pesan H-1 tampil apa adanya di dekat
+        // field, bukan pesan generik.
+        const galatBatasPengajuan =
+          Array.isArray(body?.errors) &&
+          body.errors.some(
+            (item) =>
+              typeof item === "object" &&
+              item !== null &&
+              (item as { code?: unknown }).code === "INSUFFICIENT_LEAD_TIME",
+          );
         if (pemetaan.length > 0) {
           const fieldServer: typeof galatField = {};
           for (const item of pemetaan) {
-            if (item.idKontrol === "jam-mulai") fieldServer.jamMulai = "Nilai jam mulai tidak valid. Periksa kembali.";
+            if (item.idKontrol === "jam-mulai")
+              fieldServer.jamMulai = galatBatasPengajuan ? PESAN_BATAS_PENGAJUAN : "Nilai jam mulai tidak valid. Periksa kembali.";
             if (item.idKontrol === "jam-selesai") fieldServer.jamSelesai = "Nilai jam selesai tidak valid. Periksa kembali.";
             if (item.idKontrol === "tujuan") fieldServer.tujuan = "Nilai tujuan tidak valid. Periksa kembali.";
           }
@@ -309,14 +341,21 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               <Field>
                 <FieldLabel htmlFor="jam-mulai">Jam mulai</FieldLabel>
                 <Select value={startTime} onValueChange={handleStartChange}>
-                  <SelectTrigger id="jam-mulai" className="w-full">
+                  <SelectTrigger
+                    id="jam-mulai"
+                    className="w-full"
+                    aria-describedby={adaSlotMepet ? "bantuan-batas-pengajuan" : undefined}
+                  >
                     <SelectValue placeholder="Pilih jam mulai" />
                   </SelectTrigger>
                   <SelectContent>
                     {VALID_START_TIMES.map((time) => {
                       const status = statusByStart.get(time);
-                      const disabled = status ? !status.available : false;
-                      const reason = status ? blockedByLabel(status.blockedBy) : null;
+                      // Slot mepet H-1 dinonaktifkan dengan label netral
+                      // "Tidak tersedia" — jangan menyiratkan slot terisi.
+                      const mepet = mepetByStart.get(time) ?? false;
+                      const disabled = mepet || (status ? !status.available : false);
+                      const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
                       return (
                         <SelectItem key={time} value={time} disabled={disabled}>
                           {reason ? `${time} — ${reason}` : time}
@@ -325,7 +364,10 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                     })}
                   </SelectContent>
                 </Select>
-                {!startTime && !galatField.jamMulai && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {adaSlotMepet && !galatField.jamMulai && (
+                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN}</FieldDescription>
+                )}
+                {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
               </Field>
 

@@ -47,4 +47,13 @@ describe("ReservationContent", () => {
     expect(element.props.date).toBe("2026-10-01");
     expect(computeFacilityAvailability).toHaveBeenCalledWith(2, "2026-10-01");
   });
+
+  it("meneruskan waktu server ke form sebagai dasar jendela 24 jam", async () => {
+    const element = await ReservationContent({
+      searchParams: Promise.resolve({ date: "2026-10-01" }),
+    });
+
+    expect(typeof element.props.serverNow).toBe("string");
+    expect(Number.isNaN(Date.parse(element.props.serverNow))).toBe(false);
+  });
 });

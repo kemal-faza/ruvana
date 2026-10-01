@@ -147,4 +147,44 @@ describe("createReservationService", () => {
     await createReservationService(42, validInput, now);
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
   });
+
+  it("menerima pengajuan tepat 24 jam sebelum waktu mulai", async () => {
+    const tx = makeTxMock();
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    // 09:00 WIB 15 Sep = 02:00 UTC; tepat 24 jam sebelumnya = 02:00 UTC 14 Sep.
+    const tepat24Jam = new Date("2026-09-14T02:00:00.000Z");
+    const result = await createReservationService(42, validInput, tepat24Jam);
+    expect(result.ok).toBe(true);
+  });
+
+  it("menolak pengajuan 24 jam kurang 1 detik dengan galat batas pengajuan", async () => {
+    const tx = makeTxMock();
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    const kurangSatuDetik = new Date("2026-09-14T02:00:01.000Z");
+    const result = await createReservationService(42, validInput, kurangSatuDetik);
+    expect(result.ok).toBe(false);
+    if (!result.ok && result.error.type === "validation") {
+      const pesan = result.error.errors.map((e) => e.message).join(" ");
+      expect(pesan).toContain("24 jam");
+    } else {
+      throw new Error("Seharusnya gagal validasi batas pengajuan 24 jam");
+    }
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("menghitung batas 24 jam dari instant UTC lintas tanggal Asia/Jakarta (17.00 UTC = 00.00 WIB)", async () => {
+    const tx = makeTxMock();
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    // 00.00 WIB 15 Sep = 17.00 UTC 14 Sep. Slot 07.00 WIB 16 Sep = 00.00 UTC 16 Sep.
+    const tengahMalamWib = new Date("2026-09-14T17:00:00.000Z");
+    const inputBesok = { ...validInput, date: "2026-09-16", startTime: "07:00", endTime: "07:30" };
+    const lolos = await createReservationService(42, inputBesok, tengahMalamWib);
+    expect(lolos.ok).toBe(true);
+
+    // 23.59.59 WIB 15 Sep = 16.59.59 UTC 15 Sep; selisih ke slot tinggal ~7 jam.
+    const malamWib = new Date("2026-09-15T16:59:59.000Z");
+    const mepet = await createReservationService(42, inputBesok, malamWib);
+    expect(mepet.ok).toBe(false);
+    if (!mepet.ok) expect(mepet.error.type).toBe("validation");
+  });
 });
