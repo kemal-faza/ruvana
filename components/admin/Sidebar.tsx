@@ -1,6 +1,6 @@
 "use client"
 
-import { ChartPie, LogOut, Settings, Users } from "lucide-react"
+import { Building2, ChartPie, LogOut, Settings, Users } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
 
@@ -23,6 +23,7 @@ const NAVIGASI: readonly NavigationGroup[] = [
     label: "Kelola",
     items: [
       { key: "admin-analytics", label: "Analitik", href: "/admin/analitik", icon: ChartPie },
+      { key: "admin-facilities", label: "Kelola Fasilitas", href: "/admin/fasilitas", icon: Building2 },
       { key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users },
     ],
   },

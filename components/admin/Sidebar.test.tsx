@@ -57,7 +57,7 @@ describe("AdminSidebar", () => {
       Array.from(screen.getByRole("navigation", { name: "Navigasi utama" }).querySelectorAll("a"), (link) =>
         link.textContent?.trim(),
       ),
-    ).toEqual(["Analitik", "Kelola Pengguna", "Pengaturan"])
+    ).toEqual(["Analitik", "Kelola Fasilitas", "Kelola Pengguna", "Pengaturan"])
     expect(screen.getByText("Sistem")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/admin/pengaturan")
 
