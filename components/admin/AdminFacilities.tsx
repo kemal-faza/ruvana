@@ -16,6 +16,7 @@ import { allowedTransitions } from "@/lib/facilities/status-transition";
 import type { AdminFacility, AdminFacilityCollection } from "@/lib/services/admin-facility-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -156,11 +157,12 @@ export default function AdminFacilities({ items, meta, filters }: AdminFacilitie
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">Kelola fasilitas</h1>
-          <p className="text-sm text-muted-foreground">
+    <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="mb-1 text-sm font-medium text-primary">Administrasi</p>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Kelola fasilitas</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Tambah, ubah, dan atur status fasilitas. Perubahan tercermin pada halaman publik.
           </p>
         </div>
@@ -170,63 +172,62 @@ export default function AdminFacilities({ items, meta, filters }: AdminFacilitie
         </Button>
       </header>
 
-      <form
-        method="get"
-        action="/admin/fasilitas"
-        aria-label="Filter fasilitas admin"
-        className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4 shadow-subtle sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
-      >
-        <Field>
-          <FieldLabel htmlFor="search">Kata kunci</FieldLabel>
-          <div className="flex min-h-11 items-center gap-2 rounded-control border border-border bg-background px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-            <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-            <Input
-              id="search"
-              type="search"
-              name="search"
-              placeholder="Nama fasilitas"
-              defaultValue={filters.search ?? ""}
-              maxLength={200}
-              className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
-            />
-          </div>
-        </Field>
+      <form method="get" action="/admin/fasilitas" aria-label="Filter fasilitas admin">
+        <Card size="sm">
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
+            <Field>
+              <FieldLabel htmlFor="search">Kata kunci</FieldLabel>
+              <div className="flex min-h-11 items-center gap-2 rounded-control border border-border bg-background px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+                <Input
+                  id="search"
+                  type="search"
+                  name="search"
+                  placeholder="Nama fasilitas"
+                  defaultValue={filters.search ?? ""}
+                  maxLength={200}
+                  className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+                />
+              </div>
+            </Field>
 
-        <Field>
-          <FieldLabel htmlFor="type">Tipe</FieldLabel>
-          <select id="type" name="type" defaultValue={filters.type ?? ""} className={controlClass}>
-            <option value="">Semua tipe</option>
-            {TIPE_FASILITAS.map((tipe) => (
-              <option key={tipe} value={tipe}>
-                {LABEL_TIPE_FASILITAS[tipe]}
-              </option>
-            ))}
-          </select>
-        </Field>
+            <Field>
+              <FieldLabel htmlFor="type">Tipe</FieldLabel>
+              <select id="type" name="type" defaultValue={filters.type ?? ""} className={controlClass}>
+                <option value="">Semua tipe</option>
+                {TIPE_FASILITAS.map((tipe) => (
+                  <option key={tipe} value={tipe}>
+                    {LABEL_TIPE_FASILITAS[tipe]}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-        <Field>
-          <FieldLabel htmlFor="location">Lokasi</FieldLabel>
-          <Input id="location" name="location" defaultValue={filters.location ?? ""} maxLength={200} placeholder="Gedung A" />
-        </Field>
+            <Field>
+              <FieldLabel htmlFor="location">Lokasi</FieldLabel>
+              <Input id="location" name="location" defaultValue={filters.location ?? ""} maxLength={200} placeholder="Gedung A" />
+            </Field>
 
-        <Field>
-          <FieldLabel htmlFor="status">Status</FieldLabel>
-          <select id="status" name="status" defaultValue={filters.status ?? ""} className={controlClass}>
-            <option value="">Semua status</option>
-            <option value="ACTIVE">{LABEL_STATUS_FASILITAS.ACTIVE}</option>
-            <option value="UNDER_MAINTENANCE">{LABEL_STATUS_FASILITAS.UNDER_MAINTENANCE}</option>
-            <option value="INACTIVE">{LABEL_STATUS_FASILITAS.INACTIVE}</option>
-          </select>
-        </Field>
+            <Field>
+              <FieldLabel htmlFor="status">Status</FieldLabel>
+              <select id="status" name="status" defaultValue={filters.status ?? ""} className={controlClass}>
+                <option value="">Semua status</option>
+                <option value="ACTIVE">{LABEL_STATUS_FASILITAS.ACTIVE}</option>
+                <option value="UNDER_MAINTENANCE">{LABEL_STATUS_FASILITAS.UNDER_MAINTENANCE}</option>
+                <option value="INACTIVE">{LABEL_STATUS_FASILITAS.INACTIVE}</option>
+              </select>
+            </Field>
 
-        <div className="flex items-end gap-2">
-          <Button type="submit" className="min-h-11">
-            Terapkan
-          </Button>
-          <Button variant="ghost" className="min-h-11" nativeButton={false} render={<Link href="/admin/fasilitas" />}>
-            Reset
-          </Button>
-        </div>
+            <div className="flex items-end gap-2">
+              <Button type="submit" className="min-h-11">
+                Terapkan
+              </Button>
+              <Button variant="ghost" className="min-h-11" nativeButton={false} render={<Link href="/admin/fasilitas" />}>
+                Reset
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </form>
 
       {feedback && (
@@ -236,7 +237,7 @@ export default function AdminFacilities({ items, meta, filters }: AdminFacilitie
       )}
 
       {items.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-card border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
           Tidak ada fasilitas yang cocok.
         </p>
       ) : (
@@ -244,7 +245,7 @@ export default function AdminFacilities({ items, meta, filters }: AdminFacilitie
           {items.map((facility) => (
             <li
               key={facility.id}
-              className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-subtle sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-subtle sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -345,7 +346,7 @@ export default function AdminFacilities({ items, meta, filters }: AdminFacilitie
         }}
         onSubmit={(event) => statusTarget && kirimStatus(event, statusTarget)}
       />
-    </div>
+    </main>
   );
 }
 
