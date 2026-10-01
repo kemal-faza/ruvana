@@ -75,6 +75,7 @@ describe("AdminFacilities", () => {
     await user.click(screen.getAllByRole("button", { name: /Ubah status/ })[0]);
 
     expect(await screen.findByRole("heading", { name: "Ubah status fasilitas" })).toBeInTheDocument();
+    expect(screen.getByText(/Status saat ini/)).toBeInTheDocument();
     expect(
       screen.getByText(/membatalkan seluruh reservasi yang sudah disetujui/i),
     ).toBeInTheDocument();

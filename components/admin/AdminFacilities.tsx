@@ -536,6 +536,8 @@ function SheetStatus({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const options = facility ? allowedTransitions(facility.status, "admin") : [];
+  const [nextStatus, setNextStatus] = useState("");
+
   return (
     <Sheet open={facility !== null} onOpenChange={(value) => !value && onClose()}>
       <SheetContent side="right">
@@ -544,18 +546,26 @@ function SheetStatus({
           <SheetDescription>{facility?.nama}</SheetDescription>
         </SheetHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-y-auto p-5" noValidate>
+          {facility && (
+            <p className="text-sm text-muted-foreground">
+              Status saat ini:{" "}
+              <span className="font-medium text-foreground">{LABEL_STATUS_FASILITAS[facility.status]}</span>
+            </p>
+          )}
+
           <Field>
             <FieldLabel htmlFor="status-baru">Status baru</FieldLabel>
             <Combobox
               name="status"
               items={options}
-              defaultValue={options[0] ?? null}
+              value={nextStatus || null}
               modal={false}
               itemToStringLabel={(value) => LABEL_STATUS_FASILITAS[value as StatusFasilitas]}
+              onValueChange={(value) => setNextStatus(value ?? "")}
             >
               <ComboboxInput
                 id="status-baru"
-                placeholder="Pilih status"
+                placeholder="Pilih status baru"
                 triggerLabel="Buka daftar status"
                 aria-invalid={Boolean(errors.status)}
               />
@@ -583,7 +593,11 @@ function SheetStatus({
             <Button type="button" variant="ghost" className="min-h-11" onClick={onClose}>
               Batal
             </Button>
-            <Button type="submit" className="min-h-11" disabled={pending || options.length === 0}>
+            <Button
+              type="submit"
+              className="min-h-11"
+              disabled={pending || options.length === 0 || nextStatus === ""}
+            >
               {pending ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>
