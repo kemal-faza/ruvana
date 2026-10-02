@@ -56,4 +56,17 @@ describe("ReservationContent", () => {
     expect(typeof element.props.serverNow).toBe("string");
     expect(Number.isNaN(Date.parse(element.props.serverNow))).toBe(false);
   });
+
+  it("memakai default H+2 kalender Asia/Jakarta agar slot lolos batas pengajuan", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-01T10:00:00.000Z")); // 17.00 WIB 1 Okt
+    try {
+      const element = await ReservationContent({ searchParams: Promise.resolve({}) });
+
+      expect(element.props.date).toBe("2026-10-03");
+      expect(element.props.serverNow).toBe("2026-10-01T10:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

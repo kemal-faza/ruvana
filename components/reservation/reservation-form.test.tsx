@@ -196,7 +196,8 @@ describe("ReservationForm konfirmasi pengajuan", () => {
     expect(document.activeElement?.id).toBe("jam-mulai")
   }, 20000)
 
-  it("konflik menjelaskan penyebab, menawarkan segarkan slot, dan mempertahankan input", async () => {    const user = userEvent.setup()
+  it("konflik menjelaskan penyebab, menawarkan segarkan slot, dan mempertahankan input", async () => {
+    const user = userEvent.setup()
     mockFetchMenunggu(409, {
       title: "Reservasi bertabrakan",
       detail: "Slot bertabrakan dengan reservasi yang telah disetujui.",
@@ -255,6 +256,51 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
     expect(screen.queryByRole("option", { name: /07:00 — sudah disetujui/ })).not.toBeInTheDocument()
     expect(screen.queryByRole("option", { name: /07:00 — dalam pemeliharaan/ })).not.toBeInTheDocument()
+  }, 20000)
+
+  it("memetakan galat INSUFFICIENT_LEAD_TIME server ke pesan batas di field Jam mulai", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              title: "Validasi gagal",
+              detail: "Satu atau lebih field tidak memenuhi aturan validasi",
+              errors: [
+                {
+                  field: "startTime",
+                  code: "INSUFFICIENT_LEAD_TIME",
+                  message: "Reservasi minimal 24 jam sebelum waktu mulai",
+                },
+              ],
+            }),
+            { status: 422 },
+          ),
+      ),
+    )
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-1111-4111-8111-111111111111")
+    const { container } = renderBatasPengajuan()
+
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+    await user.click(await screen.findByRole("option", { name: "17:00" }))
+    await user.click(screen.getByRole("combobox", { name: "Jam selesai" }))
+    await user.click(await screen.findByRole("option", { name: "17:30" }))
+    await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    // Pesan domain tampil apa adanya di dekat field, bukan pesan generik atau kode mentah.
+    expect(await screen.findByText("Reservasi minimal 24 jam sebelum waktu mulai.")).toBeInTheDocument()
+    expect(document.activeElement?.id).toBe("jam-mulai")
+    expect(container.textContent ?? "").not.toContain("INSUFFICIENT_LEAD_TIME")
+
+    // Galat menggantikan teks bantu; aria-describedby tidak boleh menunjuk id yang hilang.
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).not.toHaveAttribute("aria-describedby")
+
+    const wilayahWaktu = container.querySelector('section[aria-label="Waktu"]')
+    expect(wilayahWaktu).not.toBeNull()
+    expect((await axe(wilayahWaktu as HTMLElement)).violations).toEqual([])
   }, 20000)
 
   it("lolos pemeriksaan aksesibilitas otomatis pada wilayah pemilih slot", async () => {

@@ -344,7 +344,11 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   <SelectTrigger
                     id="jam-mulai"
                     className="w-full"
-                    aria-describedby={adaSlotMepet ? "bantuan-batas-pengajuan" : undefined}
+                    // Rujuk deskripsi hanya saat ia dirender; saat galat field
+                    // menggantikannya, IDREF akan menggantung.
+                    aria-describedby={
+                      adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
+                    }
                   >
                     <SelectValue placeholder="Pilih jam mulai" />
                   </SelectTrigger>

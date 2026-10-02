@@ -97,7 +97,7 @@ describe("isKurangDariBatasPengajuan", () => {
   // Slot 09:00 WIB 15 Sep = 02:00 UTC.
   const mulai = asiaJakartaToUtc("2026-09-15", "09:00");
 
-  it("salah tepat pada selisih 24 jam (diterima)", () => {
+  it("mengembalikan false tepat pada selisih 24 jam (diterima)", () => {
     expect(isKurangDariBatasPengajuan(mulai, new Date("2026-09-14T02:00:00.000Z"))).toBe(false);
   });
 
