@@ -368,7 +368,7 @@ Catatan cakupan: jaminan AA untuk teks di atas permukaan kontrol **tidak berlaku
 - [ ] Default, loading, disabled, error, success, empty, keyboard, dan responsive behavior didefinisikan untuk komponen yang relevan.
 - [ ] Layout diuji pada mobile, tablet, dan desktop.
 - [ ] Behavior tests mencakup state utama.
-- [ ] Domain tests mencakup konflik slot, aturan H−24, foto wajib, kepemilikan, dan penegakan peran.
+- [ ] Domain tests mencakup konflik slot, aturan pengajuan H−1, aturan H−24, foto wajib, kepemilikan, dan penegakan peran.
 - [ ] Keyboard dan automated accessibility checks dijalankan.
 - [ ] Visual regression mencakup primitives dan layar kunci.
 - [ ] End-to-end journey mencakup pendaftaran-verifikasi, reservasi-persetujuan, pelaporan-penyelesaian, dan perubahan status fasilitas.

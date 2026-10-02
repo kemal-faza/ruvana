@@ -802,7 +802,7 @@ Implementasi mengikuti siklus TDD: RED, GREEN, REFACTOR.
 ### Unit test
 
 - jam operasional dan pembentukan slot;
-- aturan pembatalan 24 jam;
+- aturan pembatalan dan pengajuan 24 jam;
 - transisi status;
 - perhitungan okupansi dan frekuensi kerusakan; serta
 - sanitasi nilai ekspor.
