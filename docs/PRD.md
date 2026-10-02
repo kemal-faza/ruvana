@@ -247,7 +247,8 @@ View tidak boleh menjalankan query Prisma atau memiliki aturan bisnis. Folder `/
 - Satu slot berdurasi 30 menit; tersedia 26 slot per hari.
 - Waktu mulai dan selesai harus tepat pada batas slot.
 - Waktu selesai harus sesudah waktu mulai dan tidak melewati pukul 20.00.
-- Reservasi tidak dapat dibuat untuk tanggal lampau maupun slot hari ini yang instant mulainya sudah sama dengan atau lebih awal dari waktu server saat pengajuan.
+- Reservasi hanya dapat diajukan bila waktu mulai masih sekurang-kurangnya 24 jam (`BATAS_PENGAJUAN_JAM`) dari instant pengajuan; tepat 24 jam diterima, kurang dari itu ditolak. Perhitungan memakai cara yang sama seperti batas pembatalan H−24.
+- Reservasi tidak dapat dibuat untuk tanggal lampau maupun slot yang instant mulainya sudah sama dengan atau lebih awal dari waktu server saat pengajuan.
 - Reservasi `PENDING` boleh saling overlap.
 - Hanya reservasi `APPROVED` yang memblokir ketersediaan.
 - Persetujuan selalu melakukan pemeriksaan konflik terakhir secara atomik.
@@ -444,6 +445,7 @@ Pengguna memilih satu atau beberapa slot berurutan pada satu fasilitas dan tangg
 - Tujuan wajib diisi sesuai batas input yang ditetapkan.
 - Pengajuan valid membuat tepat satu reservasi `PENDING` milik pengguna yang sedang login.
 - Waktu pengajuan dicatat oleh server saat reservasi berhasil dibuat dan tidak dapat ditentukan oleh klien.
+- Pengajuan yang waktu mulainya kurang dari 24 jam dari instant pengajuan ditolak; tepat 24 jam diterima.
 - Pengajuan sukses mengarahkan ke halaman detail reservasi yang baru dibuat dan menampilkan banner konfirmasi `role="status"` berjudul `Reservasi berhasil diajukan`, status label domain `Menunggu`, penjelasan peninjauan petugas, dan tautan `Lihat riwayat reservasi`; banner tidak tampil saat detail dibuka dari riwayat.
 - Layar konfirmasi dan form tidak menampilkan data mentah database (enum, id, dump JSON).
 - Fokus dikelola setelah navigasi ke detail; tombol kirim mempertahankan ukuran, menampilkan label proses, dan mencegah submit ganda.
@@ -453,20 +455,22 @@ Pengguna memilih satu atau beberapa slot berurutan pada satu fasilitas dan tangg
 Server menolak pengajuan dengan kondisi berikut:
 
 - tanggal lampau;
-- slot hari ini yang sudah mulai atau berlalu;
+- waktu mulai yang tersisa kurang dari 24 jam dari instant pengajuan (`BATAS_PENGAJUAN_JAM`);
+- slot yang sudah mulai atau berlalu;
 - waktu di luar jam operasional atau tidak selaras slot;
 - rentang kosong atau terbalik;
 - fasilitas tidak tersedia; atau
 - bentrok dengan reservasi `APPROVED`.
 
-Perbandingan slot hari ini menggunakan instant UTC hasil konversi tanggal/waktu `Asia/Jakarta`. Slot dengan waktu mulai tepat sama dengan waktu server ditolak, bukan dibuat lalu diubah menjadi `EXPIRED`.
+Perbandingan waktu memakai instant UTC hasil konversi tanggal/waktu `Asia/Jakarta` terhadap waktu server saat pengajuan. Batas 24 jam dihitung sebagai selisih tepat antara instant pengajuan dan instant waktu mulai, sama seperti batas pembatalan H−24: tepat 24 jam diterima, kurang dari itu ditolak. Slot dengan waktu mulai tepat sama dengan waktu server ditolak, bukan dibuat lalu diubah menjadi `EXPIRED`.
 
 **Acceptance criteria:**
 
 - Seluruh aturan tetap ditegakkan ketika request dikirim tanpa melalui validasi frontend.
 - Kegagalan mengembalikan error yang dapat dikaitkan dengan field atau aturan penyebab tanpa membuat reservasi parsial.
+- Pengajuan tepat 24 jam sebelum waktu mulai diterima; pengajuan 24 jam kurang 1 detik ditolak dengan pesan `Reservasi minimal 24 jam sebelum waktu mulai`.
 - Reservasi `PENDING` lain tidak dianggap konflik, sedangkan setiap irisan dengan `APPROVED` dianggap konflik.
-- Kasus batas waktu tepat pada jam buka, jam tutup, waktu sekarang, dan pergantian tanggal `Asia/Jakarta` tercakup pengujian.
+- Kasus batas waktu tepat pada jam buka, jam tutup, waktu sekarang, batas 24 jam, dan pergantian tanggal `Asia/Jakarta` tercakup pengujian.
 
 #### RES-03 — Riwayat dan detail
 
@@ -798,7 +802,7 @@ Implementasi mengikuti siklus TDD: RED, GREEN, REFACTOR.
 ### Unit test
 
 - jam operasional dan pembentukan slot;
-- aturan pembatalan 24 jam;
+- aturan pembatalan dan pengajuan 24 jam;
 - transisi status;
 - perhitungan okupansi dan frekuensi kerusakan; serta
 - sanitasi nilai ekspor.
@@ -935,3 +939,4 @@ Rilis selesai jika dan hanya jika:
 9. **PM memiliki kontribusi teknis.** PM menjadi owner platform/data, analitik/ekspor, integrasi, UAT, dan release, sesuai kontribusi awal pada setup dan schema.
 10. **Kontrak HTTP menggunakan OpenAPI 3.1.2 dalam YAML.** Format ini dipilih untuk kompatibilitas tooling dan kemudahan review manusia; hanya route handler yang benar-benar digunakan frontend yang menjadi bagian kontrak.
 11. **Dokumentasi dibuat secara proporsional.** PRD, snapshot `DESIGN.md`, `docs/DECISION.md`, OpenAPI, dan README menjadi set inti; checklist UAT dibuat menjelang rilis dan engineering specification besar tidak dibuat.
+12. **Batas minimal pengajuan adalah H−1 (24 jam, keputusan pemilik).** Reservasi hanya dapat diajukan bila waktu mulai masih sekurang-kurangnya 24 jam dari instant pengajuan, dihitung dengan cara yang sama seperti batas pembatalan H−24. Aturan ini menggantikan izin membuat reservasi untuk slot hari ini di RES-02; reservasi `PENDING` yang sudah ada tidak diubah.

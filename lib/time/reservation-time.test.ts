@@ -5,6 +5,7 @@ import {
   calendarDateToUtcMidnight,
   formatDateAsiaJakarta,
   formatTimeAsiaJakarta,
+  isKurangDariBatasPengajuan,
   isPastDate,
   isSlotAligned,
   isValidDateFormat,
@@ -89,5 +90,31 @@ describe("isPastDate", () => {
     expect(isPastDate("2026-09-14", now)).toBe(true);
     expect(isPastDate("2026-09-15", now)).toBe(false);
     expect(isPastDate("2026-09-16", now)).toBe(false);
+  });
+});
+
+describe("isKurangDariBatasPengajuan", () => {
+  // Slot 09:00 WIB 15 Sep = 02:00 UTC.
+  const mulai = asiaJakartaToUtc("2026-09-15", "09:00");
+
+  it("mengembalikan false tepat pada selisih 24 jam (diterima)", () => {
+    expect(isKurangDariBatasPengajuan(mulai, new Date("2026-09-14T02:00:00.000Z"))).toBe(false);
+  });
+
+  it("benar pada selisih 24 jam kurang 1 detik (ditolak)", () => {
+    expect(isKurangDariBatasPengajuan(mulai, new Date("2026-09-14T02:00:01.000Z"))).toBe(true);
+  });
+
+  it("benar untuk slot yang sudah lewat", () => {
+    expect(isKurangDariBatasPengajuan(mulai, new Date("2026-09-15T03:00:00.000Z"))).toBe(true);
+  });
+
+  it("menghitung dari instant UTC sehingga benar lintas tanggal Asia/Jakarta", () => {
+    // 17.00 UTC = 00.00 WIB keesokan harinya.
+    const tengahMalamWib = new Date("2026-09-14T17:00:00.000Z");
+    expect(formatDateAsiaJakarta(tengahMalamWib)).toBe("2026-09-15");
+    // Slot 07.00 WIB 16 Sep = 00.00 UTC 16 Sep, selisih 31 jam → diterima.
+    const slotBesokPagi = asiaJakartaToUtc("2026-09-16", "07:00");
+    expect(isKurangDariBatasPengajuan(slotBesokPagi, tengahMalamWib)).toBe(false);
   });
 });
