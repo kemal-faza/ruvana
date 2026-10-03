@@ -5,12 +5,13 @@ import { SiteFooter } from "@/components/site/site-footer"
 import { SiteHeader } from "@/components/site/site-header"
 import { navigationForRole } from "@/config/navigation-for-role"
 import { shellAccountFromUser } from "@/config/navigation"
+import { Role } from "@/generated/prisma/enums"
 import { getSessionUser } from "@/lib/auth"
 
 export default async function FasilitasLayout({ children }: { children: ReactNode }) {
   const user = await getSessionUser()
 
-  if (!user) {
+  if (!user || user.role !== Role.pengguna) {
     return (
       <>
         <SiteHeader current="fasilitas" />

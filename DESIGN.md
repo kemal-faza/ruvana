@@ -226,7 +226,7 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 
 Destinasi yang tidak tersedia harus dihilangkan dari navigasi. Akses mengikuti aturan otoritas server di **Tujuan dan otoritas**. Navigasi aktif, judul halaman, dan breadcrumb harus menunjukkan lokasi; identitas akun dan logout harus konsisten di menu profil atau footer sidebar.
 
-Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya.
+Pada halaman discovery, pengunjung anonim, petugas, dan admin memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna terautentikasi memakai navigasi pengguna.
 
 ## Komponen
 
