@@ -399,6 +399,8 @@ Detail fasilitas menampilkan 26 slot untuk tanggal yang dipilih.
 
 Pengunjung dapat mencari berdasarkan kata kunci dan memfilter berdasarkan tipe, lokasi, serta kapasitas minimum. Filter yang aktif digabungkan dengan logika AND.
 
+Form pencarian pada beranda mengarahkan pengunjung dan pengguna ke alur reservasi dengan parameter tipe fasilitas dan tanggal. Petugas dan admin tidak ditawari form pengajuan reservasi.
+
 **Acceptance criteria:**
 
 - Kata kunci dan filter dapat digunakan sendiri-sendiri maupun bersamaan.

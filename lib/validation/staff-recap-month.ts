@@ -43,18 +43,37 @@ export function formatMonthLabelIndonesia(month: string): string {
   }).format(new Date(Date.UTC(tahun, bulan - 1, 1)));
 }
 
+// Dua bentuk param didukung: bulan lengkap "YYYY-MM" (navigasi client dan
+// tautan lama) dan pasangan bulan+tahun dari form GET native tanpa JavaScript.
+// Bulan lengkap menang bila param tahun ikut hadir.
+function gabungkanBulanTahun(bulan: string | undefined, tahun: string | undefined): string | undefined {
+  if (bulan === undefined) return undefined;
+  if (tahun === undefined) return bulan;
+  if (POLA_BULAN.test(bulan)) return bulan;
+  if (/^\d{1,2}$/.test(bulan) && /^\d{1,4}$/.test(tahun)) {
+    return `${tahun.padStart(4, "0")}-${bulan.padStart(2, "0")}`;
+  }
+  return undefined;
+}
+
+function pesanTidakValid(adaTahun: boolean, bawaan: string): string {
+  return `Parameter ${adaTahun ? "bulan atau tahun" : "bulan"} tidak valid, menampilkan rekap bulan ${formatMonthLabelIndonesia(bawaan)}.`;
+}
+
 export function parseStaffRecapMonth(
   searchParams: StaffRecapMonthSearchParams,
   now: Date = new Date(),
 ): StaffRecapMonthParseResult {
   const bawaan = getStaffRecapDefaultMonth(now);
-  const mentah = ambilNilaiTunggal(searchParams.bulan);
+  const bulan = ambilNilaiTunggal(searchParams.bulan);
+  const tahun = ambilNilaiTunggal(searchParams.tahun);
+  const mentah = gabungkanBulanTahun(bulan, tahun);
 
   if (mentah === undefined) {
-    if (Array.isArray(searchParams.bulan)) {
+    if (searchParams.bulan !== undefined || searchParams.tahun !== undefined) {
       return {
         month: bawaan,
-        warning: `Parameter bulan tidak valid, menampilkan rekap bulan ${formatMonthLabelIndonesia(bawaan)}.`,
+        warning: pesanTidakValid(searchParams.tahun !== undefined, bawaan),
       };
     }
     return { month: bawaan, warning: null };
@@ -63,7 +82,7 @@ export function parseStaffRecapMonth(
   if (!bulanValid(mentah)) {
     return {
       month: bawaan,
-      warning: `Parameter bulan tidak valid, menampilkan rekap bulan ${formatMonthLabelIndonesia(bawaan)}.`,
+      warning: pesanTidakValid(searchParams.tahun !== undefined, bawaan),
     };
   }
 

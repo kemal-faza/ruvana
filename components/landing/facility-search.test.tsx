@@ -4,17 +4,34 @@ import { format, startOfToday } from "date-fns"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { FacilitySearch } from "@/components/landing/facility-search"
+import { canShowFacilitySearch } from "@/components/landing/facility-search-visibility"
 import { TIPE_FASILITAS_LABEL } from "@/config/business"
+import { Role } from "@/generated/prisma/enums"
 
 afterEach(cleanup)
 
 describe("FacilitySearch", () => {
+  it("hanya menampilkan form pengajuan kepada pengunjung dan pengguna", () => {
+    expect(canShowFacilitySearch(null)).toBe(true)
+    expect(canShowFacilitySearch(Role.pengguna)).toBe(true)
+    expect(canShowFacilitySearch(Role.petugas)).toBe(false)
+    expect(canShowFacilitySearch(Role.admin)).toBe(false)
+  })
+
   it("mengirim form pencarian ke rute reservasi dengan method get", () => {
     const { container } = render(<FacilitySearch />)
 
     const form = container.querySelector("form")
     expect(form).toHaveAttribute("method", "get")
     expect(form).toHaveAttribute("action", "/reservasi")
+  })
+
+  it("menyembunyikan alur reservasi untuk peran petugas dan admin", () => {
+    const { rerender, container } = render(<FacilitySearch visible={false} />)
+
+    expect(container.querySelector("form")).not.toBeInTheDocument()
+    rerender(<FacilitySearch />)
+    expect(container.querySelector("form")).toBeInTheDocument()
   })
 
   it("mengirim tipe terpilih lewat field bernama type", async () => {
@@ -67,10 +84,10 @@ describe("FacilitySearch", () => {
     expect(container.querySelector('input[name="date"]')).toHaveValue(iso)
   })
 
-  it("menjadikan tombol Jelajahi sebagai submit form", () => {
+  it("menjadikan tombol Lihat sebagai submit form", () => {
     render(<FacilitySearch />)
 
-    expect(screen.getByRole("button", { name: /Jelajahi/ })).toHaveAttribute("type", "submit")
+    expect(screen.getByRole("button", { name: /Lihat/ })).toHaveAttribute("type", "submit")
   })
 
   it("menampilkan indikator fokus lewat pembungkus field", () => {

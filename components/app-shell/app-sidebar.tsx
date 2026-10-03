@@ -7,6 +7,7 @@ import { motion } from "motion/react"
 import {
   Building2,
   CalendarDays,
+  ChartPie,
   Circle,
   ClipboardList,
   LayoutDashboard,
@@ -60,6 +61,7 @@ function isNavigationItemActive(pathname: string, item: NavigationItem | Seriali
 const iconRegistry = {
   Building2,
   CalendarDays,
+  ChartPie,
   ClipboardList,
   LayoutDashboard,
   Settings,

@@ -389,8 +389,10 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 - `/` memperkenalkan Ruvana dengan fokus reservasi dan pelaporan kerusakan sebagai manfaat pendukung.
 - Urutan konten: hero → pencarian fasilitas → manfaat utama → cara kerja → ajakan menjelajahi fasilitas → footer.
 - Hero memakai mockup dashboard aplikasi horizontal (sidebar menu peran pengguna dan ringkasan aktivitas) serta kartu foto ruang kampus horizontal.
-- Section pencarian fasilitas adalah pintu masuk `/fasilitas`: form `GET` dengan parameter
-  `tipe` (nilai dari `TIPE_FASILITAS`) dan `tanggal`, memakai label `TIPE_FASILITAS_LABEL`.
+- Section pencarian fasilitas adalah pintu masuk alur reservasi `/reservasi`: form `GET` dengan parameter
+  `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
+  Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
+  pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
 - CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.

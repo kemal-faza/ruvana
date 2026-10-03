@@ -64,10 +64,13 @@ describe("StaffMonthlyRecap", () => {
     const form = screen.getByRole("form", { name: "Pilih bulan rekap" });
     expect(form).toHaveAttribute("action", "/petugas");
     expect(form).toHaveAttribute("method", "get");
-    const masukan = screen.getByLabelText("Bulan");
-    expect(masukan).toHaveAttribute("type", "month");
-    expect(masukan).toHaveAttribute("name", "bulan");
-    expect(masukan).toHaveValue("2026-09");
+    const masukanBulan = screen.getByLabelText("Bulan");
+    const masukanTahun = screen.getByLabelText("Tahun");
+    expect(masukanBulan.tagName).toBe("SELECT");
+    expect(masukanBulan).toHaveAttribute("name", "bulan");
+    expect(masukanBulan).toHaveValue("09");
+    expect(masukanTahun).toHaveAttribute("name", "tahun");
+    expect(masukanTahun).toHaveValue(2026);
     expect(screen.getByRole("button", { name: "Tampilkan rekap" })).toBeInTheDocument();
   });
 
