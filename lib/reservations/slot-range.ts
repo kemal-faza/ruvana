@@ -6,26 +6,16 @@
 //   berstatus tersedia (tidak boleh lompat melewati slot yang tidak tersedia).
 
 import { VALID_END_TIMES, VALID_START_TIMES } from "@/config/business";
+import type { AvailabilitySlot, BlockedBy } from "@/lib/availability/slots";
 
-export type AvailabilityBlockedBy = "APPROVED" | "MAINTENANCE";
-
-export interface AvailabilitySlot {
-  startTime: string;
-  endTime: string;
-  available: boolean;
-  blockedBy: AvailabilityBlockedBy | null;
-}
-
-export interface FacilityAvailability {
-  facilityId: number;
-  date: string;
-  timezone: "Asia/Jakarta";
-  slots: AvailabilitySlot[];
-}
+// Satu sumber tipe ketersediaan ada di lib/availability/slots.ts. Re-export ini
+// menjaga jalur impor lama (form reservasi) tanpa menduplikasi deklarasi.
+export type { AvailabilitySlot, FacilityAvailability } from "@/lib/availability/slots";
+export type AvailabilityBlockedBy = NonNullable<BlockedBy>;
 
 export function blockedByLabel(blockedBy: AvailabilityBlockedBy | null): string | null {
   if (blockedBy === "APPROVED") return "sudah disetujui";
-  if (blockedBy === "MAINTENANCE") return "dalam perbaikan";
+  if (blockedBy === "MAINTENANCE") return "dalam pemeliharaan";
   return null;
 }
 

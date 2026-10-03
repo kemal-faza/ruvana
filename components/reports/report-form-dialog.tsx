@@ -6,16 +6,19 @@ import { ImagePlus, Trash2, X } from "lucide-react"
 
 import { KATEGORI_LAPORAN, MAKS_DESKRIPSI_LAPORAN } from "@/config/business"
 import { LABEL_TIPE_FASILITAS } from "@/config/labels"
-import { Button } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import { createReportAction, type CreateReportActionResult } from "@/app/reports/actions"
 import { validateReportSubmission, type ReportSubmissionErrors } from "@/lib/validation/report"
 import type { FacilityReportOption, ReportItem } from "@/lib/services/report-service"
-
-const cx = {
-  control:
-    "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none cursor-pointer placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-}
 
 interface ReportFormDialogProps {
   open: boolean
@@ -28,8 +31,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
   const titleId = useId()
   const descriptionId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const facilityRef = useRef<HTMLSelectElement>(null)
-  const kategoriRef = useRef<HTMLSelectElement>(null)
+  const facilityRef = useRef<HTMLButtonElement>(null)
+  const kategoriRef = useRef<HTMLButtonElement>(null)
   const deskripsiRef = useRef<HTMLTextAreaElement>(null)
   const fotoPreviewRef = useRef<string | null>(null)
   const [facilityId, setFacilityId] = useState(() => facilityOptions[0]?.id.toString() ?? "")
@@ -38,7 +41,10 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
   const [foto, setFoto] = useState<File | null>(null)
   const [fotoPreview, setFotoPreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<ReportSubmissionErrors>({})
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const facilityErrorId = `${titleId}-facility-error`
+  const kategoriErrorId = `${titleId}-category-error`
 
   useEffect(() => {
     return () => {
@@ -66,6 +72,7 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
     }
     setFoto(file)
     setErrors((current) => ({ ...current, foto: undefined }))
+    setSubmissionMessage(null)
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -86,19 +93,72 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
 
     setSubmitting(true)
     setErrors({})
-    const formData = new FormData()
-    formData.set("facilityId", facilityId)
-    formData.set("kategori", kategori)
-    formData.set("deskripsi", deskripsi)
-    if (foto) formData.set("foto", foto)
+    setSubmissionMessage(null)
+    let uploadedPathname: string | null = null
+    try {
+      if (!foto) throw new Error("Foto wajib dilampirkan.")
 
-    const result: CreateReportActionResult = await createReportAction(formData)
-    setSubmitting(false)
-    if (result.ok) {
-      onCreated(result.item)
-    } else {
-      setErrors(result.errors)
-      fokusErrorPertama(result.errors)
+      const tokenResponse = await fetch("/api/reports/photo-uploads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: foto.type, size: foto.size }),
+      })
+      if (!tokenResponse.ok) {
+        const problem = (await tokenResponse.json().catch(() => null)) as { detail?: unknown } | null
+        throw new Error(typeof problem?.detail === "string" ? problem.detail : "Izin unggah foto gagal dibuat.")
+      }
+
+      const upload = (await tokenResponse.json()) as { pathname?: unknown; uploadUrl?: unknown }
+      if (typeof upload.pathname !== "string" || typeof upload.uploadUrl !== "string") {
+        throw new Error("Respons unggah foto tidak valid.")
+      }
+      uploadedPathname = upload.pathname
+
+      const uploadResponse = await fetch(upload.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": foto.type },
+        body: foto,
+      })
+      if (!uploadResponse.ok) throw new Error("Foto gagal disimpan. Silakan coba lagi.")
+
+      const formData = new FormData()
+      formData.set("facilityId", facilityId)
+      formData.set("kategori", kategori)
+      formData.set("deskripsi", deskripsi)
+      formData.set("fotoPathname", upload.pathname)
+      formData.set("fotoType", foto.type)
+      formData.set("fotoSize", String(foto.size))
+
+      const result: CreateReportActionResult = await createReportAction(formData)
+      if (result.ok) {
+        uploadedPathname = null
+        onCreated(result.item)
+      } else {
+        await discardUploadedPhoto(upload.pathname)
+        setErrors(result.errors)
+        setSubmissionMessage(result.message)
+        fokusErrorPertama(result.errors)
+      }
+    } catch (error) {
+      if (uploadedPathname) await discardUploadedPhoto(uploadedPathname)
+      const message = error instanceof Error ? error.message : "Unggahan foto gagal. Silakan coba lagi."
+      setErrors({ foto: message })
+      setSubmissionMessage(message)
+      fokusErrorPertama({ foto: message })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function discardUploadedPhoto(pathname: string) {
+    try {
+      await fetch("/api/reports/photo-uploads", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pathname }),
+      })
+    } catch {
+      // Pembersihan sisi server best-effort; form tetap dapat memberi tahu pengguna.
     }
   }
 
@@ -133,25 +193,39 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                   Fasilitas
                 </FieldLabel>
                 <FieldContent>
-                  <select
-                    ref={facilityRef}
-                    id={`${titleId}-facility`}
-                    className={cx.control}
-                    value={facilityId}
-                    onChange={(event) => setFacilityId(event.target.value)}
-                    aria-invalid={errors.facilityId ? true : undefined}
+                  <Select
+                    name="facilityId"
+                    items={facilityOptions.map((facility) => ({
+                      value: String(facility.id),
+                      label: `${facility.nama} - ${LABEL_TIPE_FASILITAS[facility.tipe]}`,
+                    }))}
+                    value={facilityId || null}
+                    onValueChange={(value) => setFacilityId(value ?? "")}
+                    modal={false}
                     disabled={facilityOptions.length === 0}
                   >
-                    {facilityOptions.map((facility) => (
-                      <option key={facility.id} value={facility.id}>
-                        {facility.nama} - {LABEL_TIPE_FASILITAS[facility.tipe]}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      ref={facilityRef}
+                      id={`${titleId}-facility`}
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+                      aria-required="true"
+                      aria-invalid={errors.facilityId ? true : undefined}
+                      aria-describedby={errors.facilityId ? facilityErrorId : undefined}
+                    >
+                      <SelectValue placeholder="Pilih fasilitas..." />
+                    </SelectTrigger>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      {facilityOptions.map((facility) => (
+                        <SelectItem key={facility.id} value={String(facility.id)}>
+                          {facility.nama} - {LABEL_TIPE_FASILITAS[facility.tipe]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {facilityOptions.length === 0 && (
                     <p className="text-sm text-muted-foreground">Belum ada fasilitas yang tersedia untuk dilaporkan.</p>
                   )}
-                  <FieldError errors={[{ message: errors.facilityId }]} />
+                  <FieldError id={facilityErrorId} errors={[{ message: errors.facilityId }]} />
                 </FieldContent>
               </Field>
 
@@ -160,22 +234,32 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                   Kategori
                 </FieldLabel>
                 <FieldContent>
-                  <select
-                    ref={kategoriRef}
-                    id={`${titleId}-category`}
-                    className={cx.control}
-                    value={kategori}
-                    onChange={(event) => setKategori(event.target.value)}
-                    aria-invalid={errors.kategori ? true : undefined}
+                  <Select
+                    name="kategori"
+                    items={KATEGORI_LAPORAN.map((item) => ({ value: item, label: item }))}
+                    value={kategori || null}
+                    onValueChange={(value) => setKategori(value ?? "")}
+                    modal={false}
                   >
-                    <option value="">Pilih kategori...</option>
-                    {KATEGORI_LAPORAN.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                  <FieldError errors={[{ message: errors.kategori }]} />
+                    <SelectTrigger
+                      ref={kategoriRef}
+                      id={`${titleId}-category`}
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+                      aria-required="true"
+                      aria-invalid={errors.kategori ? true : undefined}
+                      aria-describedby={errors.kategori ? kategoriErrorId : undefined}
+                    >
+                      <SelectValue placeholder="Pilih kategori..." />
+                    </SelectTrigger>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      {KATEGORI_LAPORAN.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError id={kategoriErrorId} errors={[{ message: errors.kategori }]} />
                 </FieldContent>
               </Field>
 
@@ -231,9 +315,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
+                          className={BUTTON_ACTION_CLASS}
                           onClick={() => handleFile(null)}
-                          className="w-fit"
                         >
                           <Trash2 aria-hidden="true" />
                           Hapus
@@ -256,13 +339,25 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                 </FieldContent>
               </Field>
 
-              <div className="mt-2 flex justify-end gap-2 border-t border-border pt-4">
-                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                  Batal
-                </Button>
-                <Button type="submit" loading={submitting}>
-                  {submitting ? null : "Kirim laporan"}
-                </Button>
+              <div className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
+                {submissionMessage && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {submissionMessage}
+                  </p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={BUTTON_ACTION_CLASS}
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Batal
+                  </Button>
+                  <Button type="submit" className={BUTTON_ACTION_CLASS} loading={submitting}>
+                    {submitting ? null : "Kirim laporan"}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>

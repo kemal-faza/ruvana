@@ -47,6 +47,8 @@ export function validateReportSubmission(input: ReportFormInput): ReportValidati
     errors.foto = "Foto wajib dilampirkan.";
   } else if (!input.fotoType || !FOTO_TIPE_DIIZINKAN.includes(input.fotoType.toLowerCase())) {
     errors.foto = "Foto harus berupa gambar JPG, PNG, atau WebP.";
+  } else if (input.fotoSize != null && (!Number.isSafeInteger(input.fotoSize) || input.fotoSize < 1)) {
+    errors.foto = "Ukuran foto tidak valid.";
   } else if (input.fotoSize != null && input.fotoSize > LAPORAN_UPLOAD.maksByte) {
     errors.foto = `Ukuran foto maksimal ${Math.round(LAPORAN_UPLOAD.maksByte / (1024 * 1024))} MB.`;
   }

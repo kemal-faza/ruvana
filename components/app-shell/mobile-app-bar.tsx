@@ -12,7 +12,7 @@ export function MobileAppBar() {
   if (!isMobile) return null
 
   return (
-    <header className="flex min-h-16 items-center justify-between border-b border-border bg-background px-4 lg:hidden">
+    <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-border bg-background px-4 lg:hidden">
       <Button
         type="button"
         variant="ghost"

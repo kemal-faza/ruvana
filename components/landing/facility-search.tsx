@@ -36,7 +36,7 @@ export function FacilitySearch() {
     >
       <form
         method="get"
-        action="/fasilitas"
+        action="/reservasi"
         className={cn(
           "grid grid-cols-1 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-subtle",
           "max-lg:grid-cols-2 max-md:p-search-inset",
@@ -58,7 +58,7 @@ export function FacilitySearch() {
           {/* `modal={false}` mencegah Base UI mengunci scroll halaman. Kunci itu menulis
               `overflow: hidden` ke scroller viewport sehingga scrollbar hilang, dan karena
               tipografi landing page memakai `vw`, ukuran font ikut berubah. */}
-          <Select name="tipe" items={tipeOptions} modal={false}>
+          <Select name="type" items={tipeOptions} modal={false}>
             <SelectTrigger
               aria-label="Pilih tipe fasilitas"
               className="h-auto min-h-12 w-full border-0 bg-transparent p-0 text-xs text-foreground focus-visible:border-0 focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent dark:hover:bg-transparent cursor-pointer"
@@ -78,7 +78,8 @@ export function FacilitySearch() {
         </div>
 
         <div data-slot="search-field" className={fieldClass}>
-          <DatePicker name="tanggal" aria-label="Pilih tanggal" />
+          {/* Tanggal diteruskan ke alur reservasi; tipe menyaring pilihan fasilitas di sana. */}
+          <DatePicker name="date" aria-label="Pilih tanggal" />
         </div>
 
         <button

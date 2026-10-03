@@ -1,14 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { BATAS_PENGAJUAN_JAM, BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
 import {
   blockedByLabel,
   getValidEndTimes,
   type FacilityAvailability,
 } from "@/lib/reservations/slot-range";
-import { parseTimeToMinutes } from "@/lib/time/reservation-time";
-import { Button } from "@/components/ui/button";
+import {
+  pesanSuksesPengajuan,
+  petakanGalatField,
+  ringkasGalatPengajuan,
+} from "@/lib/reservations/reservation-display";
+import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -23,14 +29,24 @@ interface ReservationFormProps {
   facilityId: number;
   date: string;
   availability: FacilityAvailability | null;
+  /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 24 jam, bukan jam klien. */
+  serverNow: string;
 }
 
-export function ReservationForm({ facilities, facilityId, date, availability }: ReservationFormProps) {
+const PESAN_BATAS_PENGAJUAN = `Reservasi minimal ${BATAS_PENGAJUAN_JAM} jam sebelum waktu mulai.`;
+
+export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; msg: string; detail?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; msg: string; konflik?: boolean } | null>(null);
+  const [galatField, setGalatField] = useState<{ jamMulai?: string; jamSelesai?: string; tujuan?: string }>({});
+  const [ringkasan, setRingkasan] = useState<string | null>(null);
+  // Penjaga submit ganda di luar state agar klik kedua yang datang sebelum
+  // render ulang tetap ditolak (tombol juga dinonaktifkan saat loading).
+  const mengirimRef = useRef(false);
+  const router = useRouter();
 
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
   // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
@@ -54,6 +70,19 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     }
     return map;
   }, [availabilityForSelected]);
+
+  // Slot dalam jendela pengajuan H-1 dihitung dari waktu server, bukan jam
+  // klien. Aturan yang sama ditegakkan otoritatif oleh service saat submit.
+  const mepetByStart = useMemo(() => {
+    const acuan = new Date(serverNow);
+    const map = new Map<string, boolean>();
+    for (const time of VALID_START_TIMES) {
+      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(date, time), acuan));
+    }
+    return map;
+  }, [date, serverNow]);
+
+  const adaSlotMepet = useMemo(() => [...mepetByStart.values()].some(Boolean), [mepetByStart]);
 
   // Opsi jam selesai: setelah jam mulai & seluruh slot di antaranya tersedia
   const validEndTimes = useMemo(
@@ -106,43 +135,67 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
     );
   }
 
+  function fokusKe(id: string | null) {
+    if (!id) return;
+    document.getElementById(id)?.focus();
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mengirimRef.current) return;
     setResult(null);
+    setGalatField({});
+    setRingkasan(null);
 
-    // validasi client
-    if (!selectedFacilityId || selectedFacilityId < 1) {
-      setResult({ ok: false, msg: "Pilih fasilitas terlebih dahulu" });
-      return;
-    }
-    if (!date) {
-      setResult({ ok: false, msg: "Tanggal wajib diisi" });
-      return;
+    // validasi client: kumpulkan galat per field, tampilkan di dekat field,
+    // ringkas di atas, dan fokus ke field invalid pertama.
+    const fieldBaru: typeof galatField = {};
+    let fokusPertama: string | null = null;
+    const labelRingkasan: string[] = [];
+    function catat(kunci: keyof typeof fieldBaru, id: string, label: string, pesan: string) {
+      fieldBaru[kunci] = pesan;
+      labelRingkasan.push(label);
+      fokusPertama ??= id;
     }
     if (!startTime) {
-      setResult({ ok: false, msg: "Pilih jam mulai" });
-      return;
+      catat("jamMulai", "jam-mulai", "Jam mulai", "Jam mulai wajib dipilih.");
+    } else if (mepetByStart.get(startTime)) {
+      // pertahanan client memakai waktu server saat render: slot dalam
+      // jendela H-1 langsung ditolak tanpa menunggu respons server.
+      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN);
     }
     if (!endTime) {
-      setResult({ ok: false, msg: "Pilih jam selesai" });
-      return;
+      catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
     }
     // pertahanan terakhir di client: rentang tidak boleh melewati slot yang tidak tersedia.
     // Dilewati bila availability bukan milik fasilitas terpilih (server yang memvalidasi).
-    if (availabilityForSelected && !getValidEndTimes(startTime, availabilityForSelected.slots).includes(endTime)) {
-      setResult({ ok: false, msg: "Rentang waktu melewati slot yang tidak tersedia" });
-      return;
+    if (
+      startTime &&
+      endTime &&
+      availabilityForSelected &&
+      !getValidEndTimes(startTime, availabilityForSelected.slots).includes(endTime)
+    ) {
+      catat(
+        "jamSelesai",
+        "jam-selesai",
+        "Jam selesai",
+        "Rentang waktu melewati slot yang tidak tersedia. Pilih jam selesai lain.",
+      );
     }
     if (!tujuan.trim()) {
-      setResult({ ok: false, msg: "Tujuan penggunaan wajib diisi" });
-      return;
+      catat("tujuan", "tujuan", "Tujuan", "Tujuan wajib diisi.");
+    } else if (tujuan.trim().length > BATAS_TUJUAN_MAX) {
+      catat("tujuan", "tujuan", "Tujuan", `Tujuan maksimal ${BATAS_TUJUAN_MAX} karakter.`);
     }
-    if (tujuan.trim().length > BATAS_TUJUAN_MAX) {
-      setResult({ ok: false, msg: `Tujuan maksimal ${BATAS_TUJUAN_MAX} karakter` });
+    if (labelRingkasan.length > 0) {
+      setGalatField(fieldBaru);
+      setRingkasan(`Periksa kembali isian berikut: ${labelRingkasan.join(", ")}.`);
+      fokusKe(fokusPertama);
       return;
     }
     // cek jam operasional sudah dijamin oleh opsi dropdown
 
+    mengirimRef.current = true;
     setLoading(true);
     try {
       const body = {
@@ -162,19 +215,52 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        setResult({ ok: true, msg: `Reservasi PENDING dibuat (id ${data?.id ?? "-"})`, detail: JSON.stringify(data, null, 2) });
-        setStartTime("");
-        setEndTime("");
+        // Konfirmasi ditampilkan sebagai banner di halaman detail (satu-satunya
+        // bukti sukses); tidak ada dump JSON atau enum di layar form.
+        const idBaru =
+          typeof data === "object" && data !== null && typeof (data as { id?: unknown }).id === "number"
+            ? (data as { id: number }).id
+            : null;
+        if (idBaru === null) {
+          setResult({ ok: true, msg: pesanSuksesPengajuan() });
+        } else {
+          router.push(`/reservasi/riwayat/${idBaru}?baru=1`);
+        }
       } else {
-        // tampilkan problem+json
-        const detail = data?.detail || data?.title || `Gagal ${res.status}`;
-        const errors = data?.errors ? ` - ${JSON.stringify(data.errors)}` : "";
-        const avail = data?.availability ? `\nAvailability: ${JSON.stringify(data.availability).slice(0, 400)}...` : "";
-        setResult({ ok: false, msg: `${detail}${errors}`, detail: JSON.stringify(data, null, 2) + avail });
+        // Input dipertahankan agar pengguna dapat memperbaiki dan mencoba lagi.
+        const konflik = res.status === 409;
+        const body = data as { errors?: unknown } | null;
+        const pemetaan = petakanGalatField(body?.errors);
+        // Kode aturan dari server agar pesan H-1 tampil apa adanya di dekat
+        // field, bukan pesan generik.
+        const galatBatasPengajuan =
+          Array.isArray(body?.errors) &&
+          body.errors.some(
+            (item) =>
+              typeof item === "object" &&
+              item !== null &&
+              (item as { code?: unknown }).code === "INSUFFICIENT_LEAD_TIME",
+          );
+        if (pemetaan.length > 0) {
+          const fieldServer: typeof galatField = {};
+          for (const item of pemetaan) {
+            if (item.idKontrol === "jam-mulai")
+              fieldServer.jamMulai = galatBatasPengajuan ? PESAN_BATAS_PENGAJUAN : "Nilai jam mulai tidak valid. Periksa kembali.";
+            if (item.idKontrol === "jam-selesai") fieldServer.jamSelesai = "Nilai jam selesai tidak valid. Periksa kembali.";
+            if (item.idKontrol === "tujuan") fieldServer.tujuan = "Nilai tujuan tidak valid. Periksa kembali.";
+          }
+          setGalatField(fieldServer);
+          setRingkasan(`Periksa kembali isian berikut: ${pemetaan.map((item) => item.label).join(", ")}.`);
+          fokusKe(pemetaan.find((item) => item.idKontrol !== null)?.idKontrol ?? null);
+        } else {
+          // tampilkan ringkasan aman: tanpa enum, id, dump JSON, atau kunci internal.
+          setResult({ ok: false, msg: ringkasGalatPengajuan(data, res.status), konflik });
+        }
       }
-    } catch (err) {
-      setResult({ ok: false, msg: `Error jaringan: ${String(err)}` });
+    } catch {
+      setResult({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
     } finally {
+      mengirimRef.current = false;
       setLoading(false);
     }
   }
@@ -230,14 +316,19 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               </Field>
             </div>
             <div>
-              <Button type="submit" variant="outline">
+              <Button type="submit" variant="soft" className={BUTTON_ACTION_CLASS}>
                 Tampilkan ketersediaan
               </Button>
             </div>
           </form>
         </section>
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-6">
+        <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+          {ringkasan && (
+            <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <p className="font-medium">{ringkasan}</p>
+            </div>
+          )}
           <section aria-label="Waktu" className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
@@ -250,14 +341,25 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               <Field>
                 <FieldLabel htmlFor="jam-mulai">Jam mulai</FieldLabel>
                 <Select value={startTime} onValueChange={handleStartChange}>
-                  <SelectTrigger id="jam-mulai" className="w-full">
+                  <SelectTrigger
+                    id="jam-mulai"
+                    className="w-full"
+                    // Rujuk deskripsi hanya saat ia dirender; saat galat field
+                    // menggantikannya, IDREF akan menggantung.
+                    aria-describedby={
+                      adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
+                    }
+                  >
                     <SelectValue placeholder="Pilih jam mulai" />
                   </SelectTrigger>
                   <SelectContent>
                     {VALID_START_TIMES.map((time) => {
                       const status = statusByStart.get(time);
-                      const disabled = status ? !status.available : false;
-                      const reason = status ? blockedByLabel(status.blockedBy) : null;
+                      // Slot mepet H-1 dinonaktifkan dengan label netral
+                      // "Tidak tersedia" — jangan menyiratkan slot terisi.
+                      const mepet = mepetByStart.get(time) ?? false;
+                      const disabled = mepet || (status ? !status.available : false);
+                      const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
                       return (
                         <SelectItem key={time} value={time} disabled={disabled}>
                           {reason ? `${time} — ${reason}` : time}
@@ -266,7 +368,11 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                     })}
                   </SelectContent>
                 </Select>
-                {!startTime && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {adaSlotMepet && !galatField.jamMulai && (
+                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN}</FieldDescription>
+                )}
+                {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
               </Field>
 
               <Field>
@@ -293,6 +399,7 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
                 ) : validEndTimes.length === 0 ? (
                   <FieldDescription>Tidak ada jam selesai yang tersedia setelah jam ini.</FieldDescription>
                 ) : null}
+                {galatField.jamSelesai && <FieldError>{galatField.jamSelesai}</FieldError>}
               </Field>
             </div>
             {!availabilityForSelected && (
@@ -327,7 +434,11 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               <FieldDescription>
                 {tujuan.length}/{BATAS_TUJUAN_MAX} karakter.
               </FieldDescription>
-              {tujuan.length > BATAS_TUJUAN_MAX && <FieldError>Tujuan melebihi batas</FieldError>}
+              {galatField.tujuan ? (
+                <FieldError>{galatField.tujuan}</FieldError>
+              ) : (
+                tujuan.length > BATAS_TUJUAN_MAX && <FieldError>Tujuan melebihi batas</FieldError>
+              )}
             </Field>
 
             {summary && (
@@ -336,20 +447,45 @@ export function ReservationForm({ facilities, facilityId, date, availability }: 
               </p>
             )}
 
-            <div className="flex gap-3">
-              <Button type="submit" loading={loading} disabled={loading}>
-                Ajukan reservasi
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit" loading={loading} disabled={loading} className={`${BUTTON_ACTION_CLASS} min-w-44`}>
+                {loading ? "Mengajukan..." : "Ajukan reservasi"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => { setStartTime(""); setEndTime(""); setResult(null); }}>
+              <Button
+                type="button"
+                variant="outline"
+                className={BUTTON_ACTION_CLASS}
+                onClick={() => {
+                  setStartTime("");
+                  setEndTime("");
+                  setResult(null);
+                  setGalatField({});
+                  setRingkasan(null);
+                }}
+              >
                 Reset waktu
               </Button>
             </div>
           </section>
 
           {result && (
-            <div className={`rounded-md border p-3 text-sm ${result.ok ? "border-green-200 bg-green-50 text-green-900" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
+            <div aria-live="polite" className={`rounded-md border p-3 text-sm ${result.ok ? "border-success-subdued bg-success-subdued text-success-subdued-foreground" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
               <p className="font-medium">{result.msg}</p>
-              {result.detail && <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word text-xs opacity-80">{result.detail}</pre>}
+              {result.konflik && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p>Pilih slot lain yang masih tersedia, atau muat ulang slot terbaru tanpa mengulang isian Anda.</p>
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={BUTTON_ACTION_CLASS}
+                      onClick={() => router.refresh()}
+                    >
+                      Segarkan slot
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </form>

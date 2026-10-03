@@ -32,7 +32,7 @@
 15. [Ownership Tim](#15-ownership-tim)
 16. [Urutan Milestone](#16-urutan-milestone)
 17. [Risiko dan Mitigasi](#17-risiko-dan-mitigasi)
-18. [Traceability 17 User Story](#18-traceability-17-user-story)
+18. [Traceability 19 User Story](#18-traceability-19-user-story)
 19. [Definition of Done Rilis UTS](#19-definition-of-done-rilis-uts)
 20. [Keputusan Final dan Resolusi Konflik](#20-keputusan-final-dan-resolusi-konflik)
 
@@ -51,8 +51,8 @@
 | Artefak | Menjadi sumber kebenaran untuk |
 |---|---|
 | `docs/PRD.md` | Scope, perilaku, aturan bisnis, dan acceptance criteria |
-| `docs/DESIGN.md` | Visual, layout, komponen, dan interaksi UI |
-| `docs/superpowers/DECISION.md` | Keputusan arsitektur lintas modul dan konsekuensinya |
+| `DESIGN.md` | Visual, layout, komponen, dan interaksi UI |
+| `docs/DECISION.md` | Keputusan arsitektur lintas modul dan konsekuensinya |
 | `docs/api/openapi.yaml` | Kontrak HTTP antara frontend dan backend |
 | `prisma/schema.prisma` | Bentuk schema database yang telah diimplementasikan |
 | `README.md` | Setup, operasi lokal, akun demo, dan deployment |
@@ -63,7 +63,7 @@ Perubahan yang menyentuh lebih dari satu batas harus memperbarui seluruh artefak
 
 Ruvana adalah aplikasi web reservasi dan pelaporan fasilitas kampus. Aplikasi menyediakan informasi fasilitas dan ketersediaannya kepada publik, memungkinkan pengguna terverifikasi mengajukan reservasi dan laporan kerusakan, membantu petugas memproses antrean operasional, serta memberi admin sarana mengelola akun, fasilitas, dan rekap penggunaan.
 
-Rilis UTS mencakup seluruh 17 user story pada dokumen proyek. Produk harus dapat dijalankan secara lokal dan melalui deployment Vercel. Batas sumber kebenaran setiap artefak dijelaskan pada bagian Cara Membaca Dokumen.
+Rilis UTS mencakup seluruh 19 user story pada dokumen proyek. Produk harus dapat dijalankan secara lokal dan melalui deployment Vercel. Batas sumber kebenaran setiap artefak dijelaskan pada bagian Cara Membaca Dokumen.
 
 ## 2. Latar Belakang dan Masalah
 
@@ -88,7 +88,7 @@ Ruvana menyatukan discovery, reservasi, pelaporan, maintenance, dan rekap dalam 
 
 ### 3.2 Indikator keberhasilan rilis
 
-- Seluruh 17 user story lulus User Acceptance Test (UAT).
+- Seluruh 19 user story lulus User Acceptance Test (UAT).
 - Semua pemeriksaan role dan ownership lulus pengujian negatif.
 - Pengujian konkurensi membuktikan paling banyak satu reservasi bertabrakan yang dapat disetujui.
 - Dataset pada dashboard, CSV, XLSX, dan PDF konsisten untuk filter yang sama.
@@ -122,7 +122,7 @@ Merupakan akun `ACTIVE` dengan role `pengguna`. Dapat membuat dan melihat reserv
 
 ### 5.3 Petugas
 
-Merupakan akun `ACTIVE` dengan role `petugas`. Dapat memproses reservasi dan laporan, membatalkan reservasi secara mendesak, serta mengubah status maintenance fasilitas. Petugas tidak dapat mendaftar mandiri.
+Merupakan akun `ACTIVE` dengan role `petugas`. Dapat memproses reservasi dan laporan, membatalkan reservasi secara mendesak, mengubah status maintenance fasilitas, serta melihat ringkasan dan rekap bulanan reservasi. Petugas tidak dapat mendaftar mandiri.
 
 ### 5.4 Admin
 
@@ -228,8 +228,8 @@ View tidak boleh menjalankan query Prisma atau memiliki aturan bisnis. Folder `/
 - `docs/api/openapi.yaml` menggunakan OpenAPI 3.1.2 dalam format YAML dan menjadi kontrak seluruh route handler HTTP yang digunakan frontend.
 - Kode frontend yang berjalan di browser memanggil route handler sesuai kontrak OpenAPI. Route handler menangani batas HTTP, lalu mendelegasikan aturan bisnis dan akses data kepada service di `lib/`.
 - Server Component boleh memanggil service read-only yang sama secara langsung dan tidak melakukan HTTP request ke route handler milik aplikasi sendiri. Bentuk data yang tampil tetap mengikuti istilah domain dan aturan akses yang sama.
-- `docs/superpowers/DECISION.md` mencatat keputusan teknis lintas modul yang tidak dapat diwakili oleh PRD, OpenAPI, atau Prisma schema. Dokumen dibuat ketika keputusan pertama perlu dicatat dan tidak menduplikasi isi dokumen lain.
-- `DESIGN.md` dari repository prototipe menjadi sumber kebenaran visual setelah disalin ke `docs/DESIGN.md`. Header snapshot wajib mencatat URL repository sumber dan commit hash agar versi desain dapat ditelusuri.
+- `docs/DECISION.md` mencatat keputusan teknis lintas modul yang tidak dapat diwakili oleh PRD, OpenAPI, atau Prisma schema. Dokumen dibuat ketika keputusan pertama perlu dicatat dan tidak menduplikasi isi dokumen lain.
+- `DESIGN.md` dari repository prototipe menjadi sumber kebenaran visual setelah disalin ke root repository. Header snapshot wajib mencatat URL repository sumber dan commit hash agar versi desain dapat ditelusuri.
 - `README.md` tetap menjadi panduan setup dan operasi lokal. Checklist UAT dibuat terpisah menjelang rilis, bukan pada fase desain awal.
 
 **Acceptance criteria dokumentasi:**
@@ -237,8 +237,8 @@ View tidak boleh menjalankan query Prisma atau memiliki aturan bisnis. Folder `/
 - OpenAPI lolos parser/linter yang mendukung OpenAPI 3.1.2.
 - Setiap route handler yang dipanggil frontend tercantum beserta autentikasi, parameter, request, success response, dan bentuk error-nya.
 - Perubahan kontrak HTTP dan OpenAPI diperbarui dalam perubahan repository yang sama.
-- `docs/superpowers/DECISION.md` hanya memuat keputusan yang telah disetujui, alasan, konsekuensi, dan tanggal keputusan; tidak menjadi salinan PRD.
-- Review visual dan penerimaan UI tidak dapat diselesaikan sebelum snapshot `docs/DESIGN.md` mempunyai sumber dan commit hash yang dapat diverifikasi.
+- `docs/DECISION.md` hanya memuat keputusan yang telah disetujui, alasan, konsekuensi, dan tanggal keputusan; tidak menjadi salinan PRD.
+- Review visual dan penerimaan UI tidak dapat diselesaikan sebelum snapshot `DESIGN.md` mempunyai sumber dan commit hash yang dapat diverifikasi.
 - README dinyatakan lengkap jika memuat prasyarat, environment variable tanpa secret, instalasi dependency, Prisma generate, migration, seed, cara menjalankan lokal, akun demo, pemeriksaan CI, dan ringkasan deployment production.
 
 ## 8. Aturan Bisnis Global
@@ -247,7 +247,8 @@ View tidak boleh menjalankan query Prisma atau memiliki aturan bisnis. Folder `/
 - Satu slot berdurasi 30 menit; tersedia 26 slot per hari.
 - Waktu mulai dan selesai harus tepat pada batas slot.
 - Waktu selesai harus sesudah waktu mulai dan tidak melewati pukul 20.00.
-- Reservasi tidak dapat dibuat untuk tanggal lampau maupun slot hari ini yang instant mulainya sudah sama dengan atau lebih awal dari waktu server saat pengajuan.
+- Reservasi hanya dapat diajukan bila waktu mulai masih sekurang-kurangnya 24 jam (`BATAS_PENGAJUAN_JAM`) dari instant pengajuan; tepat 24 jam diterima, kurang dari itu ditolak. Perhitungan memakai cara yang sama seperti batas pembatalan H−24.
+- Reservasi tidak dapat dibuat untuk tanggal lampau maupun slot yang instant mulainya sudah sama dengan atau lebih awal dari waktu server saat pengajuan.
 - Reservasi `PENDING` boleh saling overlap.
 - Hanya reservasi `APPROVED` yang memblokir ketersediaan.
 - Persetujuan selalu melakukan pemeriksaan konflik terakhir secara atomik.
@@ -339,6 +340,30 @@ Admin dapat mencari dan memfilter akun serta menonaktifkan atau mengaktifkan kem
 - Akun `DISABLED` tidak dapat membuat sesi baru atau melanjutkan operasi terlindungi.
 - Aktivasi kembali hanya mengubah akun `DISABLED` menjadi `ACTIVE` dan tidak mengubah role atau histori akun.
 
+#### IAM-08 — Pengaturan akun
+
+Pengguna, petugas, dan admin dapat mengelola profil, keamanan masuk, bahasa, tampilan, dan informasi pembaruan sesuai perannya.
+
+**Acceptance criteria:**
+
+- Setiap role hanya dapat membuka halaman pengaturannya sendiri melalui pemeriksaan otoritas di server.
+- Nama profil dapat diperbarui; perubahan email belum tersedia karena belum ada alur verifikasi email baru.
+- Pengguna dapat mengganti kata sandi setelah memasukkan kata sandi saat ini. Kata sandi baru harus 8–72 byte UTF-8, disimpan sebagai hash, dan perubahan mengakhiri sesi lain tanpa mengakhiri sesi saat ini.
+- Pengguna dapat mengakhiri sesi di perangkat lain tanpa mengakhiri sesi saat ini.
+- Bagian notifikasi hanya menjelaskan tempat untuk memantau pembaruan sesuai role. Notifikasi otomatis email, WhatsApp, dan push tetap di luar cakupan rilis ini.
+- Bahasa antarmuka yang tersedia pada rilis ini adalah Bahasa Indonesia.
+- Tema terang/gelap tersedia melalui pengaturan tampilan.
+
+#### PRIV-01 — Persetujuan cookie pengunjung
+
+Pengunjung beranda mendapat penjelasan mengenai cookie yang digunakan dan dapat menyimpan pilihannya pada browser.
+
+**Acceptance criteria:**
+
+- Banner menjelaskan bahwa cookie sesi diperlukan untuk autentikasi dan keamanan akun.
+- Pengunjung dapat menyetujui penggunaan cookie atau memilih hanya cookie wajib; pilihan disimpan di `localStorage` pada browser.
+- Rilis ini tidak menggunakan cookie analitik atau iklan. Pilihan cookie wajib tidak mematikan cookie sesi yang diperlukan untuk login.
+
 **Transisi status akun:**
 
 - `PENDING → ACTIVE | REJECTED`
@@ -420,26 +445,32 @@ Pengguna memilih satu atau beberapa slot berurutan pada satu fasilitas dan tangg
 - Tujuan wajib diisi sesuai batas input yang ditetapkan.
 - Pengajuan valid membuat tepat satu reservasi `PENDING` milik pengguna yang sedang login.
 - Waktu pengajuan dicatat oleh server saat reservasi berhasil dibuat dan tidak dapat ditentukan oleh klien.
+- Pengajuan yang waktu mulainya kurang dari 24 jam dari instant pengajuan ditolak; tepat 24 jam diterima.
+- Pengajuan sukses mengarahkan ke halaman detail reservasi yang baru dibuat dan menampilkan banner konfirmasi `role="status"` berjudul `Reservasi berhasil diajukan`, status label domain `Menunggu`, penjelasan peninjauan petugas, dan tautan `Lihat riwayat reservasi`; banner tidak tampil saat detail dibuka dari riwayat.
+- Layar konfirmasi dan form tidak menampilkan data mentah database (enum, id, dump JSON).
+- Fokus dikelola setelah navigasi ke detail; tombol kirim mempertahankan ukuran, menampilkan label proses, dan mencegah submit ganda.
 
 #### RES-02 — Validasi reservasi
 
 Server menolak pengajuan dengan kondisi berikut:
 
 - tanggal lampau;
-- slot hari ini yang sudah mulai atau berlalu;
+- waktu mulai yang tersisa kurang dari 24 jam dari instant pengajuan (`BATAS_PENGAJUAN_JAM`);
+- slot yang sudah mulai atau berlalu;
 - waktu di luar jam operasional atau tidak selaras slot;
 - rentang kosong atau terbalik;
 - fasilitas tidak tersedia; atau
 - bentrok dengan reservasi `APPROVED`.
 
-Perbandingan slot hari ini menggunakan instant UTC hasil konversi tanggal/waktu `Asia/Jakarta`. Slot dengan waktu mulai tepat sama dengan waktu server ditolak, bukan dibuat lalu diubah menjadi `EXPIRED`.
+Perbandingan waktu memakai instant UTC hasil konversi tanggal/waktu `Asia/Jakarta` terhadap waktu server saat pengajuan. Batas 24 jam dihitung sebagai selisih tepat antara instant pengajuan dan instant waktu mulai, sama seperti batas pembatalan H−24: tepat 24 jam diterima, kurang dari itu ditolak. Slot dengan waktu mulai tepat sama dengan waktu server ditolak, bukan dibuat lalu diubah menjadi `EXPIRED`.
 
 **Acceptance criteria:**
 
 - Seluruh aturan tetap ditegakkan ketika request dikirim tanpa melalui validasi frontend.
 - Kegagalan mengembalikan error yang dapat dikaitkan dengan field atau aturan penyebab tanpa membuat reservasi parsial.
+- Pengajuan tepat 24 jam sebelum waktu mulai diterima; pengajuan 24 jam kurang 1 detik ditolak dengan pesan `Reservasi minimal 24 jam sebelum waktu mulai`.
 - Reservasi `PENDING` lain tidak dianggap konflik, sedangkan setiap irisan dengan `APPROVED` dianggap konflik.
-- Kasus batas waktu tepat pada jam buka, jam tutup, waktu sekarang, dan pergantian tanggal `Asia/Jakarta` tercakup pengujian.
+- Kasus batas waktu tepat pada jam buka, jam tutup, waktu sekarang, batas 24 jam, dan pergantian tanggal `Asia/Jakarta` tercakup pengujian.
 
 #### RES-03 — Riwayat dan detail
 
@@ -449,6 +480,10 @@ Pengguna dapat melihat status dan detail seluruh reservasi miliknya, termasuk al
 
 - Daftar memuat seluruh status reservasi milik pengguna dan dapat dibuka ke detail.
 - Detail menampilkan fasilitas, tanggal, waktu, tujuan, status, dan alasan yang tersedia.
+- Status tampil menggunakan label domain Indonesia (`Menunggu`, `Disetujui`, `Ditolak`, `Dibatalkan Pengguna`, `Dibatalkan Petugas`, `Kedaluwarsa`) sesuai `DESIGN.md` bagian Desain konten dan `LABEL_STATUS_RESERVASI`; enum teknis tidak tampil di UI.
+- Alasan tampil dengan label `Alasan` berbahasa Indonesia.
+- Header dan field tampil menggunakan istilah domain Indonesia (`Fasilitas`, `Tanggal`, `Waktu`, `Tujuan`, `Status`, `Alasan`).
+- Komponen client hanya menerima data siap tampil melalui presenter `lib/reservations/reservation-display.ts`; kontrak API lama dipertahankan tanpa penghapusan field.
 - Pengguna tidak dapat membaca reservasi milik pengguna lain dengan mengganti identifier.
 - Keadaan tanpa riwayat ditampilkan sebagai keadaan kosong, bukan error.
 
@@ -515,10 +550,38 @@ Saat fasilitas berubah menjadi `UNDER_MAINTENANCE`, semua reservasi masa depan b
 - Service meneruskan `Prisma.TransactionClient` yang sama kepada listener `facility.status.changed` dan menunggu listener sebelum commit.
 - Respons berhasil hanya diberikan setelah perubahan status dan seluruh pembatalan wajib tersimpan.
 - Kegagalan salah satu operasi me-roll back seluruh perubahan.
-- Kontrak listener fase awal diubah ke signature pada Bagian 7.3 dan keputusan dicatat pada `docs/superpowers/DECISION.md` sebelum implementasi.
+- Kontrak listener fase awal diubah ke signature pada Bagian 7.3 dan keputusan dicatat pada `docs/DECISION.md` sebelum implementasi.
 - Hanya reservasi `APPROVED` dengan waktu mulai setelah instant perubahan status yang dibatalkan.
 - Reservasi fasilitas lain dan histori masa lalu tidak berubah.
 - Pemicu yang diproses ulang tidak menggandakan pembatalan atau alasan.
+
+#### RES-10 — Ringkasan reservasi petugas
+
+Petugas dapat melihat ringkasan jumlah reservasi per kelompok pada dashboard petugas.
+
+**Acceptance criteria:**
+
+- Ringkasan memuat jumlah per kelompok: `Menunggu` (`PENDING` yang belum kedaluwarsa), `Disetujui` (`APPROVED`, dengan rincian `Sedang berlangsung` = waktu mulai <= waktu sekarang < waktu selesai), `Ditolak` (`REJECTED`), dan `Lainnya` (`Dibatalkan Pengguna`, `Dibatalkan Petugas`, `Kedaluwarsa`).
+- `Sedang berlangsung` adalah indikator turunan dari reservasi `APPROVED`, bukan status baru.
+- Total seluruh kelompok selalu sama dengan jumlah seluruh reservasi.
+- Proses expiry idempoten (RES-08) dijalankan sebelum penghitungan sehingga `PENDING` yang sudah lewat tidak terhitung sebagai `Menunggu`.
+- Ringkasan hanya dapat diakses oleh petugas; peran lain ditolak mengikuti guard halaman dashboard petugas.
+- Nilai nol tetap ditampilkan dengan jelas beserta penjelasan ketika belum ada reservasi.
+
+#### RES-11 — Rekap bulanan
+
+Petugas dapat melihat rekap reservasi per bulan pada dashboard petugas, ditampilkan setelah ringkasan (RES-10).
+
+**Acceptance criteria:**
+
+- Rekap memuat ringkasan tertulis, jumlah per status (seluruh status reservasi), jumlah per fasilitas, dan jumlah reservasi 6 bulan terakhir termasuk bulan terpilih yang disajikan sebagai tabel (label, periode, satuan) tanpa chart.
+- Dasar pengelompokan adalah tanggal pemakaian (kolom `tanggal`), bukan waktu pengajuan.
+- Bulan dipilih lewat query param `?bulan=YYYY-MM` pada pemilih bulan berlabel yang dapat dipakai keyboard; default adalah bulan berjalan menurut kalender `Asia/Jakarta`. Dengan JavaScript, pemilihan bulan memperbarui hanya bagian rekap tanpa reload halaman (posisi scroll dan fokus dipertahankan, URL tetap memuat `?bulan=` sehingga bisa dibagikan dan tombol back berfungsi); tanpa JavaScript, form `GET` tetap berfungsi.
+- Nilai bulan yang tidak valid jatuh ke default dengan pesan yang jelas, bukan error.
+- Bulan tanpa data menampilkan angka 0 beserta penjelasan dan aksi berikutnya, bukan error.
+- Metodologi pengelompokan ditampilkan pada halaman.
+- Rekap hanya dapat diakses oleh petugas; peran lain ditolak mengikuti guard halaman dashboard petugas.
+- Ekspor rekap berada di luar scope.
 
 **Transisi status reservasi:**
 
@@ -739,7 +802,7 @@ Implementasi mengikuti siklus TDD: RED, GREEN, REFACTOR.
 ### Unit test
 
 - jam operasional dan pembentukan slot;
-- aturan pembatalan 24 jam;
+- aturan pembatalan dan pengajuan 24 jam;
 - transisi status;
 - perhitungan okupansi dan frekuensi kerusakan; serta
 - sanitasi nilai ekspor.
@@ -767,7 +830,7 @@ Implementasi mengikuti siklus TDD: RED, GREEN, REFACTOR.
 
 ### UAT dan pemeriksaan rilis
 
-- PM memelihara matriks 17 user story dan bukti hasil.
+- PM memelihara matriks 19 user story dan bukti hasil.
 - UAT dijalankan pada lingkungan lokal dan Vercel.
 - Urutan pemeriksaan teknis mengikuti CI repository: generate Prisma, lint, banned-word check, Next type generation, TypeScript, test suite, dan build.
 
@@ -809,7 +872,7 @@ Ownership bukan silo. Perubahan pada kontrak lintas modul harus ditinjau oleh pe
 
 Dokumen Word, screenshot, dan materi presentasi adalah artefak pengumpulan mata kuliah. Ketiganya bukan sumber kebenaran requirement atau kontrak teknis aplikasi.
 
-PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17 user story.
+PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 19 user story.
 
 ## 17. Risiko dan Mitigasi
 
@@ -821,7 +884,7 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 - **Beban modul tidak seimbang:** PM mengalihkan bantuan berdasarkan progres tanpa mengubah accountability.
 - **Perbedaan dokumen:** bagian keputusan final PRD ini mengungguli ketentuan lama yang bertentangan.
 
-## 18. Traceability 17 User Story
+## 18. Traceability 19 User Story
 
 | US | Ringkasan | Requirement | Owner utama |
 |---|---|---|---|
@@ -833,7 +896,7 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 | US-06 | Melihat riwayat/detail reservasi | RES-03 | Developer 3 |
 | US-07 | Mengirim laporan kerusakan | REP-01 | Developer 4 |
 | US-08 | Memantau laporan | REP-02 | Developer 4 |
-| US-09 | Memproses antrean reservasi | RES-05, RES-06, RES-07, RES-08 | Developer 3 |
+| US-09 | Memproses antrean reservasi | RES-05, RES-06, RES-07, RES-08, RES-10, RES-11 | Developer 3 |
 | US-10 | Mencegah persetujuan konflik | RES-06 | Developer 3 |
 | US-11 | Memproses laporan kerusakan | REP-03 | Developer 4 |
 | US-12 | Mengelola status maintenance | REP-04, RES-09, FAC-04 | Developer 4 + Developer 3 |
@@ -842,6 +905,8 @@ PM menetapkan tanggal internal dan memantau dependensi tanpa mengurangi scope 17
 | US-15 | Memverifikasi registrasi mandiri | IAM-01, IAM-06 | Developer 1 |
 | US-16 | Mengelola fasilitas | FAC-05 | Developer 2 |
 | US-17 | Melihat dan mengekspor rekap | ANA-01, ANA-02 | PM |
+| US-18 | Mengelola pengaturan profil dan keamanan akun | IAM-08 | Developer 1 |
+| US-19 | Menyimpan pilihan cookie beranda | PRIV-01 | PM + Developer 1 |
 
 Authentication wajib (registrasi, login, logout) juga dilacak melalui IAM-01 sampai IAM-03 sebagai requirement global, bukan user story tambahan.
 
@@ -849,7 +914,7 @@ Authentication wajib (registrasi, login, logout) juga dilacak melalui IAM-01 sam
 
 Rilis selesai jika dan hanya jika:
 
-1. seluruh 17 user story dan requirement global autentikasi lulus UAT;
+1. seluruh 19 user story dan requirement global autentikasi lulus UAT;
 2. tidak ada konflik reservasi `APPROVED` pada pengujian normal maupun konkurensi;
 3. pemeriksaan role dan ownership lulus;
 4. foto private hanya dapat diakses pihak berwenang;
@@ -863,7 +928,7 @@ Rilis selesai jika dan hanya jika:
 
 ## 20. Keputusan Final dan Resolusi Konflik
 
-1. **Semua 17 user story wajib sebelum UTS.** Tidak ada pembagian MVP versus opsional untuk rilis ini.
+1. **Semua 19 user story wajib sebelum UTS.** Tidak ada pembagian MVP versus opsional untuk rilis ini.
 2. **Registrasi mandiri wajib.** Akun menunggu verifikasi admin sebelum dapat login.
 3. **Batas pembatalan adalah H−24 jam.** Nilai ini menggantikan H−2 jam pada `TASK.md` dan `config/business.ts`; implementasi harus menyelaraskan konfigurasi, logika, UI, dan test.
 4. **Target lingkungan adalah lokal dan Vercel.** Keduanya harus lulus smoke test.
@@ -873,4 +938,5 @@ Rilis selesai jika dan hanya jika:
 8. **Tidak ada folder `/views` literal.** Struktur App Router dan `components/` merupakan lapisan View dalam arsitektur M/C/V.
 9. **PM memiliki kontribusi teknis.** PM menjadi owner platform/data, analitik/ekspor, integrasi, UAT, dan release, sesuai kontribusi awal pada setup dan schema.
 10. **Kontrak HTTP menggunakan OpenAPI 3.1.2 dalam YAML.** Format ini dipilih untuk kompatibilitas tooling dan kemudahan review manusia; hanya route handler yang benar-benar digunakan frontend yang menjadi bagian kontrak.
-11. **Dokumentasi dibuat secara proporsional.** PRD, snapshot `docs/DESIGN.md`, `docs/superpowers/DECISION.md`, OpenAPI, dan README menjadi set inti; checklist UAT dibuat menjelang rilis dan engineering specification besar tidak dibuat.
+11. **Dokumentasi dibuat secara proporsional.** PRD, snapshot `DESIGN.md`, `docs/DECISION.md`, OpenAPI, dan README menjadi set inti; checklist UAT dibuat menjelang rilis dan engineering specification besar tidak dibuat.
+12. **Batas minimal pengajuan adalah H−1 (24 jam, keputusan pemilik).** Reservasi hanya dapat diajukan bila waktu mulai masih sekurang-kurangnya 24 jam dari instant pengajuan, dihitung dengan cara yang sama seperti batas pembatalan H−24. Aturan ini menggantikan izin membuat reservasi untuk slot hari ini di RES-02; reservasi `PENDING` yang sudah ada tidak diubah.

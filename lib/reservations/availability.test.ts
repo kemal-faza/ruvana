@@ -59,17 +59,16 @@ describe("computeFacilityAvailability", () => {
     expect(blocked.every((s) => s.blockedBy === "APPROVED")).toBe(true);
   });
 
-  it("memilih reservasi berdasarkan tanggal kalender PostgreSQL DATE", async () => {
+  it("memilih reservasi dengan irisan rentang hari WIB, bukan kolom tanggal", async () => {
     const { client, findMany } = makeClient();
     await computeFacilityAvailability(1, "2026-09-15", { client });
 
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          tanggal: {
-            gte: new Date("2026-09-15T00:00:00.000Z"),
-            lt: new Date("2026-09-16T00:00:00.000Z"),
-          },
+          status: "APPROVED",
+          startTime: { lt: new Date("2026-09-15T17:00:00.000Z") },
+          endTime: { gt: new Date("2026-09-14T17:00:00.000Z") },
         }),
       }),
     );

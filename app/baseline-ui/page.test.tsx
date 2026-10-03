@@ -2,6 +2,11 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/baseline-ui/page"
+import { getSessionUser } from "@/lib/auth"
+
+vi.mock("@/lib/auth", () => ({
+  getSessionUser: vi.fn().mockResolvedValue(null),
+}))
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/baseline-ui",
@@ -10,19 +15,20 @@ vi.mock("next/navigation", () => ({
 afterEach(cleanup)
 
 describe("katalog baseline UI", () => {
-  it("menampilkan katalog Core 6 dan shell statis", () => {
-    render(<Home />)
+  it("menampilkan katalog komponen dan shell statis", async () => {
+    render(await Home())
 
     expect(screen.getByRole("heading", { level: 1, name: "Baseline UI Ruvana" })).toBeInTheDocument()
-    expect(screen.getByText("Pratinjau UI")).toBeInTheDocument()
+    expect(screen.getByText("Pratinjau komponen")).toBeInTheDocument()
 
     for (const name of ["Button", "Field", "Card", "Badge", "Skeleton", "Empty state"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument()
     }
 
-    for (const name of ["Ringkasan", "Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
+    for (const name of ["Reservasi", "Fasilitas", "Laporan", "Pengaturan"]) {
       expect(screen.getAllByRole("link", { name }).length).toBeGreaterThan(0)
     }
+    expect(screen.queryByRole("link", { name: "Baseline UI" })).not.toBeInTheDocument()
 
     const input = screen.getByRole("textbox", { name: /nama contoh/i })
     expect(input).toBeRequired()
@@ -33,8 +39,9 @@ describe("katalog baseline UI", () => {
     expect(screen.getByRole("button", { name: "Tambah contoh" })).toBeInTheDocument()
   })
 
-  it("tidak menyisipkan data domain, statistik, atau kontrol peran", () => {
-    render(<Home />)
+  it("tidak menyisipkan data domain, statistik, atau kontrol peran", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(null)
+    render(await Home())
 
     for (const text of [
       "Ruang Sidang",

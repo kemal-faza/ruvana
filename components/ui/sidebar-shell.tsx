@@ -61,9 +61,10 @@ function SidebarMobile({
         data-slot="sidebar"
         data-mobile="true"
         className={cn(
-          "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+          "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground duration-motion-standard ease-motion-standard motion-reduce:transition-none",
           className
         )}
+        overlayClassName="duration-motion-standard motion-reduce:transition-none"
         style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
         side={side}
       >
@@ -259,9 +260,9 @@ export function SidebarRail({ className, ...props }: React.ComponentProps<"butto
   )
 }
 
-export function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
+export function SidebarInset({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <main
+    <div
       data-slot="sidebar-inset"
       className={cn(
         "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",

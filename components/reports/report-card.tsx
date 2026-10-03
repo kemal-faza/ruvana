@@ -12,13 +12,13 @@ interface ReportCardProps {
 }
 
 export function ReportCard({ report, onSelect }: ReportCardProps) {
-  const photo = report.fotoPath ?? getFacilityPhoto(report.facilityNama, report.facilityTipe)
+  const photo = report.fotoUrl ?? getFacilityPhoto(report.facilityNama, report.facilityTipe)
 
   return (
     <button
       type="button"
       onClick={() => onSelect(report.id)}
-      className="group flex w-full cursor-pointer items-start gap-4 rounded-card border border-border bg-card p-4 text-left transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 hover:border-primary/40 hover:bg-accent/40"
+      className="flex w-full cursor-pointer items-start gap-4 rounded-card border border-border bg-card p-4 text-left transition-[transform,translate,box-shadow] duration-motion-standard ease-motion-emphatic hover:translate-y-0 motion-reduce:hover:translate-y-0 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       {photo ? (
         <span className="relative hidden size-20 shrink-0 overflow-hidden rounded-md sm:block">
@@ -27,6 +27,7 @@ export function ReportCard({ report, onSelect }: ReportCardProps) {
             alt={`Foto ${report.kategori} di ${report.facilityNama}`}
             fill
             sizes="80px"
+            unoptimized
             className="object-cover"
           />
         </span>
@@ -55,7 +56,7 @@ export function ReportCard({ report, onSelect }: ReportCardProps) {
 
       <ChevronRight
         aria-hidden="true"
-        className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-motion-micro ease-motion-standard group-hover:translate-x-0.5"
+        className="mt-1 size-4 shrink-0 text-muted-foreground"
       />
     </button>
   )

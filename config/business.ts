@@ -13,12 +13,11 @@ export const BATAS_NAMA_AKUN_KARAKTER = 100;
 export const BATAS_EMAIL_AKUN_KARAKTER = 254;
 export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 24; // H-24 jam sebelum mulai (PRD Bagian 20 menggantikan H-2 TASK lama)
+export const BATAS_PENGAJUAN_JAM = 24; // Pengajuan minimal H-1: waktu mulai sekurang-kurangnya 24 jam dari instant pengajuan (PRD Bagian 20)
 
 export const BATAS_TUJUAN_MIN = 1;
 export const BATAS_TUJUAN_MAX = 500;
 export const BATAS_ALASAN_MAX = 500;
-
-export const JAKARTA_TIMEZONE = "Asia/Jakarta" as const;
 
 // Daftar waktu mulai yang valid 07:00..19:30 tiap 30 menit
 export const VALID_START_TIMES = [
@@ -79,22 +78,47 @@ export const VALID_END_TIMES = [
   "20:00",
 ] as const;
 
+// Zona waktu tunggal aplikasi: WIB = UTC+7 tetap sepanjang tahun (tanpa DST),
+// jadi offset tetap aman dipakai langsung. Jangan hardcode "Asia/Jakarta"/420
+// di modul lain — impor dari sini.
+export const ZONA_WAKTU = "Asia/Jakarta" as const;
+export const OFFSET_ZONA_WAKTU_MENIT = 420;
+
 // Daftar role & status (nilai aktual enum di Prisma; konstanta untuk UI/logika)
 // Catatan (keputusan tim Fase 0): nilai teknis enum status memakai bahasa Inggris;
 // Role & TipeFasilitas tetap bahasa Indonesia sesuai dokumen.
 export const ROLE = ["pengguna", "petugas", "admin"] as const;
 export const STATUS_AKUN = ["PENDING", "ACTIVE", "REJECTED", "DISABLED"] as const;
+export const STATUS_RESERVASI_MENUNGGU = "PENDING" as const;
+export const STATUS_RESERVASI_DISETUJUI = "APPROVED" as const;
 export const STATUS_RESERVASI = [
-  "PENDING",
-  "APPROVED",
+  STATUS_RESERVASI_MENUNGGU,
+  STATUS_RESERVASI_DISETUJUI,
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
   "EXPIRED",
 ] as const;
-export const STATUS_LAPORAN = ["NEW", "IN_PROGRESS", "RESOLVED", "REJECTED"] as const;
+export const STATUS_LAPORAN_BARU = "NEW" as const;
+export const STATUS_LAPORAN_DIPROSES = "IN_PROGRESS" as const;
+export const STATUS_LAPORAN_KERJA_PETUGAS = [STATUS_LAPORAN_BARU, STATUS_LAPORAN_DIPROSES] as const;
+export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, "RESOLVED", "REJECTED"] as const;
 export const STATUS_FASILITAS = ["ACTIVE", "UNDER_MAINTENANCE", "INACTIVE"] as const;
 export const TIPE_FASILITAS = ["ruang_kelas", "aula", "laboratorium", "alat", "lapangan"] as const;
+
+// Status yang boleh dikelola lewat jalur petugas/admin REP-04; INACTIVE hanya
+// lewat jalur admin FAC-05.
+export const STATUS_FASILITAS_OPERASIONAL = ["ACTIVE", "UNDER_MAINTENANCE"] as const;
+export type StatusFasilitasOperasional = (typeof STATUS_FASILITAS_OPERASIONAL)[number];
+
+// Matriks transisi REP-04: ACTIVE <-> UNDER_MAINTENANCE; INACTIVE selalu ditolak.
+export const TRANSISI_STATUS_FASILITAS_OPERASIONAL: Record<
+  StatusFasilitasOperasional,
+  StatusFasilitasOperasional
+> = {
+  ACTIVE: "UNDER_MAINTENANCE",
+  UNDER_MAINTENANCE: "ACTIVE",
+};
 
 // Label Indonesia untuk tipe fasilitas; nilai enum tetap bahasa Inggris-teknis.
 export const TIPE_FASILITAS_LABEL: Record<(typeof TIPE_FASILITAS)[number], string> = {
@@ -119,6 +143,11 @@ export const KATEGORI_LAPORAN = [
 export const LAPORAN_UPLOAD = {
   tipeDiizinkan: ["image/jpeg", "image/png", "image/webp"] as const,
   maksByte: 5 * 1024 * 1024,
+  masaBerlakuUrlUnggahMs: 10 * 60 * 1000,
+  masaBerlakuUrlBacaMs: 5 * 60 * 1000,
+  jendelaRateLimitMs: 60 * 60 * 1000,
+  maksUnggahPerJamPengguna: 20,
+  maksUnggahPerJamIp: 60,
 } as const
 
 // Deskripsi laporan mengikuti batas global PRD (2.000 karakter).

@@ -64,9 +64,9 @@ describe("FacilityCard", () => {
     expect(screen.queryByText(/reservasi/i)).not.toBeInTheDocument()
   })
 
-  it("menampilkan badge Dalam Perbaikan untuk status UNDER_MAINTENANCE", () => {
+  it("menampilkan badge Dalam Pemeliharaan untuk status UNDER_MAINTENANCE", () => {
     render(<FacilityCard facility={{ ...facility, status: "UNDER_MAINTENANCE" }} />)
 
-    expect(screen.getByText("Dalam Perbaikan")).toBeInTheDocument()
+    expect(screen.getByText("Dalam Pemeliharaan")).toBeInTheDocument()
   })
 })
