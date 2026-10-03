@@ -27,27 +27,25 @@ const account = {
 }
 
 describe("FasilitasLayout", () => {
-  it("memakai navigasi pengguna untuk pengguna terautentikasi", async () => {
+  it.each([
+    [Role.pengguna, ["/reservasi/riwayat", "/reservasi", "/fasilitas", "/reports", "/pengaturan"], ["/petugas", "/admin"]],
+    [Role.petugas, ["/petugas", "/petugas/antrian", "/petugas/pengaturan"], ["/reservasi", "/reports", "/admin"]],
+    [Role.admin, ["/admin/analitik", "/admin/pengguna", "/admin/pengaturan"], ["/reservasi", "/reports", "/petugas"]],
+  ] as const)("memakai navigasi sesuai peran terautentikasi %s", async (role, expected, forbidden) => {
     setMatchMedia("(max-width: 1023px)", false)
-    mocks.getSessionUser.mockResolvedValue({ ...account, role: Role.pengguna })
+    mocks.getSessionUser.mockResolvedValue({ ...account, role })
 
     render(await FasilitasLayout({ children: <p>Daftar fasilitas</p> }))
 
     const navigation = screen.getByRole("navigation", { name: "Navigasi utama" })
     const hrefs = new Set(Array.from(within(navigation).getAllByRole("link")).map((link) => link.getAttribute("href")))
-    for (const href of ["/reservasi/riwayat", "/reservasi", "/fasilitas", "/reports", "/pengaturan"])
-      expect(hrefs).toContain(href)
-    expect(hrefs).not.toContain("/petugas")
-    expect(hrefs).not.toContain("/admin")
+    for (const href of expected) expect(hrefs).toContain(href)
+    for (const href of forbidden) expect(hrefs).not.toContain(href)
   })
 
-  it.each([
-    ["pengunjung anonim", null],
-    ["petugas", Role.petugas],
-    ["admin", Role.admin],
-  ] as const)("memakai header publik tanpa sidebar pengguna untuk %s", async (_label, role) => {
+  it("memakai header publik tanpa sidebar untuk pengunjung anonim", async () => {
     setMatchMedia("(max-width: 1023px)", false)
-    mocks.getSessionUser.mockResolvedValue(role === null ? null : { ...account, role })
+    mocks.getSessionUser.mockResolvedValue(null)
 
     render(await FasilitasLayout({ children: <p>Daftar fasilitas</p> }))
 
