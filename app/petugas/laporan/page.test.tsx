@@ -3,11 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Role } from "@/generated/prisma/enums";
 
-const { requirePetugasAtauAdmin, reportQueue } = vi.hoisted(() => ({
+const { replaceMock, requirePetugasAtauAdmin, reportQueue } = vi.hoisted(() => ({
+  replaceMock: vi.fn(),
   requirePetugasAtauAdmin: vi.fn(),
   reportQueue: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: replaceMock }),
+}));
 vi.mock("@/lib/auth", () => ({ requirePetugasAtauAdmin }));
 vi.mock("@/components/staff/report-queue", () => ({
   ReportQueue: ({ queue, urut }: { queue: string; urut: string }) => {
@@ -43,7 +47,7 @@ describe("LaporanPage", () => {
     expect(requirePetugasAtauAdmin).toHaveBeenCalledOnce();
   });
 
-  it("menampilkan tiga tab antrean beserta tautan urutannya", async () => {
+  it("menampilkan tiga tab antrean dan satu dropdown urutan", async () => {
     render(await LaporanPage({ searchParams: Promise.resolve({ queue: "riwayat" }) }));
 
     const tabAntrean = screen.getByRole("navigation", { name: "Pilih antrean laporan" });
@@ -51,7 +55,11 @@ describe("LaporanPage", () => {
     expect(tabAntrean).toHaveTextContent("Daftar pekerjaan");
     expect(tabAntrean).toHaveTextContent("Riwayat");
     expect(screen.getByRole("link", { name: "Riwayat" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Terlama dulu" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("combobox", { name: "Urutkan antrean laporan" })).toHaveTextContent(
+      "Terlama",
+    );
+    // Urutan bukan lagi tautan terpisah: satu kontrol, bukan dua tombol.
+    expect(screen.queryAllByRole("link", { name: /^(Terlama|Terbaru)$/ })).toHaveLength(0);
 
     expect(reportQueue).toHaveBeenCalledWith("riwayat", "terlama");
   });
@@ -63,9 +71,8 @@ describe("LaporanPage", () => {
       "href",
       "/petugas/laporan?queue=intake&sort=terbaru",
     );
-    expect(screen.getByRole("link", { name: "Terlama dulu" })).toHaveAttribute(
-      "href",
-      "/petugas/laporan?queue=riwayat",
+    expect(screen.getByRole("combobox", { name: "Urutkan antrean laporan" })).toHaveTextContent(
+      "Terbaru",
     );
 
     expect(reportQueue).toHaveBeenCalledWith("riwayat", "terbaru");

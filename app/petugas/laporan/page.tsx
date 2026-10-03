@@ -3,11 +3,11 @@ import Link from "next/link";
 import { cn } from "cn";
 
 import { ReportQueue } from "@/components/staff/report-queue";
+import { ReportSortSelect } from "@/components/staff/report-sort-select";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { requirePetugasAtauAdmin } from "@/lib/auth";
 import {
   ANTREAN_LAPORAN,
-  URUTAN_LAPORAN,
   parseAntreanDanUrutan,
   type AntreanLaporan,
   type UrutanLaporan,
@@ -24,11 +24,6 @@ const LABEL_ANTREAN: Record<AntreanLaporan, string> = {
   intake: "Laporan masuk",
   work: "Daftar pekerjaan",
   riwayat: "Riwayat",
-};
-
-const LABEL_URUTAN: Record<UrutanLaporan, string> = {
-  terlama: "Terlama dulu",
-  terbaru: "Terbaru dulu",
 };
 
 function hrefAntrean(queue: AntreanLaporan, urut: UrutanLaporan): string {
@@ -76,23 +71,7 @@ export default async function PetugasLaporanPage({
           })}
         </nav>
 
-        <nav aria-label="Urutkan antrean laporan" className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Urutkan</span>
-          {URUTAN_LAPORAN.map((item) => {
-            const selected = urut === item;
-            return (
-              <Button
-                key={item}
-                render={<Link href={hrefAntrean(queue, item)} />}
-                variant={selected ? "soft" : "outline"}
-                aria-current={selected ? "true" : undefined}
-                className={cn(BUTTON_ACTION_CLASS, !selected && "text-muted-foreground hover:text-foreground")}
-              >
-                {LABEL_URUTAN[item]}
-              </Button>
-            );
-          })}
-        </nav>
+        <ReportSortSelect queue={queue} urut={urut} />
       </div>
 
       <ReportQueue queue={queue} urut={urut} />
