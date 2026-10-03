@@ -395,10 +395,10 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
   `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
   Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
   pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
-- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
+- CTA utama “Jelajahi Fasilitas” menuju `/publik/fasilitas`. Rute `/fasilitas` tetap menjadi pengalaman fasilitas dalam navigasi peran.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
-- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas (`/publik/fasilitas`), dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
 - Kartu foto memakai aset lokal `public/ruvana-lab2.jpg`. Prototype dan aset mentah di `output/` tidak di-commit.
 - Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.
