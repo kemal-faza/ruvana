@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell/app-shell";
 import { requirePengguna } from "@/lib/auth";
+import { getReservationReturnPath } from "@/lib/auth-routing";
 import { shellAccountFromUser } from "@/config/navigation";
 import { ReservationContent } from "./reservation-content";
 import { ReservationContentSkeleton } from "./reservation-content-skeleton";
@@ -20,8 +21,10 @@ export default async function ReservationPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const query = await searchParams;
+
   // Guard tetap dijalankan sebelum konten mulai memuat data fasilitas.
-  const pengguna = await requirePengguna();
+  const pengguna = await requirePengguna(getReservationReturnPath(query));
   const account = shellAccountFromUser(pengguna);
 
   return (
@@ -35,7 +38,7 @@ export default async function ReservationPage({
           </p>
         </header>
         <Suspense fallback={<ReservationContentSkeleton />}>
-          <ReservationContent searchParams={searchParams} />
+          <ReservationContent searchParams={Promise.resolve(query)} />
         </Suspense>
       </main>
     </AppShell>

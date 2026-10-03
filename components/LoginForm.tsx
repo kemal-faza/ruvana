@@ -14,7 +14,7 @@ import { getPostLoginPath } from "@/lib/auth-routing"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function LoginForm() {
+export default function LoginForm({ next }: { next?: string }) {
   const [state, setState] = useState({
     ok: false,
     pesan: "",
@@ -90,7 +90,7 @@ export default function LoginForm() {
                 })
                 const result = await response.json()
                 if (response.ok) {
-                  window.location.assign(getPostLoginPath(result.user.role))
+                  window.location.assign(getPostLoginPath(result.user.role, next))
                   return
                 }
                 const fieldErrors: Record<string, string[]> = {}

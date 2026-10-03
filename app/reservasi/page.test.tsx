@@ -49,6 +49,14 @@ describe("ReservationPage", () => {
     expect(requirePengguna).toHaveBeenCalledOnce();
   });
 
+  it("membawa tipe dan tanggal pencarian ke tujuan login", async () => {
+    await ReservationPage({
+      searchParams: Promise.resolve({ type: "aula", date: "2026-10-04", ignored: "value" }),
+    });
+
+    expect(requirePengguna).toHaveBeenCalledWith("/reservasi?type=aula&date=2026-10-04");
+  });
+
   it("menampilkan akun sesi pengguna, bukan akun hardcode", async () => {
     const page = await ReservationPage({ searchParams: Promise.resolve({}) });
 

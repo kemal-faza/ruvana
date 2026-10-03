@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default async function RiwayatReservasiPage() {
   // Guard server (IAM-03): tanpa sesi ke /login, role lain ke /403.
   // Riwayat dibaca komponen klien lewat API milik pengguna.
-  const pengguna = await requirePengguna();
+  const pengguna = await requirePengguna("/reservasi/riwayat");
   const account = shellAccountFromUser(pengguna);
 
   return (
