@@ -6,10 +6,10 @@ import { Bell, Languages, MoonStar, ShieldCheck, UserRound } from "lucide-react"
 
 import { changePasswordAction, revokeOtherSessionsAction, updateProfileAction } from "@/app/pengaturan/actions"
 import type { SessionUser } from "@/lib/auth"
-import { Button } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 type Section = "profil" | "notifikasi" | "keamanan" | "bahasa" | "tampilan"
@@ -97,6 +97,7 @@ function ProfileSection({ account }: SettingsViewProps) {
               autoComplete="name"
               minLength={3}
               maxLength={100}
+              className={INPUT_BASELINE_CLASS}
               required
               aria-invalid={Boolean(state.fieldErrors?.nama) || undefined}
               aria-describedby={state.fieldErrors?.nama ? "settings-name-error" : undefined}
@@ -106,7 +107,7 @@ function ProfileSection({ account }: SettingsViewProps) {
 
           <Field>
             <FieldLabel htmlFor="settings-email">Email</FieldLabel>
-            <Input id="settings-email" value={account.email} readOnly />
+            <Input id="settings-email" value={account.email} readOnly className={INPUT_BASELINE_CLASS} />
             <p className="text-sm text-muted-foreground">
               Email belum dapat diubah karena Ruvana belum menyediakan verifikasi perubahan email.
             </p>
@@ -119,7 +120,7 @@ function ProfileSection({ account }: SettingsViewProps) {
 
           <ActionFeedback ok={state.ok} message={state.message} />
           <div>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className={BUTTON_ACTION_CLASS}>
               {pending ? "Menyimpan…" : "Simpan perubahan"}
             </Button>
           </div>
@@ -173,7 +174,7 @@ function NotificationsSection({ role }: { role: SessionUser["role"] }) {
         <ul className="flex flex-wrap gap-3">
           {copy.links.map((link) => (
             <li key={link.href}>
-              <Button variant="outline" render={<Link href={link.href} />}>{link.label}</Button>
+              <Button variant="outline" className={BUTTON_ACTION_CLASS} render={<Link href={link.href} />}>{link.label}</Button>
             </li>
           ))}
         </ul>
@@ -206,7 +207,7 @@ function SecuritySection() {
             <p className="text-sm text-muted-foreground">Gunakan 8–72 byte UTF-8. Setelah diperbarui, sesi di perangkat lain akan diakhiri.</p>
             <ActionFeedback ok={passwordState.ok} message={passwordState.message} />
             <div>
-              <Button type="submit" disabled={passwordPending}>
+              <Button type="submit" disabled={passwordPending} className={BUTTON_ACTION_CLASS}>
                 {passwordPending ? "Memperbarui…" : "Perbarui kata sandi"}
               </Button>
             </div>
@@ -222,7 +223,7 @@ function SecuritySection() {
         <CardContent>
           <form action={sessionsAction} className="flex flex-col items-start gap-3">
             <ActionFeedback ok={sessionsState.ok} message={sessionsState.message} />
-            <Button type="submit" variant="outline" disabled={sessionsPending}>
+            <Button type="submit" variant="outline" disabled={sessionsPending} className={BUTTON_ACTION_CLASS}>
               {sessionsPending ? "Mengakhiri sesi…" : "Keluar dari perangkat lain"}
             </Button>
           </form>
@@ -280,6 +281,7 @@ function PasswordField({
         type="password"
         autoComplete={autoComplete}
         required
+        className={INPUT_BASELINE_CLASS}
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={error ? errorId : undefined}
       />
@@ -298,7 +300,7 @@ function LanguageSection() {
       <CardContent>
         <Field>
           <FieldLabel htmlFor="settings-language">Bahasa antarmuka</FieldLabel>
-          <Input id="settings-language" value="Bahasa Indonesia" readOnly />
+          <Input id="settings-language" value="Bahasa Indonesia" readOnly className={INPUT_BASELINE_CLASS} />
           <p className="text-sm text-muted-foreground">
             Saat ini Ruvana tersedia dalam Bahasa Indonesia.
           </p>

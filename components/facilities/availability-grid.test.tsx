@@ -32,6 +32,11 @@ describe("AvailabilityGrid", () => {
     expect(screen.getAllByText("Tersedia").length).toBeGreaterThan(0)
   })
 
+  it("menampilkan label status slot dengan ukuran metadata minimal 12 px", () => {
+    const { container } = render(<AvailabilityGrid slots={[availableSlots[0]]} />)
+    expect(container.querySelector("li span.text-xs")).toBeInTheDocument()
+  })
+
   it("menampilkan label 'Tidak tersedia' dan aria-disabled pada slot yang diblokir APPROVED", () => {
     const slots = withBlockedSlot("08:00", "APPROVED")
     render(<AvailabilityGrid slots={slots} />)
@@ -49,12 +54,12 @@ describe("AvailabilityGrid", () => {
     }))
     render(<AvailabilityGrid slots={slots} />)
 
-    expect(screen.getByText(/sedang dalam pemeliharaan/i)).toBeInTheDocument()
+    expect(screen.getByText(/sedang dalam perbaikan/i)).toBeInTheDocument()
   })
 
   it("tidak menampilkan pesan maintenance ketika fasilitas aktif", () => {
     render(<AvailabilityGrid slots={availableSlots} />)
 
-    expect(screen.queryByText(/sedang dalam pemeliharaan/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sedang dalam perbaikan/i)).not.toBeInTheDocument()
   })
 })
