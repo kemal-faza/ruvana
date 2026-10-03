@@ -1,4 +1,4 @@
-import { DURASI_SLOT_MENIT, JAM_OPERASIONAL, OFFSET_ZONA_WAKTU_MENIT } from "@/config/business";
+import { BATAS_PENGAJUAN_JAM, DURASI_SLOT_MENIT, JAM_OPERASIONAL, OFFSET_ZONA_WAKTU_MENIT } from "@/config/business";
 
 export function parseTimeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -67,6 +67,16 @@ export function getTodayDateAsiaJakarta(now: Date = new Date()): string {
 export function isPastDate(dateStr: string, now: Date = new Date()): boolean {
   const today = getTodayDateAsiaJakarta(now);
   return dateStr < today;
+}
+
+/**
+ * Benar bila sisa waktu menuju mulai kurang dari batas pengajuan H-1
+ * (BATAS_PENGAJUAN_JAM), dihitung sebagai selisih tepat dua instant —
+ * sama seperti batas pembatalan H-24. Tepat 24 jam berarti tidak melanggar.
+ * Dipakai bersama server (penolakan otoritatif) dan UI (penonaktifan slot).
+ */
+export function isKurangDariBatasPengajuan(startsAt: Date, now: Date = new Date()): boolean {
+  return startsAt.getTime() - now.getTime() < BATAS_PENGAJUAN_JAM * 60 * 60 * 1000;
 }
 
 export function isValidDateFormat(dateStr: string): boolean {

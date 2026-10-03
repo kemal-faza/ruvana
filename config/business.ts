@@ -13,6 +13,7 @@ export const BATAS_NAMA_AKUN_KARAKTER = 100;
 export const BATAS_EMAIL_AKUN_KARAKTER = 254;
 export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 24; // H-24 jam sebelum mulai (PRD Bagian 20 menggantikan H-2 TASK lama)
+export const BATAS_PENGAJUAN_JAM = 24; // Pengajuan minimal H-1: waktu mulai sekurang-kurangnya 24 jam dari instant pengajuan (PRD Bagian 20)
 
 export const BATAS_TUJUAN_MIN = 1;
 export const BATAS_TUJUAN_MAX = 500;
