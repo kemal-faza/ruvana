@@ -19,6 +19,10 @@ describe("navigasi petugas", () => {
     expect(semuaHref(staffNavigation)).toContain("/petugas/laporan");
   });
 
+  it("menautkan halaman status fasilitas untuk petugas", () => {
+    expect(semuaHref(staffNavigation)).toContain("/petugas/fasilitas");
+  });
+
   it("tidak menautkan katalog baseline dari navigasi petugas", () => {
     expect(semuaHref(staffNavigation)).not.toContain("/baseline-ui");
   });
