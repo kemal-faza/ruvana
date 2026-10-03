@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-import { validateOrigin } from "./origin";
+import { getAllowedOrigins, validateOrigin } from "./origin";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function reqWithOrigin(origin: string | null, extraHeaders: Record<string, string> = {}): NextRequest {
   const headers = new Headers();
@@ -52,5 +56,42 @@ describe("validateOrigin", () => {
   it("menolak origin dengan path", () => {
     const req = reqWithOrigin("http://127.0.0.1:3000/evil");
     expect(validateOrigin(req, allowed).ok).toBe(false);
+  });
+});
+
+describe("getAllowedOrigins", () => {
+  function requestAt(url: string, origin: string | null): NextRequest {
+    const headers = new Headers();
+    if (origin !== null) headers.set("origin", origin);
+    return new NextRequest(url, { headers });
+  }
+
+  it("menerima origin loopback milik server dev walau allowlist dikunci", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    process.env.ALLOWED_ORIGINS = "http://localhost:3001";
+
+    const req = requestAt("http://localhost:3002/api/auth/login", "http://localhost:3002");
+
+    expect(getAllowedOrigins(req)).toContain("http://localhost:3002");
+    expect(validateOrigin(req, getAllowedOrigins(req)).ok).toBe(true);
+  });
+
+  it("tetap ketat di produksi", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.ALLOWED_ORIGINS = "https://app.example.invalid";
+
+    const req = requestAt("http://localhost:3002/api/auth/login", "http://localhost:3002");
+
+    expect(getAllowedOrigins(req)).not.toContain("http://localhost:3002");
+    expect(validateOrigin(req, getAllowedOrigins(req)).ok).toBe(false);
+  });
+
+  it("tidak menambahkan origin loopback untuk host non-loopback", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    process.env.ALLOWED_ORIGINS = "https://app.example.invalid";
+
+    const req = requestAt("http://10.0.0.5:3002/api/auth/login", "http://10.0.0.5:3002");
+
+    expect(getAllowedOrigins(req)).not.toContain("http://10.0.0.5:3002");
   });
 });

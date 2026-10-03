@@ -46,16 +46,20 @@ describe("ReportDetailSheet", () => {
       "Ditangani oleh",
     ])
     const metadata = dialog.querySelector("dl")
-    expect(metadata).toHaveClass("grid", "grid-cols-1")
+    expect(metadata?.parentElement).toHaveClass("rounded-card", "border", "bg-card", "px-2.5")
+    expect(metadata).toHaveClass("flex", "flex-col", "divide-y")
     for (const term of terms) {
+      // Dua kolom: label lebar tetap, value rata kiri pada posisi x yang sama.
       expect(term.parentElement).toHaveClass(
-        "rounded-card",
-        "border",
-        "bg-card",
-        "p-4",
+        "grid",
+        "grid-cols-[7.5rem_minmax(0,1fr)]",
+        "gap-x-5",
+        "py-1.5",
       )
+      expect(term.parentElement).not.toHaveClass("rounded-card", "border", "bg-card")
       expect(term.nextElementSibling?.tagName).toBe("DD")
-      expect(term.nextElementSibling).toHaveClass("wrap-break-word")
+      expect(term.nextElementSibling).toHaveClass("wrap-break-word", "text-sm")
+      expect(term.nextElementSibling).not.toHaveClass("text-right")
     }
     expect(within(dialog).getByText(report.facilityLokasi)).toHaveClass("wrap-break-word")
     expect(within(dialog).getByText("Belum ditetapkan")).toHaveClass("wrap-break-word")

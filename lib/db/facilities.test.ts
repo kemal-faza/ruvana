@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { countPublicFacilities, findPublicFacilities } from "./facilities";
+import { countPublicFacilities, findPublicFacilities, findStaffFacilities } from "./facilities";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -103,5 +103,20 @@ describe("findPublicFacilities", () => {
     expect(prisma.facility.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 20, take: 20, orderBy: { id: "asc" } }),
     );
+  });
+});
+
+describe("findStaffFacilities", () => {
+  it("memuat seluruh status beserta provenance tanpa where", async () => {
+    vi.mocked(prisma.facility.findMany).mockResolvedValue([]);
+    await findStaffFacilities();
+
+    const argumen = vi.mocked(prisma.facility.findMany).mock.calls[0][0];
+    expect(argumen).not.toHaveProperty("where");
+    expect(argumen?.orderBy).toEqual({ id: "asc" });
+    expect(argumen?.select).toMatchObject({
+      statusChangedAt: true,
+      statusChangedBy: { select: { id: true, nama: true, role: true } },
+    });
   });
 });

@@ -64,6 +64,27 @@ export function findPublicFacilityById(id: number) {
   });
 }
 
+// Petugas perlu melihat provenance status terakhir (REP-04) dan mengetahui
+// fasilitas INACTIVE yang tidak dapat diubahnya sendiri, jadi select petugas
+// memuat seluruh status beserta aktor dan waktu perubahan.
+const staffFacilitySelect = {
+  ...publicFacilitySelect,
+  statusChangedAt: true,
+  statusChangedBy: { select: { id: true, nama: true, role: true } },
+} satisfies Prisma.FacilitySelect;
+
+/**
+ * Daftar fasilitas untuk halaman status operasional petugas. Tidak dipaginasikan:
+ * jumlah fasilitas pada satu kampus kecil dan petugas perlu memindai seluruh
+ * status tanpa berpindah halaman.
+ */
+export function findStaffFacilities() {
+  return prisma.facility.findMany({
+    orderBy: { id: "asc" },
+    select: staffFacilitySelect,
+  });
+}
+
 // Untuk reservasi: perlu load fasilitas apapun termasuk INACTIVE untuk validasi, plus lock
 export function findFacilityById(id: number) {
   return prisma.facility.findUnique({

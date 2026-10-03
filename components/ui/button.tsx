@@ -1,4 +1,5 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { LoaderCircle } from "lucide-react"
@@ -48,6 +49,20 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Render berupa elemen non-`<button>` (mis. `<Link>`) default-nya tidak melewati
+ * primitive Base UI: primitive itu memperingatkan bahwa semantik native hilang,
+ * sedangkan tautan navigasi harus tetap terbaca dan diuji sebagai link.
+ * `nativeButton` yang ditulis eksplisit tetap dihormati, dan `render` berupa
+ * `Button` sendiri tetap native karena ia elemen `<button>`.
+ */
+function rendersNativeElement(render: ButtonPrimitive.Props["render"]): boolean {
+  if (render === undefined) return true;
+  if (!isValidElement(render)) return true;
+  const type = render.type as unknown;
+  return type === "button" || type === Button;
+}
+
 function Button({
   className,
   children,
@@ -55,30 +70,61 @@ function Button({
   size = "default",
   disabled,
   loading = false,
+  render,
   ...props
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & {
     loading?: boolean
   }) {
+  const classes = cn(buttonVariants({ variant, size, className }))
+  const { nativeButton, ...rest } = props
+  const isi = loading ? (
+    <>
+      <span className="opacity-0">{children}</span>
+      <LoaderCircle
+        aria-hidden="true"
+        className="absolute size-4 animate-spin motion-reduce:animate-none"
+      />
+    </>
+  ) : (
+    children
+  )
+
+  if (!rendersNativeElement(render) && nativeButton === undefined) {
+    const element = render as ReactElement<{
+      className?: string
+      children?: ReactNode
+    }>
+    const {
+      className: renderClass,
+      children: renderChildren,
+      ...elementProps
+    } = element.props
+
+    return cloneElement(
+      element,
+      {
+        ...rest,
+        ...elementProps,
+        "data-slot": "button",
+        className: cn(classes, renderClass),
+        "aria-busy": loading || undefined,
+      } as never,
+      renderChildren ?? isi,
+    )
+  }
+
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      className={classes}
+      {...rest}
+      render={render}
+      nativeButton={nativeButton ?? true}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
     >
-      {loading ? (
-        <>
-          <span className="opacity-0">{children}</span>
-          <LoaderCircle
-            aria-hidden="true"
-            className="absolute size-4 animate-spin motion-reduce:animate-none"
-          />
-        </>
-      ) : (
-        children
-      )}
+      {isi}
     </ButtonPrimitive>
   )
 }

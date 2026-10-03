@@ -134,6 +134,16 @@ export function invalidFacilityTransition(instance: string, detail: string) {
   });
 }
 
+export function invalidReportTransition(instance: string, detail: string) {
+  return problemResponse({
+    status: 409,
+    code: "INVALID_REPORT_TRANSITION",
+    title: "Transisi laporan tidak valid",
+    detail,
+    instance,
+  });
+}
+
 export function approvalConflict(instance: string, detail: string, availability: unknown) {
   return problemResponse({
     status: 409,
@@ -150,6 +160,16 @@ export function idempotencyConflict(instance: string, detail = "Idempotency-Key 
     status: 409,
     code: "IDEMPOTENCY_KEY_REUSED",
     title: "Idempotensi tidak cocok",
+    detail,
+    instance,
+  });
+}
+
+export function blobFailure(instance: string, detail = "Penyimpanan foto tidak tersedia. Silakan coba lagi.") {
+  return problemResponse({
+    status: 502,
+    code: "BLOB_UPSTREAM_FAILURE",
+    title: "Penyimpanan foto tidak tersedia",
     detail,
     instance,
   });
