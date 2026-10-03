@@ -8,7 +8,10 @@ import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 const mocks = vi.hoisted(() => ({ getSessionUser: vi.fn(), pathname: "/fasilitas" }))
 
 vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.getSessionUser }))
-vi.mock("next/navigation", () => ({ usePathname: () => mocks.pathname }))
+vi.mock("next/navigation", () => ({
+  usePathname: () => mocks.pathname,
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
+}))
 
 afterEach(() => {
   cleanup()

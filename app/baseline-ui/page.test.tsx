@@ -10,6 +10,7 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/baseline-ui",
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }))
 
 afterEach(cleanup)

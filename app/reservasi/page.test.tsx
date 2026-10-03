@@ -15,6 +15,7 @@ vi.mock("@/app/reservasi/reservation-content", () => ({
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/reservasi",
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 
 import { ReservationContentSkeleton } from "@/app/reservasi/reservation-content-skeleton";

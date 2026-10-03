@@ -1,5 +1,11 @@
-export async function logoutFromBrowser(): Promise<void> {
+type AuthNavigation = {
+  replace: (href: string) => void;
+  refresh: () => void;
+};
+
+export async function logoutFromBrowser(router: AuthNavigation): Promise<void> {
   const response = await fetch("/api/auth/logout", { method: "POST" });
   if (!response.ok && response.status !== 401) throw new Error("Gagal keluar. Coba lagi.");
-  window.location.assign("/login");
+  router.replace("/login");
+  router.refresh();
 }

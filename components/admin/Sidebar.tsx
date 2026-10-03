@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { NavigationList } from "@/components/app-shell/app-sidebar"
@@ -19,6 +20,7 @@ import type { SessionUser } from "@/lib/auth"
 
 export default function AdminSidebar({ admin }: { admin: SessionUser }) {
   const { setOpenMobile } = useSidebar()
+  const router = useRouter()
   const [logoutError, setLogoutError] = useState("")
 
   return (
@@ -51,7 +53,7 @@ export default function AdminSidebar({ admin }: { admin: SessionUser }) {
           onClick={async () => {
             try {
               setLogoutError("")
-              await logoutFromBrowser()
+              await logoutFromBrowser(router)
               setOpenMobile(false)
             } catch {
               setLogoutError("Gagal keluar. Coba lagi.")

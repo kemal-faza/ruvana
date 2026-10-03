@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState, type CSSProperties } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion } from "motion/react"
 import { LogIn, LogOut } from "lucide-react"
 
@@ -123,6 +123,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
 
 export function AppSidebar({ navigation, account }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar()
+  const router = useRouter()
   const [logoutError, setLogoutError] = useState("")
 
   return (
@@ -157,7 +158,7 @@ export function AppSidebar({ navigation, account }: AppSidebarProps) {
               onClick={async () => {
                 try {
                   setLogoutError("")
-                  await logoutFromBrowser()
+                  await logoutFromBrowser(router)
                   setOpenMobile(false)
                 } catch {
                   setLogoutError("Gagal keluar. Coba lagi.")

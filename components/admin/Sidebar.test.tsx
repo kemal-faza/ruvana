@@ -26,6 +26,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: mockPathname,
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }))
 
 vi.mock("@/lib/auth-client", () => ({

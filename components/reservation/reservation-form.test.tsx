@@ -26,9 +26,8 @@ const facilities = [
 ]
 
 function mockFetchOk() {
-  const fetchMock = vi.fn(
-    async (_url: unknown, init?: { body?: unknown }) =>
-      new Response(JSON.stringify({ id: 99 }), { status: 201 }),
+  const fetchMock = vi.fn<(url: unknown, init?: { body?: unknown }) => Promise<Response>>(
+    async () => new Response(JSON.stringify({ id: 99 }), { status: 201 }),
   )
   vi.stubGlobal("fetch", fetchMock)
   vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-1111-4111-8111-111111111111")
