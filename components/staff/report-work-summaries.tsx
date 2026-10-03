@@ -46,7 +46,7 @@ const FORMAT_TANGGAL = new Intl.DateTimeFormat("id-ID", {
 });
 
 async function requestSummary(): Promise<StaffReportWorkView> {
-  const response = await fetch("/api/staff/reports");
+  const response = await fetch("/api/staff/reports/summary");
   if (!response.ok) throw new Error("Gagal memuat ringkasan laporan.");
   return (await response.json()) as StaffReportWorkView;
 }
@@ -153,7 +153,7 @@ export function ReportWorkSummaries() {
                   </ul>
                 )}
                 <Button
-                  render={<Link href={`/petugas/laporan?status=${item.status}`} />}
+                  render={<Link href={`/petugas/laporan?queue=${item.status === "NEW" ? "intake" : "work"}`} />}
                   variant="outline"
                   className="min-h-11 self-start gap-2.5 px-4 text-sm"
                   hidden={loading}

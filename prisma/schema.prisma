@@ -149,10 +149,13 @@ model Report {
   status          StatusLaporan @default(NEW)
   catatanResolusi String?
   ditanganiOleh   Int?
+  // Waktu pemrosesan oleh petugas (REP-03); satu instant server per transisi.
+  waktuDiproses   DateTime?     @db.Timestamptz(3)
   // Instant absolut (UTC) untuk batas hari analitik Asia/Jakarta.
   createdAt       DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime      @updatedAt @db.Timestamptz(3)
 
+  @@index([status, createdAt, id])
   @@map("reports")
 }
 

@@ -1,4 +1,4 @@
-import { ClipboardList, LayoutDashboard, Settings } from "lucide-react";
+import { ClipboardList, LayoutDashboard, Settings, Wrench } from "lucide-react";
 
 import type { NavigationGroup } from "@/components/app-shell/types";
 
@@ -9,6 +9,7 @@ export const staffNavigation: readonly NavigationGroup[] = [
     items: [
       { key: "dashboard", label: "Dashboard", href: "/petugas", icon: LayoutDashboard, exact: true },
       { key: "antrian", label: "Persetujuan reservasi", href: "/petugas/antrian", icon: ClipboardList },
+      { key: "laporan", label: "Laporan kerusakan", href: "/petugas/laporan", icon: Wrench },
     ],
   },
   {
@@ -24,6 +25,9 @@ export const staffQueueNavigation: readonly NavigationGroup[] = [
   {
     key: "utama",
     label: "Utama",
-    items: [{ key: "antrian", label: "Persetujuan reservasi", href: "/petugas/antrian", icon: ClipboardList }],
+    items: [
+      { key: "antrian", label: "Persetujuan reservasi", href: "/petugas/antrian", icon: ClipboardList },
+      { key: "laporan", label: "Laporan kerusakan", href: "/petugas/laporan", icon: Wrench },
+    ],
   },
 ];
