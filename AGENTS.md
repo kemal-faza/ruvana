@@ -43,8 +43,13 @@ pnpm db:seed
 pnpm dev
 ```
 
-The app runs on port 3000. The seed uses upserts and is safe to rerun. Stop
-PostgreSQL with `pnpm db:down`.
+`pnpm dev` pins port 3001 (`next dev -p 3001`) so the URL stays predictable when
+another process already owns 3000. Keep `ALLOWED_ORIGINS` in `.env` pointed at
+the port you actually open; outside production the origin check also accepts the
+request's own loopback origin, so a moved dev server can still log in. Only one
+`next dev` may run per checkout — a second one refuses to start and points back
+at the existing server instead of silently moving to another port. The seed uses
+upserts and is safe to rerun. Stop PostgreSQL with `pnpm db:down`.
 
 ### Rootless Podman on `/mnt/DATA`
 

@@ -29,15 +29,29 @@ export function validateOrigin(request: NextRequest, allowedOrigins: string[]): 
   return { ok: true };
 }
 
+/** Host loopback yang dipakai browser lokal; aman hanya di luar produksi. */
+const HOST_LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
 export function getAllowedOrigins(request?: NextRequest): string[] {
   const configured = process.env.ALLOWED_ORIGINS;
   const candidates = configured?.trim()
     ? configured.split(",").map((origin) => origin.trim()).filter(Boolean)
     : [process.env.NEXT_PUBLIC_SITE_URL].filter((origin): origin is string => Boolean(origin));
 
-  if (!configured?.trim() && process.env.NODE_ENV !== "production") {
+  const nonProduction = process.env.NODE_ENV !== "production";
+
+  if (!configured?.trim() && nonProduction) {
     candidates.push("http://127.0.0.1:3000", "http://localhost:3000");
-    if (request) candidates.push(new URL(request.url).origin);
+  }
+
+  // Di luar produksi, Next.js memilih port bebas saat 3000 atau 3001 sudah
+  // dipakai proses lain. Origin milik server itu sendiri tetap diizinkan agar
+  // perpindahan port dev tidak membuat login dan mutation gagalproteksi CSRF.
+  if (request && nonProduction) {
+    const sendiri = new URL(request.url);
+    if (sendiri.protocol === "http:" && HOST_LOOPBACK.has(sendiri.hostname)) {
+      candidates.push(sendiri.origin);
+    }
   }
 
   return [...new Set(candidates.flatMap((candidate) => {
