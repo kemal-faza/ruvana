@@ -19,7 +19,9 @@ afterEach(() => {
 });
 
 function pilihBulan(nilai: string) {
-  fireEvent.change(screen.getByLabelText("Bulan"), { target: { value: nilai } });
+  const [tahun, bulan] = nilai.split("-");
+  fireEvent.change(screen.getByLabelText("Bulan"), { target: { value: bulan } });
+  fireEvent.change(screen.getByLabelText("Tahun"), { target: { value: tahun } });
 }
 
 describe("RecapMonthPicker", () => {
@@ -56,16 +58,31 @@ describe("RecapMonthPicker", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
+  it("menampilkan nama bulan dalam Bahasa Indonesia", () => {
+    render(<RecapMonthPicker currentMonth="2026-09" />);
+
+    expect(screen.getByLabelText("Bulan")).toHaveDisplayValue("September");
+    expect(screen.getByRole("option", { name: "Oktober" })).toBeInTheDocument();
+  });
+
   it("tetap berfungsi tanpa JavaScript lewat form GET native", () => {
     render(<RecapMonthPicker currentMonth="2026-09" />);
 
     const form = screen.getByRole("form", { name: "Pilih bulan rekap" });
     expect(form).toHaveAttribute("action", "/petugas");
     expect(form).toHaveAttribute("method", "get");
-    const masukan = screen.getByLabelText("Bulan");
-    expect(masukan).toHaveAttribute("type", "month");
-    expect(masukan).toHaveAttribute("name", "bulan");
-    expect(masukan).toHaveValue("2026-09");
+    const masukanBulan = screen.getByLabelText("Bulan");
+    const masukanTahun = screen.getByLabelText("Tahun");
+    expect(masukanBulan.tagName).toBe("SELECT");
+    expect(masukanBulan).toHaveAttribute("name", "bulan");
+    expect(masukanBulan).toHaveValue("09");
+    expect(masukanTahun).toHaveAttribute("name", "tahun");
+    expect(masukanTahun).toHaveValue(2026);
+    expect(masukanBulan).toHaveClass("min-h-11");
+    expect(masukanTahun).toHaveClass("min-h-11");
+    const formElement = screen.getByRole("form", { name: "Pilih bulan rekap" }) as HTMLFormElement;
+    expect(new FormData(formElement).get("bulan")).toBe("09");
+    expect(new FormData(formElement).get("tahun")).toBe("2026");
   });
 
   it("lolos pemeriksaan aksesibilitas otomatis", async () => {

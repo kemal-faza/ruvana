@@ -27,7 +27,9 @@ const tipeOptions: { value: string; label: string }[] = TIPE_FASILITAS.map(
 const fieldClass =
   "flex min-h-12 items-center gap-2.5 rounded-control border border-border bg-background px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 max-md:px-2.5";
 
-export function FacilitySearch() {
+export function FacilitySearch({ visible = true }: { visible?: boolean }) {
+  if (!visible) return null
+
   return (
     <section
       id="pencarian-fasilitas"
@@ -47,7 +49,7 @@ export function FacilitySearch() {
           id="pencarian-fasilitas-title"
           className="px-4 text-sm/snug font-medium max-lg:col-span-2 max-md:px-1.5"
         >
-          Cari fasilitas
+          Amankan jadwalmu sekarang juga.
           <small className="mt-1 block text-xs font-normal text-muted-foreground">
             Mulai dari kegiatanmu
           </small>
@@ -89,7 +91,7 @@ export function FacilitySearch() {
             "min-h-12 gap-2 px-5 max-lg:col-span-2 max-lg:w-full cursor-pointer",
           )}
         >
-          Jelajahi
+          Lihat
           <ArrowRight
             aria-hidden="true"
             data-motion-icon="inline-end"

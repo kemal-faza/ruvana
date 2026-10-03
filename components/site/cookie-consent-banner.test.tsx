@@ -18,7 +18,9 @@ describe("CookieConsentBanner", () => {
     render(<CookieConsentBanner />)
 
     expect(await screen.findByRole("region", { name: "Persetujuan cookie" })).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Setuju" }))
+    const setuju = screen.getByRole("button", { name: "Setuju" })
+    expect(setuju).toHaveClass("min-h-11")
+    await user.click(setuju)
 
     expect(localStorage.getItem(KEY)).toBe("accepted")
     expect(screen.queryByRole("region", { name: "Persetujuan cookie" })).not.toBeInTheDocument()
@@ -28,7 +30,9 @@ describe("CookieConsentBanner", () => {
     const user = userEvent.setup()
     render(<CookieConsentBanner />)
     await screen.findByRole("region", { name: "Persetujuan cookie" })
-    await user.click(screen.getByRole("button", { name: "Hanya yang wajib" }))
+    const wajib = screen.getByRole("button", { name: "Hanya yang wajib" })
+    expect(wajib).toHaveClass("min-h-11")
+    await user.click(wajib)
 
     expect(localStorage.getItem(KEY)).toBe("essential-only")
   })
