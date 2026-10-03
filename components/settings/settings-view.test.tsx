@@ -8,8 +8,8 @@ vi.mock("@/app/pengaturan/actions", () => ({
   revokeOtherSessionsAction: vi.fn(),
   updateProfileAction: vi.fn(),
 }))
-vi.mock("@/components/theme-toggle", () => ({
-  ThemeToggle: () => <button type="button" className="size-11">Ganti tema</button>,
+vi.mock("next-themes", () => ({
+  useTheme: () => ({ resolvedTheme: "light", setTheme: () => {} }),
 }))
 
 const pengguna = {
@@ -57,7 +57,7 @@ describe("SettingsView", () => {
     expect(screen.getByLabelText("Bahasa antarmuka")).toHaveClass("min-h-11")
 
     fireEvent.click(screen.getByRole("button", { name: "Tampilan" }))
-    expect(screen.getByRole("button", { name: "Ganti tema" })).toHaveClass("size-11")
+    expect(screen.getByRole("button", { name: "Gunakan tema gelap" })).toHaveClass("size-11")
   })
 
   it("menampilkan tujuan pantauan notifikasi yang sesuai role pengguna", () => {
@@ -88,6 +88,6 @@ describe("SettingsView", () => {
     expect(screen.getByLabelText("Bahasa antarmuka")).toHaveValue("Bahasa Indonesia")
 
     fireEvent.click(screen.getByRole("button", { name: "Tampilan" }))
-    expect(screen.getByRole("button", { name: "Ganti tema" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Gunakan tema gelap" })).toBeInTheDocument()
   })
 })
