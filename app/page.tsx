@@ -57,6 +57,8 @@ const steps = [
 ]
 
 export default async function Home() {
+  // Sesi dibaca untuk menyembunyikan form pengajuan dari petugas/admin;
+  // konsekuensinya rute ini dirender dinamis, bukan di-prerender statis.
   const user = await getSessionUser()
   return (
     <>
