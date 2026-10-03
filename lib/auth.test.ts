@@ -184,15 +184,6 @@ describe("requirePengguna", () => {
     expect(mockRedirect).toHaveBeenLastCalledWith("/login");
   });
 
-  it("menyimpan tujuan dan query pencarian pada tautan login", async () => {
-    await expect(requirePengguna("/reservasi?type=aula&date=2026-10-04")).rejects.toThrow(
-      "redirect:/login?next=%2Freservasi%3Ftype%3Daula%26date%3D2026-10-04",
-    );
-    expect(mockRedirect).toHaveBeenLastCalledWith(
-      "/login?next=%2Freservasi%3Ftype%3Daula%26date%3D2026-10-04",
-    );
-  });
-
   it("menolak petugas dan admin yang membuka halaman khusus pengguna", async () => {
     await loginSebagai(Role.petugas);
     await expect(requirePengguna()).rejects.toThrow("redirect:/403");

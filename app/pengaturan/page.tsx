@@ -8,6 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default async function PengaturanAkunPage() {
-  const pengguna = await requirePengguna("/pengaturan");
+  const pengguna = await requirePengguna();
   return <SettingsView account={pengguna} />;
 }

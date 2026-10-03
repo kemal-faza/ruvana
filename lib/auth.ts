@@ -87,13 +87,10 @@ export async function requirePetugas(): Promise<SessionUser> {
 }
 
 // Guard halaman pengguna (RES-01 s.d. RES-04, IAM-03):
-// tanpa sesi ke /login; `next` menyimpan tujuan lokal setelah login.
-export async function requirePengguna(next?: string): Promise<SessionUser> {
+// tanpa sesi ke /login; role lain mendapat akses ditolak.
+export async function requirePengguna(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) {
-    const query = next ? `?${new URLSearchParams({ next })}` : "";
-    redirect(`/login${query}`);
-  }
+  if (!user) redirect("/login");
   if (user.role !== Role.pengguna) redirect("/403");
   return user;
 }

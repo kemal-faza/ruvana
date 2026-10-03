@@ -6,7 +6,7 @@ import { shellAccountFromUser } from "@/config/navigation"
 import { requirePengguna } from "@/lib/auth"
 
 export default async function ReportsLayout({ children }: { children: ReactNode }) {
-  const user = await requirePengguna("/reports")
+  const user = await requirePengguna()
   const account = shellAccountFromUser(user)
 
   return (

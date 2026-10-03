@@ -43,13 +43,19 @@ describe("FasilitasLayout", () => {
     for (const href of forbidden) expect(hrefs).not.toContain(href)
   })
 
-  it("menjaga tautan pengguna untuk pengunjung anonim yang akan diarahkan ke login", async () => {
+  it("memakai header publik tanpa sidebar pengguna untuk pengunjung anonim", async () => {
     setMatchMedia("(max-width: 1023px)", false)
     mocks.getSessionUser.mockResolvedValue(null)
 
     render(await FasilitasLayout({ children: <p>Daftar fasilitas</p> }))
 
-    expect(screen.getByRole("link", { name: "Reservasi" })).toHaveAttribute("href", "/reservasi")
-    expect(screen.queryByRole("link", { name: "Kelola Pengguna" })).not.toBeInTheDocument()
+    const navigation = screen.getByRole("navigation", { name: "Navigasi utama" })
+    expect(within(navigation).getByRole("link", { name: "Beranda" })).toHaveAttribute("href", "/")
+    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("aria-current", "page")
+    expect(within(navigation).getByRole("link", { name: "Jadwal" })).toHaveAttribute("href", "#jadwal")
+    expect(screen.getByRole("link", { name: "Masuk" })).toHaveAttribute("href", "/login")
+    expect(screen.getByRole("link", { name: "Daftar" })).toHaveAttribute("href", "/daftar")
+    expect(screen.queryByRole("link", { name: "Reservasi" })).not.toBeInTheDocument()
+    expect(screen.getByRole("navigation", { name: "Navigasi footer" })).toBeInTheDocument()
   })
 })

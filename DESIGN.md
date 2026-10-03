@@ -226,7 +226,7 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 
 Destinasi yang tidak tersedia harus dihilangkan dari navigasi. Akses mengikuti aturan otoritas server di **Tujuan dan otoritas**. Navigasi aktif, judul halaman, dan breadcrumb harus menunjukkan lokasi; identitas akun dan logout harus konsisten di menu profil atau footer sidebar.
 
-Pada halaman discovery, pengunjung anonim tetap mendapat navigasi pengguna sebagai jalur untuk memulai tindakan yang membutuhkan akun. Tautan tersebut mengarahkan ke login dan, setelah berhasil masuk, kembali ke tujuan yang diminta bila tujuan itu tersedia bagi perannya. Petugas dan admin memakai navigasi sesuai perannya.
+Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya.
 
 ## Komponen
 
@@ -395,8 +395,6 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
   `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
   Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
   pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
-- Jika pengunjung anonim mengirim pencarian, login mempertahankan parameter `type` dan `date` agar
-  pengguna dapat melanjutkan ke hasil pencarian setelah berhasil masuk.
 - CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.

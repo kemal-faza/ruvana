@@ -6,13 +6,6 @@ export const metadata: Metadata = {
   description: "Masuk ke sistem reservasi dan pelaporan fasilitas kampus.",
 };
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ next?: string | string[] }>;
-}) {
-  const query = searchParams ? await searchParams : {};
-  const next = typeof query.next === "string" ? query.next : undefined;
-
-  return <LoginForm next={next} />;
+export default function LoginPage() {
+  return <LoginForm />;
 }
