@@ -4,19 +4,7 @@ import Link from "next/link"
 import { useState, type CSSProperties } from "react"
 import { usePathname } from "next/navigation"
 import { motion } from "motion/react"
-import {
-  Building2,
-  CalendarDays,
-  ChartPie,
-  Circle,
-  ClipboardList,
-  LayoutDashboard,
-  LogIn,
-  LogOut,
-  Settings,
-  SwatchBook,
-  Users,
-} from "lucide-react"
+import { LogIn, LogOut } from "lucide-react"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -41,6 +29,7 @@ import type {
   SerializableNavigationItem,
   ShellAccount,
 } from "@/components/app-shell/types"
+import { resolveNavigationIcon } from "@/components/app-shell/navigation-icons"
 
 interface AppSidebarProps {
   navigation: readonly (NavigationGroup | SerializableNavigationGroup)[]
@@ -58,21 +47,6 @@ function isNavigationItemActive(pathname: string, item: NavigationItem | Seriali
   return item.href !== "/" && pathname.startsWith(`${item.href}/`)
 }
 
-const iconRegistry = {
-  Building2,
-  CalendarDays,
-  ChartPie,
-  ClipboardList,
-  LayoutDashboard,
-  Settings,
-  SwatchBook,
-  Users,
-} as const
-
-function resolveIcon(icon: NavigationItem["icon"] | string) {
-  return typeof icon === "string" ? iconRegistry[icon as keyof typeof iconRegistry] ?? Circle : icon
-}
-
 function NavigationList({ navigation, onNavigate }: NavigationListProps) {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
@@ -87,7 +61,7 @@ function NavigationList({ navigation, onNavigate }: NavigationListProps) {
             <SidebarMenu>
               {group.items.map((item, index) => {
                 const active = isNavigationItemActive(pathname, item)
-                const Icon = resolveIcon(item.icon)
+                const Icon = resolveNavigationIcon(item.icon)
 
                 return (
                   <SidebarMenuItem

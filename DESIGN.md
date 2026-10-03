@@ -226,6 +226,8 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 
 Destinasi yang tidak tersedia harus dihilangkan dari navigasi. Akses mengikuti aturan otoritas server di **Tujuan dan otoritas**. Navigasi aktif, judul halaman, dan breadcrumb harus menunjukkan lokasi; identitas akun dan logout harus konsisten di menu profil atau footer sidebar.
 
+Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya.
+
 ## Komponen
 
 Setiap komponen yang relevan harus mendefinisikan keadaan default, hover, focus-visible, loading, disabled, success, error, dan empty.
@@ -393,10 +395,10 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
   `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
   Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
   pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
-- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
+- CTA utama “Jelajahi Fasilitas” menuju `/publik/fasilitas`. Rute `/fasilitas` tetap menjadi pengalaman fasilitas dalam navigasi peran.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
-- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas (`/publik/fasilitas`), dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
 - Kartu foto memakai aset lokal `public/ruvana-lab2.jpg`. Prototype dan aset mentah di `output/` tidak di-commit.
 - Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.

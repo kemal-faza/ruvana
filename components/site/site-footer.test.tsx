@@ -21,7 +21,7 @@ describe("SiteFooter", () => {
     const nav = screen.getByRole("navigation", { name: "Navigasi footer" })
     const expected = [
       ["/", "Beranda"],
-      ["/fasilitas", "Fasilitas"],
+      ["/publik/fasilitas", "Fasilitas"],
       ["#jadwal", "Jadwal"],
     ] as const
 

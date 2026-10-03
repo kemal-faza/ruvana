@@ -8,6 +8,7 @@ interface AvailabilityDateFormProps {
   facilityId: number
   date: string
   today: string
+  basePath?: string
 }
 
 // Sama seperti komponen date-fns lain di proyek ini: parse manual di kalender lokal
@@ -17,7 +18,7 @@ function parseIsoDateLocal(iso: string): Date {
   return new Date(year, month - 1, day)
 }
 
-export function AvailabilityDateForm({ facilityId, date, today }: AvailabilityDateFormProps) {
+export function AvailabilityDateForm({ facilityId, date, today, basePath = "/fasilitas" }: AvailabilityDateFormProps) {
   return (
     <form method="get" className="flex flex-wrap items-end gap-3">
       <div className="flex min-w-40 flex-1 flex-col gap-1.5">
@@ -43,7 +44,7 @@ export function AvailabilityDateForm({ facilityId, date, today }: AvailabilityDa
           variant="outline"
           className="min-h-12 shrink-0"
           nativeButton={false}
-          render={<Link href={`/fasilitas/${facilityId}?date=${today}`} />}
+          render={<Link href={`${basePath}/${facilityId}?date=${today}`} />}
         >
           Hari ini
         </Button>

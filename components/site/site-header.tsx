@@ -9,7 +9,7 @@ export type SiteSection = "beranda" | "fasilitas"
 
 const navItems = [
   { label: "Beranda", href: "/", section: "beranda" },
-  { label: "Fasilitas", href: "/fasilitas", section: "fasilitas" },
+  { label: "Fasilitas", href: "/publik/fasilitas", section: "fasilitas" },
   { label: "Jadwal", href: "#jadwal", section: "jadwal" },
 ] as const
 
