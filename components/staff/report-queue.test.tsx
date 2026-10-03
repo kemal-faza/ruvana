@@ -95,21 +95,35 @@ function mockFetch(items: StaffReportResult[]) {
 describe("ReportQueue", () => {
   it("meminta antrean sesuai jenis pekerjaan", async () => {
     const fetchMock = mockFetch([]);
-    render(<ReportQueue queue="intake" />);
+    render(<ReportQueue queue="intake" urut="terlama" />);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(fetchMock.mock.calls[0][0]).toContain("queue=intake");
 
     cleanup();
     const fetchMockWork = mockFetch([]);
-    render(<ReportQueue queue="work" />);
+    render(<ReportQueue queue="work" urut="terlama" />);
     await waitFor(() => expect(fetchMockWork).toHaveBeenCalled());
     expect(fetchMockWork.mock.calls[0][0]).toContain("queue=work");
+
+    cleanup();
+    const fetchMockRiwayat = mockFetch([]);
+    render(<ReportQueue queue="riwayat" urut="terlama" />);
+    await waitFor(() => expect(fetchMockRiwayat).toHaveBeenCalled());
+    expect(fetchMockRiwayat.mock.calls[0][0]).toContain("queue=riwayat");
+  });
+
+  it("meneruskan pilihan urutan ke antrean", async () => {
+    const fetchMock = mockFetch([]);
+    render(<ReportQueue queue="riwayat" urut="terbaru" />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toContain("sort=terbaru");
   });
 
   it("menampilkan aksi mulai dan tolak untuk laporan baru", async () => {
     mockFetch([laporan()]);
-    render(<ReportQueue queue="intake" />);
+    render(<ReportQueue queue="intake" urut="terlama" />);
 
     expect(await screen.findByText("Lampu sisi kanan tidak menyala.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mulai ditangani" })).toBeInTheDocument();
@@ -119,7 +133,7 @@ describe("ReportQueue", () => {
 
   it("menampilkan aksi selesai dan tolak untuk laporan yang sedang berjalan", async () => {
     mockFetch([laporan({ status: "IN_PROGRESS", ditanganiOleh: { id: 7, nama: "Petugas Ruvana", role: "petugas" } })]);
-    render(<ReportQueue queue="work" />);
+    render(<ReportQueue queue="work" urut="terlama" />);
 
     expect(await screen.findByRole("button", { name: "Tandai selesai" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mulai ditangani" })).not.toBeInTheDocument();
@@ -127,7 +141,7 @@ describe("ReportQueue", () => {
 
   it("menyembunyikan seluruh aksi pada status terminal", async () => {
     mockFetch([laporan({ status: "RESOLVED", catatanResolusi: "Lampu diganti." })]);
-    render(<ReportQueue queue="work" />);
+    render(<ReportQueue queue="work" urut="terlama" />);
 
     expect(await screen.findByText("Catatan: Lampu diganti.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mulai ditangani" })).not.toBeInTheDocument();
@@ -138,7 +152,7 @@ describe("ReportQueue", () => {
   it("menolak penyimpanan laporan tanpa catatan penyelesaian", async () => {
     const user = userEvent.setup();
     mockFetch([laporan({ status: "IN_PROGRESS" })]);
-    render(<ReportQueue queue="work" />);
+    render(<ReportQueue queue="work" urut="terlama" />);
 
     await user.click(await screen.findByRole("button", { name: "Tandai selesai" }));
 
@@ -149,7 +163,7 @@ describe("ReportQueue", () => {
   it("menjalankan transisi dengan catatan yang diisi", async () => {
     const user = userEvent.setup();
     const fetchMock = mockFetch([laporan({ status: "IN_PROGRESS" })]);
-    render(<ReportQueue queue="work" />);
+    render(<ReportQueue queue="work" urut="terlama" />);
 
     await user.click(await screen.findByRole("button", { name: "Tandai selesai" }));
     const dialog = await screen.findByRole("dialog", { name: "Selesaikan laporan" });
@@ -172,9 +186,16 @@ describe("ReportQueue", () => {
 
   it("menjelaskan keadaan kosong antrean", async () => {
     mockFetch([]);
-    render(<ReportQueue queue="intake" />);
+    render(<ReportQueue queue="intake" urut="terlama" />);
 
     expect(await screen.findByText("Tidak ada laporan baru yang menunggu.")).toBeInTheDocument();
+  });
+
+  it("menjelaskan keadaan kosong riwayat tanpa aksi", async () => {
+    mockFetch([]);
+    render(<ReportQueue queue="riwayat" urut="terlama" />);
+
+    expect(await screen.findByText("Belum ada laporan yang selesai atau ditolak.")).toBeInTheDocument();
   });
 
   it("menjelaskan akses ditolak", async () => {
@@ -182,7 +203,7 @@ describe("ReportQueue", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 403, json: async () => ({}) } as Response),
     );
-    render(<ReportQueue queue="intake" />);
+    render(<ReportQueue queue="intake" urut="terlama" />);
 
     expect(await screen.findByText("Akses ditolak")).toBeInTheDocument();
   });
@@ -192,14 +213,14 @@ describe("ReportQueue", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) } as Response),
     );
-    render(<ReportQueue queue="intake" />);
+    render(<ReportQueue queue="intake" urut="terlama" />);
 
     expect(await screen.findByText("Masuk sebagai petugas")).toBeInTheDocument();
   });
 
   it("memenuhi pemeriksaan aksesibilitas", async () => {
     mockFetch([laporan()]);
-    const { container } = render(<ReportQueue queue="intake" />);
+    const { container } = render(<ReportQueue queue="intake" urut="terlama" />);
     await screen.findByText("Lampu sisi kanan tidak menyala.");
 
     expect((await axe(container)).violations).toEqual([]);

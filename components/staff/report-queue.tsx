@@ -12,7 +12,7 @@ import { ReportStatusBadge } from "@/components/reports/report-status-badge";
 import { formatWaktu } from "@/components/reports/format";
 import { LABEL_TIPE_FASILITAS } from "@/config/labels";
 import { MAKS_CATATAN_RESOLUSI_LAPORAN } from "@/config/business";
-import type { AntreanLaporan } from "@/lib/validation/report-processing";
+import type { AntreanLaporan, UrutanLaporan } from "@/lib/validation/report-processing";
 import type { StaffReportCollection, StaffReportResult } from "@/lib/services/report-processing-service";
 
 const PER_PAGE = 20;
@@ -27,6 +27,11 @@ const KETERANGAN_ANTREAN: Record<AntreanLaporan, { title: string; description: s
     title: "Daftar pekerjaan",
     description: "Laporan baru dan yang sedang ditangani agar pekerjaan berjalan tetap dapat ditemukan dan diselesaikan.",
     kosong: "Tidak ada pekerjaan laporan yang perlu ditangani.",
+  },
+  riwayat: {
+    title: "Riwayat laporan",
+    description: "Laporan yang sudah selesai atau ditolak. Isinya arsip dan tidak dapat diubah lagi.",
+    kosong: "Belum ada laporan yang selesai atau ditolak.",
   },
 };
 
@@ -57,7 +62,7 @@ function kosongState(access: ReportQueueResponse["access"], queue: AntreanLapora
   return { title: KETERANGAN_ANTREAN[queue].kosong, description: "Ringkasan di dasbor petugas tetap diperbarui otomatis." };
 }
 
-export function ReportQueue({ queue }: { queue: AntreanLaporan }) {
+export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: UrutanLaporan }) {
   const [page, setPage] = useState(1);
   const [state, setState] = useState<ReportQueueResponse>({ access: "ok", data: null });
   const [loading, setLoading] = useState(true);
@@ -74,7 +79,7 @@ export function ReportQueue({ queue }: { queue: AntreanLaporan }) {
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/staff/reports?queue=${queue}&page=${targetPage}&perPage=${PER_PAGE}`,
+          `/api/staff/reports?queue=${queue}&sort=${urut}&page=${targetPage}&perPage=${PER_PAGE}`,
         );
         if (res.status === 401) {
           setState({ access: "login", data: null });
@@ -95,7 +100,7 @@ export function ReportQueue({ queue }: { queue: AntreanLaporan }) {
         setLoading(false);
       }
     },
-    [queue],
+    [queue, urut],
   );
 
   useEffect(() => {

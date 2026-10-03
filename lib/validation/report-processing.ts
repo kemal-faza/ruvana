@@ -1,19 +1,35 @@
 import type { ProblemFieldError } from "@/lib/http/problem";
-import { MAKS_CATATAN_RESOLUSI_LAPORAN, STATUS_LAPORAN_ANTREAN_MASUK, STATUS_LAPORAN_KERJA_PETUGAS } from "@/config/business";
+import {
+  MAKS_CATATAN_RESOLUSI_LAPORAN,
+  STATUS_LAPORAN_ANTREAN_MASUK,
+  STATUS_LAPORAN_KERJA_PETUGAS,
+  STATUS_LAPORAN_RIWAYAT_PETUGAS,
+} from "@/config/business";
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; errors: ProblemFieldError[] };
 
-/** Antrean REP-03: `intake` hanya NEW, `work` NEW + IN_PROGRESS. */
-export const ANTREAN_LAPORAN = ["intake", "work"] as const;
+/**
+ * Antrean laporan petugas: `intake` hanya NEW, `work` NEW + IN_PROGRESS, dan
+ * `riwayat` laporan yang sudah RESOLVED atau REJECTED.
+ */
+export const ANTREAN_LAPORAN = ["intake", "work", "riwayat"] as const;
 export type AntreanLaporan = (typeof ANTREAN_LAPORAN)[number];
+
+/** Urutan antrean: terlama lebih dulu (bawaan) atau terbaru lebih dulu. */
+export const URUTAN_LAPORAN = ["terlama", "terbaru"] as const;
+export type UrutanLaporan = (typeof URUTAN_LAPORAN)[number];
+
+export const URUTAN_LAPORAN_BAWAAN: UrutanLaporan = "terlama";
 
 export const STATUS_ANTREAN_LAPORAN: Record<AntreanLaporan, readonly string[]> = {
   intake: STATUS_LAPORAN_ANTREAN_MASUK,
   work: STATUS_LAPORAN_KERJA_PETUGAS,
+  riwayat: STATUS_LAPORAN_RIWAYAT_PETUGAS,
 };
 
 export interface StaffReportQueueQuery {
   queue: AntreanLaporan;
+  urut: UrutanLaporan;
   page: number;
   perPage: number;
 }
@@ -46,10 +62,15 @@ export function parseStaffReportQueueQuery(searchParams: URLSearchParams): Parse
     errors.push({
       field: "queue",
       code: "REQUIRED",
-      message: "queue wajib diisi (intake untuk laporan baru, work untuk daftar pekerjaan)",
+      message: "queue wajib diisi (intake untuk laporan baru, work untuk daftar pekerjaan, riwayat untuk arsip)",
     });
   } else if (!(ANTREAN_LAPORAN as readonly string[]).includes(rawQueue)) {
-    errors.push({ field: "queue", code: "INVALID_ENUM", message: "queue harus intake atau work" });
+    errors.push({ field: "queue", code: "INVALID_ENUM", message: "queue harus intake, work, atau riwayat" });
+  }
+
+  const rawUrutan = searchParams.get("sort");
+  if (rawUrutan !== null && !(URUTAN_LAPORAN as readonly string[]).includes(rawUrutan)) {
+    errors.push({ field: "sort", code: "INVALID_ENUM", message: "sort harus terlama atau terbaru" });
   }
 
   const rawPage = parsePositiveInt(searchParams.get("page"));
@@ -74,9 +95,28 @@ export function parseStaffReportQueueQuery(searchParams: URLSearchParams): Parse
     ok: true,
     value: {
       queue: rawQueue as AntreanLaporan,
+      urut: (rawUrutan as UrutanLaporan | null) ?? URUTAN_LAPORAN_BAWAAN,
       page: rawPage ?? 1,
       perPage: rawPerPage ?? PER_HALAMAN_ANTREAN_LAPORAN,
     },
+  };
+}
+
+/** Nilai antrean dan urutan dari URL; nilai lain jatuh ke bawaan yang aman. */
+export function parseAntreanDanUrutan(searchParams: {
+  queue?: string | string[] | undefined;
+  sort?: string | string[] | undefined;
+}): { queue: AntreanLaporan; urut: UrutanLaporan } {
+  const queue = Array.isArray(searchParams.queue) ? searchParams.queue[0] : searchParams.queue;
+  const urut = Array.isArray(searchParams.sort) ? searchParams.sort[0] : searchParams.sort;
+
+  return {
+    queue: (ANTREAN_LAPORAN as readonly string[]).includes(queue ?? "")
+      ? (queue as AntreanLaporan)
+      : "intake",
+    urut: (URUTAN_LAPORAN as readonly string[]).includes(urut ?? "")
+      ? (urut as UrutanLaporan)
+      : URUTAN_LAPORAN_BAWAAN,
   };
 }
 

@@ -88,9 +88,9 @@ describe("listStaffReportQueueService", () => {
     vi.mocked(findStaffReports).mockResolvedValue([]);
     vi.mocked(countStaffReports).mockResolvedValue(0);
 
-    await listStaffReportQueueService({ queue: "intake", page: 1, perPage: 20 });
+    await listStaffReportQueueService({ queue: "intake", urut: "terlama", page: 1, perPage: 20 });
 
-    expect(findStaffReports).toHaveBeenCalledWith({ status: ["NEW"], skip: 0, take: 20 });
+    expect(findStaffReports).toHaveBeenCalledWith({ status: ["NEW"], urut: "terlama", skip: 0, take: 20 });
     expect(countStaffReports).toHaveBeenCalledWith(["NEW"]);
   });
 
@@ -98,20 +98,36 @@ describe("listStaffReportQueueService", () => {
     vi.mocked(findStaffReports).mockResolvedValue([]);
     vi.mocked(countStaffReports).mockResolvedValue(0);
 
-    await listStaffReportQueueService({ queue: "work", page: 2, perPage: 10 });
+    await listStaffReportQueueService({ queue: "work", urut: "terlama", page: 2, perPage: 10 });
 
     expect(findStaffReports).toHaveBeenCalledWith({
       status: ["NEW", "IN_PROGRESS"],
+      urut: "terlama",
       skip: 10,
       take: 10,
     });
+  });
+
+  it("antrean riwayat meminta laporan terminal saja", async () => {
+    vi.mocked(findStaffReports).mockResolvedValue([]);
+    vi.mocked(countStaffReports).mockResolvedValue(0);
+
+    await listStaffReportQueueService({ queue: "riwayat", urut: "terbaru", page: 1, perPage: 20 });
+
+    expect(findStaffReports).toHaveBeenCalledWith({
+      status: ["RESOLVED", "REJECTED"],
+      urut: "terbaru",
+      skip: 0,
+      take: 20,
+    });
+    expect(countStaffReports).toHaveBeenCalledWith(["RESOLVED", "REJECTED"]);
   });
 
   it("tidak pernah mengembalikan pathname foto private", async () => {
     vi.mocked(findStaffReports).mockResolvedValue([row]);
     vi.mocked(countStaffReports).mockResolvedValue(1);
 
-    const result = await listStaffReportQueueService({ queue: "intake", page: 1, perPage: 20 });
+    const result = await listStaffReportQueueService({ queue: "intake", urut: "terlama", page: 1, perPage: 20 });
 
     expect(result.items[0].foto).toEqual({
       hasPhoto: true,
@@ -128,7 +144,7 @@ describe("listStaffReportQueueService", () => {
       { id: 7, nama: "Petugas Ruvana", role: "petugas" },
     ]);
 
-    const result = await listStaffReportQueueService({ queue: "work", page: 1, perPage: 20 });
+    const result = await listStaffReportQueueService({ queue: "work", urut: "terlama", page: 1, perPage: 20 });
 
     expect(findStaffReportHandlers).toHaveBeenCalledWith([7], expect.anything());
     expect(result.items[0].ditanganiOleh).toEqual({ id: 7, nama: "Petugas Ruvana", role: "petugas" });

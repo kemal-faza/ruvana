@@ -4,6 +4,8 @@ import { MAKS_CATATAN_RESOLUSI_LAPORAN } from "@/config/business";
 
 import {
   ANTREAN_LAPORAN,
+  URUTAN_LAPORAN,
+  parseAntreanDanUrutan,
   parseReportId,
   parseReportResolutionBody,
   parseStaffReportQueueQuery,
@@ -22,14 +24,17 @@ describe("parseReportId", () => {
 });
 
 describe("parseStaffReportQueueQuery", () => {
-  it("memberikan default halaman dan per halaman", () => {
+  it("memberikan default halaman, per halaman, dan urutan terlama", () => {
     const result = parseStaffReportQueueQuery(new URLSearchParams("queue=intake"));
-    expect(result).toEqual({ ok: true, value: { queue: "intake", page: 1, perPage: 20 } });
+    expect(result).toEqual({ ok: true, value: { queue: "intake", urut: "terlama", page: 1, perPage: 20 } });
   });
 
-  it("menerima kedua nilai antrean", () => {
+  it("menerima semua nilai antrean dan urutan", () => {
     for (const queue of ANTREAN_LAPORAN) {
       expect(parseStaffReportQueueQuery(new URLSearchParams(`queue=${queue}`)).ok).toBe(true);
+    }
+    for (const urut of URUTAN_LAPORAN) {
+      expect(parseStaffReportQueueQuery(new URLSearchParams(`queue=work&sort=${urut}`)).ok).toBe(true);
     }
   });
 
@@ -38,9 +43,27 @@ describe("parseStaffReportQueueQuery", () => {
     expect(parseStaffReportQueueQuery(new URLSearchParams("queue=all")).ok).toBe(false);
   });
 
+  it("menolak urutan yang tidak dikenal", () => {
+    expect(parseStaffReportQueueQuery(new URLSearchParams("queue=intake&sort=lama")).ok).toBe(false);
+  });
+
   it("menolak nilai halaman di luar rentang", () => {
     expect(parseStaffReportQueueQuery(new URLSearchParams("queue=work&page=0")).ok).toBe(false);
     expect(parseStaffReportQueueQuery(new URLSearchParams("queue=work&perPage=101")).ok).toBe(false);
+  });
+});
+
+describe("parseAntreanDanUrutan", () => {
+  it("membaca antrean dan urutan dari URL", () => {
+    expect(parseAntreanDanUrutan({ queue: "riwayat", sort: "terbaru" })).toEqual({
+      queue: "riwayat",
+      urut: "terbaru",
+    });
+  });
+
+  it("memakai nilai bawaan saat parameter hilang atau tidak dikenal", () => {
+    expect(parseAntreanDanUrutan({})).toEqual({ queue: "intake", urut: "terlama" });
+    expect(parseAntreanDanUrutan({ queue: ["all"], sort: ["lama"] })).toEqual({ queue: "intake", urut: "terlama" });
   });
 });
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import type { StatusLaporan } from "@/generated/prisma/enums";
+import type { UrutanLaporan } from "@/lib/validation/report-processing";
 
 const reportFacilitySelect = {
   id: true,
@@ -133,16 +134,21 @@ export async function lockReportById(tx: Prisma.TransactionClient, id: number) {
 
 export interface FindStaffReportsParams {
   status: readonly StatusLaporan[];
+  urut: UrutanLaporan;
   skip: number;
   take: number;
 }
 
-// Antrean laporan untuk petugas: createdAt ASC lalu id ASC agar laporan terlama
-// menunggu lebih dulu (OpenAPI listStaffReports).
-export function findStaffReports({ status, skip, take }: FindStaffReportsParams) {
+// Antrean laporan untuk petugas: createdAt lalu id terurut sesuai pilihan
+// urutan antrean, sehingga laporan terlama selalu dapat ditemukan lebih dulu.
+export function findStaffReports({ status, urut, skip, take }: FindStaffReportsParams) {
+  const arah = urut === "terbaru" ? "desc" : "asc";
   return prisma.report.findMany({
     where: { status: { in: [...status] } },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    orderBy: [
+      { createdAt: arah },
+      { id: arah },
+    ],
     select: staffReportSelect,
     skip,
     take,

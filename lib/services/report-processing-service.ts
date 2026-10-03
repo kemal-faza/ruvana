@@ -21,7 +21,11 @@ import {
   type StaffReportRow,
 } from "@/lib/db/reports";
 import { prisma } from "@/lib/prisma";
-import { STATUS_ANTREAN_LAPORAN, type AntreanLaporan } from "@/lib/validation/report-processing";
+import {
+  STATUS_ANTREAN_LAPORAN,
+  type AntreanLaporan,
+  type UrutanLaporan,
+} from "@/lib/validation/report-processing";
 
 type PersistSuccess<T> = (tx: Prisma.TransactionClient, result: T) => Promise<void>;
 
@@ -149,17 +153,18 @@ async function attachHandlers(
   return new Map(handlers.map((user) => [user.id, { id: user.id, nama: user.nama, role: user.role }]));
 }
 
-/** Antrean laporan masuk (hanya NEW) dan daftar pekerjaan (NEW + IN_PROGRESS). */
+/** Antrean laporan masuk, daftar pekerjaan, dan riwayat arsip petugas. */
 export async function listStaffReportQueueService(query: {
   queue: AntreanLaporan;
+  urut: UrutanLaporan;
   page: number;
   perPage: number;
 }): Promise<StaffReportCollection> {
-  const { queue, page, perPage } = query;
+  const { queue, urut, page, perPage } = query;
   const statuses = STATUS_ANTREAN_LAPORAN[queue] as readonly StatusLaporan[];
 
   const [rows, totalItems] = await Promise.all([
-    findStaffReports({ status: statuses, skip: (page - 1) * perPage, take: perPage }),
+    findStaffReports({ status: statuses, urut, skip: (page - 1) * perPage, take: perPage }),
     countStaffReports(statuses),
   ]);
 
