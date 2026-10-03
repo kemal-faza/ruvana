@@ -140,7 +140,9 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
           >
             <SelectTrigger
               aria-label="Urutkan laporan"
-              className={`${SELECT_TRIGGER_ACTION_CLASS} w-24 shrink-0`}
+              // `min-w` alih-alih `w` tetap agar label "Terlama"/"Terbaru"
+              // tidak pernah terpotong pada lebar desktop mana pun.
+              className={cn(SELECT_TRIGGER_ACTION_CLASS, "min-w-24 shrink-0 bg-background hover:bg-muted")}
             >
               <SelectValue />
             </SelectTrigger>
