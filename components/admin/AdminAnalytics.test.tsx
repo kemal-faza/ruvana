@@ -49,7 +49,7 @@ const snapshot: AnalyticsSnapshot = {
     reservationDateRule: "Reservasi dihitung berdasarkan tanggal kalender kampus (Asia/Jakarta) dalam rentang inklusif.",
     approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
     facilityStatusNote:
-      "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam pemeliharaan dan nonaktif tetap masuk kapasitas.",
+      "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
     reportCreationDateRule: "Laporan dihitung berdasarkan waktu dibuat dalam kalender Asia/Jakarta.",
   },
 };
@@ -95,11 +95,11 @@ describe("AdminAnalyticsDashboard", () => {
     expect(statusTable).not.toHaveTextContent("IN_PROGRESS");
     expect(within(statusTable).getAllByRole("row")).toHaveLength(4);
 
-    for (const status of ["Tersedia", "Dalam Pemeliharaan", "Nonaktif"]) {
+    for (const status of ["Aktif", "Dalam Perbaikan", "Nonaktif"]) {
       expect(screen.getByText(status).closest("li")).toHaveTextContent("1 fasilitas");
     }
-    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Tersedia" })).toHaveTextContent("Ruang Alfa");
-    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Dalam Pemeliharaan" })).toHaveTextContent(
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Aktif" })).toHaveTextContent("Ruang Alfa");
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Dalam Perbaikan" })).toHaveTextContent(
       "Aula Utama",
     );
     expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Nonaktif" })).toHaveTextContent(
@@ -198,12 +198,12 @@ describe("AdminAnalyticsDashboard", () => {
       />,
     );
 
-    expect(screen.getByText("Tersedia").closest("li")).toHaveTextContent("2 fasilitas");
-    expect(screen.getByText("Dalam Pemeliharaan").closest("li")).toHaveTextContent("0 fasilitas");
+    expect(screen.getByText("Aktif").closest("li")).toHaveTextContent("2 fasilitas");
+    expect(screen.getByText("Dalam Perbaikan").closest("li")).toHaveTextContent("0 fasilitas");
     expect(screen.getByText("Nonaktif").closest("li")).toHaveTextContent("0 fasilitas");
-    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Tersedia" })).toHaveTextContent("Ruang Beta");
+    expect(screen.getByRole("list", { name: "Daftar fasilitas berstatus Aktif" })).toHaveTextContent("Ruang Beta");
     expect(
-      screen.queryByRole("list", { name: "Daftar fasilitas berstatus Dalam Pemeliharaan" }),
+      screen.queryByRole("list", { name: "Daftar fasilitas berstatus Dalam Perbaikan" }),
     ).not.toBeInTheDocument();
   });
 

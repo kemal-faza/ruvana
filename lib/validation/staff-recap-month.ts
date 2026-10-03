@@ -48,10 +48,16 @@ export function parseStaffRecapMonth(
   now: Date = new Date(),
 ): StaffRecapMonthParseResult {
   const bawaan = getStaffRecapDefaultMonth(now);
-  const mentah = ambilNilaiTunggal(searchParams.bulan);
+  const bulan = ambilNilaiTunggal(searchParams.bulan);
+  const tahun = ambilNilaiTunggal(searchParams.tahun);
+  const mentah = tahun === undefined
+    ? bulan
+    : bulan && /^\d{1,2}$/.test(bulan) && /^\d{1,4}$/.test(tahun)
+      ? `${tahun.padStart(4, "0")}-${bulan.padStart(2, "0")}`
+      : undefined;
 
   if (mentah === undefined) {
-    if (Array.isArray(searchParams.bulan)) {
+    if (searchParams.bulan !== undefined || searchParams.tahun !== undefined) {
       return {
         month: bawaan,
         warning: `Parameter bulan tidak valid, menampilkan rekap bulan ${formatMonthLabelIndonesia(bawaan)}.`,

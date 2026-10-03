@@ -30,6 +30,13 @@ describe("parseStaffRecapMonth", () => {
     expect(hasil.warning).toBeNull();
   });
 
+  it("menerima pasangan bulan dan tahun dari form GET tanpa JavaScript", () => {
+    const hasil = parseStaffRecapMonth({ bulan: "09", tahun: "2026" }, new Date("2026-09-15T10:00:00.000Z"));
+
+    expect(hasil.month).toBe("2026-09");
+    expect(hasil.warning).toBeNull();
+  });
+
   it("memakai default tanpa peringatan saat param tidak ada", () => {
     const hasil = parseStaffRecapMonth({}, INSTANT_GANTI_BULAN);
 
