@@ -37,6 +37,31 @@ describe("parseStaffRecapMonth", () => {
     expect(hasil.warning).toBeNull();
   });
 
+  it("menerima format bulan lengkap walaupun param tahun ikut hadir", () => {
+    const hasil = parseStaffRecapMonth(
+      { bulan: "2026-09", tahun: "2026" },
+      new Date("2026-09-15T10:00:00.000Z"),
+    );
+
+    expect(hasil.month).toBe("2026-09");
+    expect(hasil.warning).toBeNull();
+  });
+
+  it("memberi padding pada bulan satu digit dari format pasangan", () => {
+    const hasil = parseStaffRecapMonth({ bulan: "9", tahun: "2026" }, new Date("2026-09-15T10:00:00.000Z"));
+
+    expect(hasil.month).toBe("2026-09");
+    expect(hasil.warning).toBeNull();
+  });
+
+  it("menyebut bulan atau tahun saat param pasangan tidak valid", () => {
+    const hasil = parseStaffRecapMonth({ bulan: "09", tahun: "abc" }, INSTANT_GANTI_BULAN);
+
+    expect(hasil.month).toBe("2026-10");
+    expect(hasil.warning).toMatch(/bulan atau tahun/i);
+    expect(hasil.warning).toMatch(/Oktober 2026/);
+  });
+
   it("memakai default tanpa peringatan saat param tidak ada", () => {
     const hasil = parseStaffRecapMonth({}, INSTANT_GANTI_BULAN);
 
