@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
@@ -287,7 +288,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
               <Field>
                 <FieldLabel>Fasilitas</FieldLabel>
                 <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
                     <SelectValue placeholder="Pilih fasilitas">
                       {(value: string) => {
                         const match = facilities.find((f) => String(f.id) === value);
@@ -343,7 +344,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                 <Select value={startTime} onValueChange={handleStartChange}>
                   <SelectTrigger
                     id="jam-mulai"
-                    className="w-full"
+                    className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
                     // Rujuk deskripsi hanya saat ia dirender; saat galat field
                     // menggantikannya, IDREF akan menggantung.
                     aria-describedby={
@@ -383,7 +384,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                     if (v) setEndTime(v);
                   }}
                 >
-                  <SelectTrigger id="jam-selesai" className="w-full" disabled={!startTime}>
+                  <SelectTrigger id="jam-selesai" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`} disabled={!startTime}>
                     <SelectValue placeholder="Pilih jam selesai" />
                   </SelectTrigger>
                   <SelectContent>
