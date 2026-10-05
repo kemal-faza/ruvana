@@ -10,6 +10,7 @@ import { Reveal } from "@/components/motion/reveal"
 import { StaggerGroup, StaggerItem } from "@/components/motion/stagger-group"
 import { SiteFooter } from "@/components/site/site-footer"
 import { SiteHeader } from "@/components/site/site-header"
+import { SkipToContentLink } from "@/components/site/skip-to-content-link"
 import { CookieConsentBanner } from "@/components/site/cookie-consent-banner"
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -62,12 +63,7 @@ export default async function Home() {
   const user = await getSessionUser()
   return (
     <>
-      <a
-        href="#konten"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-control focus:bg-card focus:p-4"
-      >
-        Lewati ke konten utama
-      </a>
+      <SkipToContentLink />
 
       <SiteHeader current="beranda" />
 

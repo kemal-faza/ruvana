@@ -1,5 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 
 import { AccountStatus, Role } from "@/generated/prisma/enums"
 import FasilitasLayout from "@/app/fasilitas/layout"
@@ -30,6 +31,19 @@ const account = {
 }
 
 describe("FasilitasLayout", () => {
+  it.each([null, Role.pengguna])("menyediakan tautan lewati sebagai fokus pertama untuk peran %s", async (role) => {
+    setMatchMedia("(max-width: 1023px)", false)
+    mocks.getSessionUser.mockResolvedValue(role ? { ...account, role } : null)
+
+    const { container } = render(await FasilitasLayout({ children: <h1>Daftar fasilitas</h1> }))
+    const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" })
+
+    expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink)
+    expect(skipLink).toHaveAttribute("href", "#konten")
+    expect(screen.getByRole("main")).toHaveAttribute("id", "konten")
+    expect((await axe(container)).violations).toEqual([])
+  })
+
   it.each([
     [Role.pengguna, ["/reservasi/riwayat", "/reservasi", "/fasilitas", "/reports", "/pengaturan"], ["/petugas", "/admin"]],
     [Role.petugas, ["/petugas", "/petugas/antrian", "/petugas/pengaturan"], ["/reservasi", "/reports", "/admin"]],
