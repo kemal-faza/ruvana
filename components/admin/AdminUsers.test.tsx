@@ -131,8 +131,10 @@ describe("AdminUsers (kelola akun)", () => {
     expect(screen.getByText("Citra Lestari")).toBeInTheDocument()
 
     await user.clear(screen.getByLabelText("Cari nama atau email"))
-    await user.selectOptions(screen.getByLabelText("Filter peran"), "pengguna")
-    await user.selectOptions(screen.getByLabelText("Filter status"), "REJECTED")
+    await user.click(screen.getByRole("combobox", { name: "Filter peran" }))
+    await user.click(await screen.findByRole("option", { name: "Pengguna" }))
+    await user.click(screen.getByRole("combobox", { name: "Filter status" }))
+    await user.click(await screen.findByRole("option", { name: "Ditolak" }))
     expect(screen.getByText("Menampilkan 1 dari 4 akun.")).toBeInTheDocument()
     expect(screen.getByText("Citra Lestari")).toBeInTheDocument()
     expect(screen.queryByText("Ayu Pratama")).not.toBeInTheDocument()
@@ -178,10 +180,28 @@ describe("AdminUsers (kelola akun)", () => {
     await user.type(nama, "Siti Aminah")
     await user.type(email, "siti@kampus.ac.id")
     await user.type(password, `a1x${"é".repeat(35)}`)
-    await user.selectOptions(within(dialog).getByLabelText(/peran/i), "pengguna")
+    await user.click(within(dialog).getByRole("combobox", { name: /peran/i }))
+    await user.click(await screen.findByRole("option", { name: "Pengguna" }))
     await user.click(within(dialog).getByRole("button", { name: "Buat akun" }))
 
     expect(password.validationMessage).toBe("Password maksimal 72 byte.")
+    expect(buatAkun).not.toHaveBeenCalled()
+  })
+
+  it("menahan pengiriman form admin selama peran belum dipilih", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+    await user.click(screen.getByRole("button", { name: "Tambah akun" }))
+
+    const dialog = await screen.findByRole("dialog", { name: "Buat akun baru" })
+    const peran = within(dialog).getByRole("combobox", { name: /peran/i })
+    expect(peran).toHaveTextContent("Pilih peran")
+
+    await user.type(within(dialog).getByLabelText(/nama lengkap/i), "Siti Aminah")
+    await user.type(within(dialog).getByLabelText(/email/i), "siti@kampus.ac.id")
+    await user.type(within(dialog).getByLabelText(/password awal/i), "rahasia123")
+    await user.click(within(dialog).getByRole("button", { name: "Buat akun" }))
+
     expect(buatAkun).not.toHaveBeenCalled()
   })
 
