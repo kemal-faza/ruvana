@@ -45,6 +45,8 @@ pnpm dev
 
 The app runs on port 3000. The seed uses upserts and is safe to rerun. Stop
 PostgreSQL with `pnpm db:down`.
+Set a unique `SEED_DEMO_PASSWORD` (16–72 bytes) in `.env` before running the seed;
+non-local database URLs require `SEED_ALLOW_NON_LOCAL=1` explicitly.
 
 ### Rootless Podman on `/mnt/DATA`
 

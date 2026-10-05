@@ -52,7 +52,7 @@ beforeEach(() => {
   vi.mocked(getCurrentSessionTokenHash).mockResolvedValue("session-hash")
   vi.mocked(updateUserName).mockResolvedValue({ count: 1 } as never)
   vi.mocked(findPasswordHashByUserId).mockResolvedValue({ password: "stored-hash" } as never)
-  vi.mocked(bcrypt.compare).mockImplementation(async (value, hash) => value === "password123" && hash === "stored-hash")
+  vi.mocked(bcrypt.compare).mockImplementation(async (value, hash) => value === "sandi-uji-lama" && hash === "stored-hash")
   vi.mocked(bcrypt.hash).mockResolvedValue("new-hash" as never)
   vi.mocked(updatePasswordAndRevokeOtherSessions).mockResolvedValue(1)
   vi.mocked(deleteOtherAuthSessions).mockResolvedValue({ count: 2 } as never)
@@ -76,7 +76,7 @@ describe("pengaturan profil dan keamanan", () => {
   it("menolak kata sandi baru di bawah 8 byte sebelum cek kredensial", async () => {
     const result = await changePasswordAction(
       { ok: false, message: "" },
-      form({ currentPassword: "password123", newPassword: "1234567", confirmation: "1234567" }),
+      form({ currentPassword: "sandi-uji-lama", newPassword: "1234567", confirmation: "1234567" }),
     )
 
     expect(result.fieldErrors?.newPassword).toContain("8–72 byte UTF-8")
@@ -86,7 +86,7 @@ describe("pengaturan profil dan keamanan", () => {
   it("mengganti kata sandi dan mengakhiri sesi lain dengan sesi saat ini tetap aktif", async () => {
     const result = await changePasswordAction(
       { ok: false, message: "" },
-      form({ currentPassword: "password123", newPassword: "password456", confirmation: "password456" }),
+      form({ currentPassword: "sandi-uji-lama", newPassword: "password456", confirmation: "password456" }),
     )
 
     expect(result).toEqual({
