@@ -7,7 +7,6 @@ import { metadata as adminPenggunaMetadata } from "./admin/pengguna/page"
 import { metadata as baselineUiMetadata } from "./baseline-ui/page"
 import { metadata as daftarMetadata } from "./daftar/page"
 import { metadata as fasilitasMetadata } from "./fasilitas/page"
-import { metadata as publicFacilityMetadata } from "./publik/fasilitas/page"
 import { metadata as loginMetadata } from "./login/page"
 import { metadata as petugasMetadata } from "./petugas/page"
 import { metadata as antrianMetadata } from "./petugas/antrian/page"
@@ -24,7 +23,6 @@ const metadataCases = [
   { route: "/admin/analitik", actualTitle: adminAnalitikMetadata.title, title: "Analitik | ruvana" },
   { route: "/admin/pengguna", actualTitle: adminPenggunaMetadata.title, title: "Kelola pengguna | ruvana" },
   { route: "/fasilitas", actualTitle: fasilitasMetadata.title, title: "Fasilitas | ruvana" },
-  { route: "/publik/fasilitas", actualTitle: publicFacilityMetadata.title, title: "Fasilitas | ruvana" },
   { route: "/reports", actualTitle: reportsMetadata.title, title: "Laporan | ruvana" },
   { route: "/reservasi", actualTitle: reservationMetadata.title, title: "Ajukan reservasi | ruvana" },
   { route: "/reservasi/riwayat", actualTitle: reservationHistoryMetadata.title, title: "Reservasi Saya | ruvana" },

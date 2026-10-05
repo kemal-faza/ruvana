@@ -13,9 +13,8 @@ export interface NavigationItem {
    */
   exact?: boolean
   /**
-   * Pathname lain yang tetap mewakili item ini, mis. rute publik dari halaman
-   * yang sama (`/publik/fasilitas` untuk item `/fasilitas`) sehingga navigasi
-   * tetap menunjukkan lokasi saat pengguna membuka rute tersebut.
+   * Pathname tambahan yang tetap mewakili item ini ketika satu tujuan
+   * navigasi punya beberapa alamat.
    */
   activeFor?: readonly string[]
 }

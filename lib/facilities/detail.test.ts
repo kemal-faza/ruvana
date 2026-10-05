@@ -38,9 +38,9 @@ describe("detail fasilitas", () => {
   })
 
   it("membuat metadata dari data fasilitas di service", async () => {
-    const metadata = await generateFacilityDetailMetadata("8", "/publik/fasilitas")
+    const metadata = await generateFacilityDetailMetadata("8", "/fasilitas")
 
     expect(metadata.title).toBe("Laboratorium Kimia | ruvana")
-    expect(metadata.alternates?.canonical).toBe("/publik/fasilitas/8")
+    expect(metadata.alternates?.canonical).toBe("/fasilitas/8")
   })
 })

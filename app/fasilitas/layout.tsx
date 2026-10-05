@@ -13,9 +13,7 @@ export default async function FasilitasLayout({ children }: { children: ReactNod
   if (!user) {
     return (
       <>
-        {/* Tautan "Fasilitas" di header publik menuju `/publik/fasilitas`, bukan
-            rute ini, jadi tidak ada item navigasi yang ditandai aktif. */}
-        <SiteHeader />
+        <SiteHeader current="fasilitas" />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
         <SiteFooter />
       </>

@@ -38,14 +38,14 @@ describe("FacilityList", () => {
   })
 
   it("mempertahankan rute publik pada tautan reset", () => {
-    render(<FacilityList items={[]} hasActiveFilters basePath="/publik/fasilitas" />)
+    render(<FacilityList items={[]} hasActiveFilters basePath="/fasilitas" />)
 
-    expect(screen.getByRole("button", { name: /reset/i })).toHaveAttribute("href", "/publik/fasilitas")
+    expect(screen.getByRole("button", { name: /reset/i })).toHaveAttribute("href", "/fasilitas")
   })
 
   it("menautkan detail fasilitas ke rute publik", () => {
-    render(<FacilityList items={[facility]} basePath="/publik/fasilitas" detailBasePath="/publik/fasilitas" />)
+    render(<FacilityList items={[facility]} basePath="/fasilitas" detailBasePath="/fasilitas" />)
 
-    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/publik/fasilitas/1")
+    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/fasilitas/1")
   })
 })

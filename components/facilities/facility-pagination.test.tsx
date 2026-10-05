@@ -46,19 +46,19 @@ describe("FacilityPagination", () => {
     expect(href).toContain("page=2")
   })
 
-  it("membuat tautan halaman tetap di rute fasilitas publik", () => {
+  it("membuat tautan halaman tetap di rute fasilitas", () => {
     render(
       <FacilityPagination
         page={1}
         totalPages={2}
         query={{ type: "ruang_kelas" }}
-        basePath="/publik/fasilitas"
+        basePath="/fasilitas"
       />,
     )
 
     expect(screen.getByRole("button", { name: /berikutnya/i })).toHaveAttribute(
       "href",
-      "/publik/fasilitas?type=ruang_kelas&page=2",
+      "/fasilitas?type=ruang_kelas&page=2",
     )
   })
 
