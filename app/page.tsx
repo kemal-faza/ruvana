@@ -103,7 +103,7 @@ export default async function Home() {
                 className="motion-rise motion-rise-stagger flex min-w-0 flex-wrap items-center gap-3.5 sm:gap-5"
                 style={staggerStyle(3)}
               >
-                <Link href="/fasilitas" className={primaryLink}>
+                <Link href="/publik/fasilitas" className={primaryLink}>
                   Jelajahi Fasilitas
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
                 </Link>
@@ -217,7 +217,7 @@ export default async function Home() {
                   Lihat fasilitas kampus dan siapkan kegiatanmu.
                 </p>
               </div>
-              <Link href="/fasilitas" className={primaryLink}>
+              <Link href="/publik/fasilitas" className={primaryLink}>
                 Jelajahi Fasilitas
                 <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
               </Link>

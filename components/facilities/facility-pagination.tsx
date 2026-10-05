@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button"
 interface FacilityPaginationProps {
   page: number
   totalPages: number
+  basePath?: string
   /** Filter aktif yang harus dipertahankan saat berpindah halaman. */
   query: Record<string, string | number | undefined>
 }
 
-function buildHref(page: number, query: FacilityPaginationProps["query"]): string {
+function buildHref(page: number, query: FacilityPaginationProps["query"], basePath: string): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== "") {
@@ -18,10 +19,10 @@ function buildHref(page: number, query: FacilityPaginationProps["query"]): strin
     }
   }
   params.set("page", String(page))
-  return `/fasilitas?${params.toString()}`
+  return `${basePath}?${params.toString()}`
 }
 
-export function FacilityPagination({ page, totalPages, query }: FacilityPaginationProps) {
+export function FacilityPagination({ page, totalPages, query, basePath = "/fasilitas" }: FacilityPaginationProps) {
   if (totalPages <= 1) {
     return null
   }
@@ -40,7 +41,7 @@ export function FacilityPagination({ page, totalPages, query }: FacilityPaginati
         nativeButton={false}
         disabled={isFirst}
         aria-disabled={isFirst}
-        render={isFirst ? undefined : <Link href={buildHref(page - 1, query)} />}
+        render={isFirst ? undefined : <Link href={buildHref(page - 1, query, basePath)} />}
       >
         <ChevronLeft aria-hidden="true" />
         Sebelumnya
@@ -56,7 +57,7 @@ export function FacilityPagination({ page, totalPages, query }: FacilityPaginati
         nativeButton={false}
         disabled={isLast}
         aria-disabled={isLast}
-        render={isLast ? undefined : <Link href={buildHref(page + 1, query)} />}
+        render={isLast ? undefined : <Link href={buildHref(page + 1, query, basePath)} />}
       >
         Berikutnya
         <ChevronRight aria-hidden="true" data-motion-icon="inline-end" />

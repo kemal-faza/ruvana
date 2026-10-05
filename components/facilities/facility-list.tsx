@@ -8,11 +8,18 @@ import type { PublicFacility } from "@/lib/services/facility-service"
 
 interface FacilityListProps {
   items: PublicFacility[]
+  basePath?: string
+  detailBasePath?: string
   /** True ketika ada filter/pencarian aktif, supaya empty state membedakan "kosong" vs "tidak cocok". */
   hasActiveFilters?: boolean
 }
 
-export function FacilityList({ items, hasActiveFilters = false }: FacilityListProps) {
+export function FacilityList({
+  items,
+  hasActiveFilters = false,
+  basePath = "/fasilitas",
+  detailBasePath = "/fasilitas",
+}: FacilityListProps) {
   if (items.length === 0) {
     if (hasActiveFilters) {
       return (
@@ -30,7 +37,7 @@ export function FacilityList({ items, hasActiveFilters = false }: FacilityListPr
                 variant="outline"
                 className="min-h-11"
                 nativeButton={false}
-                render={<Link href="/fasilitas" />}
+                render={<Link href={basePath} />}
               >
                 Reset
               </Button>
@@ -60,7 +67,7 @@ export function FacilityList({ items, hasActiveFilters = false }: FacilityListPr
   return (
     <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((facility, index) => (
-        <FacilityCard key={facility.id} facility={facility} eager={index === 0} />
+        <FacilityCard key={facility.id} facility={facility} eager={index === 0} detailBasePath={detailBasePath} />
       ))}
     </div>
   )

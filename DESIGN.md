@@ -226,6 +226,10 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 
 Destinasi yang tidak tersedia harus dihilangkan dari navigasi. Akses mengikuti aturan otoritas server di **Tujuan dan otoritas**. Navigasi aktif, judul halaman, dan breadcrumb harus menunjukkan lokasi; identitas akun dan logout harus konsisten di menu profil atau footer sidebar.
 
+Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya, termasuk ketika membuka katalog publik.
+
+Katalog fasilitas memiliki dua rute dengan konten yang sama: `/publik/fasilitas` adalah pintu masuk publik yang dipakai header, footer, CTA landing, dan sitemap, sedangkan `/fasilitas` adalah rute fasilitas di navigasi peran. Aturan chrome di atas berlaku di keduanya — pengunjung anonim yang membuka `/fasilitas` tetap memakai header publik tanpa sidebar, dan item navigasi hanya ditandai aktif bila tautannya menuju halaman yang sedang dibuka. Tautan **Jadwal** pada chrome publik menunjuk ke seksi jadwal beranda (`/#jadwal`) karena seksi tersebut tidak dirender di halaman discovery.
+
 ## Komponen
 
 Setiap komponen yang relevan harus mendefinisikan keadaan default, hover, focus-visible, loading, disabled, success, error, dan empty.
@@ -300,6 +304,12 @@ Istilah **available**, **selected**, **loading**, **success**, **error**, **empt
 1. Admin mengelola verifikasi akun, pengguna, fasilitas, analitik, dan ekspor sesuai kewenangan.
 2. Terapkan validasi peran, kepemilikan, konflik, dan state sesuai otoritas server di **Tujuan dan otoritas**.
 3. UI hanya menjelaskan hasil keputusan dan menyediakan pemulihan yang relevan.
+
+### 8. Masuk dan keluar
+
+1. Setelah masuk berhasil, pengguna diarahkan ke tujuan sesuai perannya: **Reservasi Saya** (`/reservasi/riwayat`) untuk pengguna, `/petugas` untuk petugas, dan `/admin/analitik` untuk admin.
+2. Perpindahan halaman setelah masuk atau keluar tidak memuat ulang seluruh aplikasi; hak akses halaman tujuan tetap ditentukan server pada permintaan berikutnya.
+3. Keluar mengakhiri sesi lalu kembali ke `/login`, dan permintaan berikutnya ke halaman terproteksi dialihkan ke `/login`.
 
 ## Umpan balik dan kesalahan
 
@@ -393,10 +403,10 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
   `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
   Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
   pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
-- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`; tujuan ini disiapkan untuk integrasi fitur fasilitas yang dikembangkan terpisah.
+- CTA utama “Jelajahi Fasilitas” menuju `/publik/fasilitas`. Rute `/fasilitas` tetap menjadi pengalaman fasilitas dalam navigasi peran.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
-- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas, dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas (`/publik/fasilitas`), dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
 - Kartu foto memakai aset lokal `public/ruvana-lab2.jpg`. Prototype dan aset mentah di `output/` tidak di-commit.
 - Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.

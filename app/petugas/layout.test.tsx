@@ -13,7 +13,10 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.getSessionUser }))
-vi.mock("next/navigation", () => ({ usePathname: () => mocks.pathname }))
+vi.mock("next/navigation", () => ({
+  usePathname: () => mocks.pathname,
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
+}))
 
 afterEach(() => {
   cleanup()

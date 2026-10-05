@@ -7,26 +7,26 @@ import { navigationForRole } from "@/config/navigation-for-role"
 import { shellAccountFromUser } from "@/config/navigation"
 import { getSessionUser } from "@/lib/auth"
 
-export default async function FasilitasLayout({ children }: { children: ReactNode }) {
+// Katalog publik tetap memakai chrome publik untuk pengunjung anonim, tetapi
+// pengguna yang sudah masuk memakai navigasi perannya (DESIGN.md §Tata letak).
+export default async function PublicFacilityLayout({ children }: { children: ReactNode }) {
   const user = await getSessionUser()
 
-  if (!user) {
+  if (user) {
+    const account = shellAccountFromUser(user)
+
     return (
-      <>
-        {/* Tautan "Fasilitas" di header publik menuju `/publik/fasilitas`, bukan
-            rute ini, jadi tidak ada item navigasi yang ditandai aktif. */}
-        <SiteHeader />
+      <AppShell navigation={navigationForRole(user.role)} account={account}>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
-        <SiteFooter />
-      </>
+      </AppShell>
     )
   }
 
-  const account = shellAccountFromUser(user)
-
   return (
-    <AppShell navigation={navigationForRole(user.role)} account={account}>
+    <>
+      <SiteHeader current="fasilitas" />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
-    </AppShell>
+      <SiteFooter />
+    </>
   )
 }

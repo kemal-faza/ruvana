@@ -11,20 +11,20 @@ export const metadata: Metadata = {
   title: "Fasilitas | ruvana",
   description,
   alternates: {
-    canonical: "/fasilitas",
+    canonical: "/publik/fasilitas",
   },
   openGraph: {
     type: "website",
     title: "ruvana",
     description,
-    url: "/fasilitas",
+    url: "/publik/fasilitas",
   },
 }
 
-interface FasilitasPageProps {
+interface PublicFasilitasPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default function FasilitasPage({ searchParams }: FasilitasPageProps) {
-  return <FacilityCatalog searchParams={searchParams} basePath="/fasilitas" />
+export default function PublicFasilitasPage({ searchParams }: PublicFasilitasPageProps) {
+  return <FacilityCatalog searchParams={searchParams} basePath="/publik/fasilitas" />
 }

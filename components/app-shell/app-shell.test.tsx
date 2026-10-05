@@ -15,6 +15,7 @@ const routeState = vi.hoisted(() => ({ pathname: "/reservasi" }))
 
 vi.mock("next/navigation", () => ({
   usePathname: () => routeState.pathname,
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }))
 vi.mock("@/lib/auth-client", () => ({ logoutFromBrowser: vi.fn() }))
 

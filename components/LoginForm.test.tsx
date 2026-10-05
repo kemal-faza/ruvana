@@ -3,12 +3,30 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, expect, it, vi } from "vitest"
 import LoginForm from "./LoginForm"
 
+const navigation = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }))
+
+vi.mock("next/navigation", () => ({ useRouter: () => navigation }))
 vi.mock("@/components/AuthPhotoPanel", () => ({ AuthPhotoPanel: () => null }))
 vi.mock("@/components/theme-toggle", () => ({ ThemeToggle: () => null }))
 
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.clearAllMocks()
+})
+
+it("membuka riwayat reservasi setelah pengguna berhasil login", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () =>
+    new Response(JSON.stringify({ user: { role: "pengguna" } }), { status: 200 }),
+  ))
+  render(<LoginForm />)
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
+  await user.type(screen.getByLabelText(/Kata sandi/), "rahasia123")
+  await user.click(screen.getByRole("button", { name: "Masuk" }))
+
+  await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/reservasi/riwayat"))
+  expect(navigation.refresh).toHaveBeenCalledOnce()
 })
 
 it("menolak password multibyte di atas 72 byte sebelum request login", async () => {

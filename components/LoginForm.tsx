@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -15,6 +16,7 @@ import { getPostLoginPath } from "@/lib/auth-routing"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function LoginForm() {
+  const router = useRouter()
   const [state, setState] = useState({
     ok: false,
     pesan: "",
@@ -90,7 +92,8 @@ export default function LoginForm() {
                 })
                 const result = await response.json()
                 if (response.ok) {
-                  window.location.assign(getPostLoginPath(result.user.role))
+                  router.replace(getPostLoginPath(result.user.role))
+                  router.refresh()
                   return
                 }
                 const fieldErrors: Record<string, string[]> = {}
