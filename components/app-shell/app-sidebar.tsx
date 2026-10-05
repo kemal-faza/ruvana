@@ -43,6 +43,7 @@ interface NavigationListProps {
 
 function isNavigationItemActive(pathname: string, item: NavigationItem | SerializableNavigationItem) {
   if (pathname === item.href) return true
+  if (item.activeFor?.some((href) => pathname === href || pathname.startsWith(`${href}/`))) return true
   if (item.exact) return false
   return item.href !== "/" && pathname.startsWith(`${item.href}/`)
 }

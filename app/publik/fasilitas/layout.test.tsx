@@ -54,6 +54,9 @@ describe("PublicFacilityLayout", () => {
       "/reservasi/riwayat",
     )
     expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("href", "/fasilitas")
+    // Item "Fasilitas" menunjuk `/fasilitas`, tetapi tetap ditandai aktif di
+    // katalog publik yang menampilkan konten sama.
+    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("aria-current", "page")
     expect(screen.queryByRole("link", { name: "Masuk" })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Daftar" })).not.toBeInTheDocument()
     expect(screen.getByText("Siti Aminah")).toBeInTheDocument()
