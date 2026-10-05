@@ -13,6 +13,7 @@ import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
@@ -179,7 +180,7 @@ export function ReservationHistoryList() {
           value={statusFilter || SEMUA}
           onValueChange={gantiFilter}
         >
-          <SelectTrigger id="filter-status" className="w-full">
+          <SelectTrigger id="filter-status" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
             <SelectValue placeholder="Semua status" />
           </SelectTrigger>
           <SelectContent>
