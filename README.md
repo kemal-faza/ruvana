@@ -112,6 +112,9 @@ pnpm build
 - Push ke branch `main` memicu deployment Vercel.
 - Database production menggunakan Prisma Postgres. Untuk menerapkan perubahan schema di production, gunakan `pnpm prisma migrate deploy`; `pnpm db:migrate` ditujukan untuk development.
 - Simpan environment variable dan kredensial provider di konfigurasi environment Vercel, bukan di repository.
+- Variabel deployment Production: `DATABASE_URL` (Prisma Postgres), `NEXT_PUBLIC_SITE_URL` (URL kanonis), `ALLOWED_ORIGINS` (origin browser yang diizinkan), `BLOB_READ_WRITE_TOKEN` (foto laporan), dan `CRON_SECRET` (job kedaluwarsa reservasi). Jangan gunakan nilai contoh lokal untuk production.
+- Isi `CRON_SECRET` dengan nilai acak panjang di Vercel Project Settings → Environment Variables, khusus **Production**. Vercel Cron mengirimkannya sebagai `Authorization: Bearer <CRON_SECRET>`. Setelah mengubah environment variable, lakukan redeploy production agar deployment aktif menerima nilainya.
+- Verifikasi `GET /api/cron/expire-reservations` tanpa bearer mengembalikan 401; panggilan dengan bearer yang benar mengembalikan 200 berisi `expired` dan `processedAt`. Periksa log setelah siklus cron berikutnya untuk memastikan pesan `CRON_SECRET belum dikonfigurasi` tidak muncul lagi. Jangan menaruh secret pada URL, log, atau repository.
 - Foto laporan saat ini menggunakan penyimpanan lokal development di `public/uploads/reports/`. PRD menetapkan private Vercel Blob sebagai target production; integrasi storage production perlu tersedia sebelum menerima upload foto di production.
 
 Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan kontribusi.
