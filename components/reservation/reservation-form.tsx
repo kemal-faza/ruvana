@@ -16,8 +16,8 @@ import {
 import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import { Separator } from "@/components/ui/separator";
@@ -286,9 +286,9 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
           <form method="get" action="/reservasi" className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
-                <FieldLabel>Fasilitas</FieldLabel>
+                <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>
                 <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
-                  <SelectTrigger className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
+                  <SelectTrigger id="fasilitas" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
                     <SelectValue placeholder="Pilih fasilitas">
                       {(value: string) => {
                         const match = facilities.find((f) => String(f.id) === value);
@@ -313,7 +313,13 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
 
               <Field>
                 <FieldLabel htmlFor="date">Tanggal</FieldLabel>
-                <Input id="date" name="date" type="date" defaultValue={date} required />
+                <DatePicker
+                  id="date"
+                  name="date"
+                  aria-label="Tanggal"
+                  defaultValue={date}
+                  className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
+                />
               </Field>
             </div>
             <div>

@@ -60,6 +60,17 @@ describe("ReservationForm hierarki tombol", () => {
   })
 })
 
+describe("ReservationForm nama kontrol", () => {
+  it("menyediakan nama aksesibel untuk pemilih Fasilitas dan Tanggal", () => {
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    expect(screen.getByRole("combobox", { name: "Fasilitas" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Tanggal")).toHaveTextContent("27 Sep 2026")
+  })
+})
+
 describe("ReservationForm facilityId", () => {
   it("mengirim facilityId default saat pilihan tidak diubah", async () => {
     const user = userEvent.setup()
@@ -314,9 +325,8 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     await user.click(await screen.findByRole("option", { name: "17:30" }))
     await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
 
-    // Cakupan dibatasi pada wilayah yang diubah tahap ini; pemicu Fasilitas
-    // di luar wilayah ini sudah gagal button-name sebelum tahap ini (tanpa
-    // label terprogram) dan dilaporkan terpisah, bukan diperbaiki di sini.
+    // Cakupan dibatasi pada wilayah Waktu; pemicu Fasilitas dan Tanggal di luar
+    // wilayah ini diperiksa pada test nama aksesibel di atas.
     const wilayahWaktu = container.querySelector('section[aria-label="Waktu"]')
     expect(wilayahWaktu).not.toBeNull()
     expect((await axe(wilayahWaktu as HTMLElement)).violations).toEqual([])
