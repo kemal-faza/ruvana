@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 import { FacilityCatalog } from "@/components/facilities/facility-catalog"
+import { getFacilityCatalog } from "@/lib/facilities/catalog"
 
 export const dynamic = "force-dynamic"
 
@@ -25,6 +27,8 @@ interface FasilitasPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default function FasilitasPage({ searchParams }: FasilitasPageProps) {
-  return <FacilityCatalog searchParams={searchParams} basePath="/fasilitas" />
+export default async function FasilitasPage({ searchParams }: FasilitasPageProps) {
+  const catalog = await getFacilityCatalog(await searchParams)
+  if ("redirectQuery" in catalog) redirect(`/fasilitas?${catalog.redirectQuery}`)
+  return <FacilityCatalog {...catalog} basePath="/fasilitas" />
 }

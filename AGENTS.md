@@ -75,10 +75,15 @@ pnpm exec next typegen
 pnpm exec tsc --noEmit
 pnpm test
 pnpm build
+pnpm test:http-guards
 ```
 
 - `next typegen` must precede `tsc`; `app/layout.tsx` uses generated `LayoutProps`.
 - `pnpm build` regenerates Prisma Client but does not replace the explicit typecheck.
+- `pnpm test:http-guards` must run after `pnpm build`: it starts the production
+  server and asserts anonymous requests to `/reports` and `/petugas*` answer 3xx to
+  `/login` instead of 200 with a meta refresh. No database is needed, because
+  anonymous requests return before any query.
 - Unit tests are vitest and co-located as `*.test.ts(x)` next to the file under
   test; they are excluded from `next build` output. `pnpm test` runs them once
   (CI mode). Accessibility checks use `vitest-axe`.

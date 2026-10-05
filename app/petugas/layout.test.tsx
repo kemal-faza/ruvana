@@ -8,11 +8,11 @@ import LoadingAntrian from "@/app/petugas/antrian/loading"
 import PetugasLayout from "@/app/petugas/layout"
 
 const mocks = vi.hoisted(() => ({
-  getSessionUser: vi.fn(),
+  requirePetugasAtauAdmin: vi.fn(),
   pathname: "/petugas",
 }))
 
-vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.getSessionUser }))
+vi.mock("@/lib/auth", () => ({ requirePetugasAtauAdmin: mocks.requirePetugasAtauAdmin }))
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
@@ -38,7 +38,7 @@ const petugas = {
 describe("PetugasLayout", () => {
   it("menjaga sidebar dan navigasi tampil saat konten dashboard berupa skeleton", async () => {
     setMatchMedia("(max-width: 1023px)", false)
-    mocks.getSessionUser.mockResolvedValue(petugas)
+    mocks.requirePetugasAtauAdmin.mockResolvedValue(petugas)
 
     render(await PetugasLayout({ children: <LoadingPetugasDashboard /> }))
 
@@ -57,7 +57,7 @@ describe("PetugasLayout", () => {
   it("tetap membatasi navigasi admin pada antrean ketika halaman antrean loading", async () => {
     setMatchMedia("(max-width: 1023px)", false)
     mocks.pathname = "/petugas/antrian"
-    mocks.getSessionUser.mockResolvedValue({ ...petugas, role: Role.admin })
+    mocks.requirePetugasAtauAdmin.mockResolvedValue({ ...petugas, role: Role.admin })
 
     render(await PetugasLayout({ children: <LoadingAntrian /> }))
 
@@ -67,5 +67,21 @@ describe("PetugasLayout", () => {
       "/petugas/antrian",
     )
     expect(screen.queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    { name: "pengunjung anonim", destination: "/login" },
+    { name: "pengguna", destination: "/403" },
+  ])("mengalihkan $name sebelum merender shell", async ({ destination }) => {
+    mocks.requirePetugasAtauAdmin.mockRejectedValue(new Error(`redirect:${destination}`))
+
+    // Guard menolak sebelum layout sempat mengembalikan elemen, jadi React tidak
+    // pernah merender apa pun dan asersi DOM di sini akan selalu benar. Kunci
+    // "anonim tidak menerima shell" ada di tes HTTP
+    // scripts/check-protected-routes.mjs.
+    await expect(PetugasLayout({ children: <LoadingPetugasDashboard /> })).rejects.toThrow(
+      `redirect:${destination}`,
+    )
+    expect(mocks.requirePetugasAtauAdmin).toHaveBeenCalledOnce()
   })
 })
