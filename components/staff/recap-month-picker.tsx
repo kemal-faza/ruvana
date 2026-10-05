@@ -8,18 +8,21 @@ import { id as localeId } from "date-fns/locale";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1).padStart(2, "0"),
   label: format(new Date(2020, index, 1), "LLLL", { locale: localeId }),
 }));
 
-// Island client kecil untuk pemilih bulan rekap (RES-11). Atribut native
-// action/method dipertahankan sehingga tanpa JavaScript form GET tetap
-// berfungsi (reload penuh). Dengan JavaScript, submit dicegat dan navigasi
-// dilakukan lewat router.replace agar hanya Server Component yang
-// me-render ulang: header, sidebar, kartu ringkasan, scroll, dan fokus
-// tetap. Validasi ?bulan= dan pengambilan data tetap di server
+// Island client kecil untuk pemilih bulan rekap (RES-11). Form tetap form GET
+// native dengan atribut action/method dan input tersembunyi `bulan`, jadi nilai
+// bulan aktif tetap ikut terkirim walau JavaScript mati (pemilihnya sendiri butuh
+// JavaScript karena memakai Select Ruvana, bukan <select> bawaan browser). Dengan
+// JavaScript, submit dicegat dan navigasi dilakukan lewat router.replace agar hanya
+// Server Component yang me-render ulang: header, sidebar, kartu ringkasan, scroll,
+// dan fokus tetap. Validasi ?bulan= dan pengambilan data tetap di server
 // (app/petugas/page.tsx); client hanya meneruskan string bulan.
 export function RecapMonthPicker({ currentMonth }: { currentMonth: string }) {
   const router = useRouter();
@@ -69,20 +72,30 @@ export function RecapMonthPicker({ currentMonth }: { currentMonth: string }) {
         <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_8rem] gap-3">
           <div className="flex min-w-0 flex-col gap-1.5">
             <Label htmlFor="rekap-bulan">Bulan</Label>
-            <select
-              id="rekap-bulan"
+            <Select
               name="bulan"
-              value={month}
+              items={MONTHS}
+              value={month || null}
               disabled={pending}
               required
-              onChange={(event) => {
-                setMonth(event.target.value);
+              modal={false}
+              onValueChange={(nilai) => {
+                setMonth(nilai ?? "");
                 setMenunggu(false);
               }}
-              className="min-h-11 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 dark:bg-input/30 dark:disabled:bg-input/80"
             >
-              {MONTHS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-            </select>
+              <SelectTrigger
+                id="rekap-bulan"
+                className={`${SELECT_TRIGGER_ACTION_CLASS} w-full min-w-0`}
+              >
+                <SelectValue placeholder="Pilih bulan" />
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                {MONTHS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex min-w-0 flex-col gap-1.5">
             <Label htmlFor="rekap-tahun">Tahun</Label>
