@@ -55,6 +55,10 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
   // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
   const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
 
+  // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
+  // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
+  const [tanggalResetKe, setTanggalResetKe] = useState(0);
+
   // Availability dihitung server untuk prop facilityId. Bila user memilih
   // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
   // baru — perlakukan sebagai tidak diketahui (fallback: semua waktu aktif,
@@ -314,6 +318,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
               <Field>
                 <FieldLabel htmlFor="date">Tanggal</FieldLabel>
                 <DatePicker
+                  key={`${date}:${tanggalResetKe}`}
                   id="date"
                   name="date"
                   aria-label="Tanggal"
@@ -465,6 +470,8 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                 onClick={() => {
                   setStartTime("");
                   setEndTime("");
+                  // Tanggal ikut kembali ke tanggal yang sedang aktif di halaman.
+                  setTanggalResetKe((ke) => ke + 1);
                   setResult(null);
                   setGalatField({});
                   setRingkasan(null);

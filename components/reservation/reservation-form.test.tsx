@@ -71,6 +71,31 @@ describe("ReservationForm nama kontrol", () => {
   })
 })
 
+describe("ReservationForm reset waktu", () => {
+  it("mengembalikan jam dan tanggal ke keadaan halaman", async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    await isiWaktuDanTujuan(user)
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("09:00")
+
+    // Tanggal diubah lewat kalender tetapi belum diterapkan ke server.
+    await user.click(screen.getByLabelText("Tanggal"))
+    const hariLain = document.querySelector<HTMLButtonElement>('td[data-day="2026-12-10"] button')
+    expect(hariLain).not.toBeNull()
+    await user.click(hariLain as HTMLButtonElement)
+    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-10")
+
+    await user.click(screen.getByRole("button", { name: "Reset waktu" }))
+
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("Pilih jam mulai")
+    expect(screen.getByLabelText("Tanggal")).toHaveTextContent("2 Des 2026")
+    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-02")
+  }, 20000)
+})
+
 describe("ReservationForm facilityId", () => {
   it("mengirim facilityId default saat pilihan tidak diubah", async () => {
     const user = userEvent.setup()
