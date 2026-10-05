@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:http-guards": "node scripts/check-protected-routes.mjs",
     "test:watch": "vitest",
     "measure:motion": "node scripts/measure-motion-frames.mjs",
     "db:up": "docker compose up -d",

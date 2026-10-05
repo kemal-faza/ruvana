@@ -75,3 +75,8 @@ jobs:
           # Build halaman statis (belum ada data fetching) — tidak butuh DB.
           DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
           NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: HTTP guard redirects
+        run: pnpm test:http-guards
+        env:
+          DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
