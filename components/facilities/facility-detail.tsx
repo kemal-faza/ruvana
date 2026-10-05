@@ -1,8 +1,5 @@
 import Image from "next/image"
 import Link from "next/link"
-import type { Metadata } from "next"
-import { notFound } from "next/navigation"
-import { cache } from "react"
 import { ArrowLeft, CalendarDays, MapPin, Package, Users } from "lucide-react"
 
 import { getFacilityPhoto } from "@/config/facility-photos"
@@ -11,77 +8,22 @@ import { Button } from "@/components/ui/button"
 import { AvailabilityDateForm } from "@/components/facilities/availability-date-form"
 import { AvailabilityGrid } from "@/components/facilities/availability-grid"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
-import { getPublicFacility, type PublicFacility } from "@/lib/services/facility-service"
-import { getFacilityAvailability } from "@/lib/services/availability-service"
-import { parseCalendarDate, todayJakarta } from "@/lib/time/jakarta"
+import type { FacilityDetailData } from "@/lib/facilities/detail"
 
-const getFacility = cache((id: number) => getPublicFacility(id))
-
-function parseId(raw: string): number | null {
-  if (!/^\d+$/.test(raw)) return null
-  const id = Number(raw)
-  return id >= 1 ? id : null
-}
-
-function buildDescription(facility: PublicFacility): string {
-  const deskripsi = facility.deskripsi?.trim()
-  if (deskripsi) return deskripsi
-
-  const satuan = LABEL_SATUAN_KAPASITAS[facility.tipe]
-  const kapasitasLabel = facility.tipe === "alat" ? "jumlah" : "kapasitas"
-  return `${LABEL_TIPE_FASILITAS[facility.tipe]} di ${facility.lokasi} dengan ${kapasitasLabel} ${facility.kapasitas} ${satuan}.`
-}
-
-export async function generateFacilityDetailMetadata(facilityId: string, basePath: string): Promise<Metadata> {
-  const id = parseId(facilityId)
-  if (id === null) return {}
-
-  const facility = await getFacility(id)
-  if (!facility) return {}
-
-  const description = buildDescription(facility)
-  const path = `${basePath}/${facility.id}`
-
-  return {
-    title: `${facility.nama} | ruvana`,
-    description,
-    alternates: {
-      canonical: path,
-    },
-    openGraph: {
-      type: "article",
-      title: "ruvana",
-      description,
-      url: path,
-    },
-  }
-}
-
-interface FacilityDetailContentProps {
-  facilityId: string
-  searchParams: Promise<{ date?: string }>
+interface FacilityDetailContentProps extends FacilityDetailData {
   basePath: string
 }
 
-export async function FacilityDetailContent({
-  facilityId,
-  searchParams,
+export function FacilityDetailContent({
+  facility,
+  date,
+  today,
+  availability,
   basePath,
 }: FacilityDetailContentProps) {
-  const id = parseId(facilityId)
-  if (id === null) notFound()
-
-  const facility = await getFacility(id)
-  if (!facility) notFound()
-
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = getFacilityPhoto(facility.nama, facility.tipe)
-
-  const today = todayJakarta()
-  const { date: rawDate } = await searchParams
-  const date = rawDate && parseCalendarDate(rawDate) ? rawDate : today
-  const availability = await getFacilityAvailability(id, date)
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,7 +89,7 @@ export async function FacilityDetailContent({
           <CalendarDays aria-hidden="true" className="size-5" />
           Ketersediaan slot
         </h2>
-        <AvailabilityDateForm facilityId={id} date={date} today={today} basePath={basePath} />
+        <AvailabilityDateForm facilityId={facility.id} date={date} today={today} basePath={basePath} />
         {availability && <AvailabilityGrid slots={availability.slots} />}
       </div>
     </div>
