@@ -226,7 +226,9 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 
 Destinasi yang tidak tersedia harus dihilangkan dari navigasi. Akses mengikuti aturan otoritas server di **Tujuan dan otoritas**. Navigasi aktif, judul halaman, dan breadcrumb harus menunjukkan lokasi; identitas akun dan logout harus konsisten di menu profil atau footer sidebar.
 
-Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya.
+Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya, termasuk ketika membuka katalog publik.
+
+Katalog fasilitas memiliki dua rute dengan konten yang sama: `/publik/fasilitas` adalah pintu masuk publik yang dipakai header, footer, CTA landing, dan sitemap, sedangkan `/fasilitas` adalah rute fasilitas di navigasi peran. Aturan chrome di atas berlaku di keduanya — pengunjung anonim yang membuka `/fasilitas` tetap memakai header publik tanpa sidebar, dan item navigasi hanya ditandai aktif bila tautannya menuju halaman yang sedang dibuka. Tautan **Jadwal** pada chrome publik menunjuk ke seksi jadwal beranda (`/#jadwal`) karena seksi tersebut tidak dirender di halaman discovery.
 
 ## Komponen
 
@@ -302,6 +304,12 @@ Istilah **available**, **selected**, **loading**, **success**, **error**, **empt
 1. Admin mengelola verifikasi akun, pengguna, fasilitas, analitik, dan ekspor sesuai kewenangan.
 2. Terapkan validasi peran, kepemilikan, konflik, dan state sesuai otoritas server di **Tujuan dan otoritas**.
 3. UI hanya menjelaskan hasil keputusan dan menyediakan pemulihan yang relevan.
+
+### 8. Masuk dan keluar
+
+1. Setelah masuk berhasil, pengguna diarahkan ke tujuan sesuai perannya: **Reservasi Saya** (`/reservasi/riwayat`) untuk pengguna, `/petugas` untuk petugas, dan `/admin/analitik` untuk admin.
+2. Perpindahan halaman setelah masuk atau keluar tidak memuat ulang seluruh aplikasi; hak akses halaman tujuan tetap ditentukan server pada permintaan berikutnya.
+3. Keluar mengakhiri sesi lalu kembali ke `/login`, dan permintaan berikutnya ke halaman terproteksi dialihkan ke `/login`.
 
 ## Umpan balik dan kesalahan
 
