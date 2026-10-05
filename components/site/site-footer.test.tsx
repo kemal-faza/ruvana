@@ -22,7 +22,7 @@ describe("SiteFooter", () => {
     const expected = [
       ["/", "Beranda"],
       ["/publik/fasilitas", "Fasilitas"],
-      ["#jadwal", "Jadwal"],
+      ["/#jadwal", "Jadwal"],
     ] as const
 
     for (const [href, label] of expected) {

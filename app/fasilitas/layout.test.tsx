@@ -54,8 +54,11 @@ describe("FasilitasLayout", () => {
 
     const navigation = screen.getByRole("navigation", { name: "Navigasi utama" })
     expect(within(navigation).getByRole("link", { name: "Beranda" })).toHaveAttribute("href", "/")
-    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("aria-current", "page")
-    expect(within(navigation).getByRole("link", { name: "Jadwal" })).toHaveAttribute("href", "#jadwal")
+    // `/fasilitas` bukan tujuan tautan "Fasilitas" di header publik, jadi tidak ada
+    // item yang ditandai sebagai halaman aktif.
+    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("href", "/publik/fasilitas")
+    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).not.toHaveAttribute("aria-current")
+    expect(within(navigation).getByRole("link", { name: "Jadwal" })).toHaveAttribute("href", "/#jadwal")
     expect(screen.getByRole("link", { name: "Masuk" })).toHaveAttribute("href", "/login")
     expect(screen.getByRole("link", { name: "Daftar" })).toHaveAttribute("href", "/daftar")
     expect(screen.queryByRole("link", { name: "Reservasi" })).not.toBeInTheDocument()
