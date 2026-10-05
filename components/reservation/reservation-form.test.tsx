@@ -95,7 +95,7 @@ describe("ReservationForm facilityId", () => {
 
     // User memilih Lab tanpa memuat ulang halaman ("Tampilkan ketersediaan" tidak diklik)
     await user.click(comboboxFasilitas())
-    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 — Gedung B Lt.2" }))
+    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
     expect(container.querySelector('input[name="facilityId"]')).toHaveValue("4")
 
     await isiWaktuDanTujuan(user)

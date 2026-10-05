@@ -292,14 +292,14 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                     <SelectValue placeholder="Pilih fasilitas">
                       {(value: string) => {
                         const match = facilities.find((f) => String(f.id) === value);
-                        return match ? `${match.nama} — ${match.lokasi}` : "Pilih fasilitas";
+                        return match ? `${match.nama} | ${match.lokasi}` : "Pilih fasilitas";
                       }}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {facilities.map((f) => (
                       <SelectItem key={f.id} value={String(f.id)}>
-                        {f.nama} — {f.lokasi}
+                        {f.nama} | {f.lokasi}
                       </SelectItem>
                     ))}
                   </SelectContent>
