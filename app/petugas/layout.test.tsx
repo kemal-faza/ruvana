@@ -75,10 +75,13 @@ describe("PetugasLayout", () => {
   ])("mengalihkan $name sebelum merender shell", async ({ destination }) => {
     mocks.requirePetugasAtauAdmin.mockRejectedValue(new Error(`redirect:${destination}`))
 
+    // Guard menolak sebelum layout sempat mengembalikan elemen, jadi React tidak
+    // pernah merender apa pun dan asersi DOM di sini akan selalu benar. Kunci
+    // "anonim tidak menerima shell" ada di tes HTTP
+    // scripts/check-protected-routes.mjs.
     await expect(PetugasLayout({ children: <LoadingPetugasDashboard /> })).rejects.toThrow(
       `redirect:${destination}`,
     )
     expect(mocks.requirePetugasAtauAdmin).toHaveBeenCalledOnce()
-    expect(screen.queryByRole("navigation", { name: "Navigasi utama" })).not.toBeInTheDocument()
   })
 })
