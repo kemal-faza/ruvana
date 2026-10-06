@@ -142,7 +142,7 @@ export function parseAvailabilityDate(raw: string | null): ParseResult<string> {
 
 export function parseFacilityId(raw: string): ParseResult<number> {
   const id = parsePositiveInt(raw);
-  if (id === null || Number.isNaN(id) || id < 1) {
+  if (id === null || !Number.isSafeInteger(id) || id < 1 || id > 2_147_483_647) {
     return {
       ok: false,
       errors: [{ field: "facilityId", code: "INVALID_INTEGER", message: "facilityId harus bilangan bulat positif" }],

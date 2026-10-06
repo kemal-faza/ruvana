@@ -155,6 +155,12 @@ describe("parseFacilityId", () => {
   it("menolak id nol atau negatif", () => {
     expect(parseFacilityId("0").ok).toBe(false);
   });
+
+  it("menerima batas Int PostgreSQL dan menolak ID yang melampauinya", () => {
+    expect(parseFacilityId("2147483647")).toEqual({ ok: true, value: 2_147_483_647 });
+    expect(parseFacilityId("2147483648").ok).toBe(false);
+    expect(parseFacilityId("99999999999999999999").ok).toBe(false);
+  });
 });
 
 describe("cleanSearchParams", () => {

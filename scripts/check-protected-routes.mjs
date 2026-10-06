@@ -82,7 +82,7 @@ async function checkCatalogStatuses() {
   const destination = await checkRedirect("/fasilitas?page=9999", null, "/fasilitas")
   assert.equal(destination.searchParams.get("page"), "1", "halaman katalog di luar rentang harus menuju halaman terakhir")
 
-  for (const path of ["/fasilitas/abc", "/fasilitas/0"]) {
+  for (const path of ["/fasilitas/abc", "/fasilitas/0", "/fasilitas/99999999999999999999"]) {
     const response = await fetch(`${origin}${path}`, {
       redirect: "manual",
       signal: AbortSignal.timeout(5000),
@@ -90,6 +90,10 @@ async function checkCatalogStatuses() {
     assert.equal(response.status, 404, `${path}: perlu 404, diterima ${response.status}`)
     console.log(`✓ GET ${path} → 404`)
   }
+  const oldDetail = await fetch(`${origin}/publik/fasilitas/99999999999999999999`, {
+    signal: AbortSignal.timeout(5000),
+  })
+  assert.equal(oldDetail.status, 404, "URL detail lama harus berakhir pada 404 setelah redirect permanen")
 }
 
 async function unusedPort() {

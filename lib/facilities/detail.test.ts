@@ -30,6 +30,13 @@ describe("detail fasilitas", () => {
     expect(getPublicFacility).not.toHaveBeenCalled()
   })
 
+  it("tidak melakukan query untuk ID di luar jangkauan Int", async () => {
+    expect(await getFacilityDetail("99999999999999999999")).toBeNull()
+    expect(await generateFacilityDetailMetadata("99999999999999999999", "/fasilitas")).toEqual({})
+    expect(getPublicFacility).not.toHaveBeenCalled()
+    expect(getFacilityAvailability).not.toHaveBeenCalled()
+  })
+
   it("memakai tanggal pilihan yang valid untuk ketersediaan", async () => {
     const detail = await getFacilityDetail("8", "2026-09-15")
 
