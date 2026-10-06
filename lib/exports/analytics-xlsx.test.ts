@@ -37,7 +37,7 @@ const snapshot: AnalyticsSnapshot = {
     approvedStatusRule: "Hanya durasi reservasi berstatus disetujui yang masuk ke pembilang.",
     reportCreationDateRule: "Laporan dihitung berdasarkan waktu dibuat dalam kalender Asia/Jakarta.",
     facilityStatusNote:
-      "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam pemeliharaan dan nonaktif tetap masuk kapasitas.",
+      "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
   },
 };
 

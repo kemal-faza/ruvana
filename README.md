@@ -5,7 +5,7 @@ Ruvana adalah aplikasi web untuk reservasi dan pelaporan kerusakan fasilitas kam
 ## Fitur
 
 - Daftar dan detail fasilitas kampus.
-- Pengajuan reservasi dalam slot 30 menit pada jam operasional 07.00–20.00, beserta pemeriksaan ketersediaan.
+- Pengajuan reservasi minimal 24 jam sebelum waktu mulai dalam slot 30 menit pada jam operasional 07.00–20.00, beserta pemeriksaan ketersediaan.
 - Riwayat dan detail reservasi pengguna.
 - Laporan kerusakan dengan foto dan pemantauan status.
 - Antrean reservasi dan laporan untuk petugas.

@@ -166,7 +166,7 @@ export async function getAnalyticsSnapshot(filters: AnalyticsFilters): Promise<A
         reportCreationDateRule:
           `Laporan dihitung berdasarkan waktu dibuat dalam rentang tanggal kalender ${ZONA_WAKTU}, dengan batas akhir eksklusif pada pukul 00.00 hari berikutnya.`,
         facilityStatusNote:
-          "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam pemeliharaan dan nonaktif tetap masuk kapasitas.",
+          "Status fasilitas adalah snapshot saat ini. Histori status belum tersedia; fasilitas dalam perbaikan dan nonaktif tetap masuk kapasitas.",
       },
     },
   };

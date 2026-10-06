@@ -3,6 +3,7 @@ import Link from "next/link"
 import type { CSSProperties } from "react"
 
 import { FacilitySearch } from "@/components/landing/facility-search"
+import { canShowFacilitySearch } from "@/components/landing/facility-search-visibility"
 import { HeroVisual } from "@/components/landing/hero-visual"
 import { Parallax } from "@/components/motion/parallax"
 import { Reveal } from "@/components/motion/reveal"
@@ -12,6 +13,7 @@ import { SiteHeader } from "@/components/site/site-header"
 import { CookieConsentBanner } from "@/components/site/cookie-consent-banner"
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { getSessionUser } from "@/lib/auth"
 
 const SHELL = "mx-auto w-full max-w-shell px-4 sm:px-7"
 const primaryLink = buttonVariants({ className: "min-h-11 gap-2.5 px-4 text-sm" })
@@ -54,7 +56,10 @@ const steps = [
   },
 ]
 
-export default function Home() {
+export default async function Home() {
+  // Sesi dibaca untuk menyembunyikan form pengajuan dari petugas/admin;
+  // konsekuensinya rute ini dirender dinamis, bukan di-prerender statis.
+  const user = await getSessionUser()
   return (
     <>
       <a
@@ -98,7 +103,7 @@ export default function Home() {
                 className="motion-rise motion-rise-stagger flex min-w-0 flex-wrap items-center gap-3.5 sm:gap-5"
                 style={staggerStyle(3)}
               >
-                <Link href="/fasilitas" className={primaryLink}>
+                <Link href="/publik/fasilitas" className={primaryLink}>
                   Jelajahi Fasilitas
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
                 </Link>
@@ -116,7 +121,7 @@ export default function Home() {
           </div>
         </section>
 
-        <FacilitySearch />
+        <FacilitySearch visible={canShowFacilitySearch(user?.role ?? null)} />
 
         <section aria-labelledby="benefits-title" className={`${SHELL} pt-section-top sm:pt-section-top-lg`}>
           <Reveal>
@@ -212,7 +217,7 @@ export default function Home() {
                   Lihat fasilitas kampus dan siapkan kegiatanmu.
                 </p>
               </div>
-              <Link href="/fasilitas" className={primaryLink}>
+              <Link href="/publik/fasilitas" className={primaryLink}>
                 Jelajahi Fasilitas
                 <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
               </Link>

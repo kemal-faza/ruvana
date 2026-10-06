@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react"
 
-import { Button } from "@/components/ui/button"
+import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 
 const CONSENT_KEY = "ruvana-cookie-consent-v1"
 
@@ -59,10 +59,10 @@ export function CookieConsentBanner() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => choose("essential-only")}>
+          <Button type="button" variant="outline" className={BUTTON_ACTION_CLASS} onClick={() => choose("essential-only")}>
             Hanya yang wajib
           </Button>
-          <Button type="button" onClick={() => choose("accepted")}>
+          <Button type="button" className={BUTTON_ACTION_CLASS} onClick={() => choose("accepted")}>
             Setuju
           </Button>
         </div>

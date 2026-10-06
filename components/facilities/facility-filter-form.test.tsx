@@ -15,6 +15,13 @@ describe("FacilityFilterForm", () => {
     expect(form).toHaveAttribute("action", "/fasilitas")
   })
 
+  it("bisa mengirim filter ke rute fasilitas publik", () => {
+    const { container } = render(<FacilityFilterForm actionPath="/publik/fasilitas" />)
+
+    expect(container.querySelector("form")).toHaveAttribute("action", "/publik/fasilitas")
+    expect(screen.getByRole("button", { name: /reset/i })).toHaveAttribute("href", "/publik/fasilitas")
+  })
+
   it("menyediakan input search, location, minCapacity, dan select type", () => {
     render(<FacilityFilterForm />)
 

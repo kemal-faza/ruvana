@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: `${SITE_URL}/fasilitas`,
+      url: `${SITE_URL}/publik/fasilitas`,
       changeFrequency: "daily",
       priority: 0.8,
     },

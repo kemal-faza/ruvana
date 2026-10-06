@@ -1,6 +1,5 @@
-import type { LucideIcon } from "lucide-react"
-
 import { AppShellClient } from "@/components/app-shell/app-shell-client"
+import { navigationIconName } from "@/components/app-shell/navigation-icons"
 import type { AppShellProps, SerializableNavigationGroup } from "@/components/app-shell/types"
 
 function serializeNavigation(
@@ -10,7 +9,7 @@ function serializeNavigation(
     ...group,
     items: group.items.map((item) => ({
       ...item,
-      icon: (item.icon as LucideIcon).displayName ?? item.icon.name,
+      icon: navigationIconName(item.icon),
     })),
   }))
 }

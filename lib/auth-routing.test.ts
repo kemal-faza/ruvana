@@ -7,6 +7,6 @@ describe("tujuan setelah login", () => {
   it("membuka dashboard sesuai peran", () => {
     expect(getPostLoginPath(Role.admin)).toBe("/admin/analitik");
     expect(getPostLoginPath(Role.petugas)).toBe("/petugas");
-    expect(getPostLoginPath(Role.pengguna)).toBe("/reservasi");
+    expect(getPostLoginPath(Role.pengguna)).toBe("/reservasi/riwayat");
   });
 });

@@ -11,11 +11,12 @@ import type { PublicFacility } from "@/lib/services/facility-service"
 
 interface FacilityCardProps {
   facility: PublicFacility
+  detailBasePath?: string
   /** Muat foto segera; pakai untuk card pertama yang berpotensi jadi LCP. */
   eager?: boolean
 }
 
-export function FacilityCard({ facility, eager = false }: FacilityCardProps) {
+export function FacilityCard({ facility, eager = false, detailBasePath = "/fasilitas" }: FacilityCardProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = getFacilityPhoto(facility.nama, facility.tipe)
@@ -62,7 +63,7 @@ export function FacilityCard({ facility, eager = false }: FacilityCardProps) {
           variant="outline"
           className="min-h-11 w-full"
           nativeButton={false}
-          render={<Link href={`/fasilitas/${facility.id}`} />}
+          render={<Link href={`${detailBasePath}/${facility.id}`} />}
         >
           Lihat detail
         </Button>

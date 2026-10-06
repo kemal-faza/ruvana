@@ -12,6 +12,12 @@ export interface NavigationItem {
    * (mis. /reservasi vs /reservasi/riwayat) agar tidak double-active.
    */
   exact?: boolean
+  /**
+   * Pathname lain yang tetap mewakili item ini, mis. rute publik dari halaman
+   * yang sama (`/publik/fasilitas` untuk item `/fasilitas`) sehingga navigasi
+   * tetap menunjukkan lokasi saat pengguna membuka rute tersebut.
+   */
+  activeFor?: readonly string[]
 }
 
 export interface NavigationGroup {

@@ -12,6 +12,7 @@ import { LABEL_FILTER_JUMLAH_ALAT, LABEL_FILTER_KAPASITAS_RUANG } from "@/config
 import { cn } from "@/lib/utils"
 
 interface FacilityFilterFormProps {
+  actionPath?: string
   value?: {
     search?: string
     type?: string
@@ -23,7 +24,7 @@ interface FacilityFilterFormProps {
 const controlClass =
   "flex min-h-11 items-center gap-2.5 rounded-control border border-border bg-background px-3 text-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
 
-export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
+export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
   // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
   // kapasitas menyesuaikan tipe yang sedang dipilih.
   const [tipe, setTipe] = useState(value?.type ?? "")
@@ -33,7 +34,7 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
   return (
     <form
       method="get"
-      action="/fasilitas"
+      action={actionPath}
       aria-label="Filter fasilitas"
       className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4 shadow-subtle sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto_auto]"
     >
@@ -113,7 +114,7 @@ export function FacilityFilterForm({ value }: FacilityFilterFormProps) {
           variant="outline"
           className="min-h-11 w-full shrink-0 lg:w-auto"
           nativeButton={false}
-          render={<Link href="/fasilitas" />}
+          render={<Link href={actionPath} />}
         >
           Reset
         </Button>

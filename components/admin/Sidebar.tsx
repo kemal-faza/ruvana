@@ -1,12 +1,13 @@
 "use client"
 
-import { Building2, ChartPie, LogOut, Settings, Users } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { NavigationList } from "@/components/app-shell/app-sidebar"
-import type { NavigationGroup } from "@/components/app-shell/types"
+import { adminNavigation } from "@/config/admin-navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Sidebar,
@@ -17,25 +18,9 @@ import {
 } from "@/components/ui/sidebar"
 import type { SessionUser } from "@/lib/auth"
 
-const NAVIGASI: readonly NavigationGroup[] = [
-  {
-    key: "kelola",
-    label: "Kelola",
-    items: [
-      { key: "admin-analytics", label: "Analitik", href: "/admin/analitik", icon: ChartPie },
-      { key: "admin-facilities", label: "Kelola Fasilitas", href: "/admin/fasilitas", icon: Building2 },
-      { key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users },
-    ],
-  },
-  {
-    key: "sistem",
-    label: "Sistem",
-    items: [{ key: "admin-settings", label: "Pengaturan", href: "/admin/pengaturan", icon: Settings }],
-  },
-]
-
 export default function AdminSidebar({ admin }: { admin: SessionUser }) {
   const { setOpenMobile } = useSidebar()
+  const router = useRouter()
   const [logoutError, setLogoutError] = useState("")
 
   return (
@@ -51,7 +36,7 @@ export default function AdminSidebar({ admin }: { admin: SessionUser }) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavigationList navigation={NAVIGASI} onNavigate={() => setOpenMobile(false)} />
+        <NavigationList navigation={adminNavigation} onNavigate={() => setOpenMobile(false)} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
@@ -68,7 +53,7 @@ export default function AdminSidebar({ admin }: { admin: SessionUser }) {
           onClick={async () => {
             try {
               setLogoutError("")
-              await logoutFromBrowser()
+              await logoutFromBrowser(router)
               setOpenMobile(false)
             } catch {
               setLogoutError("Gagal keluar. Coba lagi.")

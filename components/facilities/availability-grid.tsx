@@ -21,7 +21,7 @@ export function AvailabilityGrid({ slots }: AvailabilityGridProps) {
       {isMaintenance && (
         <p className="flex items-center gap-2 rounded-card border border-border bg-warning-subdued px-4 py-3 text-sm text-warning-subdued-foreground">
           <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
-          <span>Fasilitas sedang dalam pemeliharaan, semua slot tidak tersedia.</span>
+          <span>Fasilitas sedang dalam perbaikan, semua slot tidak tersedia.</span>
         </p>
       )}
 
@@ -44,7 +44,7 @@ export function AvailabilityGrid({ slots }: AvailabilityGridProps) {
                   <Icon aria-hidden="true" className="size-3.5" />
                   {slot.startTime}
                 </span>
-                <span className="text-[11px] leading-none">{label}</span>
+                <span className="text-xs leading-none">{label}</span>
               </div>
             </li>
           )

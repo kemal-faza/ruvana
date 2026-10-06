@@ -7,10 +7,13 @@ import { cn } from "@/lib/utils"
 
 export type SiteSection = "beranda" | "fasilitas"
 
+// Header dipakai juga oleh halaman discovery, sementara seksi `#jadwal` hanya ada
+// di beranda; karena itu anchor ditulis sebagai rute absolut agar tidak menjadi
+// tautan mati di `/fasilitas` dan `/publik/fasilitas`.
 const navItems = [
   { label: "Beranda", href: "/", section: "beranda" },
-  { label: "Fasilitas", href: "/fasilitas", section: "fasilitas" },
-  { label: "Jadwal", href: "#jadwal", section: "jadwal" },
+  { label: "Fasilitas", href: "/publik/fasilitas", section: "fasilitas" },
+  { label: "Jadwal", href: "/#jadwal", section: "jadwal" },
 ] as const
 
 interface SiteHeaderProps {

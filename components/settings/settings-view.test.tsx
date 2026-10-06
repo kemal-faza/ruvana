@@ -8,8 +8,8 @@ vi.mock("@/app/pengaturan/actions", () => ({
   revokeOtherSessionsAction: vi.fn(),
   updateProfileAction: vi.fn(),
 }))
-vi.mock("@/components/theme-toggle", () => ({
-  ThemeToggle: () => <button type="button">Ganti tema</button>,
+vi.mock("next-themes", () => ({
+  useTheme: () => ({ resolvedTheme: "light", setTheme: () => {} }),
 }))
 
 const pengguna = {
@@ -29,6 +29,35 @@ describe("SettingsView", () => {
     expect(screen.getByLabelText("Email")).toHaveValue("siti@kampus.ac.id")
     expect(screen.getByLabelText("Email")).toHaveAttribute("readonly")
     expect(screen.getByText("Pengguna")).toBeInTheDocument()
+  })
+
+  it("memenuhi ukuran minimum 44 px pada kontrol semua bagian pengaturan", () => {
+    render(<SettingsView account={pengguna} />)
+
+    for (const input of screen.getAllByRole("textbox")) {
+      expect(input).toHaveClass("min-h-11")
+    }
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveClass("min-h-11")
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifikasi" }))
+    expect(screen.getByRole("link", { name: "Reservasi Saya" })).toHaveClass("min-h-11")
+    expect(screen.getByRole("link", { name: "Laporan" })).toHaveClass("min-h-11")
+
+    fireEvent.click(screen.getByRole("button", { name: "Keamanan & masuk" }))
+    for (const input of screen.getAllByLabelText(/Kata sandi/)) {
+      expect(input).toHaveClass("min-h-11")
+    }
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveClass("min-h-11")
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Bahasa" }))
+    expect(screen.getByLabelText("Bahasa antarmuka")).toHaveClass("min-h-11")
+
+    fireEvent.click(screen.getByRole("button", { name: "Tampilan" }))
+    expect(screen.getByRole("button", { name: "Gunakan tema gelap" })).toHaveClass("size-11")
   })
 
   it("menampilkan tujuan pantauan notifikasi yang sesuai role pengguna", () => {
@@ -59,6 +88,6 @@ describe("SettingsView", () => {
     expect(screen.getByLabelText("Bahasa antarmuka")).toHaveValue("Bahasa Indonesia")
 
     fireEvent.click(screen.getByRole("button", { name: "Tampilan" }))
-    expect(screen.getByRole("button", { name: "Ganti tema" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Gunakan tema gelap" })).toBeInTheDocument()
   })
 })
