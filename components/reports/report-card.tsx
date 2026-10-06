@@ -18,7 +18,7 @@ export function ReportCard({ report, onSelect }: ReportCardProps) {
     <button
       type="button"
       onClick={() => onSelect(report.id)}
-      className="flex w-full cursor-pointer items-start gap-4 rounded-card border border-border bg-card p-4 text-left transition-[transform,translate,box-shadow] duration-motion-standard ease-motion-emphatic hover:translate-y-0 motion-reduce:hover:translate-y-0 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="flex w-full cursor-pointer items-start gap-4 rounded-card border border-border bg-card p-4 text-left transition-[transform,translate,box-shadow] duration-motion-standard ease-motion-emphatic hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       {photo ? (
         <span className="relative hidden size-20 shrink-0 overflow-hidden rounded-md sm:block">

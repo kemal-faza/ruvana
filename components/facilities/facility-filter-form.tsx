@@ -7,9 +7,16 @@ import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldTitle } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
 import { LABEL_FILTER_JUMLAH_ALAT, LABEL_FILTER_KAPASITAS_RUANG } from "@/config/labels"
-import { cn } from "@/lib/utils"
 
 interface FacilityFilterFormProps {
   actionPath?: string
@@ -23,6 +30,18 @@ interface FacilityFilterFormProps {
 
 const controlClass =
   "flex min-h-11 items-center gap-2.5 rounded-control border border-border bg-background px-3 text-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
+
+// Label opsi untuk Select Ruvana: tanpa `items`, <SelectValue /> merender value
+// mentah (enum) di trigger, bukan label domain Indonesia. Opsi "Semua tipe"
+// bernilai kosong supaya form GET tidak mengirim `type=` berisi nilai yang tidak
+// dikenal; server membuang parameter kosong sebelum validasi.
+const OPSI_TIPE = [
+  { value: "", label: "Semua tipe" },
+  ...TIPE_FASILITAS.map((tipe) => ({
+    value: tipe,
+    label: TIPE_FASILITAS_LABEL[tipe],
+  })),
+]
 
 export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
   // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
@@ -56,20 +75,27 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
 
       <Field>
         <FieldTitle className="min-h-10">Tipe</FieldTitle>
-        <select
+        <Select
           name="type"
-          aria-label="Tipe"
+          items={OPSI_TIPE}
           value={tipe}
-          onChange={(event) => setTipe(event.target.value)}
-          className={cn(controlClass, "appearance-none text-sm")}
+          modal={false}
+          onValueChange={(nilai) => setTipe(nilai ?? "")}
         >
-          <option value="">Semua tipe</option>
-          {TIPE_FASILITAS.map((tipeOption) => (
-            <option key={tipeOption} value={tipeOption}>
-              {TIPE_FASILITAS_LABEL[tipeOption]}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger
+            aria-label="Tipe"
+            className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+          >
+            <SelectValue placeholder="Semua tipe" />
+          </SelectTrigger>
+          <SelectContent align="start" alignItemWithTrigger={false}>
+            {OPSI_TIPE.map((opsi) => (
+              <SelectItem key={opsi.value} value={opsi.value}>
+                {opsi.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
 
       <Field>
