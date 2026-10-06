@@ -86,7 +86,8 @@ pnpm test:http-guards
 - `pnpm build` regenerates Prisma Client but does not replace the explicit typecheck.
 - `pnpm test:http-guards` must run after `pnpm build`: it starts the production
   server and asserts anonymous requests to `/reports` and `/petugas*` answer 3xx to
-  `/login`, then checks seeded role sessions against the petugas routes. It needs
+  `/login`, checks seeded role sessions against the petugas routes, and checks
+  katalog redirect/404 statuses. It needs
   a migrated and seeded local database. Set `SEED_DEMO_PASSWORD` before seeding.
 - Unit tests are vitest and co-located as `*.test.ts(x)` next to the file under
   test; they are excluded from `next build` output. `pnpm test` runs them once

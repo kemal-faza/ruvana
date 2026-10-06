@@ -51,6 +51,7 @@ async function checkRedirect(path, cookie, expectedPath) {
       `${path}: respons anonim tidak boleh memuat shell terlindungi`)
   }
   console.log(`✓ GET ${path} → ${response.status} ${destination.pathname}`)
+  return destination
 }
 
 async function checkAllowed(path, cookie, role) {
@@ -64,6 +65,20 @@ async function checkAllowed(path, cookie, role) {
   assert.equal(/<meta[^>]*http-equiv=["']?refresh/i.test(body), false,
     `${role} ${path}: tidak boleh dialihkan lewat meta refresh`)
   console.log(`✓ ${role} GET ${path} → 200`)
+}
+
+async function checkCatalogStatuses() {
+  const destination = await checkRedirect("/fasilitas?page=9999", null, "/fasilitas")
+  assert.equal(destination.searchParams.get("page"), "1", "halaman katalog di luar rentang harus menuju halaman terakhir")
+
+  for (const path of ["/fasilitas/abc", "/fasilitas/0"]) {
+    const response = await fetch(`${origin}${path}`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(5000),
+    })
+    assert.equal(response.status, 404, `${path}: perlu 404, diterima ${response.status}`)
+    console.log(`✓ GET ${path} → 404`)
+  }
 }
 
 async function unusedPort() {
@@ -133,6 +148,7 @@ try {
   for (const path of ["/petugas", "/petugas/antrian", "/petugas/pengaturan"]) {
     await checkRedirect(path, pengguna.cookie, "/403")
   }
+  await checkCatalogStatuses()
 } finally {
   try {
     if (sessionHashes.length > 0) {
