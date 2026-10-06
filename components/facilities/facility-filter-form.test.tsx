@@ -98,4 +98,20 @@ describe("FacilityFilterForm", () => {
 
     expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
   })
+
+  it("mengembalikan filter tipe ke semua tipe dengan nilai kosong", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<FacilityFilterForm />)
+
+    await user.click(screen.getByLabelText(/tipe/i))
+    await user.click(await screen.findByRole("option", { name: "Alat" }))
+    expect(container.querySelector("input[name='type']")).toHaveValue("alat")
+
+    await user.click(screen.getByLabelText(/tipe/i))
+    await user.click(await screen.findByRole("option", { name: "Semua tipe" }))
+
+    expect(container.querySelector("input[name='type']")).toHaveValue("")
+    expect(screen.getByLabelText(/tipe/i)).toHaveTextContent("Semua tipe")
+    expect(screen.getByLabelText("Kapasitas minimum (orang)")).toBeInTheDocument()
+  })
 })

@@ -140,6 +140,26 @@ describe("AdminUsers (kelola akun)", () => {
     expect(screen.queryByText("Ayu Pratama")).not.toBeInTheDocument()
   })
 
+  it("mengembalikan filter peran dan status ke seluruh akun", async () => {
+    const user = userEvent.setup()
+    renderFixture()
+
+    await user.click(screen.getByRole("combobox", { name: "Filter peran" }))
+    await user.click(await screen.findByRole("option", { name: "Pengguna" }))
+    await user.click(screen.getByRole("combobox", { name: "Filter status" }))
+    await user.click(await screen.findByRole("option", { name: "Ditolak" }))
+    expect(screen.getByText("Menampilkan 1 dari 4 akun.")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("combobox", { name: "Filter status" }))
+    await user.click(await screen.findByRole("option", { name: "Semua status" }))
+    expect(screen.getByText("Menampilkan 3 dari 4 akun.")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("combobox", { name: "Filter peran" }))
+    await user.click(await screen.findByRole("option", { name: "Semua peran" }))
+    expect(screen.getByText("Menampilkan 4 dari 4 akun.")).toBeInTheDocument()
+    expect(screen.getByText("Ayu Pratama")).toBeInTheDocument()
+  })
+
   it("memfilter daftar dan menampilkan empty state saat tidak cocok", async () => {
     const user = userEvent.setup()
     renderFixture()

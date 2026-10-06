@@ -53,12 +53,20 @@ const RINGKASAN_ITEM = [
 ] as const;
 
 // Label opsi untuk Select Ruvana: tanpa `items`, <SelectValue /> merender value
-// mentah (enum) di trigger, bukan label domain Indonesia.
-const OPSI_PERAN = Object.entries(ROLE_LABEL).map(([value, label]) => ({ value, label }));
-const OPSI_STATUS = Object.entries(STATUS_CONFIG).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
+// mentah (enum) di trigger, bukan label domain Indonesia. Opsi "Semua …"
+// bernilai kosong agar filter dapat dikembalikan ke seluruh data, sama seperti
+// <option value=""> pada select bawaan yang digantikan.
+const OPSI_PERAN = [
+  { value: "", label: "Semua peran" },
+  ...Object.entries(ROLE_LABEL).map(([value, label]) => ({ value, label })),
+];
+const OPSI_STATUS = [
+  { value: "", label: "Semua status" },
+  ...Object.entries(STATUS_CONFIG).map(([value, config]) => ({
+    value,
+    label: config.label,
+  })),
+];
 const OPSI_PERAN_BARU = [
   { value: "petugas", label: "Petugas" },
   { value: "pengguna", label: "Pengguna" },
@@ -256,7 +264,7 @@ export default function AdminUsers({
             </div>
             <Select
               items={OPSI_PERAN}
-              value={roleFilter || null}
+              value={roleFilter}
               modal={false}
               onValueChange={(nilai) => {
                 setRoleFilter(nilai ?? "");
@@ -279,7 +287,7 @@ export default function AdminUsers({
             </Select>
             <Select
               items={OPSI_STATUS}
-              value={statusFilter || null}
+              value={statusFilter}
               modal={false}
               onValueChange={(nilai) => {
                 setStatusFilter(nilai ?? "");

@@ -32,11 +32,16 @@ const controlClass =
   "flex min-h-11 items-center gap-2.5 rounded-control border border-border bg-background px-3 text-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
 
 // Label opsi untuk Select Ruvana: tanpa `items`, <SelectValue /> merender value
-// mentah (enum) di trigger, bukan label domain Indonesia.
-const OPSI_TIPE = TIPE_FASILITAS.map((tipe) => ({
-  value: tipe,
-  label: TIPE_FASILITAS_LABEL[tipe],
-}))
+// mentah (enum) di trigger, bukan label domain Indonesia. Opsi "Semua tipe"
+// bernilai kosong supaya form GET tidak mengirim `type=` berisi nilai yang tidak
+// dikenal; server membuang parameter kosong sebelum validasi.
+const OPSI_TIPE = [
+  { value: "", label: "Semua tipe" },
+  ...TIPE_FASILITAS.map((tipe) => ({
+    value: tipe,
+    label: TIPE_FASILITAS_LABEL[tipe],
+  })),
+]
 
 export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
   // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
@@ -73,7 +78,7 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
         <Select
           name="type"
           items={OPSI_TIPE}
-          value={tipe || null}
+          value={tipe}
           modal={false}
           onValueChange={(nilai) => setTipe(nilai ?? "")}
         >
