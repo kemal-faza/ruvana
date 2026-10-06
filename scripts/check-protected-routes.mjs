@@ -68,6 +68,17 @@ async function checkAllowed(path, cookie, role) {
 }
 
 async function checkCatalogStatuses() {
+  const legacy = await fetch(`${origin}/publik/fasilitas?search=lab&page=2`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(5000),
+  })
+  assert.equal(legacy.status, 308, "URL katalog lama harus dialihkan permanen")
+  const legacyDestination = new URL(legacy.headers.get("location") ?? "", origin)
+  assert.equal(legacyDestination.pathname, "/fasilitas")
+  assert.equal(legacyDestination.searchParams.get("search"), "lab")
+  assert.equal(legacyDestination.searchParams.get("page"), "2")
+  console.log("✓ GET /publik/fasilitas → 308 /fasilitas")
+
   const destination = await checkRedirect("/fasilitas?page=9999", null, "/fasilitas")
   assert.equal(destination.searchParams.get("page"), "1", "halaman katalog di luar rentang harus menuju halaman terakhir")
 
