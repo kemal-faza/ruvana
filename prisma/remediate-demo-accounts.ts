@@ -52,7 +52,7 @@ async function main() {
 
   const rotated = await Promise.all(affected.map(async (user) => ({
     id: user.id,
-    password: await bcrypt.hash(randomBytes(48).toString("base64url"), 12),
+    password: await bcrypt.hash(randomBytes(48).toString("base64url"), 10),
   })))
   await prisma.$transaction(async (tx) => {
     for (const user of rotated) {

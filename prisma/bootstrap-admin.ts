@@ -23,7 +23,9 @@ async function main() {
     throw new Error("Email admin sudah terdaftar; bootstrap tidak mengubah akun yang ada.")
   }
 
-  const hash = await bcrypt.hash(password, 12)
+  // Biaya 10 mengikuti seluruh jalur kata sandi aplikasi (registrasi, ubah kata
+  // sandi, dan admin yang dibuat lewat /admin/pengguna).
+  const hash = await bcrypt.hash(password, 10)
   await prisma.user.create({
     data: { email, nama, password: hash, role: Role.admin, status: AccountStatus.ACTIVE },
   })
