@@ -5,17 +5,24 @@ import Link from "next/link"
 import { Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Combobox,
+  ComboboxClear,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
 import { Field, FieldTitle } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { TIPE_FASILITAS } from "@/config/business"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
-import { LABEL_FILTER_JUMLAH_ALAT, LABEL_FILTER_KAPASITAS_RUANG } from "@/config/labels"
+  LABEL_FILTER_JUMLAH_ALAT,
+  LABEL_FILTER_KAPASITAS_RUANG,
+  LABEL_TIPE_FASILITAS,
+} from "@/config/labels"
+import type { TipeFasilitas } from "@/generated/prisma/enums"
 
 interface FacilityFilterFormProps {
   actionPath?: string
@@ -29,18 +36,6 @@ interface FacilityFilterFormProps {
 
 const controlClass =
   "flex min-h-11 items-center gap-2.5 rounded-control border border-border bg-background px-3 text-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
-
-// Label opsi untuk Select Ruvana: tanpa `items`, <SelectValue /> merender value
-// mentah (enum) di trigger, bukan label domain Indonesia. Opsi "Semua tipe"
-// bernilai kosong supaya form GET tidak mengirim `type=` berisi nilai yang tidak
-// dikenal; server membuang parameter kosong sebelum validasi.
-const OPSI_TIPE = [
-  { value: "", label: "Semua tipe" },
-  ...TIPE_FASILITAS.map((tipe) => ({
-    value: tipe,
-    label: TIPE_FASILITAS_LABEL[tipe],
-  })),
-]
 
 function ClearButton({
   label,
@@ -113,38 +108,28 @@ function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: Facility
 
       <Field>
         <FieldTitle className="min-h-10">Tipe</FieldTitle>
-        <div className={`${controlClass} relative`}>
-          <Select
-            name="type"
-            items={OPSI_TIPE}
-            value={tipe}
-            modal={false}
-            onValueChange={(nilai) => setTipe(nilai ?? "")}
-          >
-            <SelectTrigger
-              aria-label="Tipe"
-              className={`min-h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-sm focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent ${
-                tipe !== "" ? "pr-8 [&>svg]:hidden" : ""
-              }`}
-            >
-              <SelectValue placeholder="Semua tipe" />
-            </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false} className="min-w-52">
-              {OPSI_TIPE.map((opsi) => (
-                <SelectItem key={opsi.value} value={opsi.value}>
-                  {opsi.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {tipe !== "" && (
-            <ClearButton
-              label="Hapus pilihan tipe"
-              onClick={() => setTipe("")}
-              className="absolute top-1/2 right-2 -translate-y-1/2"
-            />
-          )}
-        </div>
+        <Combobox
+          name="type"
+          items={TIPE_FASILITAS}
+          value={tipe || null}
+          modal={false}
+          itemToStringLabel={(option) => LABEL_TIPE_FASILITAS[option as TipeFasilitas]}
+          onValueChange={(option) => setTipe(option ?? "")}
+        >
+          <ComboboxInput id="type" aria-label="Tipe" placeholder="Semua tipe" triggerLabel="Buka daftar tipe">
+            {tipe !== "" && <ComboboxClear aria-label="Hapus pilihan tipe" />}
+          </ComboboxInput>
+          <ComboboxContent align="start">
+            <ComboboxList>
+              {(option: string) => (
+                <ComboboxItem key={option} value={option}>
+                  {LABEL_TIPE_FASILITAS[option as TipeFasilitas]}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+            <ComboboxEmpty>Tipe tidak ditemukan.</ComboboxEmpty>
+          </ComboboxContent>
+        </Combobox>
       </Field>
 
       <Field>

@@ -41,7 +41,7 @@ describe("FacilityFilterForm", () => {
     expect(screen.getByRole("searchbox", { name: "Kata kunci" })).toHaveValue("lab")
     expect(screen.getByRole("textbox", { name: "Lokasi" })).toHaveValue("Gedung A")
     expect(screen.getByRole("spinbutton", { name: "Kapasitas minimum (orang)" })).toHaveValue(30)
-    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveTextContent("Laboratorium")
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("Laboratorium")
     expect(container.querySelector("input[name='type']")).toHaveValue("laboratorium")
   })
 
@@ -99,7 +99,7 @@ describe("FacilityFilterForm", () => {
     expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
   })
 
-  it("mengembalikan filter tipe ke semua tipe dengan nilai kosong", async () => {
+  it("mengembalikan filter tipe ke semua tipe lewat tombol hapus", async () => {
     const user = userEvent.setup()
     const { container } = render(<FacilityFilterForm />)
 
@@ -107,11 +107,10 @@ describe("FacilityFilterForm", () => {
     await user.click(await screen.findByRole("option", { name: "Alat" }))
     expect(container.querySelector("input[name='type']")).toHaveValue("alat")
 
-    await user.click(screen.getByRole("combobox", { name: "Tipe" }))
-    await user.click(await screen.findByRole("option", { name: "Semua tipe" }))
+    await user.click(screen.getByRole("button", { name: "Hapus pilihan tipe" }))
 
     expect(container.querySelector("input[name='type']")).toHaveValue("")
-    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveTextContent("Semua tipe")
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("")
     expect(screen.getByRole("spinbutton", { name: "Kapasitas minimum (orang)" })).toBeInTheDocument()
   })
 
@@ -154,18 +153,18 @@ describe("FacilityFilterForm", () => {
     expect(container.querySelector("input[name='type']")).toHaveValue("")
     expect(container.querySelector("input[name='location']")).toHaveValue("")
     expect(container.querySelector("input[name='minCapacity']")).toHaveValue(null)
-    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveTextContent("Semua tipe")
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("")
   })
 
   it("mereset field saat nilai filter berubah (mis. tekan Reset)", () => {
     const { rerender } = render(
       <FacilityFilterForm value={{ search: "lab", type: "laboratorium" }} />,
     )
-    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveTextContent("Laboratorium")
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("Laboratorium")
 
     rerender(<FacilityFilterForm value={{}} />)
 
-    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveTextContent("Semua tipe")
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("")
     expect(screen.getByRole("searchbox", { name: "Kata kunci" })).toHaveValue("")
     expect(screen.queryByRole("button", { name: "Hapus pilihan tipe" })).not.toBeInTheDocument()
   })
