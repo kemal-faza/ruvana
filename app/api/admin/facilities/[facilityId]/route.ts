@@ -25,16 +25,7 @@ import { parseFacilityId } from "@/lib/validation/facility-query";
 import { parseFacilityUpdateBody } from "@/lib/validation/admin-facility";
 
 import { guardAdmin } from "../guard";
-
-function duplicateName(instance: string) {
-  return problemResponse({
-    status: 409,
-    code: "FACILITY_NAME_ALREADY_USED",
-    title: "Nama fasilitas sudah digunakan",
-    detail: "Nama fasilitas harus unik.",
-    instance,
-  });
-}
+import { duplicateName, duplicateNameBody, notFoundBody, storeBestEffort, transitionBody, validationFailedBody } from "../problem";
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
   const instance = request.nextUrl.pathname;
@@ -158,61 +149,4 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/
 
   revalidateFacilityViews(parsedId.value);
   return NextResponse.json(result.data, { status: 200, headers: { "Cache-Control": "no-store" } });
-}
-
-async function storeBestEffort(
-  identity: Parameters<typeof storeIdempotencyResult>[0],
-  status: number,
-  body: unknown,
-) {
-  try {
-    await storeIdempotencyResult(identity, { responseStatus: status, responseBody: body });
-  } catch {
-    // Replay bersifat best-effort; respons tetap dikembalikan.
-  }
-}
-
-function validationFailedBody(instance: string, errors: unknown) {
-  return {
-    type: "https://ruvana.invalid/problems/validation-failed",
-    title: "Validasi gagal",
-    status: 422,
-    detail: "Satu atau lebih field tidak memenuhi aturan validasi",
-    instance,
-    code: "VALIDATION_FAILED",
-    errors,
-  };
-}
-
-function notFoundBody(instance: string, detail: string) {
-  return {
-    type: "https://ruvana.invalid/problems/not-found",
-    title: "Resource tidak ditemukan",
-    status: 404,
-    detail,
-    instance,
-    code: "NOT_FOUND",
-  };
-}
-
-function transitionBody(instance: string, detail: string) {
-  return {
-    type: "https://ruvana.invalid/problems/invalid-facility-transition",
-    title: "Transisi fasilitas tidak valid",
-    status: 409,
-    detail,
-    instance,
-    code: "INVALID_FACILITY_TRANSITION",
-  };
-}
-
-function duplicateNameBody(instance: string) {
-  return {
-    type: "https://ruvana.invalid/problems/facility-name-already-used",
-    title: "Nama fasilitas sudah digunakan",
-    status: 409,
-    detail: "Nama fasilitas harus unik.",
-    instance,
-    code: "FACILITY_NAME_ALREADY_USED",
-  };
 }

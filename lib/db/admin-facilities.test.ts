@@ -71,11 +71,12 @@ describe("query admin", () => {
     expect(prisma.facility.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 1 } }));
   });
 
-  it("createAdminFacility meneruskan data", async () => {
-    vi.mocked(prisma.facility.create).mockResolvedValue({} as never);
-    await createAdminFacility({ nama: "Aula", tipe: "aula", lokasi: "Gedung", kapasitas: 1 });
+  it("createAdminFacility memakai client transaksi dan meneruskan data", async () => {
+    const create = vi.fn().mockResolvedValue({});
+    const tx = { facility: { create } } as never;
+    await createAdminFacility(tx, { nama: "Aula", tipe: "aula", lokasi: "Gedung", kapasitas: 1 });
 
-    expect(prisma.facility.create).toHaveBeenCalledWith(
+    expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ data: { nama: "Aula", tipe: "aula", lokasi: "Gedung", kapasitas: 1 } }),
     );
   });

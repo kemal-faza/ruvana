@@ -1,6 +1,7 @@
 import { STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import type { StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import type { ProblemFieldError } from "@/lib/http/problem";
+import { parsePositiveInt } from "@/lib/validation/facility-query";
 
 const BATAS_NAMA = 100;
 const BATAS_LOKASI = 200;
@@ -35,12 +36,6 @@ export interface FacilityUpdateInput {
   kapasitas?: number;
   deskripsi?: string | null;
   status?: StatusFasilitas;
-}
-
-function parsePositiveInt(raw: string | null): number | null {
-  if (raw === null) return null;
-  if (!/^\d+$/.test(raw)) return NaN;
-  return Number(raw);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

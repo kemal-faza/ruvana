@@ -64,7 +64,51 @@ function bacaDeskripsi(fd: FormData): string | null {
   return value === "" ? null : value;
 }
 
-export default function AdminFacilities({ items, meta, locations, filters }: AdminFacilitiesProps) {
+// Batas ini mencerminkan aturan di lib/validation/admin-facility.ts supaya form
+// memberi umpan balik tanpa menunggu perjalanan ke server (AGENTS.md: form
+// penting juga memvalidasi di klien).
+const BATAS_NAMA = 100;
+const BATAS_LOKASI = 200;
+const BATAS_DESKRIPSI = 2000;
+
+function validasiFasilitas(payload: {
+  nama: string;
+  tipe: string;
+  lokasi: string;
+  kapasitas: number;
+  deskripsi: string | null;
+}): FieldErrors {
+  const errors: FieldErrors = {};
+  if (payload.nama === "") errors.nama = "nama wajib diisi";
+  else if (payload.nama.length > BATAS_NAMA) errors.nama = `nama maksimal ${BATAS_NAMA} karakter`;
+
+  if (payload.tipe === "") errors.tipe = "tipe wajib diisi";
+
+  if (payload.lokasi === "") errors.lokasi = "lokasi wajib diisi";
+  else if (payload.lokasi.length > BATAS_LOKASI) errors.lokasi = `lokasi maksimal ${BATAS_LOKASI} karakter`;
+
+  if (!Number.isSafeInteger(payload.kapasitas)) errors.kapasitas = "kapasitas harus bilangan bulat";
+  else if (payload.kapasitas < 1) errors.kapasitas = "kapasitas harus minimal 1";
+
+  if (payload.deskripsi !== null && payload.deskripsi.length > BATAS_DESKRIPSI) {
+    errors.deskripsi = `deskripsi maksimal ${BATAS_DESKRIPSI} karakter`;
+  }
+
+  return errors;
+}
+
+// Nilai filter berubah lewat navigasi lunak (mis. tautan Reset) tanpa remount,
+// jadi state filter harus diinisialisasi ulang lewat key. Pola yang sama dipakai
+// FacilityFilterForm.
+function filterKey(filters: AdminFacilitiesProps["filters"]): string {
+  return JSON.stringify(filters ?? {});
+}
+
+export default function AdminFacilities(props: AdminFacilitiesProps) {
+  return <AdminFacilitiesView key={filterKey(props.filters)} {...props} />;
+}
+
+function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitiesProps) {
   const router = useRouter();
   const [selectedLocation, setSelectedLocation] = useState(filters.location ?? "");
   const [selectedType, setSelectedType] = useState(filters.type ?? "");
@@ -95,6 +139,13 @@ export default function AdminFacilities({ items, meta, locations, filters }: Adm
       kapasitas: Number(fd.get("kapasitas")),
       deskripsi: bacaDeskripsi(fd),
     };
+
+    const clientErrors = validasiFasilitas(payload);
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      setFeedback("Periksa kembali isian yang ditandai.");
+      return;
+    }
 
     setPending(true);
     resetFeedback();
@@ -146,6 +197,7 @@ export default function AdminFacilities({ items, meta, locations, filters }: Adm
       }
 
       const body = await response.json().catch(() => null);
+      setErrors(extractFieldErrors(body));
       setFeedback(
         body && typeof body === "object" && "detail" in body
           ? String((body as { detail: string }).detail)

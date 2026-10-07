@@ -101,19 +101,40 @@ describe("getAdminFacility", () => {
 });
 
 describe("createFacility", () => {
-  it("membuat dan memetakan hasil", async () => {
+  const input = { nama: "RK-101", tipe: "ruang_kelas" as const, lokasi: "Gedung A", kapasitas: 40 };
+
+  function mockCreateTx() {
+    const tx = { facility: { create: vi.fn() } };
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    return tx;
+  }
+
+  it("membuat di dalam transaksi dan memetakan hasil", async () => {
+    const tx = mockCreateTx();
     vi.mocked(createAdminFacility).mockResolvedValue(row() as never);
 
-    const result = await createFacility({ nama: "RK-101", tipe: "ruang_kelas", lokasi: "Gedung A", kapasitas: 40 });
+    const result = await createFacility(input);
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.id).toBe(1);
+    expect(createAdminFacility).toHaveBeenCalledWith(tx, input);
+  });
+
+  it("memanggil persistSuccess dengan transaksi yang sama", async () => {
+    const tx = mockCreateTx();
+    vi.mocked(createAdminFacility).mockResolvedValue(row() as never);
+    const persist = vi.fn().mockResolvedValue(undefined);
+
+    await createFacility(input, persist);
+
+    expect(persist).toHaveBeenCalledWith(tx, expect.objectContaining({ id: 1 }));
   });
 
   it("memetakan P2002 ke duplicate_name", async () => {
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn({}));
     vi.mocked(createAdminFacility).mockRejectedValue(p2002());
 
-    const result = await createFacility({ nama: "RK-101", tipe: "ruang_kelas", lokasi: "Gedung A", kapasitas: 40 });
+    const result = await createFacility(input);
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("duplicate_name");

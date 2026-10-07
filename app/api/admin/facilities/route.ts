@@ -17,18 +17,9 @@ import { createFacility, listAdminFacilities } from "@/lib/services/admin-facili
 import { parseAdminListQuery, parseFacilityCreateBody } from "@/lib/validation/admin-facility";
 
 import { guardAdmin } from "./guard";
+import { duplicateName, duplicateNameBody, storeBestEffort, validationFailedBody } from "./problem";
 
 const ALLOWED_LIST_PARAMS = new Set(["page", "perPage", "search", "type", "location", "status"]);
-
-function duplicateName(instance: string) {
-  return problemResponse({
-    status: 409,
-    code: "FACILITY_NAME_ALREADY_USED",
-    title: "Nama fasilitas sudah digunakan",
-    detail: "Nama fasilitas harus unik.",
-    instance,
-  });
-}
 
 export async function GET(request: NextRequest) {
   const instance = request.nextUrl.pathname;
@@ -138,7 +129,13 @@ export async function POST(request: NextRequest) {
 
   let result;
   try {
-    result = await createFacility(parsed.value);
+    // Replay disimpan di dalam transaksi yang sama dengan pembuatan fasilitas,
+    // mengikuti PATCH: klaim tidak boleh menggantung tanpa hasil bila proses mati
+    // di antara commit dan penyimpanan.
+    result = await createFacility(parsed.value, async (tx, data) => {
+      const stored = await storeIdempotencyResult(identity, { responseStatus: 201, responseBody: data }, tx);
+      if (stored.count !== 1) throw new Error("Klaim idempotency tidak dapat diselesaikan");
+    });
   } catch (error) {
     console.error("Gagal membuat fasilitas", error);
     await deleteIdempotencyClaim(identity).catch(() => {});
@@ -151,41 +148,5 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateFacilityViews(result.data.id);
-  await storeBestEffort(identity, 201, result.data);
   return NextResponse.json(result.data, { status: 201, headers: { "Cache-Control": "no-store" } });
-}
-
-async function storeBestEffort(
-  identity: Parameters<typeof storeIdempotencyResult>[0],
-  status: number,
-  body: unknown,
-) {
-  try {
-    await storeIdempotencyResult(identity, { responseStatus: status, responseBody: body });
-  } catch {
-    // Replay bersifat best-effort; respons tetap dikembalikan.
-  }
-}
-
-function validationFailedBody(instance: string, errors: unknown) {
-  return {
-    type: "https://ruvana.invalid/problems/validation-failed",
-    title: "Validasi gagal",
-    status: 422,
-    detail: "Satu atau lebih field tidak memenuhi aturan validasi",
-    instance,
-    code: "VALIDATION_FAILED",
-    errors,
-  };
-}
-
-function duplicateNameBody(instance: string) {
-  return {
-    type: "https://ruvana.invalid/problems/facility-name-already-used",
-    title: "Nama fasilitas sudah digunakan",
-    status: 409,
-    detail: "Nama fasilitas harus unik.",
-    instance,
-    code: "FACILITY_NAME_ALREADY_USED",
-  };
 }

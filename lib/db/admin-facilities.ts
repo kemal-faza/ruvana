@@ -72,8 +72,8 @@ export function findAdminFacilityLocations() {
   });
 }
 
-export function createAdminFacility(data: CreateFacilityData) {
-  return prisma.facility.create({ data, select: adminFacilitySelect });
+export function createAdminFacility(client: Prisma.TransactionClient, data: CreateFacilityData) {
+  return client.facility.create({ data, select: adminFacilitySelect });
 }
 
 export function updateAdminFacility(

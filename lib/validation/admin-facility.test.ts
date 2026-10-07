@@ -33,6 +33,18 @@ describe("parseAdminListQuery", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors[0]).toMatchObject({ field: "page", code: "OUT_OF_RANGE" });
   });
+
+  it("menolak page di luar jangkauan int4", () => {
+    const result = parseAdminListQuery(new URLSearchParams({ page: "99999999999999999999" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ field: "page", code: "INVALID_INTEGER" });
+  });
+
+  it("menolak perPage di luar jangkauan int4", () => {
+    const result = parseAdminListQuery(new URLSearchParams({ perPage: "99999999999999999999" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ field: "perPage", code: "INVALID_INTEGER" });
+  });
 });
 
 describe("parseFacilityCreateBody", () => {

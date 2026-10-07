@@ -111,10 +111,19 @@ export async function listAdminLocations(): Promise<string[]> {
 
 export async function createFacility(
   input: FacilityCreateInput,
+  persistSuccess?: PersistSuccess<AdminFacility>,
 ): Promise<{ ok: true; data: AdminFacility } | { ok: false; error: AdminFacilityMutationError }> {
   try {
-    const row = await createAdminFacility(input);
-    return { ok: true, data: toAdminFacility(row) };
+    // Pembuatan dan efek sampingnya (mis. simpan replay idempotency) satu transaksi,
+    // mengikuti updateFacility.
+    const result = await prisma.$transaction(async (tx) => {
+      const row = await createAdminFacility(tx, input);
+      const response = toAdminFacility(row);
+      await persistSuccess?.(tx, response);
+      return response;
+    });
+
+    return { ok: true, data: result };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, error: { type: "duplicate_name", message: "Nama fasilitas sudah digunakan" } };

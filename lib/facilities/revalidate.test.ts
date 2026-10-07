@@ -17,18 +17,18 @@ describe("revalidateFacilityViews", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/fasilitas/1");
   });
 
-  it("menginvalidasi daftar dan detail fasilitas admin", () => {
+  it("menginvalidasi daftar fasilitas admin tanpa path detail yang belum ada", () => {
     revalidateFacilityViews(1);
 
     expect(revalidatePath).toHaveBeenCalledWith("/admin/fasilitas");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin/fasilitas/1");
+    expect(revalidatePath).not.toHaveBeenCalledWith("/admin/fasilitas/1");
   });
 
-  it("memakai id fasilitas pada path detail dan total empat path", () => {
+  it("memakai id fasilitas pada path detail dan total tiga path", () => {
     revalidateFacilityViews(42);
 
     expect(revalidatePath).toHaveBeenCalledWith("/fasilitas/42");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin/fasilitas/42");
-    expect(revalidatePath).toHaveBeenCalledTimes(4);
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/fasilitas");
+    expect(revalidatePath).toHaveBeenCalledTimes(3);
   });
 });

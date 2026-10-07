@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -79,5 +79,50 @@ describe("AdminFacilities", () => {
     expect(
       screen.getByText(/membatalkan seluruh reservasi yang sudah disetujui/i),
     ).toBeInTheDocument();
+  });
+
+  it("mereset field filter saat nilai filter berubah (mis. tekan Reset)", () => {
+    const { rerender } = render(
+      <AdminFacilities
+        items={items}
+        meta={meta}
+        locations={locations}
+        filters={{ search: "lab", type: "aula", location: "Gedung A Lt.1", status: "ACTIVE" }}
+      />,
+    );
+
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("Aula");
+    expect(screen.getByRole("combobox", { name: "Status" })).toHaveValue("Aktif");
+
+    // Navigasi lunak ke /admin/fasilitas tanpa query merender komponen yang sama;
+    // key membuat state filter diinisialisasi ulang.
+    rerender(<AdminFacilities items={items} meta={meta} locations={locations} filters={{}} />);
+
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Status" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Lokasi" })).toHaveValue("");
+    expect(screen.getByRole("searchbox", { name: "Kata kunci" })).toHaveValue("");
+    expect(screen.queryByRole("button", { name: "Hapus pilihan tipe" })).not.toBeInTheDocument();
+  });
+
+  it("menolak isian tidak valid di klien tanpa memanggil API", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    renderFixture();
+
+    await user.click(screen.getByRole("button", { name: /Tambah fasilitas/ }));
+    const sheet = within(await screen.findByRole("dialog"));
+    await user.clear(sheet.getByLabelText("Nama"));
+    await user.clear(sheet.getByLabelText("Lokasi"));
+    await user.clear(sheet.getByLabelText("Kapasitas"));
+    await user.click(sheet.getByRole("button", { name: "Simpan" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await screen.findByText("nama wajib diisi")).toBeInTheDocument();
+    expect(screen.getByText("lokasi wajib diisi")).toBeInTheDocument();
+    expect(screen.getByText("kapasitas harus minimal 1")).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 });
