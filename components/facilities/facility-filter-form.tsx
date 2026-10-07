@@ -42,13 +42,21 @@ const OPSI_TIPE = [
   })),
 ]
 
-function ClearButton({ label, onClick }: { label: string; onClick: () => void }) {
+function ClearButton({
+  label,
+  onClick,
+  className,
+}: {
+  label: string
+  onClick: () => void
+  className?: string
+}) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={`flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className ?? ""}`}
     >
       <X aria-hidden="true" className="size-4" />
     </button>
@@ -105,7 +113,7 @@ function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: Facility
 
       <Field>
         <FieldTitle className="min-h-10">Tipe</FieldTitle>
-        <div className={controlClass}>
+        <div className={`${controlClass} relative`}>
           <Select
             name="type"
             items={OPSI_TIPE}
@@ -115,11 +123,13 @@ function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: Facility
           >
             <SelectTrigger
               aria-label="Tipe"
-              className="min-h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-sm focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent"
+              className={`min-h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-sm focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent ${
+                tipe !== "" ? "pr-8 [&>svg]:hidden" : ""
+              }`}
             >
               <SelectValue placeholder="Semua tipe" />
             </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
+            <SelectContent align="start" alignItemWithTrigger={false} className="min-w-52">
               {OPSI_TIPE.map((opsi) => (
                 <SelectItem key={opsi.value} value={opsi.value}>
                   {opsi.label}
@@ -127,7 +137,13 @@ function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: Facility
               ))}
             </SelectContent>
           </Select>
-          {tipe !== "" && <ClearButton label="Hapus pilihan tipe" onClick={() => setTipe("")} />}
+          {tipe !== "" && (
+            <ClearButton
+              label="Hapus pilihan tipe"
+              onClick={() => setTipe("")}
+              className="absolute top-1/2 right-2 -translate-y-1/2"
+            />
+          )}
         </div>
       </Field>
 
