@@ -96,7 +96,8 @@ jobs:
           pnpm db:seed
         env:
           DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
-          SEED_DEMO_PASSWORD: ci-only-random-demo-password-2026
+          # Nilai unik per run; jangan simpan kata sandi demo tetap di repo.
+          SEED_DEMO_PASSWORD: ci-demo-${{ github.run_id }}-${{ github.run_attempt }}-password
 
       - name: HTTP guard redirects
         run: pnpm test:http-guards
