@@ -5,7 +5,7 @@ import type { NavigationGroup } from "@/components/app-shell/types"
 export const adminNavigation: readonly NavigationGroup[] = [
   {
     key: "kelola",
-    label: "Kelola",
+    label: "Administrasi",
     items: [
       { key: "admin-analytics", label: "Analitik", href: "/admin/analitik", icon: ChartPie },
       { key: "admin-facilities", label: "Kelola Fasilitas", href: "/admin/fasilitas", icon: Building2 },

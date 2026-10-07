@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/empty";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import {
   Sheet,
   SheetContent,
@@ -48,6 +50,26 @@ const RINGKASAN_ITEM = [
   { key: "aktif", label: "Aktif", status: "ACTIVE", icon: UserCheck },
   { key: "pending", label: "Menunggu verifikasi", status: "PENDING", icon: Clock },
   { key: "dinonaktifkan", label: "Dinonaktifkan", status: "DISABLED", icon: UserX },
+] as const;
+
+// Label opsi untuk Select Ruvana: tanpa `items`, <SelectValue /> merender value
+// mentah (enum) di trigger, bukan label domain Indonesia. Opsi "Semua …"
+// bernilai kosong agar filter dapat dikembalikan ke seluruh data, sama seperti
+// <option value=""> pada select bawaan yang digantikan.
+const OPSI_PERAN = [
+  { value: "", label: "Semua peran" },
+  ...Object.entries(ROLE_LABEL).map(([value, label]) => ({ value, label })),
+];
+const OPSI_STATUS = [
+  { value: "", label: "Semua status" },
+  ...Object.entries(STATUS_CONFIG).map(([value, config]) => ({
+    value,
+    label: config.label,
+  })),
+];
+const OPSI_PERAN_BARU = [
+  { value: "petugas", label: "Petugas" },
+  { value: "pengguna", label: "Pengguna" },
 ] as const;
 
 const JUMLAH_PER_HALAMAN = 10;
@@ -240,44 +262,52 @@ export default function AdminUsers({
                 className="pl-9"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="sr-only">Filter peran</span>
-              <select
-                value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value);
-                  setHalaman(1);
-                }}
+            <Select
+              items={OPSI_PERAN}
+              value={roleFilter}
+              modal={false}
+              onValueChange={(nilai) => {
+                setRoleFilter(nilai ?? "");
+                setHalaman(1);
+              }}
+            >
+              <SelectTrigger
                 aria-label="Filter peran"
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className={`${SELECT_TRIGGER_ACTION_CLASS} w-full shrink-0 sm:w-44`}
               >
-                <option value="">Semua peran</option>
-                {Object.entries(ROLE_LABEL).map(([nilai, label]) => (
-                  <option key={nilai} value={nilai}>
-                    {label}
-                  </option>
+                <SelectValue placeholder="Semua peran" />
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                {OPSI_PERAN.map((opsi) => (
+                  <SelectItem key={opsi.value} value={opsi.value}>
+                    {opsi.label}
+                  </SelectItem>
                 ))}
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="sr-only">Filter status</span>
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setHalaman(1);
-                }}
+              </SelectContent>
+            </Select>
+            <Select
+              items={OPSI_STATUS}
+              value={statusFilter}
+              modal={false}
+              onValueChange={(nilai) => {
+                setStatusFilter(nilai ?? "");
+                setHalaman(1);
+              }}
+            >
+              <SelectTrigger
                 aria-label="Filter status"
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className={`${SELECT_TRIGGER_ACTION_CLASS} w-full shrink-0 sm:w-48`}
               >
-                <option value="">Semua status</option>
-                {Object.entries(STATUS_CONFIG).map(([nilai, config]) => (
-                  <option key={nilai} value={nilai}>
-                    {config.label}
-                  </option>
+                <SelectValue placeholder="Semua status" />
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                {OPSI_STATUS.map((opsi) => (
+                  <SelectItem key={opsi.value} value={opsi.value}>
+                    {opsi.label}
+                  </SelectItem>
                 ))}
-              </select>
-            </label>
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
         <p aria-live="polite" className="mt-2 text-xs text-muted-foreground">
@@ -597,21 +627,24 @@ function SheetBuatAkun({
             <FieldLabel htmlFor="buat-role" required>
               Peran
             </FieldLabel>
-            <select
-              id="buat-role"
-              name="role"
-              required
-              defaultValue=""
-              aria-invalid={state.fieldErrors?.role ? true : undefined}
-              aria-describedby={state.fieldErrors?.role ? "buat-role-error" : undefined}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <option value="" disabled>
-                Pilih peran
-              </option>
-              <option value="petugas">Petugas</option>
-              <option value="pengguna">Pengguna</option>
-            </select>
+            <Select name="role" items={OPSI_PERAN_BARU} required modal={false}>
+              <SelectTrigger
+                id="buat-role"
+                className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+                aria-required="true"
+                aria-invalid={state.fieldErrors?.role ? true : undefined}
+                aria-describedby={state.fieldErrors?.role ? "buat-role-error" : undefined}
+              >
+                <SelectValue placeholder="Pilih peran" />
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                {OPSI_PERAN_BARU.map((opsi) => (
+                  <SelectItem key={opsi.value} value={opsi.value}>
+                    {opsi.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {state.fieldErrors?.role && (
               <FieldError id="buat-role-error">{state.fieldErrors.role[0]}</FieldError>
             )}

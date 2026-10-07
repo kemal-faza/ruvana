@@ -114,4 +114,18 @@ describe("FacilityFilterForm", () => {
 
     expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
   })
+
+  it("mengembalikan filter tipe ke semua tipe lewat tombol hapus", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<FacilityFilterForm locations={locations} value={{ type: "alat" }} />)
+
+    expect(container.querySelector("input[name='type']")).toHaveValue("alat")
+    expect(screen.getByLabelText("Jumlah minimum (unit)")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Hapus pilihan tipe" }))
+
+    expect(container.querySelector("input[name='type']")).toHaveValue("")
+    expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("")
+    expect(screen.getByLabelText("Kapasitas minimum (orang)")).toBeInTheDocument()
+  })
 })
