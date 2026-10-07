@@ -26,6 +26,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: mockPathname,
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }))
 
 vi.mock("@/lib/auth-client", () => ({
@@ -62,7 +63,7 @@ describe("AdminSidebar", () => {
     expect(screen.getByRole("link", { name: "Pengaturan" })).toHaveAttribute("href", "/admin/pengaturan")
 
     expect(screen.getByRole("link", { name: "Ruvana" })).toHaveAttribute("href", "/")
-    expect(screen.queryByText("Administrasi")).not.toBeInTheDocument()
+    expect(screen.getByText("Administrasi")).toBeInTheDocument()
     expect(screen.queryByText("Pengelolaan fasilitas")).not.toBeInTheDocument()
 
     expect(screen.getByText("Ayu Pratama")).toBeInTheDocument()

@@ -26,9 +26,8 @@ const facilities = [
 ]
 
 function mockFetchOk() {
-  const fetchMock = vi.fn(
-    async (_url: unknown, init?: { body?: unknown }) =>
-      new Response(JSON.stringify({ id: 99 }), { status: 201 }),
+  const fetchMock = vi.fn<(url: unknown, init?: { body?: unknown }) => Promise<Response>>(
+    async () => new Response(JSON.stringify({ id: 99 }), { status: 201 }),
   )
   vi.stubGlobal("fetch", fetchMock)
   vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-1111-4111-8111-111111111111")
@@ -61,6 +60,42 @@ describe("ReservationForm hierarki tombol", () => {
   })
 })
 
+describe("ReservationForm nama kontrol", () => {
+  it("menyediakan nama aksesibel untuk pemilih Fasilitas dan Tanggal", () => {
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    expect(screen.getByRole("combobox", { name: "Fasilitas" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Tanggal")).toHaveTextContent("27 Sep 2026")
+  })
+})
+
+describe("ReservationForm reset waktu", () => {
+  it("mengembalikan jam dan tanggal ke keadaan halaman", async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    await isiWaktuDanTujuan(user)
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("09:00")
+
+    // Tanggal diubah lewat kalender tetapi belum diterapkan ke server.
+    await user.click(screen.getByLabelText("Tanggal"))
+    const hariLain = document.querySelector<HTMLButtonElement>('td[data-day="2026-12-10"] button')
+    expect(hariLain).not.toBeNull()
+    await user.click(hariLain as HTMLButtonElement)
+    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-10")
+
+    await user.click(screen.getByRole("button", { name: "Reset waktu" }))
+
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("Pilih jam mulai")
+    expect(screen.getByLabelText("Tanggal")).toHaveTextContent("2 Des 2026")
+    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-02")
+  }, 20000)
+})
+
 describe("ReservationForm facilityId", () => {
   it("mengirim facilityId default saat pilihan tidak diubah", async () => {
     const user = userEvent.setup()
@@ -85,7 +120,7 @@ describe("ReservationForm facilityId", () => {
 
     // User memilih Lab tanpa memuat ulang halaman ("Tampilkan ketersediaan" tidak diklik)
     await user.click(comboboxFasilitas())
-    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 — Gedung B Lt.2" }))
+    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
     expect(container.querySelector('input[name="facilityId"]')).toHaveValue("4")
 
     await isiWaktuDanTujuan(user)
@@ -315,9 +350,8 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     await user.click(await screen.findByRole("option", { name: "17:30" }))
     await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
 
-    // Cakupan dibatasi pada wilayah yang diubah tahap ini; pemicu Fasilitas
-    // di luar wilayah ini sudah gagal button-name sebelum tahap ini (tanpa
-    // label terprogram) dan dilaporkan terpisah, bukan diperbaiki di sini.
+    // Cakupan dibatasi pada wilayah Waktu; pemicu Fasilitas dan Tanggal di luar
+    // wilayah ini diperiksa pada test nama aksesibel di atas.
     const wilayahWaktu = container.querySelector('section[aria-label="Waktu"]')
     expect(wilayahWaktu).not.toBeNull()
     expect((await axe(wilayahWaktu as HTMLElement)).violations).toEqual([])

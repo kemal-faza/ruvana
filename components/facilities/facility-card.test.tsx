@@ -35,6 +35,12 @@ describe("FacilityCard", () => {
     expect(link).toHaveAttribute("href", "/fasilitas/1")
   })
 
+  it("mendukung tautan detail pada jalur fasilitas publik", () => {
+    render(<FacilityCard facility={facility} detailBasePath="/fasilitas" />)
+
+    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/fasilitas/1")
+  })
+
   it("memuat foto secara eager saat diminta agar cepat menjadi LCP", () => {
     const { container } = render(<FacilityCard facility={facility} eager />)
 

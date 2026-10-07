@@ -1,9 +1,11 @@
 import Link from "next/link"
 
+// Seksi `#jadwal` hanya ada di beranda, jadi anchor memakai rute absolut supaya
+// tetap valid ketika footer dirender di halaman discovery.
 const footerLinks = [
   { label: "Beranda", href: "/" },
   { label: "Fasilitas", href: "/fasilitas" },
-  { label: "Jadwal", href: "#jadwal" },
+  { label: "Jadwal", href: "/#jadwal" },
 ] as const
 
 export function SiteFooter() {

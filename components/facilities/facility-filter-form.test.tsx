@@ -15,6 +15,13 @@ describe("FacilityFilterForm", () => {
     expect(form).toHaveAttribute("action", "/fasilitas")
   })
 
+  it("bisa mengirim filter ke rute fasilitas", () => {
+    const { container } = render(<FacilityFilterForm actionPath="/fasilitas" />)
+
+    expect(container.querySelector("form")).toHaveAttribute("action", "/fasilitas")
+    expect(screen.getByRole("button", { name: /reset/i })).toHaveAttribute("href", "/fasilitas")
+  })
+
   it("menyediakan input search, location, minCapacity, dan select type", () => {
     render(<FacilityFilterForm />)
 
@@ -25,7 +32,7 @@ describe("FacilityFilterForm", () => {
   })
 
   it("menampilkan nilai filter yang aktif sebagai default", () => {
-    render(
+    const { container } = render(
       <FacilityFilterForm
         value={{ search: "lab", location: "Gedung A", minCapacity: 30, type: "laboratorium" }}
       />,
@@ -34,14 +41,15 @@ describe("FacilityFilterForm", () => {
     expect(screen.getByLabelText(/kata kunci/i)).toHaveValue("lab")
     expect(screen.getByLabelText(/lokasi/i)).toHaveValue("Gedung A")
     expect(screen.getByLabelText(/kapasitas minimum/i)).toHaveValue(30)
-    expect(screen.getByLabelText(/tipe/i)).toHaveValue("laboratorium")
+    expect(screen.getByLabelText(/tipe/i)).toHaveTextContent("Laboratorium")
+    expect(container.querySelector("input[name='type']")).toHaveValue("laboratorium")
   })
 
   it("mengirim name yang sesuai kontrak untuk tiap kontrol", () => {
     const { container } = render(<FacilityFilterForm />)
 
     expect(container.querySelector("input[name='search']")).not.toBeNull()
-    expect(container.querySelector("select[name='type']")).not.toBeNull()
+    expect(container.querySelector("input[name='type']")).not.toBeNull()
     expect(container.querySelector("input[name='location']")).not.toBeNull()
     expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
   })
@@ -74,7 +82,8 @@ describe("FacilityFilterForm", () => {
 
     expect(screen.getByLabelText("Kapasitas minimum (orang)")).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText(/tipe/i), "alat")
+    await user.click(screen.getByLabelText(/tipe/i))
+    await user.click(await screen.findByRole("option", { name: "Alat" }))
 
     expect(screen.getByLabelText("Jumlah minimum (unit)")).toBeInTheDocument()
     expect(screen.queryByLabelText("Kapasitas minimum (orang)")).not.toBeInTheDocument()
@@ -84,8 +93,25 @@ describe("FacilityFilterForm", () => {
     const user = userEvent.setup()
     const { container } = render(<FacilityFilterForm />)
 
-    await user.selectOptions(screen.getByLabelText(/tipe/i), "alat")
+    await user.click(screen.getByLabelText(/tipe/i))
+    await user.click(await screen.findByRole("option", { name: "Alat" }))
 
     expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
+  })
+
+  it("mengembalikan filter tipe ke semua tipe dengan nilai kosong", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<FacilityFilterForm />)
+
+    await user.click(screen.getByLabelText(/tipe/i))
+    await user.click(await screen.findByRole("option", { name: "Alat" }))
+    expect(container.querySelector("input[name='type']")).toHaveValue("alat")
+
+    await user.click(screen.getByLabelText(/tipe/i))
+    await user.click(await screen.findByRole("option", { name: "Semua tipe" }))
+
+    expect(container.querySelector("input[name='type']")).toHaveValue("")
+    expect(screen.getByLabelText(/tipe/i)).toHaveTextContent("Semua tipe")
+    expect(screen.getByLabelText("Kapasitas minimum (orang)")).toBeInTheDocument()
   })
 })

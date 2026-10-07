@@ -16,9 +16,10 @@ import {
 import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +54,10 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
   // dimuat ulang via "Tampilkan ketersediaan"). Komponen di-remount per
   // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
   const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
+
+  // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
+  // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
+  const [tanggalResetKe, setTanggalResetKe] = useState(0);
 
   // Availability dihitung server untuk prop facilityId. Bila user memilih
   // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
@@ -285,20 +290,20 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
           <form method="get" action="/reservasi" className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
-                <FieldLabel>Fasilitas</FieldLabel>
+                <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>
                 <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id="fasilitas" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
                     <SelectValue placeholder="Pilih fasilitas">
                       {(value: string) => {
                         const match = facilities.find((f) => String(f.id) === value);
-                        return match ? `${match.nama} — ${match.lokasi}` : "Pilih fasilitas";
+                        return match ? `${match.nama} | ${match.lokasi}` : "Pilih fasilitas";
                       }}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {facilities.map((f) => (
                       <SelectItem key={f.id} value={String(f.id)}>
-                        {f.nama} — {f.lokasi}
+                        {f.nama} | {f.lokasi}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -312,7 +317,14 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
 
               <Field>
                 <FieldLabel htmlFor="date">Tanggal</FieldLabel>
-                <Input id="date" name="date" type="date" defaultValue={date} required />
+                <DatePicker
+                  key={`${date}:${tanggalResetKe}`}
+                  id="date"
+                  name="date"
+                  aria-label="Tanggal"
+                  defaultValue={date}
+                  className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
+                />
               </Field>
             </div>
             <div>
@@ -343,7 +355,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                 <Select value={startTime} onValueChange={handleStartChange}>
                   <SelectTrigger
                     id="jam-mulai"
-                    className="w-full"
+                    className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
                     // Rujuk deskripsi hanya saat ia dirender; saat galat field
                     // menggantikannya, IDREF akan menggantung.
                     aria-describedby={
@@ -383,7 +395,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                     if (v) setEndTime(v);
                   }}
                 >
-                  <SelectTrigger id="jam-selesai" className="w-full" disabled={!startTime}>
+                  <SelectTrigger id="jam-selesai" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`} disabled={!startTime}>
                     <SelectValue placeholder="Pilih jam selesai" />
                   </SelectTrigger>
                   <SelectContent>
@@ -458,6 +470,8 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                 onClick={() => {
                   setStartTime("");
                   setEndTime("");
+                  // Tanggal ikut kembali ke tanggal yang sedang aktif di halaman.
+                  setTanggalResetKe((ke) => ke + 1);
                   setResult(null);
                   setGalatField({});
                   setRingkasan(null);

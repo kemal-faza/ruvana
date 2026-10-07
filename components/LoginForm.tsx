@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -13,14 +14,19 @@ import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "@/config/bu
 import { getPostLoginPath } from "@/lib/auth-routing"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const subscribeHydration = () => () => {}
+const clientHydrated = () => true
+const serverHydrated = () => false
 
 export default function LoginForm() {
+  const router = useRouter()
   const [state, setState] = useState({
     ok: false,
     pesan: "",
     fieldErrors: {} as Record<string, string[]>,
   })
   const [pending, setPending] = useState(false)
+  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated)
 
   const emailError = state.fieldErrors?.email?.[0]
   const passwordError = state.fieldErrors?.password?.[0]
@@ -58,8 +64,12 @@ export default function LoginForm() {
             </p>
           </div>
 
+          {/* `method="post"` adalah jaring pengaman: bila submit native terjadi
+              sebelum hidrasi, kredensial tidak ikut masuk query string. `action`
+              sengaja tidak diisi karena /api/auth/login hanya menerima JSON. */}
           <form
             className="flex flex-col gap-5"
+            method="post"
             noValidate
             onSubmit={async (event) => {
               event.preventDefault()
@@ -90,7 +100,8 @@ export default function LoginForm() {
                 })
                 const result = await response.json()
                 if (response.ok) {
-                  window.location.assign(getPostLoginPath(result.user.role))
+                  router.replace(getPostLoginPath(result.user.role))
+                  router.refresh()
                   return
                 }
                 const fieldErrors: Record<string, string[]> = {}
@@ -188,7 +199,7 @@ export default function LoginForm() {
               </p>
             )}
 
-            <Button type="submit" size="lg" loading={pending} className="mt-1 min-h-11 w-full">
+            <Button type="submit" size="lg" loading={pending} disabled={!hydrated} className="mt-1 min-h-11 w-full">
               Masuk
             </Button>
 
