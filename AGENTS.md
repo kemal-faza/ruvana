@@ -45,6 +45,8 @@ pnpm dev
 
 The app runs on port 3000. The seed uses upserts and is safe to rerun. Stop
 PostgreSQL with `pnpm db:down`.
+Set a unique `SEED_DEMO_PASSWORD` (16–72 bytes) in `.env` before running the seed;
+non-local database URLs require `SEED_ALLOW_NON_LOCAL=1` explicitly.
 
 ### Rootless Podman on `/mnt/DATA`
 
@@ -75,6 +77,8 @@ pnpm exec next typegen
 pnpm exec tsc --noEmit
 pnpm test
 pnpm build
+pnpm prisma migrate deploy
+pnpm db:seed
 pnpm test:http-guards
 ```
 
@@ -82,8 +86,9 @@ pnpm test:http-guards
 - `pnpm build` regenerates Prisma Client but does not replace the explicit typecheck.
 - `pnpm test:http-guards` must run after `pnpm build`: it starts the production
   server and asserts anonymous requests to `/reports` and `/petugas*` answer 3xx to
-  `/login` instead of 200 with a meta refresh. No database is needed, because
-  anonymous requests return before any query.
+  `/login`, checks seeded role sessions against the petugas routes, and checks
+  katalog redirect/404 statuses. It needs
+  a migrated and seeded local database. Set `SEED_DEMO_PASSWORD` before seeding.
 - Unit tests are vitest and co-located as `*.test.ts(x)` next to the file under
   test; they are excluded from `next build` output. `pnpm test` runs them once
   (CI mode). Accessibility checks use `vitest-axe`.

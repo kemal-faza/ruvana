@@ -15,6 +15,20 @@ jobs:
     name: lint + typecheck + build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ruvana
+          POSTGRES_PASSWORD: ruvana_pass
+          POSTGRES_DB: ruvana
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ruvana -d ruvana"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -75,6 +89,15 @@ jobs:
           # Build halaman statis (belum ada data fetching) — tidak butuh DB.
           DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
           NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Migrasi dan seed database tes
+        run: |
+          pnpm prisma migrate deploy
+          pnpm db:seed
+        env:
+          DATABASE_URL: postgresql://ruvana:ruvana_pass@localhost:5432/ruvana
+          # Nilai unik per run; jangan simpan kata sandi demo tetap di repo.
+          SEED_DEMO_PASSWORD: ci-demo-${{ github.run_id }}-${{ github.run_attempt }}-password
 
       - name: HTTP guard redirects
         run: pnpm test:http-guards

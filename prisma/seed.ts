@@ -2,12 +2,18 @@ import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { validateSeedConfig } from "./seed-safety";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const seedConfig = validateSeedConfig({
+  databaseUrl: process.env.DATABASE_URL,
+  allowNonLocal: process.env.SEED_ALLOW_NON_LOCAL,
+  demoPassword: process.env.SEED_DEMO_PASSWORD,
+});
+const adapter = new PrismaPg({ connectionString: seedConfig.databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const hash = await bcrypt.hash("password123", 10);
+  const hash = await bcrypt.hash(seedConfig.demoPassword, 10);
 
   // Akun demo per role (upsert per email — idempoten)
   const akun = [
@@ -18,7 +24,7 @@ async function main() {
   ] as const;
 
   for (const a of akun) {
-    await prisma.user.upsert({
+    const user = await prisma.user.upsert({
       where: { email: a.email },
       update: {},
       create: {
@@ -29,6 +35,12 @@ async function main() {
         status: a.status as "PENDING" | "ACTIVE",
       },
     });
+    if (!(await bcrypt.compare(seedConfig.demoPassword, user.password))) {
+      await prisma.$transaction([
+        prisma.user.update({ where: { id: user.id }, data: { password: hash } }),
+        prisma.session.deleteMany({ where: { userId: user.id } }),
+      ]);
+    }
   }
 
   // Fasilitas contoh lintas tipe (upsert per nama — idempoten)

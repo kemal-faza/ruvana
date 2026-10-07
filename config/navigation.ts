@@ -21,9 +21,6 @@ export const navigation: readonly NavigationGroup[] = [
         label: "Fasilitas",
         href: "/fasilitas",
         icon: Building2,
-        // Katalog publik menampilkan konten yang sama, jadi item ini tetap
-        // ditandai aktif ketika pengguna membukanya.
-        activeFor: ["/publik/fasilitas"],
       },
       { key: "laporan", label: "Laporan", href: "/reports", icon: ClipboardList },
     ],

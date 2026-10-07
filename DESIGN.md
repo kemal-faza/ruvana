@@ -228,7 +228,9 @@ Destinasi yang tidak tersedia harus dihilangkan dari navigasi. Akses mengikuti a
 
 Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa sidebar pengguna. Header menyediakan tautan Beranda, Fasilitas, Jadwal, Masuk, dan Daftar. Pengguna, petugas, dan admin yang sudah masuk memakai navigasi sesuai perannya, termasuk ketika membuka katalog publik.
 
-Katalog fasilitas memiliki dua rute dengan konten yang sama: `/publik/fasilitas` adalah pintu masuk publik yang dipakai header, footer, CTA landing, dan sitemap, sedangkan `/fasilitas` adalah rute fasilitas di navigasi peran. Aturan chrome di atas berlaku di keduanya — pengunjung anonim yang membuka `/fasilitas` tetap memakai header publik tanpa sidebar, dan item navigasi hanya ditandai aktif bila tautannya menuju halaman yang sedang dibuka. Tautan **Jadwal** pada chrome publik menunjuk ke seksi jadwal beranda (`/#jadwal`) karena seksi tersebut tidak dirender di halaman discovery.
+Katalog dan detail fasilitas memakai satu rute, `/fasilitas`. Pengunjung anonim melihat header dan footer publik tanpa sidebar; pengguna yang sudah masuk melihat navigasi sesuai peran. Header publik menandai Fasilitas aktif di rute ini. URL lama `/publik/fasilitas` dan detailnya dialihkan secara permanen ke `/fasilitas` sambil mempertahankan parameter pencarian. Tautan **Jadwal** pada chrome publik menunjuk ke seksi jadwal beranda (`/#jadwal`) karena seksi tersebut tidak dirender di halaman discovery.
+
+Rute ini sengaja tidak memakai `loading.tsx`. Boundary Suspense membuat respons dikirim sebagai `200 OK`, sehingga `notFound()` dan `redirect()` di halaman kehilangan status HTTP aslinya: fasilitas yang tidak ada dijawab 200 dengan `noindex` dan halaman di luar rentang dialihkan di sisi klien. Status 404/3xx yang benar diutamakan, dengan konsekuensi aturan **Loading awal** pada tabel state di bawah tidak berlaku di `/fasilitas`; selama data dimuat, peramban menampilkan halaman sebelumnya.
 
 ## Komponen
 
@@ -403,10 +405,10 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
   `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
   Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
   pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
-- CTA utama “Jelajahi Fasilitas” menuju `/publik/fasilitas`. Rute `/fasilitas` tetap menjadi pengalaman fasilitas dalam navigasi peran.
+- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`, dengan tampilan publik untuk pengunjung anonim.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
-- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas (`/publik/fasilitas`), dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
+- Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas (`/fasilitas`), dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.
 - Kartu foto memakai aset lokal `public/ruvana-lab2.jpg`. Prototype dan aset mentah di `output/` tidak di-commit.
 - Header dan footer publik dipakai bersama lewat `components/site/`; komponen landing yang berperilaku atau berat ada di `components/landing/`.
 - Landing page memakai entrance singkat saat masuk viewport dan parallax terikat scroll; tidak ada loop idle.
