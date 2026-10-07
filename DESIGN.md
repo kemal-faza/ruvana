@@ -230,6 +230,8 @@ Pada halaman discovery, pengunjung anonim memakai header dan footer publik tanpa
 
 Katalog dan detail fasilitas memakai satu rute, `/fasilitas`. Pengunjung anonim melihat header dan footer publik tanpa sidebar; pengguna yang sudah masuk melihat navigasi sesuai peran. Header publik menandai Fasilitas aktif di rute ini. URL lama `/publik/fasilitas` dan detailnya dialihkan secara permanen ke `/fasilitas` sambil mempertahankan parameter pencarian. Tautan **Jadwal** pada chrome publik menunjuk ke seksi jadwal beranda (`/#jadwal`) karena seksi tersebut tidak dirender di halaman discovery.
 
+Rute ini sengaja tidak memakai `loading.tsx`. Boundary Suspense membuat respons dikirim sebagai `200 OK`, sehingga `notFound()` dan `redirect()` di halaman kehilangan status HTTP aslinya: fasilitas yang tidak ada dijawab 200 dengan `noindex` dan halaman di luar rentang dialihkan di sisi klien. Status 404/3xx yang benar diutamakan, dengan konsekuensi aturan **Loading awal** pada tabel state di bawah tidak berlaku di `/fasilitas`; selama data dimuat, peramban menampilkan halaman sebelumnya.
+
 ## Komponen
 
 Setiap komponen yang relevan harus mendefinisikan keadaan default, hover, focus-visible, loading, disabled, success, error, dan empty.
