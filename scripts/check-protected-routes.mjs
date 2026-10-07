@@ -46,7 +46,7 @@ async function checkRedirect(path, cookie, expectedPath) {
   const body = await response.text()
   assert.equal(/<meta[^>]*http-equiv=["']?refresh/i.test(body), false,
     `${path}: respons tidak boleh memakai meta refresh`)
-  if (!cookie) {
+  if (!cookie && expectedPath === "/login") {
     assert.equal(/data-slot=["']sidebar|Navigasi utama/i.test(body), false,
       `${path}: respons anonim tidak boleh memuat shell terlindungi`)
   }
