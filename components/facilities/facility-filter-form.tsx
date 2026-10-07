@@ -52,7 +52,7 @@ export function FacilityFilterForm({ value, locations, actionPath = "/fasilitas"
       <Card size="sm">
         <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
           <Field>
-            <FieldLabel htmlFor="search">Kata kunci</FieldLabel>
+            <FieldLabel className="min-h-10" htmlFor="search">Kata kunci</FieldLabel>
             <div className={controlClass}>
               <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
               <Input
@@ -68,7 +68,7 @@ export function FacilityFilterForm({ value, locations, actionPath = "/fasilitas"
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="type">Tipe</FieldLabel>
+            <FieldLabel className="min-h-10" htmlFor="type">Tipe</FieldLabel>
             <Combobox
               name="type"
               items={TIPE_FASILITAS}
@@ -94,7 +94,7 @@ export function FacilityFilterForm({ value, locations, actionPath = "/fasilitas"
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="location">Lokasi</FieldLabel>
+            <FieldLabel className="min-h-10" htmlFor="location">Lokasi</FieldLabel>
             <Combobox
               name="location"
               items={locations}
@@ -119,7 +119,7 @@ export function FacilityFilterForm({ value, locations, actionPath = "/fasilitas"
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="minCapacity">{kapasitasLabel}</FieldLabel>
+            <FieldLabel className="min-h-10" htmlFor="minCapacity">{kapasitasLabel}</FieldLabel>
             <div className={controlClass}>
               <Input
                 id="minCapacity"
