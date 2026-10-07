@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldTitle } from "@/components/ui/field"
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
 import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
 import { LABEL_FILTER_JUMLAH_ALAT, LABEL_FILTER_KAPASITAS_RUANG } from "@/config/labels"
 
@@ -43,10 +42,39 @@ const OPSI_TIPE = [
   })),
 ]
 
-export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
+function ClearButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <X aria-hidden="true" className="size-4" />
+    </button>
+  )
+}
+
+// Nilai filter berubah lewat navigasi (mis. tautan Reset), bukan remount. Kunci
+// ini membuat field di-reset ke nilai baru tanpa menyisakan state lama seperti
+// tipe yang sudah terpilih.
+function filterKey(value: FacilityFilterFormProps["value"]): string {
+  return JSON.stringify(value ?? {})
+}
+
+export function FacilityFilterForm(props: FacilityFilterFormProps) {
+  return <FacilityFilterFormFields key={filterKey(props.value)} {...props} />
+}
+
+function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
   // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
   // kapasitas menyesuaikan tipe yang sedang dipilih.
+  const [search, setSearch] = useState(value?.search ?? "")
   const [tipe, setTipe] = useState(value?.type ?? "")
+  const [lokasi, setLokasi] = useState(value?.location ?? "")
+  const [minCapacity, setMinCapacity] = useState(
+    value?.minCapacity !== undefined ? String(value.minCapacity) : "",
+  )
   const isAlat = tipe === "alat"
   const kapasitasLabel = isAlat ? LABEL_FILTER_JUMLAH_ALAT : LABEL_FILTER_KAPASITAS_RUANG
 
@@ -66,36 +94,41 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
             name="search"
             aria-label="Kata kunci"
             placeholder="Nama fasilitas"
-            defaultValue={value?.search ?? ""}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             maxLength={200}
-            className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
           />
+          {search !== "" && <ClearButton label="Hapus kata kunci" onClick={() => setSearch("")} />}
         </div>
       </Field>
 
       <Field>
         <FieldTitle className="min-h-10">Tipe</FieldTitle>
-        <Select
-          name="type"
-          items={OPSI_TIPE}
-          value={tipe}
-          modal={false}
-          onValueChange={(nilai) => setTipe(nilai ?? "")}
-        >
-          <SelectTrigger
-            aria-label="Tipe"
-            className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+        <div className={controlClass}>
+          <Select
+            name="type"
+            items={OPSI_TIPE}
+            value={tipe}
+            modal={false}
+            onValueChange={(nilai) => setTipe(nilai ?? "")}
           >
-            <SelectValue placeholder="Semua tipe" />
-          </SelectTrigger>
-          <SelectContent align="start" alignItemWithTrigger={false}>
-            {OPSI_TIPE.map((opsi) => (
-              <SelectItem key={opsi.value} value={opsi.value}>
-                {opsi.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              aria-label="Tipe"
+              className="min-h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-sm focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent"
+            >
+              <SelectValue placeholder="Semua tipe" />
+            </SelectTrigger>
+            <SelectContent align="start" alignItemWithTrigger={false}>
+              {OPSI_TIPE.map((opsi) => (
+                <SelectItem key={opsi.value} value={opsi.value}>
+                  {opsi.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {tipe !== "" && <ClearButton label="Hapus pilihan tipe" onClick={() => setTipe("")} />}
+        </div>
       </Field>
 
       <Field>
@@ -106,10 +139,12 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
             name="location"
             aria-label="Lokasi"
             placeholder="Gedung A"
-            defaultValue={value?.location ?? ""}
+            value={lokasi}
+            onChange={(event) => setLokasi(event.target.value)}
             maxLength={200}
-            className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
           />
+          {lokasi !== "" && <ClearButton label="Hapus lokasi" onClick={() => setLokasi("")} />}
         </div>
       </Field>
 
@@ -122,9 +157,16 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
             aria-label={kapasitasLabel}
             placeholder={isAlat ? "2" : "30"}
             min={1}
-            defaultValue={value?.minCapacity ?? ""}
-            className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            value={minCapacity}
+            onChange={(event) => setMinCapacity(event.target.value)}
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
           />
+          {minCapacity !== "" && (
+            <ClearButton
+              label="Hapus nilai kapasitas"
+              onClick={() => setMinCapacity("")}
+            />
+          )}
         </div>
       </Field>
 
