@@ -100,7 +100,7 @@ function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: Facility
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             maxLength={200}
-            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden dark:bg-transparent"
           />
           {search !== "" && <ClearButton label="Hapus kata kunci" onClick={() => setSearch("")} />}
         </div>
