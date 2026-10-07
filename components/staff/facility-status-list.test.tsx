@@ -141,7 +141,7 @@ describe("FacilityStatusList", () => {
     expect(JSON.parse(String(options.body))).toEqual({ status: "UNDER_MAINTENANCE" });
     expect((options.headers as Record<string, string>)["Idempotency-Key"]).toBeTruthy();
 
-    expect(await screen.findByText("Dalam Pemeliharaan")).toBeInTheDocument();
+    expect(await screen.findByText("Dalam Perbaikan")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kembalikan tersedia" })).toBeInTheDocument();
     expect(screen.getByText(/dibatalkan otomatis/)).toBeInTheDocument();
     // FAC-04: UI yang melakukan mutasi me-refetch data server.
