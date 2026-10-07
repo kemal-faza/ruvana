@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { countPublicFacilities, findPublicFacilities, findPublicFacilityLocations } from "./facilities";
+import { countPublicFacilities, findPublicFacilities } from "./facilities";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -103,18 +103,5 @@ describe("findPublicFacilities", () => {
     expect(prisma.facility.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 20, take: 20, orderBy: { id: "asc" } }),
     );
-  });
-});
-
-describe("findPublicFacilityLocations", () => {
-  it("mengambil lokasi unik fasilitas tampil publik secara terurut", async () => {
-    vi.mocked(prisma.facility.findMany).mockResolvedValue([]);
-    await findPublicFacilityLocations();
-    expect(prisma.facility.findMany).toHaveBeenCalledWith({
-      where: { lokasi: { not: "" }, status: { in: PUBLIC_STATUSES } },
-      select: { lokasi: true },
-      distinct: ["lokasi"],
-      orderBy: { lokasi: "asc" },
-    });
   });
 });

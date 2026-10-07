@@ -1,9 +1,8 @@
-import { listPublicFacilities, listPublicLocations, type PublicFacility, type PageMeta } from "@/lib/services/facility-service"
+import { listPublicFacilities, type PublicFacility, type PageMeta } from "@/lib/services/facility-service"
 import { cleanSearchParams, parsePublicListQuery, type PublicListQuery } from "@/lib/validation/facility-query"
 
 export interface FacilityCatalogData {
   items: PublicFacility[]
-  locations: string[]
   meta: PageMeta
   filterValue: Pick<PublicListQuery, "search" | "type" | "location" | "minCapacity">
   paginationQuery: Pick<PublicListQuery, "search" | "type" | "location" | "minCapacity"> & { perPage?: number }
@@ -33,7 +32,7 @@ export async function getFacilityCatalog(
     ...filterValue,
     ...(query.perPage !== 20 ? { perPage: query.perPage } : {}),
   }
-  const [{ items, meta }, locations] = await Promise.all([listPublicFacilities(query), listPublicLocations()])
+  const { items, meta } = await listPublicFacilities(query)
 
   if (meta.totalPages > 0 && query.page > meta.totalPages) {
     const canonicalParams = new URLSearchParams()
@@ -46,7 +45,6 @@ export async function getFacilityCatalog(
 
   return {
     items,
-    locations,
     meta,
     filterValue,
     paginationQuery,
