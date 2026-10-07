@@ -2,21 +2,27 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Combobox,
+  ComboboxClear,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
 import { Field, FieldTitle } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { TIPE_FASILITAS } from "@/config/business"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes"
-import { TIPE_FASILITAS, TIPE_FASILITAS_LABEL } from "@/config/business"
-import { LABEL_FILTER_JUMLAH_ALAT, LABEL_FILTER_KAPASITAS_RUANG } from "@/config/labels"
+  LABEL_FILTER_JUMLAH_ALAT,
+  LABEL_FILTER_KAPASITAS_RUANG,
+  LABEL_TIPE_FASILITAS,
+} from "@/config/labels"
+import type { TipeFasilitas } from "@/generated/prisma/enums"
 
 interface FacilityFilterFormProps {
   actionPath?: string
@@ -31,22 +37,47 @@ interface FacilityFilterFormProps {
 const controlClass =
   "flex min-h-11 items-center gap-2.5 rounded-control border border-border bg-background px-3 text-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
 
-// Label opsi untuk Select Ruvana: tanpa `items`, <SelectValue /> merender value
-// mentah (enum) di trigger, bukan label domain Indonesia. Opsi "Semua tipe"
-// bernilai kosong supaya form GET tidak mengirim `type=` berisi nilai yang tidak
-// dikenal; server membuang parameter kosong sebelum validasi.
-const OPSI_TIPE = [
-  { value: "", label: "Semua tipe" },
-  ...TIPE_FASILITAS.map((tipe) => ({
-    value: tipe,
-    label: TIPE_FASILITAS_LABEL[tipe],
-  })),
-]
+function ClearButton({
+  label,
+  onClick,
+  className,
+}: {
+  label: string
+  onClick: () => void
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={`flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className ?? ""}`}
+    >
+      <X aria-hidden="true" className="size-4" />
+    </button>
+  )
+}
 
-export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
+// Nilai filter berubah lewat navigasi (mis. tautan Reset), bukan remount. Kunci
+// ini membuat field di-reset ke nilai baru tanpa menyisakan state lama seperti
+// tipe yang sudah terpilih.
+function filterKey(value: FacilityFilterFormProps["value"]): string {
+  return JSON.stringify(value ?? {})
+}
+
+export function FacilityFilterForm(props: FacilityFilterFormProps) {
+  return <FacilityFilterFormFields key={filterKey(props.value)} {...props} />
+}
+
+function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
   // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
   // kapasitas menyesuaikan tipe yang sedang dipilih.
+  const [search, setSearch] = useState(value?.search ?? "")
   const [tipe, setTipe] = useState(value?.type ?? "")
+  const [lokasi, setLokasi] = useState(value?.location ?? "")
+  const [minCapacity, setMinCapacity] = useState(
+    value?.minCapacity !== undefined ? String(value.minCapacity) : "",
+  )
   const isAlat = tipe === "alat"
   const kapasitasLabel = isAlat ? LABEL_FILTER_JUMLAH_ALAT : LABEL_FILTER_KAPASITAS_RUANG
 
@@ -66,36 +97,39 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
             name="search"
             aria-label="Kata kunci"
             placeholder="Nama fasilitas"
-            defaultValue={value?.search ?? ""}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             maxLength={200}
-            className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden dark:bg-transparent"
           />
+          {search !== "" && <ClearButton label="Hapus kata kunci" onClick={() => setSearch("")} />}
         </div>
       </Field>
 
       <Field>
         <FieldTitle className="min-h-10">Tipe</FieldTitle>
-        <Select
+        <Combobox
           name="type"
-          items={OPSI_TIPE}
-          value={tipe}
+          items={TIPE_FASILITAS}
+          value={tipe || null}
           modal={false}
-          onValueChange={(nilai) => setTipe(nilai ?? "")}
+          itemToStringLabel={(option) => LABEL_TIPE_FASILITAS[option as TipeFasilitas]}
+          onValueChange={(option) => setTipe(option ?? "")}
         >
-          <SelectTrigger
-            aria-label="Tipe"
-            className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
-          >
-            <SelectValue placeholder="Semua tipe" />
-          </SelectTrigger>
-          <SelectContent align="start" alignItemWithTrigger={false}>
-            {OPSI_TIPE.map((opsi) => (
-              <SelectItem key={opsi.value} value={opsi.value}>
-                {opsi.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <ComboboxInput id="type" aria-label="Tipe" placeholder="Semua tipe" triggerLabel="Buka daftar tipe">
+            {tipe !== "" && <ComboboxClear aria-label="Hapus pilihan tipe" />}
+          </ComboboxInput>
+          <ComboboxContent align="start">
+            <ComboboxList>
+              {(option: string) => (
+                <ComboboxItem key={option} value={option}>
+                  {LABEL_TIPE_FASILITAS[option as TipeFasilitas]}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+            <ComboboxEmpty>Tipe tidak ditemukan.</ComboboxEmpty>
+          </ComboboxContent>
+        </Combobox>
       </Field>
 
       <Field>
@@ -106,10 +140,12 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
             name="location"
             aria-label="Lokasi"
             placeholder="Gedung A"
-            defaultValue={value?.location ?? ""}
+            value={lokasi}
+            onChange={(event) => setLokasi(event.target.value)}
             maxLength={200}
-            className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
           />
+          {lokasi !== "" && <ClearButton label="Hapus lokasi" onClick={() => setLokasi("")} />}
         </div>
       </Field>
 
@@ -122,9 +158,16 @@ export function FacilityFilterForm({ value, actionPath = "/fasilitas" }: Facilit
             aria-label={kapasitasLabel}
             placeholder={isAlat ? "2" : "30"}
             min={1}
-            defaultValue={value?.minCapacity ?? ""}
-            className="h-auto border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
+            value={minCapacity}
+            onChange={(event) => setMinCapacity(event.target.value)}
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 dark:bg-transparent"
           />
+          {minCapacity !== "" && (
+            <ClearButton
+              label="Hapus nilai kapasitas"
+              onClick={() => setMinCapacity("")}
+            />
+          )}
         </div>
       </Field>
 
