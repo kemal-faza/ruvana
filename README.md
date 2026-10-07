@@ -74,7 +74,7 @@ pnpm db:down
 
 ## Akun demo
 
-Akun demo menggunakan nilai `SEED_DEMO_PASSWORD` dari environment lokal. Seed menolak database non-lokal kecuali `SEED_ALLOW_NON_LOCAL=1` diberikan secara eksplisit; gunakan flag itu hanya untuk database non-produksi yang sudah diperiksa. Seed yang dijalankan ulang mengganti kata sandi demo yang berbeda dan mencabut sesi akun tersebut.
+Akun demo menggunakan nilai `SEED_DEMO_PASSWORD` dari environment lokal. Seed menolak database non-lokal kecuali `SEED_ALLOW_NON_LOCAL=1` diberikan secara eksplisit; gunakan flag itu hanya untuk database non-produksi yang sudah diperiksa. Seed yang dijalankan ulang mengganti kata sandi demo yang berbeda dan mencabut sesi akun tersebut. Seed tidak mengaktifkan kembali akun demo yang sudah `DISABLED`; bila statusnya terlanjur berubah (mis. setelah `db:remediate-demo --apply` di database lokal), pulihkan dengan `pnpm prisma migrate reset --force` lalu `pnpm db:seed` — `migrate reset` di Prisma 7 tidak menjalankan seed, dan `SEED_DEMO_PASSWORD` harus terisi.
 
 | Peran | Email | Status awal |
 |---|---|---|
