@@ -82,6 +82,16 @@ async function checkCatalogStatuses() {
   const destination = await checkRedirect("/fasilitas?page=9999", null, "/fasilitas")
   assert.equal(destination.searchParams.get("page"), "1", "halaman katalog di luar rentang harus menuju halaman terakhir")
 
+  for (const query of ["page=99999999999999999999", "minCapacity=99999999999999999999"]) {
+    const response = await fetch(`${origin}/fasilitas?${query}`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(5000),
+    })
+    assert.ok(response.status < 500,
+      `/fasilitas?${query}: status ${response.status} — nilai di luar jangkauan int4 tidak boleh memicu 5xx`)
+    console.log(`✓ GET /fasilitas?${query} → ${response.status}`)
+  }
+
   for (const path of ["/fasilitas/abc", "/fasilitas/0", "/fasilitas/99999999999999999999"]) {
     const response = await fetch(`${origin}${path}`, {
       redirect: "manual",

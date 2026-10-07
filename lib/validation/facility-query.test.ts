@@ -137,6 +137,23 @@ describe("parsePublicListQuery", () => {
       expect(result.errors[0]).toMatchObject({ field: "page" });
     }
   });
+
+  it("menolak page, perPage, dan minCapacity di luar jangkauan int4", () => {
+    const tooLarge = "99999999999999999999";
+
+    for (const field of ["page", "perPage", "minCapacity"]) {
+      const result = parsePublicListQuery(new URLSearchParams(`${field}=${tooLarge}`));
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.errors[0]).toMatchObject({ field, code: "INVALID_INTEGER" });
+      }
+    }
+  });
+
+  it("menerima page dan minCapacity tepat pada batas int4", () => {
+    expect(parsePublicListQuery(new URLSearchParams("page=2147483647&minCapacity=2147483647")).ok).toBe(true);
+    expect(parsePublicListQuery(new URLSearchParams("page=2147483648")).ok).toBe(false);
+  });
 });
 
 describe("parseFacilityId", () => {
