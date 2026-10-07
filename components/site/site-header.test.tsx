@@ -17,7 +17,7 @@ describe("SiteHeader", () => {
     const nav = screen.getByRole("navigation", { name: "Navigasi utama" })
     const expected = [
       ["/", "Beranda"],
-      ["/publik/fasilitas", "Fasilitas"],
+      ["/fasilitas", "Fasilitas"],
       ["/#jadwal", "Jadwal"],
     ] as const
 

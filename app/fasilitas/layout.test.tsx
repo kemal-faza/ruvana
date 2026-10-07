@@ -1,5 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 
 import { AccountStatus, Role } from "@/generated/prisma/enums"
 import FasilitasLayout from "@/app/fasilitas/layout"
@@ -30,6 +31,19 @@ const account = {
 }
 
 describe("FasilitasLayout", () => {
+  it.each([null, Role.pengguna])("menyediakan tautan lewati sebagai fokus pertama untuk peran %s", async (role) => {
+    setMatchMedia("(max-width: 1023px)", false)
+    mocks.getSessionUser.mockResolvedValue(role ? { ...account, role } : null)
+
+    const { container } = render(await FasilitasLayout({ children: <h1>Daftar fasilitas</h1> }))
+    const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" })
+
+    expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink)
+    expect(skipLink).toHaveAttribute("href", "#konten")
+    expect(screen.getByRole("main")).toHaveAttribute("id", "konten")
+    expect((await axe(container)).violations).toEqual([])
+  })
+
   it.each([
     [Role.pengguna, ["/reservasi/riwayat", "/reservasi", "/fasilitas", "/reports", "/pengaturan"], ["/petugas", "/admin"]],
     [Role.petugas, ["/petugas", "/petugas/antrian", "/petugas/pengaturan"], ["/reservasi", "/reports", "/admin"]],
@@ -54,10 +68,8 @@ describe("FasilitasLayout", () => {
 
     const navigation = screen.getByRole("navigation", { name: "Navigasi utama" })
     expect(within(navigation).getByRole("link", { name: "Beranda" })).toHaveAttribute("href", "/")
-    // `/fasilitas` bukan tujuan tautan "Fasilitas" di header publik, jadi tidak ada
-    // item yang ditandai sebagai halaman aktif.
-    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("href", "/publik/fasilitas")
-    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).not.toHaveAttribute("aria-current")
+    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("href", "/fasilitas")
+    expect(within(navigation).getByRole("link", { name: "Fasilitas" })).toHaveAttribute("aria-current", "page")
     expect(within(navigation).getByRole("link", { name: "Jadwal" })).toHaveAttribute("href", "/#jadwal")
     expect(screen.getByRole("link", { name: "Masuk" })).toHaveAttribute("href", "/login")
     expect(screen.getByRole("link", { name: "Daftar" })).toHaveAttribute("href", "/daftar")

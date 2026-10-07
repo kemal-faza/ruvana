@@ -4,7 +4,7 @@ import Link from "next/link"
 // tetap valid ketika footer dirender di halaman discovery.
 const footerLinks = [
   { label: "Beranda", href: "/" },
-  { label: "Fasilitas", href: "/publik/fasilitas" },
+  { label: "Fasilitas", href: "/fasilitas" },
   { label: "Jadwal", href: "/#jadwal" },
 ] as const
 

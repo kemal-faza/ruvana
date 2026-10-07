@@ -47,12 +47,13 @@ Variabel yang digunakan oleh konfigurasi lokal:
 | `POSTGRES_PORT` | Port PostgreSQL lokal. |
 | `DATABASE_URL` | Koneksi Prisma dan aplikasi ke PostgreSQL. Wajib tersedia saat Prisma Client dibuat. |
 | `NEXT_PUBLIC_SITE_URL` | URL aplikasi untuk metadata publik; gunakan `http://localhost:3000` saat development. |
+| `SEED_DEMO_PASSWORD` | Kata sandi unik 16–72 byte untuk akun demo lokal. Wajib saat `pnpm db:seed`. |
 
 Jangan simpan kredensial production di `.env.example` atau README.
 
 ## Menjalankan secara lokal
 
-Setelah mengatur `.env`, jalankan:
+Setelah mengatur `.env`, termasuk `SEED_DEMO_PASSWORD` yang unik, jalankan:
 
 ```bash
 pnpm install
@@ -73,7 +74,7 @@ pnpm db:down
 
 ## Akun demo
 
-Semua akun demo menggunakan password `password123`. Gunakan hanya pada lingkungan development.
+Akun demo menggunakan nilai `SEED_DEMO_PASSWORD` dari environment lokal. Seed menolak database non-lokal kecuali `SEED_ALLOW_NON_LOCAL=1` diberikan secara eksplisit; gunakan flag itu hanya untuk database non-produksi yang sudah diperiksa. Seed yang dijalankan ulang mengganti kata sandi demo yang berbeda dan mencabut sesi akun tersebut. Seed tidak mengaktifkan kembali akun demo yang sudah `DISABLED`; bila statusnya terlanjur berubah (mis. setelah `db:remediate-demo --apply` di database lokal), pulihkan dengan `pnpm prisma migrate reset --force` lalu `pnpm db:seed` — `migrate reset` di Prisma 7 tidak menjalankan seed, dan `SEED_DEMO_PASSWORD` harus terisi.
 
 | Peran | Email | Status awal |
 |---|---|---|
@@ -112,6 +113,16 @@ pnpm build
 - Push ke branch `main` memicu deployment Vercel.
 - Database production menggunakan Prisma Postgres. Untuk menerapkan perubahan schema di production, gunakan `pnpm prisma migrate deploy`; `pnpm db:migrate` ditujukan untuk development.
 - Simpan environment variable dan kredensial provider di konfigurasi environment Vercel, bukan di repository.
+- Variabel deployment Production: `DATABASE_URL` (Prisma Postgres), `NEXT_PUBLIC_SITE_URL` (URL kanonis), `ALLOWED_ORIGINS` (origin browser yang diizinkan), `BLOB_READ_WRITE_TOKEN` (foto laporan), dan `CRON_SECRET` (job kedaluwarsa reservasi). Jangan gunakan nilai contoh lokal untuk production.
+- Isi `CRON_SECRET` dengan nilai acak panjang di Vercel Project Settings → Environment Variables, khusus **Production**. Vercel Cron mengirimkannya sebagai `Authorization: Bearer <CRON_SECRET>`. Setelah mengubah environment variable, lakukan redeploy production agar deployment aktif menerima nilainya.
+- Verifikasi `GET /api/cron/expire-reservations` tanpa bearer mengembalikan 401; panggilan dengan bearer yang benar mengembalikan 200 berisi `expired` dan `processedAt`. Periksa log setelah siklus cron berikutnya untuk memastikan pesan `CRON_SECRET belum dikonfigurasi` tidak muncul lagi. Jangan menaruh secret pada URL, log, atau repository.
 - Foto laporan saat ini menggunakan penyimpanan lokal development di `public/uploads/reports/`. PRD menetapkan private Vercel Blob sebagai target production; integrasi storage production perlu tersedia sebelum menerima upload foto di production.
+
+### Admin awal dan akun demo yang pernah terpapar
+
+1. Siapkan `DATABASE_URL` production dan nilai unik untuk `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, serta `BOOTSTRAP_ADMIN_PASSWORD` (16–72 byte) melalui environment aman. Jalankan `pnpm db:bootstrap-admin` untuk membuat admin tepercaya tanpa kata sandi bawaan. Perintah menolak email yang sudah terdaftar.
+2. Berikan kata sandi demo lama yang terpapar melalui `COMPROMISED_DEMO_PASSWORD` di environment sementara; jangan menuliskannya di repo atau argumen perintah. Jalankan `pnpm db:remediate-demo` untuk audit tanpa perubahan. Tinjau jumlah reservasi, laporan, perubahan fasilitas, dan sesi aktif yang terkait sebelum melanjutkan.
+3. Setelah admin baru siap dan hasil audit ditinjau, jalankan `pnpm exec tsx prisma/remediate-demo-accounts.ts --apply`. Skrip mengacak kata sandi, menonaktifkan setiap akun yang cocok, dan mencabut sesinya dalam transaksi; data reservasi dan laporan tetap tersimpan. Skrip menolak perubahan bila tidak ada admin aktif lain yang aman.
+4. Pastikan login dengan kredensial demo lama menghasilkan 401. Audit log akses/auth production untuk aktivitas sebelumnya; tabel `sessions` hanya mencatat sesi yang masih ada dan tidak menyimpan seluruh riwayat login.
 
 Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan kontribusi.

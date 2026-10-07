@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { renderToString } from "react-dom/server"
 import { afterEach, expect, it, vi } from "vitest"
 import LoginForm from "./LoginForm"
 
@@ -13,6 +14,24 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
+})
+
+it("memakai POST native ke halaman sendiri, bukan endpoint JSON", () => {
+  render(<LoginForm />)
+  const form = screen.getByRole("button", { name: "Masuk" }).closest("form")
+
+  expect(form).toHaveAttribute("method", "post")
+  expect(form).not.toHaveAttribute("action")
+})
+
+it("menonaktifkan submit pada HTML sebelum hidrasi", () => {
+  const container = document.createElement("div")
+  container.innerHTML = renderToString(<LoginForm />)
+  const form = container.querySelector("form")
+
+  expect(form?.getAttribute("method")).toBe("post")
+  expect(form?.getAttribute("action")).toBeNull()
+  expect(form?.querySelector("button[type='submit']")).toHaveAttribute("disabled")
 })
 
 it("membuka riwayat reservasi setelah pengguna berhasil login", async () => {

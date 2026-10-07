@@ -7,6 +7,6 @@ describe("sitemap", () => {
   it("memuat rute statis publik", () => {
     const entries = sitemap()
 
-    expect(entries.map((entry) => entry.url)).toEqual([SITE_URL, `${SITE_URL}/publik/fasilitas`])
+    expect(entries.map((entry) => entry.url)).toEqual([SITE_URL, `${SITE_URL}/fasilitas`])
   })
 })

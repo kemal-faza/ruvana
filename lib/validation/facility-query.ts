@@ -17,10 +17,17 @@ export type ParseResult<T> =
   | { ok: true; value: T }
   | { ok: false; errors: ProblemFieldError[] };
 
+// Batas bilangan bulat PostgreSQL (int4). Nilai di atas batas ini tidak boleh
+// diteruskan ke Prisma: driver menolaknya sebagai parameter query dan permintaan
+// berakhir sebagai 500, bukan 422/404.
+const BATAS_INT4 = 2_147_483_647;
+
 function parsePositiveInt(raw: string | null): number | null {
   if (raw === null) return null;
   if (!/^\d+$/.test(raw)) return NaN;
-  return Number(raw);
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value > BATAS_INT4) return NaN;
+  return value;
 }
 
 /**

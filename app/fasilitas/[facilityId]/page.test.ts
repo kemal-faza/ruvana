@@ -1,14 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { getPublicFacility } = vi.hoisted(() => ({ getPublicFacility: vi.fn() }))
+const { getPublicFacility, getFacilityAvailability } = vi.hoisted(() => ({
+  getPublicFacility: vi.fn(),
+  getFacilityAvailability: vi.fn(),
+}))
 
 vi.mock("@/lib/services/facility-service", () => ({ getPublicFacility }))
+vi.mock("@/lib/services/availability-service", () => ({ getFacilityAvailability }))
 
-import { generateMetadata } from "./page"
-import { generateMetadata as generatePublicMetadata } from "@/app/publik/fasilitas/[facilityId]/page"
+import FasilitasDetailPage, { generateMetadata } from "./page"
 
 describe("metadata title detail fasilitas", () => {
   beforeEach(() => {
+    getFacilityAvailability.mockResolvedValue(null)
     getPublicFacility.mockResolvedValue({
       id: 8,
       nama: "Laboratorium Kimia",
@@ -27,15 +31,17 @@ describe("metadata title detail fasilitas", () => {
     })
 
     expect(metadata.title).toBe("Laboratorium Kimia | ruvana")
+    expect(metadata.alternates?.canonical).toBe("/fasilitas/8")
+    expect(metadata.robots).toBeUndefined()
   })
 
-  it("memakai canonical pada rute detail fasilitas publik", async () => {
-    const metadata = await generatePublicMetadata({
+  it("mengembalikan pengunjung ke katalog dari detail", async () => {
+    const page = await FasilitasDetailPage({
       params: Promise.resolve({ facilityId: "8" }),
-      searchParams: Promise.resolve({}),
+      searchParams: Promise.resolve({ date: "2026-09-15" }),
     })
 
-    expect(metadata.alternates?.canonical).toBe("/publik/fasilitas/8")
+    expect(page.props.basePath).toBe("/fasilitas")
   })
 
   it("memberi title sesuai halaman not-found fasilitas", async () => {
