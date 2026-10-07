@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { listPublicFacilities } = vi.hoisted(() => ({ listPublicFacilities: vi.fn() }))
-vi.mock("@/lib/services/facility-service", () => ({ listPublicFacilities }))
+const { listPublicFacilities, listPublicLocations } = vi.hoisted(() => ({
+  listPublicFacilities: vi.fn(),
+  listPublicLocations: vi.fn(),
+}))
+vi.mock("@/lib/services/facility-service", () => ({ listPublicFacilities, listPublicLocations }))
 
 import { getFacilityCatalog } from "./catalog"
 
@@ -12,6 +15,8 @@ describe("getFacilityCatalog", () => {
       items: [],
       meta: { page: 1, perPage: 20, totalItems: 0, totalPages: 0 },
     })
+    listPublicLocations.mockReset()
+    listPublicLocations.mockResolvedValue([])
   })
 
   it("membersihkan filter kosong dan memakai nilai baku untuk kueri tidak valid", async () => {
@@ -19,6 +24,14 @@ describe("getFacilityCatalog", () => {
 
     expect(listPublicFacilities).toHaveBeenCalledWith({ page: 1, perPage: 20 })
     expect(result).toMatchObject({ hasActiveFilters: false, filterValue: {} })
+  })
+
+  it("mengembalikan daftar lokasi fasilitas publik", async () => {
+    listPublicLocations.mockResolvedValue(["Gedung A", "Gedung B"])
+
+    const result = await getFacilityCatalog({})
+
+    expect(result).toMatchObject({ locations: ["Gedung A", "Gedung B"] })
   })
 
   it("menyediakan parameter kanonis untuk halaman di luar rentang", async () => {

@@ -50,7 +50,7 @@ describe("AdminFacilities", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Kelola fasilitas" })).toBeInTheDocument();
     expect(screen.getByText("RK-101")).toBeInTheDocument();
     expect(screen.getByText("Lab Komputer 2")).toBeInTheDocument();
-    expect(screen.getAllByText("Dalam Pemeliharaan").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Dalam Perbaikan").length).toBeGreaterThan(0);
   });
 
   it("menampilkan keadaan kosong", () => {

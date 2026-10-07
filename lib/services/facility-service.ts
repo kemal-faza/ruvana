@@ -1,5 +1,5 @@
 import type { PublicFacilityFilters } from "@/lib/db/facilities";
-import { countPublicFacilities, findPublicFacilities, findPublicFacilityById } from "@/lib/db/facilities";
+import { countPublicFacilities, findPublicFacilities, findPublicFacilityById, findPublicFacilityLocations } from "@/lib/db/facilities";
 import type { TipeFasilitas } from "@/generated/prisma/enums";
 
 export interface PublicFacility {
@@ -51,4 +51,9 @@ export async function listPublicFacilities({ page, perPage, ...filters }: Public
 export async function getPublicFacility(id: number): Promise<PublicFacility | null> {
   const facility = await findPublicFacilityById(id);
   return facility as PublicFacility | null;
+}
+
+export async function listPublicLocations(): Promise<string[]> {
+  const rows = await findPublicFacilityLocations();
+  return rows.map((row) => row.lokasi);
 }

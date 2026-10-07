@@ -57,6 +57,16 @@ export function countPublicFacilities(filters: PublicFacilityFilters = {}) {
   });
 }
 
+/** Nama lokasi unik dari fasilitas yang tampil publik, untuk pilihan filter. */
+export function findPublicFacilityLocations() {
+  return prisma.facility.findMany({
+    where: { lokasi: { not: "" }, status: { in: PUBLIC_FACILITY_STATUSES } },
+    select: { lokasi: true },
+    distinct: ["lokasi"],
+    orderBy: { lokasi: "asc" },
+  });
+}
+
 export function findPublicFacilityById(id: number) {
   return prisma.facility.findFirst({
     where: { id, status: { in: PUBLIC_FACILITY_STATUSES } },

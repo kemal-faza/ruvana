@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { countPublicFacilities, findPublicFacilities, findPublicFacilityById } from "@/lib/db/facilities";
+import { countPublicFacilities, findPublicFacilities, findPublicFacilityById, findPublicFacilityLocations } from "@/lib/db/facilities";
 
-import { getPublicFacility, listPublicFacilities } from "./facility-service";
+import { getPublicFacility, listPublicFacilities, listPublicLocations } from "./facility-service";
 
 vi.mock("@/lib/db/facilities", () => ({
   findPublicFacilities: vi.fn(),
   countPublicFacilities: vi.fn(),
   findPublicFacilityById: vi.fn(),
+  findPublicFacilityLocations: vi.fn(),
 }));
 
 const mockFacility = {
@@ -85,6 +86,17 @@ describe("listPublicFacilities", () => {
 
     expect(countPublicFacilities).toHaveBeenCalledWith({ search: "lab" });
     expect(result.meta).toEqual({ page: 1, perPage: 2, totalItems: 5, totalPages: 3 });
+  });
+});
+
+describe("listPublicLocations", () => {
+  it("memetakan baris lokasi menjadi daftar string", async () => {
+    vi.mocked(findPublicFacilityLocations).mockResolvedValue([
+      { lokasi: "Gedung A" },
+      { lokasi: "Gedung B" },
+    ]);
+
+    await expect(listPublicLocations()).resolves.toEqual(["Gedung A", "Gedung B"]);
   });
 });
 
