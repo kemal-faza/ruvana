@@ -16,12 +16,12 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-it("mengirim form login secara native hanya lewat POST", () => {
+it("memakai POST native ke halaman sendiri, bukan endpoint JSON", () => {
   render(<LoginForm />)
   const form = screen.getByRole("button", { name: "Masuk" }).closest("form")
 
   expect(form).toHaveAttribute("method", "post")
-  expect(form).toHaveAttribute("action", "/api/auth/login")
+  expect(form).not.toHaveAttribute("action")
 })
 
 it("menonaktifkan submit pada HTML sebelum hidrasi", () => {
@@ -30,7 +30,7 @@ it("menonaktifkan submit pada HTML sebelum hidrasi", () => {
   const form = container.querySelector("form")
 
   expect(form?.getAttribute("method")).toBe("post")
-  expect(form?.getAttribute("action")).toBe("/api/auth/login")
+  expect(form?.getAttribute("action")).toBeNull()
   expect(form?.querySelector("button[type='submit']")).toHaveAttribute("disabled")
 })
 

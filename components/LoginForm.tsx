@@ -64,10 +64,12 @@ export default function LoginForm() {
             </p>
           </div>
 
+          {/* `method="post"` adalah jaring pengaman: bila submit native terjadi
+              sebelum hidrasi, kredensial tidak ikut masuk query string. `action`
+              sengaja tidak diisi karena /api/auth/login hanya menerima JSON. */}
           <form
             className="flex flex-col gap-5"
             method="post"
-            action="/api/auth/login"
             noValidate
             onSubmit={async (event) => {
               event.preventDefault()
