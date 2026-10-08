@@ -1,8 +1,9 @@
 // Mengukur long task dan frame landing page saat entrance dan scroll.
-// Dijalankan terhadap server yang sudah hidup di RUVANA_BASE_URL.
+// Dijalankan terhadap server yang sudah hidup di RUVANA_BASE_URL; bawaan
+// mengikuti port `pnpm dev`.
 import { chromium } from "@playwright/test"
 
-const baseUrl = process.env.RUVANA_BASE_URL ?? "http://127.0.0.1:3000"
+const baseUrl = process.env.RUVANA_BASE_URL ?? "http://127.0.0.1:3001"
 const budgets = { maxFrameP95Ms: 20, maxFrameMaxMs: 50, maxLongTaskTotalMs: 400 }
 
 const browser = await chromium.launch()

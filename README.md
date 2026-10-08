@@ -46,7 +46,7 @@ Variabel yang digunakan oleh konfigurasi lokal:
 | `POSTGRES_PASSWORD` | Password database lokal; contoh di `.env.example` hanya untuk development. |
 | `POSTGRES_PORT` | Port PostgreSQL lokal. |
 | `DATABASE_URL` | Koneksi Prisma dan aplikasi ke PostgreSQL. Wajib tersedia saat Prisma Client dibuat. |
-| `NEXT_PUBLIC_SITE_URL` | URL aplikasi untuk metadata publik; gunakan `http://localhost:3000` saat development. |
+| `NEXT_PUBLIC_SITE_URL` | URL aplikasi untuk metadata publik; gunakan `http://localhost:3001` saat development karena `pnpm dev` menjalankan server pada port 3001. |
 | `SEED_DEMO_PASSWORD` | Kata sandi unik 16–72 byte untuk akun demo lokal. Wajib saat `pnpm db:seed`. |
 
 Jangan simpan kredensial production di `.env.example` atau README.
@@ -64,7 +64,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000). `pnpm prisma generate` memerlukan `DATABASE_URL` di environment, tetapi tidak perlu koneksi database aktif. Seed dapat dijalankan kembali untuk mengisi atau memperbarui data contoh.
+Buka [http://localhost:3001](http://localhost:3001). `pnpm prisma generate` memerlukan `DATABASE_URL` di environment, tetapi tidak perlu koneksi database aktif. Seed dapat dijalankan kembali untuk mengisi atau memperbarui data contoh.
 
 Untuk menghentikan PostgreSQL yang dijalankan dengan Docker Compose:
 
