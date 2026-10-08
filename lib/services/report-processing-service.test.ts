@@ -5,6 +5,7 @@ import {
   findStaffReportById,
   findStaffReportHandlers,
   findStaffReports,
+  lockReportById,
   type StaffReportRow,
 } from "@/lib/db/reports";
 import { prisma } from "@/lib/prisma";
@@ -66,9 +67,10 @@ const row: StaffReportRow = {
 /**
  * Transaksi tiruan: `reads` adalah hasil pembacaan berurutan (baris sebelum
  * transisi, lalu baris sesudahnya). tx hanya memerlukan report.updateMany.
+ * `updateCount` mensimulasikan kalah balapan pada pembaruan bersyarat.
  */
-function mockTransaction(reads: (StaffReportRow | null)[]) {
-  const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+function mockTransaction(reads: (StaffReportRow | null)[], updateCount = 1) {
+  const updateMany = vi.fn().mockResolvedValue({ count: updateCount });
   let cursor = 0;
   vi.mocked(findStaffReportById).mockImplementation(
     () => Promise.resolve(reads[cursor++] ?? null) as ReturnType<typeof findStaffReportById>,
@@ -251,5 +253,35 @@ describe("transisi status laporan", () => {
     const result = await startStaffReportService(7, 999);
 
     expect(result).toEqual({ ok: false, error: { type: "not_found", message: "Laporan tidak ditemukan" } });
+  });
+
+  it("mengunci baris laporan sebelum membaca statusnya", async () => {
+    const urutan: string[] = [];
+    vi.mocked(lockReportById).mockImplementation(async () => {
+      urutan.push("lock");
+    });
+    vi.mocked(findStaffReportById).mockImplementation((() => {
+      urutan.push("read");
+      return Promise.resolve(row);
+    }) as never);
+    vi.mocked(prisma.$transaction).mockImplementation((callback) =>
+      callback({ report: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) } } as never),
+    );
+
+    await startStaffReportService(7, 15, new Date("2026-09-09T05:00:00.000Z"));
+
+    expect(lockReportById).toHaveBeenCalledWith(expect.anything(), 15);
+    expect(urutan.slice(0, 2)).toEqual(["lock", "read"]);
+  });
+
+  it("menolak transisi ketika pembaruan bersyarat kalah balapan", async () => {
+    const { updateMany } = mockTransaction([row, { ...row, status: "IN_PROGRESS" }], 0);
+
+    const result = await startStaffReportService(7, 15);
+
+    expect(result).toMatchObject({ ok: false, error: { type: "transition" } });
+    expect(updateMany).toHaveBeenCalledOnce();
+    // Baris tidak dibaca ulang setelah kalah, jadi tidak ada respons sukses palsu.
+    expect(findStaffReportById).toHaveBeenCalledOnce();
   });
 });
