@@ -57,7 +57,7 @@ describe("FacilitySearch", () => {
 
     expect(screen.queryByRole("option", { name: "Pilih fasilitas" })).not.toBeInTheDocument()
     for (const label of Object.values(TIPE_FASILITAS_LABEL)) {
-      expect(screen.getByRole("option", { name: label })).toBeInTheDocument()
+      expect(await screen.findByRole("option", { name: label })).toBeInTheDocument()
     }
   })
 

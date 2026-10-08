@@ -25,11 +25,18 @@ export function FacilityCard({ facility, eager = false, detailBasePath = "/fasil
     <Card>
       {photo && (
         <div className="relative -mx-6 -mt-6 aspect-video overflow-hidden">
+          {/* Beberapa kartu bisa memakai foto yang sama (fallback per tipe). Next
+              dev melacak LCP per URL gambar, sehingga entri "lazy" kartu
+              berikutnya menimpa entri "eager" kartu ini dan memicu peringatan
+              LCP palsu. `unoptimized` memberi kartu eager URL unik agar
+              pelacakannya akurat; foto sumbernya kecil sehingga optimasi tak
+              berdampak. */}
           <Image
             src={photo}
             alt={facility.nama}
             fill
             sizes="(min-width: 1024px) 33vw, 100vw"
+            unoptimized={eager}
             loading={eager ? "eager" : "lazy"}
             className="object-cover"
           />

@@ -1,4 +1,4 @@
-import { ChartPie, Settings, Users } from "lucide-react"
+import { Building2, ChartPie, Settings, Users } from "lucide-react"
 
 import type { NavigationGroup } from "@/components/app-shell/types"
 
@@ -8,6 +8,7 @@ export const adminNavigation: readonly NavigationGroup[] = [
     label: "Administrasi",
     items: [
       { key: "admin-analytics", label: "Analitik", href: "/admin/analitik", icon: ChartPie },
+      { key: "admin-facilities", label: "Kelola Fasilitas", href: "/admin/fasilitas", icon: Building2 },
       { key: "admin-users", label: "Kelola Pengguna", href: "/admin/pengguna", icon: Users },
     ],
   },

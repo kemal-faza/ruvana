@@ -22,7 +22,12 @@ export type ParseResult<T> =
 // berakhir sebagai 500, bukan 422/404.
 const BATAS_INT4 = 2_147_483_647;
 
-function parsePositiveInt(raw: string | null): number | null {
+/**
+ * Helper bersama untuk parameter kuantitatif (`page`, `perPage`, `minCapacity`),
+ * termasuk query admin. Nilai di luar jangkauan int4 mengembalikan NaN supaya
+ * permintaan berakhir 422, bukan 500 dari Prisma.
+ */
+export function parsePositiveInt(raw: string | null): number | null {
   if (raw === null) return null;
   if (!/^\d+$/.test(raw)) return NaN;
   const value = Number(raw);
