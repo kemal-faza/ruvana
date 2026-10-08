@@ -129,7 +129,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Aplikasi tersedia di <http://localhost:3000>. Hentikan database dengan:
+Aplikasi tersedia di <http://localhost:3001>. Hentikan database dengan:
 
 ```bash
 pnpm db:down

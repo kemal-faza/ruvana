@@ -34,11 +34,11 @@ describe("ringkasan pekerjaan laporan Petugas", () => {
     expect(screen.getByText("Diproses")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lihat laporan baru" })).toHaveAttribute(
       "href",
-      "/petugas/laporan?status=NEW",
+      "/petugas/laporan?queue=intake",
     );
     expect(screen.getByRole("link", { name: "Lihat pekerjaan berjalan" })).toHaveAttribute(
       "href",
-      "/petugas/laporan?status=IN_PROGRESS",
+      "/petugas/laporan?queue=work",
     );
   });
 

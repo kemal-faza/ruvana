@@ -71,40 +71,42 @@ export function ReportDetailSheet({ report, open, onOpenChange }: ReportDetailSh
             </p>
           </div>
 
-          <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
-            <div className="flex min-w-0 flex-col gap-1 rounded-card border border-border bg-card p-4">
-              <dt className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-                <MapPin aria-hidden="true" className="size-4 shrink-0" />
-                Lokasi
-              </dt>
-              <dd className="ml-6 wrap-break-word font-medium">{report.facilityLokasi}</dd>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-card border border-border bg-card p-4">
-              <dt className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-                <CalendarClock aria-hidden="true" className="size-4 shrink-0" />
-                Diajukan
-              </dt>
-              <dd className="ml-6 wrap-break-word font-medium">{formatWaktu(report.createdAt)}</dd>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-card border border-border bg-card p-4">
-              <dt className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-                <UserRound aria-hidden="true" className="size-4 shrink-0" />
-                Ditangani oleh
-              </dt>
-              <dd className="ml-6 wrap-break-word font-medium">
-                {report.ditanganiOleh ? (
-                  <span className="block min-w-0">
-                    <span className="block wrap-break-word">{report.ditanganiOleh.nama}</span>
-                    <span className="block wrap-break-word text-xs text-muted-foreground capitalize">
-                      {report.ditanganiOleh.role}
+          <div className="min-w-0 rounded-card border border-border bg-card px-2.5 py-1.5">
+            <dl className="flex min-w-0 flex-col divide-y divide-border/60">
+              <div className="grid min-w-0 grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-5 py-1.5">
+                <dt className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin aria-hidden="true" className="size-4 shrink-0" />
+                  Lokasi
+                </dt>
+                <dd className="min-w-0 wrap-break-word text-sm font-medium">{report.facilityLokasi}</dd>
+              </div>
+              <div className="grid min-w-0 grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-5 py-1.5">
+                <dt className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <CalendarClock aria-hidden="true" className="size-4 shrink-0" />
+                  Diajukan
+                </dt>
+                <dd className="min-w-0 wrap-break-word text-sm font-medium">{formatWaktu(report.createdAt)}</dd>
+              </div>
+              <div className="grid min-w-0 grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-5 py-1.5">
+                <dt className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <UserRound aria-hidden="true" className="size-4 shrink-0" />
+                  Ditangani oleh
+                </dt>
+                <dd className="min-w-0 wrap-break-word text-sm font-medium">
+                  {report.ditanganiOleh ? (
+                    <span className="block min-w-0">
+                      <span className="block wrap-break-word">{report.ditanganiOleh.nama}</span>
+                      <span className="block wrap-break-word text-xs text-muted-foreground capitalize">
+                        {report.ditanganiOleh.role}
+                      </span>
                     </span>
-                  </span>
-                ) : (
-                  <span className="block wrap-break-word text-muted-foreground">Belum ditetapkan</span>
-                )}
-              </dd>
-            </div>
-          </dl>
+                  ) : (
+                    <span className="block wrap-break-word text-muted-foreground">Belum ditetapkan</span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </div>
 
           <div className="rounded-card border border-border bg-card p-4">
             <h3 className="mb-1.5 font-medium text-foreground">Deskripsi kerusakan</h3>

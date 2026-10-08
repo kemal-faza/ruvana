@@ -15,11 +15,19 @@ describe("navigasi petugas", () => {
     expect(semuaHref(staffNavigation)).toContain("/petugas/antrian");
   });
 
+  it("menautkan halaman laporan kerusakan untuk petugas", () => {
+    expect(semuaHref(staffNavigation)).toContain("/petugas/laporan");
+  });
+
+  it("menautkan halaman status fasilitas untuk petugas", () => {
+    expect(semuaHref(staffNavigation)).toContain("/petugas/fasilitas");
+  });
+
   it("tidak menautkan katalog baseline dari navigasi petugas", () => {
     expect(semuaHref(staffNavigation)).not.toContain("/baseline-ui");
   });
 
-  it("navigasi antrean admin tidak menambah menu lain", () => {
-    expect(semuaHref(staffQueueNavigation)).toEqual(["/petugas/antrian"]);
+  it("navigasi antrean admin memuat antrean reservasi dan laporan", () => {
+    expect(semuaHref(staffQueueNavigation)).toEqual(["/petugas/antrian", "/petugas/laporan"]);
   });
 });

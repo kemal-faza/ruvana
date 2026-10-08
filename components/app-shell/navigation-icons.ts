@@ -9,6 +9,7 @@ import {
   Settings,
   SwatchBook,
   Users,
+  Wrench,
   type LucideIcon,
 } from "lucide-react"
 
@@ -24,6 +25,7 @@ const iconRegistry: Readonly<Record<string, LucideIcon>> = {
   Settings,
   SwatchBook,
   Users,
+  Wrench,
 }
 
 export function navigationIconName(icon: LucideIcon): string {

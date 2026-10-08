@@ -1,4 +1,6 @@
 // Konstanta bisnis terpusat (dipakai logika & UI — jangan hardcode tersebar)
+import type { StatusLaporan } from "../generated/prisma/enums";
+
 export const JAM_OPERASIONAL = {
   mulai: "07:00",
   selesai: "20:00",
@@ -101,8 +103,31 @@ export const STATUS_RESERVASI = [
 ] as const;
 export const STATUS_LAPORAN_BARU = "NEW" as const;
 export const STATUS_LAPORAN_DIPROSES = "IN_PROGRESS" as const;
+export const STATUS_LAPORAN_SELESAI = "RESOLVED" as const;
+export const STATUS_LAPORAN_DITOLAK = "REJECTED" as const;
 export const STATUS_LAPORAN_KERJA_PETUGAS = [STATUS_LAPORAN_BARU, STATUS_LAPORAN_DIPROSES] as const;
-export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, "RESOLVED", "REJECTED"] as const;
+export const STATUS_LAPORAN_TERMINAL = [STATUS_LAPORAN_SELESAI, STATUS_LAPORAN_DITOLAK] as const;
+export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, ...STATUS_LAPORAN_TERMINAL] as const;
+
+// Antrean laporan masuk (REP-03) hanya memuat laporan baru; daftar pekerjaan
+// memuat laporan baru dan yang sedang ditangani agar pekerjaan berjalan tetap
+// dapat ditemukan dan diselesaikan; riwayat memuat laporan yang sudah selesai
+// atau ditolak sebagai arsip read-only.
+export const STATUS_LAPORAN_ANTREAN_MASUK = [STATUS_LAPORAN_BARU] as const;
+export const STATUS_LAPORAN_RIWAYAT_PETUGAS = STATUS_LAPORAN_TERMINAL;
+
+// Matriks transisi REP-03: NEW -> IN_PROGRESS | REJECTED dan
+// IN_PROGRESS -> RESOLVED | REJECTED. Status terminal tidak dapat dibuka kembali.
+export const TRANSISI_STATUS_LAPORAN: Record<
+  (typeof STATUS_LAPORAN_KERJA_PETUGAS)[number],
+  readonly StatusLaporan[]
+> = {
+  [STATUS_LAPORAN_BARU]: [STATUS_LAPORAN_DIPROSES, STATUS_LAPORAN_DITOLAK],
+  [STATUS_LAPORAN_DIPROSES]: [STATUS_LAPORAN_SELESAI, STATUS_LAPORAN_DITOLAK],
+};
+
+// Catatan penyelesaian wajib pada status terminal REP-03 (OpenAPI ResolutionRequest).
+export const MAKS_CATATAN_RESOLUSI_LAPORAN = 500;
 export const STATUS_FASILITAS = ["ACTIVE", "UNDER_MAINTENANCE", "INACTIVE"] as const;
 export const TIPE_FASILITAS = ["ruang_kelas", "aula", "laboratorium", "alat", "lapangan"] as const;
 

@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { countPublicFacilities, findPublicFacilities, findPublicFacilityById } from "@/lib/db/facilities";
+import { countPublicFacilities, findPublicFacilities, findPublicFacilityById, findStaffFacilities } from "@/lib/db/facilities";
 
-import { getPublicFacility, listPublicFacilities } from "./facility-service";
+import { getPublicFacility, listPublicFacilities, listStaffFacilitiesService } from "./facility-service";
 
 vi.mock("@/lib/db/facilities", () => ({
   findPublicFacilities: vi.fn(),
   countPublicFacilities: vi.fn(),
   findPublicFacilityById: vi.fn(),
+  findStaffFacilities: vi.fn(),
 }));
 
 const mockFacility = {
@@ -104,5 +105,41 @@ describe("getPublicFacility", () => {
     const result = await getPublicFacility(999);
 
     expect(result).toBeNull();
+  });
+});
+
+describe("listStaffFacilitiesService", () => {
+  const row = {
+    ...mockFacility,
+    status: "UNDER_MAINTENANCE" as const,
+    statusChangedAt: new Date("2026-10-03T05:00:00.000Z"),
+    statusChangedBy: { id: 7, nama: "Petugas Ruvana", role: "petugas" as const },
+  };
+
+  it("memetakan provenance status menjadi string ISO dan aktor", async () => {
+    vi.mocked(findStaffFacilities).mockResolvedValue([row]);
+
+    const result = await listStaffFacilitiesService();
+
+    expect(result).toEqual([
+      {
+        ...mockFacility,
+        status: "UNDER_MAINTENANCE",
+        statusChangedAt: "2026-10-03T05:00:00.000Z",
+        statusChangedBy: { id: 7, nama: "Petugas Ruvana", role: "petugas" },
+      },
+    ]);
+  });
+
+  it("mempertahankan fasilitas INACTIVE dengan provenance kosong", async () => {
+    vi.mocked(findStaffFacilities).mockResolvedValue([
+      { ...row, status: "INACTIVE", statusChangedAt: null, statusChangedBy: null },
+    ]);
+
+    const result = await listStaffFacilitiesService();
+
+    expect(result[0].status).toBe("INACTIVE");
+    expect(result[0].statusChangedAt).toBeNull();
+    expect(result[0].statusChangedBy).toBeNull();
   });
 });
