@@ -58,6 +58,20 @@ describe("RecapMonthPicker", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
+  it("menjaga fokus tetap pada kontrol saat navigasi parsial selesai", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<RecapMonthPicker currentMonth="2026-09" />);
+
+    pilihBulan("2026-10");
+    const tombol = screen.getByRole("button", { name: "Tampilkan rekap" });
+    await user.click(tombol);
+    expect(replaceMock).toHaveBeenCalledWith("/petugas?bulan=2026-10", { scroll: false });
+
+    rerender(<RecapMonthPicker currentMonth="2026-10" />);
+    expect(screen.getByRole("button", { name: "Tampilkan rekap" })).toBeEnabled();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Tampilkan rekap" }));
+  });
+
   it("menampilkan nama bulan dalam Bahasa Indonesia", () => {
     render(<RecapMonthPicker currentMonth="2026-09" />);
 
