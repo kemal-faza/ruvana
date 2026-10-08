@@ -1194,12 +1194,13 @@ paths:
       operationId: listStaffReports
       tags: [Staff]
       summary: Menampilkan antrean laporan petugas
-      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. queue=intake hanya berisi NEW; queue=work berisi NEW dan IN_PROGRESS. Hasil dipaginasi dan diurutkan createdAt ASC lalu id ASC.
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. queue=intake hanya berisi NEW; queue=work berisi NEW dan IN_PROGRESS; queue=riwayat berisi arsip RESOLVED dan REJECTED. Hasil dipaginasi dan diurutkan sesuai sort, dengan bawaan createdAt ASC lalu id ASC. Ringkasan pekerjaan untuk dasbor petugas berada di /api/staff/reports/summary.
       x-requirement-ids: [REP-03, IAM-03]
       security:
         - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/ReportQueue'
+        - $ref: '#/components/parameters/ReportSort'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
       responses:
@@ -1226,6 +1227,40 @@ paths:
                 meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/staff/reports/summary:
+    get:
+      operationId: getStaffReportWorkSummary
+      tags: [Staff]
+      summary: Menampilkan ringkasan pekerjaan laporan petugas
+      description: Hanya role=petugas atau role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Ringkasan memuat total dan pratinjau terbaru (maksimal 3 item) untuk status NEW dan IN_PROGRESS; daftar lengkap dan paginasi berada di /api/staff/reports.
+      x-requirement-ids: [REP-03, IAM-03]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Ringkasan pekerjaan laporan per status.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffReportWorkSummary' }
+              example:
+                NEW:
+                  total: 4
+                  items:
+                    - id: 15
+                      facilityNama: RK-101
+                      kategori: Listrik
+                      deskripsi: Lampu sisi kanan tidak menyala.
+                      status: NEW
+                      createdAt: '2026-09-09T03:35:00Z'
+                IN_PROGRESS:
+                  total: 0
+                  items: []
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -2063,9 +2098,16 @@ components:
       name: queue
       in: query
       required: true
-      description: intake hanya NEW; work mencakup NEW dan IN_PROGRESS.
-      schema: { type: string, enum: [intake, work] }
+      description: intake hanya NEW; work mencakup NEW dan IN_PROGRESS; riwayat berisi arsip RESOLVED dan REJECTED yang tidak dapat diubah lagi.
+      schema: { type: string, enum: [intake, work, riwayat] }
       example: work
+    ReportSort:
+      name: sort
+      in: query
+      required: false
+      description: Urutan antrean berdasarkan createdAt; terlama adalah bawaan (createdAt ASC lalu id ASC).
+      schema: { type: string, enum: [terlama, terbaru], default: terlama }
+      example: terbaru
     RoleQuery:
       name: role
       in: query
@@ -3120,6 +3162,34 @@ components:
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/StaffReport' } }
         meta: { $ref: '#/components/schemas/PageMeta' }
+    StaffReportPreview:
+      type: object
+      additionalProperties: false
+      required: [id, facilityNama, kategori, deskripsi, status, createdAt]
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        facilityNama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        kategori: { $ref: '#/components/schemas/ReportCategory' }
+        deskripsi: { type: string, minLength: 1, maxLength: 2000 }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        createdAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
+    StaffReportWorkStatusSummary:
+      type: object
+      additionalProperties: false
+      required: [total, items]
+      properties:
+        total: { type: integer, minimum: 0, readOnly: true }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/StaffReportPreview' }
+          readOnly: true
+    StaffReportWorkSummary:
+      type: object
+      additionalProperties: false
+      required: [NEW, IN_PROGRESS]
+      properties:
+        NEW: { $ref: '#/components/schemas/StaffReportWorkStatusSummary' }
+        IN_PROGRESS: { $ref: '#/components/schemas/StaffReportWorkStatusSummary' }
     UserCollection:
       type: object
       additionalProperties: false

@@ -624,7 +624,7 @@ Pengguna dapat melihat daftar, detail, status terkini, dan catatan penyelesaian 
 
 #### REP-03 — Pemrosesan laporan
 
-Antrean laporan masuk petugas hanya memuat laporan berstatus `NEW`. Daftar pekerjaan laporan memuat laporan `NEW` dan `IN_PROGRESS` agar pekerjaan yang telah dimulai tetap dapat ditemukan dan diselesaikan.
+Antrean laporan masuk petugas hanya memuat laporan berstatus `NEW`. Daftar pekerjaan laporan memuat laporan `NEW` dan `IN_PROGRESS` agar pekerjaan yang telah dimulai tetap dapat ditemukan dan diselesaikan. Riwayat laporan petugas memuat arsip laporan `RESOLVED` dan `REJECTED` sebagai daftar read-only tanpa aksi perubahan status.
 
 Petugas dapat memproses laporan melalui transisi:
 
