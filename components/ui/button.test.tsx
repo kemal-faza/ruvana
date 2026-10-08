@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { Save } from "lucide-react"
 import Link from "next/link"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -76,5 +76,57 @@ describe("kontrak Button", () => {
 
     expect(screen.getByRole("button", { name: "Pilihkan" }).tagName).toBe("BUTTON")
     expect(error).not.toHaveBeenCalled()
+  })
+
+  it("membawa keadaan nonaktif ke render non-button", () => {
+    render(
+      <Button disabled render={<Link href="/petugas/laporan">Laporan kerusakan</Link>}>
+        Laporan kerusakan
+      </Button>,
+    )
+
+    const link = screen.getByRole("link", { name: "Laporan kerusakan" })
+    expect(link).toHaveAttribute("aria-disabled", "true")
+    expect(link).toHaveClass("pointer-events-none", "opacity-50")
+  })
+
+  it("membatalkan aksi tautan yang nonaktif", () => {
+    const aksi = vi.fn()
+    render(
+      <Button disabled render={<a href="/petugas/laporan" onClick={aksi}>Laporan kerusakan</a>}>
+        Laporan kerusakan
+      </Button>,
+    )
+
+    fireEvent.click(screen.getByRole("link", { name: "Laporan kerusakan" }))
+
+    expect(aksi).not.toHaveBeenCalled()
+  })
+
+  it("meneruskan aksi tautan saat tombol aktif", () => {
+    const aksi = vi.fn()
+    render(
+      <Button render={<a href="/petugas/laporan" onClick={aksi}>Laporan kerusakan</a>}>
+        Laporan kerusakan
+      </Button>,
+    )
+
+    const link = screen.getByRole("link", { name: "Laporan kerusakan" })
+    fireEvent.click(link)
+
+    expect(aksi).toHaveBeenCalledOnce()
+    expect(link).not.toHaveAttribute("aria-disabled")
+  })
+
+  it("menandai loading pada render non-button", () => {
+    render(
+      <Button loading render={<Link href="/petugas/laporan">Laporan kerusakan</Link>}>
+        Laporan kerusakan
+      </Button>,
+    )
+
+    const link = screen.getByRole("link", { name: "Laporan kerusakan" })
+    expect(link).toHaveAttribute("aria-busy", "true")
+    expect(link).toHaveAttribute("aria-disabled", "true")
   })
 })

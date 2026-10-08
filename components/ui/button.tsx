@@ -94,6 +94,7 @@ function Button({
     const element = render as ReactElement<{
       className?: string
       children?: ReactNode
+      onClick?: (event: { preventDefault: () => void }) => void
     }>
     const {
       className: renderClass,
@@ -101,14 +102,24 @@ function Button({
       ...elementProps
     } = element.props
 
+    // Elemen non-`<button>` tidak mengenal atribut `disabled`, jadi keadaan
+    // nonaktif harus dibawa lewat `aria-disabled`, aksi yang dibatalkan, dan
+    // kelas visual — kalau tidak, tombol tautan tetap bisa diklik saat loading.
+    const nonaktif = Boolean(disabled || loading)
+    const aksiAsli = elementProps.onClick ?? (rest.onClick as typeof elementProps.onClick)
+
     return cloneElement(
       element,
       {
         ...rest,
         ...elementProps,
         "data-slot": "button",
-        className: cn(classes, renderClass),
+        className: cn(classes, renderClass, nonaktif && "pointer-events-none opacity-50"),
         "aria-busy": loading || undefined,
+        "aria-disabled": nonaktif || undefined,
+        onClick: nonaktif
+          ? (event: { preventDefault: () => void }) => event.preventDefault()
+          : aksiAsli,
       } as never,
       renderChildren ?? isi,
     )
