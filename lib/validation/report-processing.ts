@@ -1,3 +1,4 @@
+import type { StatusLaporan } from "@/generated/prisma/enums";
 import type { ProblemFieldError } from "@/lib/http/problem";
 import {
   MAKS_CATATAN_RESOLUSI_LAPORAN,
@@ -21,11 +22,23 @@ export type UrutanLaporan = (typeof URUTAN_LAPORAN)[number];
 
 export const URUTAN_LAPORAN_BAWAAN: UrutanLaporan = "terlama";
 
-export const STATUS_ANTREAN_LAPORAN: Record<AntreanLaporan, readonly string[]> = {
+/** Pemetaan antrean ke status; tipe status mengikuti schema Prisma. */
+export const STATUS_ANTREAN_LAPORAN: Record<AntreanLaporan, readonly StatusLaporan[]> = {
   intake: STATUS_LAPORAN_ANTREAN_MASUK,
   work: STATUS_LAPORAN_KERJA_PETUGAS,
   riwayat: STATUS_LAPORAN_RIWAYAT_PETUGAS,
 };
+
+/**
+ * URL halaman antrean laporan. Urutan bawaan sengaja tidak ditulis agar alamat
+ * yang disalin, ditandai, atau dibaca pengguna tetap ringkas; tab antrean dan
+ * pemilih urutan memakai bentuk yang sama.
+ */
+export function hrefAntreanLaporan(queue: AntreanLaporan, urut: UrutanLaporan): string {
+  return urut === URUTAN_LAPORAN_BAWAAN
+    ? `/petugas/laporan?queue=${queue}`
+    : `/petugas/laporan?queue=${queue}&sort=${urut}`;
+}
 
 export interface StaffReportQueueQuery {
   queue: AntreanLaporan;

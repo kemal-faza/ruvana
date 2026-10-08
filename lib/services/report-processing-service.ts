@@ -161,7 +161,7 @@ export async function listStaffReportQueueService(query: {
   perPage: number;
 }): Promise<StaffReportCollection> {
   const { queue, urut, page, perPage } = query;
-  const statuses = STATUS_ANTREAN_LAPORAN[queue] as readonly StatusLaporan[];
+  const statuses = STATUS_ANTREAN_LAPORAN[queue];
 
   const [rows, totalItems] = await Promise.all([
     findStaffReports({ status: statuses, urut, skip: (page - 1) * perPage, take: perPage }),

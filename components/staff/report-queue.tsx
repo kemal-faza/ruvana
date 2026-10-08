@@ -12,10 +12,12 @@ import { ReportStatusBadge } from "@/components/reports/report-status-badge";
 import { formatWaktu } from "@/components/reports/format";
 import { LABEL_TIPE_FASILITAS } from "@/config/labels";
 import { MAKS_CATATAN_RESOLUSI_LAPORAN } from "@/config/business";
-import type { AntreanLaporan, UrutanLaporan } from "@/lib/validation/report-processing";
+import {
+  PER_HALAMAN_ANTREAN_LAPORAN,
+  type AntreanLaporan,
+  type UrutanLaporan,
+} from "@/lib/validation/report-processing";
 import type { StaffReportCollection, StaffReportResult } from "@/lib/services/report-processing-service";
-
-const PER_PAGE = 20;
 
 const KETERANGAN_ANTREAN: Record<AntreanLaporan, { title: string; description: string; kosong: string }> = {
   intake: {
@@ -79,7 +81,7 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/staff/reports?queue=${queue}&sort=${urut}&page=${targetPage}&perPage=${PER_PAGE}`,
+          `/api/staff/reports?queue=${queue}&sort=${urut}&page=${targetPage}&perPage=${PER_HALAMAN_ANTREAN_LAPORAN}`,
         );
         if (res.status === 401) {
           setState({ access: "login", data: null });

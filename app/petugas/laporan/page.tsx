@@ -8,9 +8,9 @@ import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { requirePetugasAtauAdmin } from "@/lib/auth";
 import {
   ANTREAN_LAPORAN,
+  hrefAntreanLaporan,
   parseAntreanDanUrutan,
   type AntreanLaporan,
-  type UrutanLaporan,
 } from "@/lib/validation/report-processing";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +25,6 @@ const LABEL_ANTREAN: Record<AntreanLaporan, string> = {
   work: "Daftar pekerjaan",
   riwayat: "Riwayat",
 };
-
-function hrefAntrean(queue: AntreanLaporan, urut: UrutanLaporan): string {
-  return urut === "terlama" ? `/petugas/laporan?queue=${queue}` : `/petugas/laporan?queue=${queue}&sort=${urut}`;
-}
 
 export default async function PetugasLaporanPage({
   searchParams,
@@ -60,7 +56,7 @@ export default async function PetugasLaporanPage({
             return (
               <Button
                 key={item}
-                render={<Link href={hrefAntrean(item, urut)} />}
+                render={<Link href={hrefAntreanLaporan(item, urut)} />}
                 variant={selected ? "primary" : "outline"}
                 aria-current={selected ? "page" : undefined}
                 className={cn(BUTTON_ACTION_CLASS, !selected && "text-muted-foreground hover:text-foreground")}

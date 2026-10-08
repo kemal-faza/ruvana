@@ -13,7 +13,7 @@ import {
 import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import {
   URUTAN_LAPORAN,
-  URUTAN_LAPORAN_BAWAAN,
+  hrefAntreanLaporan,
   type AntreanLaporan,
   type UrutanLaporan,
 } from "@/lib/validation/report-processing";
@@ -29,14 +29,9 @@ function isUrutanLaporan(nilai: unknown): nilai is UrutanLaporan {
   return (URUTAN_LAPORAN as readonly unknown[]).includes(nilai);
 }
 
-// Bentuk URL disalin dari app/petugas/laporan/page.tsx agar urutan bawaan
-// tetap tanpa `sort`: memindahkan tautan ke dalam satu kontrol tidak boleh
-// mengubah alamat yang ditandai, disalin, atau dibaca pengguna.
-function hrefUrut(queue: AntreanLaporan, urut: UrutanLaporan): string {
-  return urut === URUTAN_LAPORAN_BAWAAN
-    ? `/petugas/laporan?queue=${queue}`
-    : `/petugas/laporan?queue=${queue}&sort=${urut}`;
-}
+// Bentuk URL dipakai bersama halaman lewat hrefAntreanLaporan agar urutan
+// bawaan tetap tanpa `sort`: memindahkan tautan ke dalam satu kontrol tidak
+// boleh mengubah alamat yang ditandai, disalin, atau dibaca pengguna.
 
 // Dua tautan urutan digantikan satu dropdown Base UI yang menampilkan
 // pilihan saat dibuka. Urutan aktif tetap dibaca dari URL (Server
@@ -56,7 +51,7 @@ export function ReportSortSelect({ queue, urut }: { queue: AntreanLaporan; urut:
         modal={false}
         onValueChange={(value) => {
           if (!isUrutanLaporan(value) || value === urut) return;
-          router.replace(hrefUrut(queue, value), { scroll: false });
+          router.replace(hrefAntreanLaporan(queue, value), { scroll: false });
         }}
       >
         <SelectTrigger

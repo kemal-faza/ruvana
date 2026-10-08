@@ -114,7 +114,7 @@ export const STATUS_LAPORAN = [...STATUS_LAPORAN_KERJA_PETUGAS, ...STATUS_LAPORA
 // dapat ditemukan dan diselesaikan; riwayat memuat laporan yang sudah selesai
 // atau ditolak sebagai arsip read-only.
 export const STATUS_LAPORAN_ANTREAN_MASUK = [STATUS_LAPORAN_BARU] as const;
-export const STATUS_LAPORAN_RIWAYAT_PETUGAS = [...STATUS_LAPORAN_TERMINAL] as const;
+export const STATUS_LAPORAN_RIWAYAT_PETUGAS = STATUS_LAPORAN_TERMINAL;
 
 // Matriks transisi REP-03: NEW -> IN_PROGRESS | REJECTED dan
 // IN_PROGRESS -> RESOLVED | REJECTED. Status terminal tidak dapat dibuka kembali.
