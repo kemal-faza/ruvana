@@ -99,6 +99,14 @@ describe("StaffMonthlyRecap", () => {
     expect(screen.queryByText("APPROVED")).not.toBeInTheDocument();
   });
 
+  it("menampilkan jumlah reservasi per fasilitas pada tabel berlabel", () => {
+    render(<StaffMonthlyRecap recap={buatRekap()} currentMonth="2026-09" warning={null} />);
+
+    const tabel = screen.getByRole("table", { name: "Jumlah reservasi per fasilitas" });
+    expect(within(tabel).getByText("Aula Utama")).toBeInTheDocument();
+    expect(within(tabel).getByText("5")).toBeInTheDocument();
+  });
+
   it("menampilkan nol bukan error untuk bulan tanpa data beserta aksi berikutnya", () => {
     const kosong = buatRekap({ total: 0, perStatus: buatRekap().perStatus, perFacility: [] });
     render(<StaffMonthlyRecap recap={kosong} currentMonth="2026-02" warning={null} />);
