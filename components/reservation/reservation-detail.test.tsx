@@ -36,14 +36,7 @@ const data = {
   processedBy: null,
 } as unknown as ReservationResult
 
-function mockFetchOk() {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response(JSON.stringify(data), { status: 200 })),
-  )
-}
-
-function mockFetchReservasi(payload: ReservationResult) {
+function mockFetchOk(payload: ReservationResult = data) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 })),
@@ -84,7 +77,7 @@ describe("ReservationDetail", () => {
   })
 
   it("menampilkan alasan dengan label Alasan saat tersedia (RES-03)", async () => {
-    mockFetchReservasi({
+    mockFetchOk({
       ...data,
       status: "REJECTED",
       alasan: "Kapasitas tidak mencukupi",
@@ -100,7 +93,7 @@ describe("ReservationDetail", () => {
   })
 
   it("menampilkan status Dibatalkan Petugas dan alasan pembatalan mendesak (RES-07)", async () => {
-    mockFetchReservasi({
+    mockFetchOk({
       ...data,
       status: "CANCELLED_BY_OFFICER",
       alasan: "Dibatalkan karena perbaikan mendadak pada fasilitas",
