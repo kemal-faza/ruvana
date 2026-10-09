@@ -85,6 +85,17 @@ describe("GET /api/staff/reservations (antrean)", () => {
     expect(listStaffApprovedService).not.toHaveBeenCalled();
   });
 
+  // guardStaff mengizinkan petugas DAN admin. Uji 403 di atas hanya membuktikan
+  // pengguna ditolak, jadi tanpa uji ini jalur admin tidak pernah terjaga.
+  it("mengizinkan role admin melewati guardStaff", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({ ...petugas, id: 9, role: "admin" } as never);
+
+    const response = await GET(request("status=PENDING"));
+
+    expect(response.status).toBe(200);
+    expect(listStaffQueueService).toHaveBeenCalledWith({ status: "PENDING", page: 1, perPage: 20 });
+  });
+
   it("menolak status di luar PENDING/APPROVED dengan 422", async () => {
     const response = await GET(request("status=REJECTED"));
 
