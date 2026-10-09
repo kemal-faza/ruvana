@@ -193,18 +193,31 @@ describe("POST /api/reservations", () => {
   });
 
   it("submit ganda aman: key sama me-replay hasil pertama tanpa memanggil service lagi", async () => {
-    vi.mocked(createReservationService).mockResolvedValue({ ok: true, data: reservationResult } as never);
+    vi.mocked(createReservationService).mockImplementation((async (
+      _userId: number,
+      _input: unknown,
+      _now: Date,
+      persist?: (tx: unknown, result: unknown) => Promise<void>,
+    ) => {
+      await persist?.({}, reservationResult);
+      return { ok: true, data: reservationResult };
+    }) as never);
 
     const first = await POST(postRequest(validBody));
     expect(first.status).toBe(201);
     expect(createReservationService).toHaveBeenCalledTimes(1);
 
+    // Replay dibangun dari apa yang benar-benar disimpan request pertama,
+    // bukan dari record yang disusun tangan seperti sebelumnya.
+    const tersimpan = vi.mocked(storeIdempotencyResult).mock.calls[0]!;
+    expect(tersimpan[1]).toEqual({ responseStatus: 201, responseBody: reservationResult });
+
     vi.mocked(claimOrGetIdempotencyKey).mockResolvedValue({
       claimed: false,
       record: claimRecord({
         requestHash: hashCanonicalBody(validBody),
-        responseStatus: 201,
-        responseBody: reservationResult,
+        responseStatus: tersimpan[1].responseStatus,
+        responseBody: tersimpan[1].responseBody,
       }),
     } as never);
     vi.mocked(isIdempotencySettled).mockReturnValue(true);
