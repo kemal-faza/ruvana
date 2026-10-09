@@ -54,6 +54,20 @@ describe("ReservationQueue", () => {
     expect((container.textContent ?? "")).not.toMatch(/FIFO/)
   })
 
+  it("menyediakan fasilitas, pemohon, tanggal/waktu, dan tujuan untuk mengambil keputusan (RES-05)", async () => {
+    mockFetch()
+    render(<ReservationQueue />)
+
+    const judul = await screen.findByText(/Aula Utama · 3 Des 2026 · 09:00–10:00/)
+    expect(judul).toHaveTextContent("Aula Utama")
+    expect(judul).toHaveTextContent("3 Des 2026")
+    expect(judul).toHaveTextContent("09:00–10:00")
+
+    const deskripsi = screen.getByText(/Siti Aminah/)
+    expect(deskripsi).toHaveTextContent("Siti Aminah (siti@example.com)")
+    expect(deskripsi).toHaveTextContent("Diskusi kelompok")
+  })
+
   it("memberi tahu hasil persetujuan tanpa id teknis", async () => {
     const user = userEvent.setup()
     mockFetch()
