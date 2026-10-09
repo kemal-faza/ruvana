@@ -23,6 +23,34 @@ describe("prasyarat Production", () => {
     expect(run.stderr).not.toContain(valid.DATABASE_URL)
   })
 
+  it("menjelaskan bahwa variabel bertipe Secret tidak terbaca saat rilis ditolak", () => {
+    const run = spawnSync(process.execPath, [script], {
+      env: { ...valid, DATABASE_URL: "" },
+      encoding: "utf8",
+    })
+    expect(run.status).toBe(1)
+    expect(run.stderr).toContain("DATABASE_URL")
+    expect(run.stderr).toContain("Config")
+    expect(run.stderr).toContain("Secret")
+  })
+
+  it("menerima DATABASE_URL Prisma Postgres", () => {
+    const output = execFileSync(process.execPath, [script], {
+      env: { ...valid, DATABASE_URL: "prisma+postgres://accelerate.prisma-data.net/?api_key=contoh" },
+      encoding: "utf8",
+    })
+    expect(output).toContain("Konfigurasi wajib Production tersedia")
+  })
+
+  it("menolak DATABASE_URL non-PostgreSQL", () => {
+    const run = spawnSync(process.execPath, [script], {
+      env: { ...valid, DATABASE_URL: "mysql://user:password@database.example.invalid:3306/ruvana" },
+      encoding: "utf8",
+    })
+    expect(run.status).toBe(1)
+    expect(run.stderr).toContain("PostgreSQL")
+  })
+
   it("menerima konfigurasi production lengkap", () => {
     const output = execFileSync(process.execPath, [script], { env: valid, encoding: "utf8" })
     expect(output).toContain("Konfigurasi wajib Production tersedia")

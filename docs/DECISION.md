@@ -363,6 +363,14 @@ promosi mempertahankan versi aplikasi yang sedang melayani traffic.
   `VERCEL_ORG_ID`, dan `VERCEL_PROJECT_ID`. Vercel Production wajib memiliki
   `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `NEXT_PUBLIC_SITE_URL`,
   `ALLOWED_ORIGINS`, dan `CRON_SECRET`.
+- Variabel Production yang dibaca workflow lewat `vercel env run` wajib bertipe
+  **Config**, bukan Secret: nilai Secret bersifat write-only sehingga tidak dapat
+  dibaca CLI. Periksa dengan `vercel env ls production`; bila tipenya Secret,
+  sediakan nilainya lewat secret environment GitHub `production` atau buat ulang
+  variabel sebagai Config.
+- Rilis tahap migrasi dapat dijalankan manual dari branch `main` melalui
+  `workflow_dispatch`; commit selain HEAD `main` dan commit yang CI-nya belum
+  sukses tetap ditolak.
 - Build preview dan build paralel tidak menjalankan migrasi Production.
 - Batas free tier database dan storage harus dipantau sesuai PRD.
 
