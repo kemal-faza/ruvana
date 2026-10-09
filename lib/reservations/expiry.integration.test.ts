@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { asiaJakartaToUtc, calendarDateToUtcMidnight } from "@/lib/time/reservation-time";
+import { asiaJakartaToUtc, calendarDateToUtcMidnight, formatDateAsiaJakarta } from "@/lib/time/reservation-time";
 
 // Wajib database KHUSUS (ruvana_expiry_test), bukan `ruvana` atau
 // `ruvana_test`. `expirePendingReservations` menjalankan updateMany lintas
@@ -37,8 +37,12 @@ function requireLoopbackDatabaseUrl(value: string | undefined): string {
 // Tanggal jauh di masa depan: imun aturan pengajuan H-1 Tahap 7. Batas
 // kedaluwarsa ditentukan lewat param `now` eksplisit agar deterministik.
 const KAPAN = "2027-06-15";
-// Tanggal yang sudah lewat dari waktu nyata untuk uji riwayat dan antrean.
-const LEWAT = "2026-09-15";
+// Tanggal di masa lalu untuk uji riwayat dan antrean. Uji ini memanggil
+// service yang menjalankan expirePendingReservations() dengan `new Date()`
+// internal, jadi `now` tidak bisa disuntik dan tanggalnya wajib benar-benar
+// sudah lewat saat suite dijalankan. Diturunkan dari jam dinding supaya tidak
+// jadi bom waktu yang meledak kalau suite dijalankan mundur.
+const LEWAT = formatDateAsiaJakarta(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 const NOW = asiaJakartaToUtc(KAPAN, "12:00");
 
 type StatusReservasiTampil =
