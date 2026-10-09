@@ -49,6 +49,15 @@ type StatusReservasiTampil =
   | "CANCELLED_BY_OFFICER"
   | "EXPIRED";
 
+// Status selain PENDING yang harus dibiarkan oleh sweep.
+const STATUS_NON_PENDING = [
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED_BY_USER",
+  "CANCELLED_BY_OFFICER",
+  "EXPIRED",
+] as const;
+
 type PrismaTest = typeof import("@/lib/prisma").prisma;
 
 async function buatPengguna(prisma: PrismaTest, key: string) {
@@ -171,20 +180,23 @@ describe.skipIf(!databaseUrl)("integrasi PostgreSQL kedaluwarsa reservasi (RES-0
     const key = randomUUID();
     const user = await buatPengguna(prisma, key);
     const facility = await buatFasilitas(prisma, key);
-    const ids: Record<StatusReservasiTampil, number> = {} as never;
+    const idsByStatus = new Map<(typeof STATUS_NON_PENDING)[number], number>();
     let jam = 8;
-    for (const status of ["APPROVED", "REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"] as const) {
-      ids[status] = (
-        await buatReservasi(
-          prisma,
-          { userId: user.id, facilityId: facility.id },
-          KAPAN,
-          `${jam}:00`,
-          `${jam}:30`,
-          status,
-          `Status ${status} ${key}`,
-        )
-      ).id;
+    for (const status of STATUS_NON_PENDING) {
+      idsByStatus.set(
+        status,
+        (
+          await buatReservasi(
+            prisma,
+            { userId: user.id, facilityId: facility.id },
+            KAPAN,
+            `${jam}:00`,
+            `${jam}:30`,
+            status,
+            `Status ${status} ${key}`,
+          )
+        ).id,
+      );
       jam += 1;
     }
     const lewat = await buatReservasi(prisma, { userId: user.id, facilityId: facility.id }, KAPAN, "07:00", "07:30", "PENDING", `Pending lewat ${key}`);
@@ -193,8 +205,8 @@ describe.skipIf(!databaseUrl)("integrasi PostgreSQL kedaluwarsa reservasi (RES-0
       const hasil = await expiry.expirePendingReservations(prisma, NOW);
       expect(hasil.count).toBeGreaterThanOrEqual(1);
 
-      for (const status of ["APPROVED", "REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"] as const) {
-        const baris = await prisma.reservation.findFirstOrThrow({ where: { id: ids[status] } });
+      for (const [status, id] of idsByStatus) {
+        const baris = await prisma.reservation.findFirstOrThrow({ where: { id } });
         expect(baris.status).toBe(status);
       }
 
