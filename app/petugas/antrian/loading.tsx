@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function LoadingAntrian() {
   return (
-    <main
+    <main id="konten" tabIndex={-1}
       role="status"
       aria-busy="true"
       aria-label="Memuat antrean reservasi"

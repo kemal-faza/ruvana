@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import AdminSidebar from "@/components/admin/Sidebar";
 import { MobileAppBar } from "@/components/app-shell/mobile-app-bar";
+import { SkipToContentLink } from "@/components/site/skip-to-content-link";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { requireAdmin } from "@/lib/auth";
 
@@ -14,12 +15,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin();
 
   return (
-    <SidebarProvider>
-      <AdminSidebar admin={admin} />
-      <SidebarInset>
-        <MobileAppBar />
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <>
+      <SkipToContentLink />
+      <SidebarProvider>
+        <AdminSidebar admin={admin} />
+        <SidebarInset>
+          <MobileAppBar />
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </>
   );
 }
