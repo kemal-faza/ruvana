@@ -4,9 +4,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { asiaJakartaToUtc, calendarDateToUtcMidnight } from "@/lib/time/reservation-time";
 
-// Database khusus tahap ini agar fixture kedaluwarsa terisolasi. Mengikuti
-// pola integrasi lain: tanpa var ini seluruh suite di-skip (CI tanpa
-// PostgreSQL tetap hijau). Wajib loopback + database lokal.
+// Wajib database KHUSUS (ruvana_expiry_test), bukan `ruvana` atau
+// `ruvana_test`. `expirePendingReservations` menjalankan updateMany lintas
+// tabel tanpa scope, sehingga suite ini tidak boleh berbagi database dengan
+// siapa pun: berbagi `ruvana_test` membuat sweep bertanggal 2027 mengubah
+// fixture suite lain di tengah jalan, dan mengarahkannya ke `ruvana` akan
+// mengedipkan reservasi PENDING milik pengembang. Mengikuti pola integrasi
+// lain: tanpa var ini seluruh suite di-skip (CI tanpa PostgreSQL tetap
+// hijau). Wajib loopback + database lokal.
 const databaseUrl = process.env.RESERVATION_EXPIRY_TEST_DATABASE_URL;
 
 function requireLoopbackDatabaseUrl(value: string | undefined): string {
@@ -19,8 +24,11 @@ function requireLoopbackDatabaseUrl(value: string | undefined): string {
   if (!["localhost", "127.0.0.1", "::1"].includes(host)) {
     throw new Error("RESERVATION_EXPIRY_TEST_DATABASE_URL must point to a loopback PostgreSQL host.");
   }
-  if (!/^\/(ruvana|ruvana_test)$/.test(url.pathname)) {
-    throw new Error("RESERVATION_EXPIRY_TEST_DATABASE_URL must use the local `ruvana` or `ruvana_test` database.");
+  if (!/^\/ruvana_expiry_test$/.test(url.pathname)) {
+    throw new Error(
+      "RESERVATION_EXPIRY_TEST_DATABASE_URL must use a dedicated `ruvana_expiry_test` database. " +
+        "The expiry sweep is table-wide, so sharing a database with other suites or with development data is unsafe.",
+    );
   }
 
   return value;
