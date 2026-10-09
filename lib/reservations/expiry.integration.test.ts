@@ -142,7 +142,9 @@ describe.skipIf(!databaseUrl)("integrasi PostgreSQL kedaluwarsa reservasi (RES-0
 
     try {
       const hasil = await expiry.expirePendingReservations(prisma, NOW);
-      expect(hasil.count).toBeGreaterThanOrEqual(2);
+      // Hitungan eksak aman karena database khusus: hanya baris uji ini yang
+      // mungkin cocok, jadi sweep yang keliru mengenai baris lain tertangkap.
+      expect(hasil.count).toBe(2);
 
       const baris = await prisma.reservation.findFirstOrThrow({ where: { id: lewat.id } });
       expect(baris.status).toBe("EXPIRED");
@@ -203,7 +205,7 @@ describe.skipIf(!databaseUrl)("integrasi PostgreSQL kedaluwarsa reservasi (RES-0
 
     try {
       const hasil = await expiry.expirePendingReservations(prisma, NOW);
-      expect(hasil.count).toBeGreaterThanOrEqual(1);
+      expect(hasil.count).toBe(1);
 
       for (const [status, id] of idsByStatus) {
         const baris = await prisma.reservation.findFirstOrThrow({ where: { id } });
@@ -228,7 +230,7 @@ describe.skipIf(!databaseUrl)("integrasi PostgreSQL kedaluwarsa reservasi (RES-0
       const pertama = await expiry.expirePendingReservations(prisma, NOW);
       const kedua = await expiry.expirePendingReservations(prisma, NOW);
 
-      expect(pertama.count).toBeGreaterThanOrEqual(1);
+      expect(pertama.count).toBe(1);
       expect(kedua.count).toBe(0);
 
       const baris = await prisma.reservation.findFirstOrThrow({ where: { id: lewat.id } });
