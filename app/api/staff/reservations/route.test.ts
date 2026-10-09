@@ -92,4 +92,24 @@ describe("GET /api/staff/reservations (antrean)", () => {
     expect(listStaffQueueService).not.toHaveBeenCalled();
     expect(listStaffApprovedService).not.toHaveBeenCalled();
   });
+
+  it("mengembalikan 500 ketika pengambilan antrean gagal", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(listStaffQueueService).mockRejectedValue(new Error("db mati"));
+
+    const response = await GET(request("status=PENDING"));
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+  });
+
+  it("mengembalikan 500 ketika pengambilan daftar APPROVED gagal", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(listStaffApprovedService).mockRejectedValue(new Error("db mati"));
+
+    const response = await GET(request("status=APPROVED"));
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+  });
 });

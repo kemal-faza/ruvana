@@ -143,4 +143,14 @@ describe("POST /api/staff/reservations/[reservationId]/approve", () => {
     const body = await response.json();
     expect(body.code).toBe("INVALID_RESERVATION_TRANSITION");
   });
+
+  it("mengembalikan 500 ketika persetujuan gagal", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(approveReservationService).mockRejectedValue(new Error("db mati"));
+
+    const response = await POST(request(), makeContext());
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+  });
 });

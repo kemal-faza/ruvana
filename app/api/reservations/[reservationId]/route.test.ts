@@ -102,4 +102,14 @@ describe("GET /api/reservations/[reservationId]", () => {
     expect(response.status).toBe(422);
     expect(getMyReservationService).not.toHaveBeenCalled();
   });
+
+  it("mengembalikan 500 ketika pengambilan detail gagal", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(getMyReservationService).mockRejectedValue(new Error("db mati"));
+
+    const response = await GET(request(), makeContext());
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+  });
 });

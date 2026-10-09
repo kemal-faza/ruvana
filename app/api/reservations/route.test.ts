@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getSessionUser } from "@/lib/auth";
 import {
   claimOrGetIdempotencyKey,
+  deleteIdempotencyClaim,
   isIdempotencySettled,
   storeIdempotencyResult,
   waitForIdempotencyResult,
@@ -279,6 +280,20 @@ describe("POST /api/reservations", () => {
       expect.objectContaining({ responseStatus: 422 }),
     );
   });
+
+  it("mengembalikan 500 dan menghapus klaim agar retry bisa diproses", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(createReservationService).mockRejectedValue(new Error("db mati"));
+
+    const response = await POST(postRequest(validBody));
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+    // 5xx tidak disimpan untuk replay: klaim dihapus supaya percobaan ulang
+    // tidak menerima hasil gagal yang tersimpan.
+    expect(storeIdempotencyResult).not.toHaveBeenCalled();
+    expect(deleteIdempotencyClaim).toHaveBeenCalledWith(expect.objectContaining({ key: KEY, principalId: 3 }));
+  });
 });
 
 describe("GET /api/reservations filter status", () => {
@@ -333,5 +348,15 @@ describe("GET /api/reservations filter status", () => {
 
     expect(response.status).toBe(401);
     expect(listMyReservationsService).not.toHaveBeenCalled();
+  });
+
+  it("mengembalikan 500 ketika pengambilan riwayat gagal", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(listMyReservationsService).mockRejectedValue(new Error("db mati"));
+
+    const response = await GET(getRequest(""));
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
   });
 });

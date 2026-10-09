@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getSessionUser } from "@/lib/auth";
 import {
   claimOrGetIdempotencyKey,
+  deleteIdempotencyClaim,
   storeIdempotencyResult,
 } from "@/lib/db/idempotency";
 import { cancelReservationByOfficerService } from "@/lib/services/reservation-service";
@@ -186,5 +187,19 @@ describe("POST /api/staff/reservations/[reservationId]/cancel (mendesak)", () =>
       expect.anything(),
       expect.objectContaining({ responseStatus: 404 }),
     );
+  });
+
+  it("mengembalikan 500 dan menghapus klaim agar retry bisa diproses", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(cancelReservationByOfficerService).mockRejectedValue(new Error("db mati"));
+
+    const response = await POST(request({ alasan: "Alasan valid" }), makeContext());
+
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+    // 5xx tidak disimpan untuk replay: klaim dihapus supaya percobaan ulang
+    // tidak menerima hasil gagal yang tersimpan.
+    expect(storeIdempotencyResult).not.toHaveBeenCalled();
+    expect(deleteIdempotencyClaim).toHaveBeenCalledWith(expect.objectContaining({ key: KEY, principalId: 7 }));
   });
 });
