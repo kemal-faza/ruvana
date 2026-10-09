@@ -44,6 +44,7 @@ Status keputusan:
 | D-007 | `development` | TDD dan test otomatis wajib; pemilihan runner ditunda sampai test harness dibuat |
 | D-008 | `deployment` | Vercel, Prisma Postgres, dan private Vercel Blob untuk production |
 | D-009 | `project-wide` | Listener status fasilitas menerima client transaksi (tx-first) |
+| D-010 | `project-wide` | Kontrak OpenAPI hanya memuat route handler HTTP |
 
 ---
 
@@ -436,6 +437,21 @@ transaksi sendiri atau memakai singleton Prisma untuk operasi dalam event.
 |---|---|
 | Listener payload-only membuka transaksi sendiri | Sederhana bagi pemicu, tetapi status fasilitas dan pembatalan bisa commit terpisah dan saling bertabrakan. |
 | Event asinkron setelah commit | Pemicu tidak menunggu, tetapi kegagalan listener meninggalkan status dan reservasi tidak konsisten tanpa mekanisme retry. |
+
+## D-010 — Kontrak OpenAPI untuk route handler HTTP
+
+- **Status:** `accepted`
+- **Scope:** `project-wide`
+
+`docs/api/openapi.yaml` mendokumentasikan path yang punya route handler di
+`app/api/`. Mutasi akun admin di `app/admin/pengguna/actions.ts` adalah Server
+Action, bukan endpoint JSON `/api/admin/users/{userId}/approve`, `/reject`,
+`/disable`, atau `/enable`. Daftar dan detail laporan pengguna serta dashboard
+analitik admin adalah Server Component. Ketiganya tidak diberi path API palsu.
+Ekspor analitik memakai tiga handler terpisah di `/api/admin/analitik/ekspor/`.
+
+Jalankan `pnpm check:openapi-paths` untuk membandingkan path kontrak dan route
+handler. Tambahkan path kontrak pada perubahan route agar pemeriksaan CI lulus.
 
 ## Sumber kebenaran
 

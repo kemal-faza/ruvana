@@ -22,8 +22,7 @@ info:
      terhadap allowlist konfigurasi; missing, malformed, null, dan multiple Origin
     values selalu ditolak. Idempotency berlaku hanya untuk operasi yang
     mendeklarasikan header tersebut, yaitu mutasi dengan body:
-    createReservation, cancelMyReservation, createReportUploadIntent,
-    finalizeReport, rejectReservation, cancelReservationByOfficer,
+    createReservation, cancelMyReservation, rejectReservation, cancelReservationByOfficer,
     resolveStaffReport, rejectStaffReport, updateFacilityOperationalStatus,
     createAdminManagedUser, createFacility, dan updateFacility. Identity adalah
     authenticated principal + method/operation + canonical path parameters +
@@ -742,255 +741,85 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/report-uploads:
+  /api/reports/photo-uploads:
     post:
-      operationId: createReportUploadIntent
+      operationId: createReportPhotoUpload
       tags: [Reports]
-      summary: Menerbitkan intent upload foto laporan
-      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Menerbitkan presigned upload ke private Vercel Blob. Upload dibatasi MIME image/jpeg, image/png, atau image/webp, ukuran maksimum 5 MiB, pathname acak terikat owner, method PUT, header wajib, dan masa berlaku maksimum 10 menit. Rate limit durable atomik adalah 20 per user per jam dan 60 per IP per jam.
-      x-requirement-ids: [REP-01, IAM-03]
-      security:
-        - cookieAuth: []
+      summary: Menerbitkan URL unggah foto laporan
+      description: Pengguna ACTIVE memperoleh URL PUT privat untuk JPEG, PNG, atau WebP maksimal 5 MiB. Batas permintaan adalah 20 per pengguna dan 60 per IP per jam.
+      security: [{ cookieAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ReportUploadRequest' }
-            example:
-              fileName: panel-listrik.png
-              contentType: image/png
-              size: 245760
-      responses:
-        '201':
-          description: Intent upload privat berhasil diterbitkan.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/UploadIntent' }
-              example:
-                uploadId: 0f8fad5b-d9cb-469f-a165-70867728950e
-                pathname: reports/42/8b7c2d1e-panel-listrik.png
-                uploadUrl: https://blob.vercel-storage.com/upload/signed-token
-                method: PUT
-                requiredHeaders: { content-type: image/png }
-                expiresAt: '2026-09-09T03:25:00Z'
-                maximumSizeInBytes: 5242880
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/OriginRejected'
-        '409':
-          $ref: '#/components/responses/IdempotencyConflict'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '429':
-          $ref: '#/components/responses/UploadRateLimited'
-        '502':
-          $ref: '#/components/responses/BlobFailure'
-        '503':
-          $ref: '#/components/responses/UploadQuotaExhausted'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/reports:
-    get:
-      operationId: listMyReports
-      tags: [Reports]
-      summary: Menampilkan riwayat laporan pengguna
-      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Hanya laporan milik user aktif yang dikembalikan, diurutkan createdAt DESC lalu id DESC. Foto hanya berupa metadata aman; URL private diterbitkan melalui operasi photo-url setelah pemeriksaan akses.
-      x-requirement-ids: [REP-02, IAM-03]
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ReportStatusQuery'
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PerPage'
+            schema:
+              type: object
+              required: [contentType, size]
+              properties:
+                contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                size: { type: integer, minimum: 1, maximum: 5242880 }
       responses:
         '200':
-          description: Riwayat laporan, termasuk keadaan kosong.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          description: URL unggah sementara diterbitkan.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ReportCollection' }
-              example:
-                items:
-                  - id: 15
-                    facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
-                    kategori: Listrik
-                    deskripsi: Lampu sisi kanan tidak menyala.
-                    foto: { hasPhoto: true, contentType: image/png, size: 245760 }
-                    status: NEW
-                    catatanResolusi: null
-                    ditanganiOleh: null
-                    createdAt: '2026-09-09T03:30:00Z'
-                    processedAt: null
-                meta: { page: 1, perPage: 20, totalItems: 1, totalPages: 1 }
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    post:
-      operationId: finalizeReport
-      tags: [Reports]
-      summary: Memfinalisasi laporan kerusakan
-      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Upload intent milik user lain atau intent yang tidak ditemukan dimasking sebagai 404. Urutan Blob wajib authenticate -> lock/load intent -> verify owner -> verify unconsumed -> inspect (private store/pathname, size, MIME, dan magic bytes). Jangan menghapus apa pun pada owner mismatch atau consumed replay. Hanya objek caller-owned unconsumed yang boleh dihapus setelah validasi atau transaksi gagal. Intent kedaluwarsa dibersihkan dengan menghapus orphan object dan record intent. Pembuatan report dan konsumsi intent bersifat tepat satu kali; quota provider menghasilkan 503 tanpa laporan parsial.
-      x-requirement-ids: [REP-01, REP-02, IAM-03]
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ReportCreateRequest' }
-            example:
-              uploadId: 0f8fad5b-d9cb-469f-a165-70867728950e
-              facilityId: 1
-              kategori: Listrik
-              deskripsi: Lampu sisi kanan tidak menyala.
-      responses:
-        '201':
-          description: Laporan NEW dibuat setelah foto tervalidasi.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-               schema: { $ref: '#/components/schemas/Report' }
-               example:
-                id: 15
-                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
-                kategori: Listrik
-                deskripsi: Lampu sisi kanan tidak menyala.
-                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
-                status: NEW
-                catatanResolusi: null
-                ditanganiOleh: null
-                createdAt: '2026-09-09T03:35:00Z'
-                processedAt: null
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/OriginRejected'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: Intent sudah dipakai atau idempotency key berbeda payload.
-          content:
-            application/problem+json:
               schema:
-                anyOf:
-                  - $ref: '#/components/schemas/ReportFinalizationConflictProblem'
-                  - $ref: '#/components/schemas/IdempotencyConflictProblem'
-              example:
-                type: https://app.example.invalid/problems/upload-already-finalized
-                title: Upload sudah digunakan
-                status: 409
-                detail: Upload intent tidak dapat dipakai lebih dari satu kali.
-                instance: /api/reports
-                code: UPLOAD_ALREADY_FINALIZED
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '502':
-          $ref: '#/components/responses/BlobFailure'
-        '503':
-          $ref: '#/components/responses/UploadQuotaExhausted'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/reports/{reportId}:
-    get:
-      operationId: getMyReport
+                type: object
+                required: [pathname, uploadUrl, validUntil]
+                properties:
+                  pathname: { type: string }
+                  uploadUrl: { type: string, format: uri }
+                  validUntil: { type: integer, description: Waktu kedaluwarsa dalam milidetik Unix. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/OriginRejected' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '429': { $ref: '#/components/responses/UploadRateLimited' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      operationId: removeUnusedReportPhotoUpload
       tags: [Reports]
-      summary: Menampilkan detail laporan pengguna
-      description: Hanya role=pengguna dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Ownership dimasking sebagai 404. Detail memuat metadata foto aman, bukan URL private permanen; gunakan photo-url untuk signed read URL sementara.
-      x-requirement-ids: [REP-02, IAM-03]
-      security:
-        - cookieAuth: []
+      summary: Menghapus foto sementara yang belum terhubung ke laporan
+      security: [{ cookieAuth: [] }]
       parameters:
-        - $ref: '#/components/parameters/ReportId'
-      responses:
-        '200':
-          description: Detail laporan milik user aktif.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Report' }
-              example:
-                id: 15
-                facility: { id: 1, nama: RK-101, tipe: ruang_kelas, lokasi: Gedung A Lt.1, kapasitas: 40, deskripsi: Ruang kelas standar ber-AC, status: ACTIVE }
-                kategori: Listrik
-                deskripsi: Lampu sisi kanan tidak menyala.
-                foto: { hasPhoto: true, contentType: image/png, size: 245760 }
-                status: RESOLVED
-                catatanResolusi: Lampu diganti dan diuji.
-                ditanganiOleh: { id: 7, nama: Petugas Ruvana, role: petugas }
-                createdAt: '2026-09-09T03:35:00Z'
-                processedAt: '2026-09-10T06:00:00Z'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/reports/{reportId}/photo-url:
-    post:
-      operationId: createMyReportPhotoUrl
-      tags: [Reports]
-      summary: Menerbitkan URL foto laporan sementara
-      description: Hanya role=pengguna dengan status=ACTIVE yang diterima untuk operasi owner ini; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. Report user lain dimasking sebagai 404. Signed read URL hanya diterbitkan setelah akses owner diverifikasi dan berlaku paling lama 5 menit. URL bersifat sementara dan tidak dikembalikan pada resource laporan.
-      x-requirement-ids: [REP-02, IAM-03]
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ReportId'
         - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pathname]
+              properties:
+                pathname: { type: string }
       responses:
-        '200':
-          description: URL baca signed sementara.
+        '204': { description: Foto sementara dibersihkan atau sudah terhubung ke laporan. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/OriginRejected' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/reports/{reportId}/photo:
+    get:
+      operationId: readReportPhoto
+      tags: [Reports]
+      summary: Membaca foto laporan dengan pemeriksaan akses
+      description: Pemilik laporan, petugas, dan admin ACTIVE dapat mengakses foto. Foto privat diarahkan sementara ke URL bertanda tangan; foto lama dapat disajikan langsung.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200': { description: Isi foto lama dengan Cache-Control private no-store. }
+        '307':
+          description: Pengalihan sementara ke URL foto privat bertanda tangan.
           headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/PhotoUrlResponse' }
-              example:
-                url: https://blob.vercel-storage.com/reports/42/8b7c2d1e-panel-listrik.png?token=temporary
-                expiresAt: '2026-09-09T03:40:00Z'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/OriginRejected'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '502':
-          $ref: '#/components/responses/BlobFailure'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+            Location:
+              schema: { type: string, format: uri }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/staff/reservations:
     get:
       operationId: listStaffReservations
@@ -1603,114 +1432,6 @@ paths:
         '409': { $ref: '#/components/responses/AdminUserMutationConflict' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
         '500': { $ref: '#/components/responses/InternalServerError' }
-  /api/admin/users/{userId}/approve:
-    post:
-      operationId: approvePendingUser
-      tags: [Administration]
-      summary: Menyetujui pendaftaran pengguna
-      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin hanya dapat mengubah PENDING menjadi ACTIVE dan mencatat waktu verifikasi. Status selain PENDING ditolak tanpa perubahan.
-      x-requirement-ids: [IAM-01, IAM-06, IAM-03]
-      security: [{ cookieAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-      responses:
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '200':
-          description: User terbaru berstatus ACTIVE.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SafeUser' }
-              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: '2026-09-09T06:10:00Z' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '403': { $ref: '#/components/responses/MutationForbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
-  /api/admin/users/{userId}/reject:
-    post:
-      operationId: rejectPendingUser
-      tags: [Administration]
-      summary: Menolak pendaftaran pengguna
-      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin hanya dapat mengubah PENDING menjadi REJECTED; status yang sudah diproses ditolak secara aman.
-      x-requirement-ids: [IAM-01, IAM-06, IAM-03]
-      security: [{ cookieAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-      responses:
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '200':
-          description: User terbaru berstatus REJECTED.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SafeUser' }
-              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: REJECTED, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: null }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '403': { $ref: '#/components/responses/MutationForbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
-  /api/admin/users/{userId}/disable:
-    post:
-      operationId: disableUser
-      tags: [Administration]
-      summary: Menonaktifkan akun pengguna
-      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin mengubah ACTIVE menjadi DISABLED. Sesi akun yang dinonaktifkan tidak dapat dipakai atau diperbarui.
-      x-requirement-ids: [IAM-07, IAM-03]
-      security: [{ cookieAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-      responses:
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '200':
-          description: User terbaru berstatus DISABLED.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SafeUser' }
-              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: DISABLED, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: '2026-09-09T06:10:00Z' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '403': { $ref: '#/components/responses/MutationForbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
-  /api/admin/users/{userId}/enable:
-    post:
-      operationId: enableUser
-      tags: [Administration]
-      summary: Mengaktifkan kembali akun pengguna
-      description: Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda menghasilkan 403. Admin hanya dapat mengubah DISABLED menjadi ACTIVE tanpa mengubah role atau histori akun.
-      x-requirement-ids: [IAM-07, IAM-03]
-      security: [{ cookieAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-      responses:
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '200':
-          description: User terbaru berstatus ACTIVE.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SafeUser' }
-              example: { id: 42, nama: Siti Aminah, email: siti.aminah@example.com, role: pengguna, status: ACTIVE, waktuDaftar: '2026-09-09T03:15:00Z', waktuVerifikasi: '2026-09-09T06:10:00Z' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '403': { $ref: '#/components/responses/MutationForbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/AccountTransitionConflict' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/admin/facilities:
     get:
       operationId: listAdminFacilities
@@ -1851,133 +1572,95 @@ paths:
         '409': { $ref: '#/components/responses/FacilityMutationConflict' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
         '500': { $ref: '#/components/responses/InternalServerError' }
-  /api/admin/analytics:
+  /api/admin/analitik/ekspor/csv:
     get:
-      operationId: getAdminAnalytics
+      operationId: exportAdminAnalyticsCsv
       tags: [Analytics]
-      summary: Menampilkan dashboard analitik
-      description: >-
-        Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE
-        menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda
-        menghasilkan 403. Admin wajib mengirim rentang tanggal inklusif dalam Asia/Jakarta dengan
-        dateFrom <= dateTo. Server memakai rentang UTC setengah-terbuka dari 00:00
-        awal sampai 00:00 sehari setelah dateTo. Location dinormalisasi dengan trim
-        dan case-fold lalu dicocokkan exact secara case-insensitive; location kosong
-         berarti seluruh lokasi. Dashboard dan export memakai population setiap fasilitas
-         yang cocok: ACTIVE, UNDER_MAINTENANCE, dan INACTIVE semuanya termasuk dalam
-         denominator. Frekuensi kerusakan sama dengan laporan yang createdAt-nya berada
-         dalam effective range dan dikelompokkan berdasarkan fasilitas, kategori, dan status.
-         Numerator hanya menit APPROVED; denominator = setiap fasilitas yang cocok dengan
-         location ternormalisasi × jumlah hari × 780 menit. Keterbatasan historis: populasi
-         fasilitas memakai katalog/status saat perhitungan dan tidak merekonstruksi riwayat
-         status fasilitas.
-      x-requirement-ids: [ANA-01, IAM-03]
+      summary: Mengunduh analitik sebagai CSV
+      description: Hanya admin ACTIVE. Rentang tanggal memakai Asia/Jakarta; tanpa tanggal, bulan berjalan digunakan. CSV menetralkan awalan formula spreadsheet.
       security: [{ cookieAuth: [] }]
       parameters:
-        - $ref: '#/components/parameters/DateFrom'
-        - $ref: '#/components/parameters/DateTo'
-        - $ref: '#/components/parameters/AnalyticsLocation'
+        - { name: startDate, in: query, schema: { type: string, format: date } }
+        - { name: endDate, in: query, schema: { type: string, format: date } }
+        - { name: location, in: query, schema: { type: string } }
       responses:
         '200':
-          description: Rekap analitik; keadaan tanpa data tetap berisi nilai nol dan metodologi.
-          headers:
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Analytics' }
-              example:
-                filter: { dateFrom: '2026-09-01', dateTo: '2026-09-30', location: Gedung A }
-                timezone: Asia/Jakarta
-                effectiveRange: { from: '2026-08-31T17:00:00Z', until: '2026-09-30T17:00:00Z' }
-                generatedAt: '2026-10-01T02:00:00Z'
-                occupancy: { numeratorMinutes: 1560, denominatorMinutes: 23400, percentage: 6.6667 }
-                damageGroups:
-                  - facilityId: 1
-                    facilityName: RK-101
-                    kategori: Listrik
-                    status: RESOLVED
-                    count: 2
-                methodology: { operatingMinutesPerDay: 780, approvedOnly: true, maintenanceExcludedFromDenominator: false, damageCountedFrom: createdAt }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
-  /api/admin/analytics/export:
-    get:
-      operationId: exportAdminAnalytics
-      tags: [Analytics]
-      summary: Mengekspor rekap analitik
-      description: >-
-        Hanya role=admin dengan status=ACTIVE yang diterima; akun non-ACTIVE
-        menghasilkan 401 generik, sedangkan principal ACTIVE dengan role berbeda
-        menghasilkan 403. Menggunakan dataset dan filter efektif yang sama persis dengan dashboard,
-        termasuk setiap fasilitas yang cocok, termasuk ACTIVE, UNDER_MAINTENANCE,
-        dan INACTIVE, normalized case-insensitive exact location match, effective UTC range,
-        numerator, denominator, damage groups, dan methodology. File wajib memuat
-        period dateFrom/dateTo, requested serta effective location/filter, generatedAt,
-        methodology, dan dataset yang sama. Mapping tepat: format=csv -> text/csv dan
-        ekstensi .csv; format=xlsx -> application/vnd.openxmlformats-officedocument
-        .spreadsheetml.sheet dan ekstensi .xlsx; format=pdf -> application/pdf dan
-        ekstensi .pdf. CSV/XLSX menetralkan nilai cell yang diawali =, +, -, @, tab,
-        atau carriage return dengan prefix apostrophe sebelum serialisasi. PDF memakai
-        text encoding UTF-8/font yang aman serta escaping backslash, parentheses, dan
-        control bytes; input diperlakukan sebagai data, bukan markup/kode. Ekspor
-        kosong tetap memiliki header, periode, filter, generatedAt, metodologi, dan
-        file valid. Content-Disposition memuat rentang tanggal.
-      x-requirement-ids: [ANA-02, ANA-01, IAM-03]
-      security: [{ cookieAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/DateFrom'
-        - $ref: '#/components/parameters/DateTo'
-        - $ref: '#/components/parameters/AnalyticsLocation'
-        - $ref: '#/components/parameters/ExportFormat'
-      responses:
-        '200':
-          description: File ekspor valid dengan dataset yang konsisten terhadap dashboard.
-          headers:
-            Content-Disposition:
-              $ref: '#/components/headers/ExportContentDisposition'
-            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          description: File CSV dengan header Content-Disposition.
           content:
             text/csv:
               schema: { type: string, format: binary }
-              example: |
-                section,field,value
-                period,dateFrom,2026-09-01
-                period,dateTo,2026-09-30
-                period,effectiveFrom,2026-08-31T17:00:00Z
-                period,effectiveUntil,2026-09-30T17:00:00Z
-                filter,requestedLocation,Gedung A
-                filter,normalizedLocation,gedung a
-                filter,effectiveLocation,gedung a
-                filter,locationMatch,exact case-insensitive
-                filter,effectiveDateFrom,2026-08-31T17:00:00Z
-                filter,effectiveDateUntil,2026-09-30T17:00:00Z
-                metadata,timezone,Asia/Jakarta
-                metadata,generatedAt,2026-10-01T02:00:00Z
-                methodology,operatingMinutesPerDay,780
-                methodology,approvedOnly,true
-                methodology,maintenanceExcludedFromDenominator,false
-                methodology,damageCountedFrom,createdAt
-                section,Occupancy dataset,
-                recordType,facilityId,facilityName,facilityStatus,numeratorMinutes,denominatorMinutes,percentage
-                facility,1,RK-101,ACTIVE,1560,23400,6.6667
-                total,,,,1560,23400,6.6667
-                section,Damage frequency dataset,
-                facilityId,facilityName,kategori,status,count
-                1,RK-101,Listrik,RESOLVED,2
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema: { type: string, format: binary }
-            application/pdf:
-              schema: { type: string, format: binary }
-        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
         '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/analitik/ekspor/pdf:
+    get:
+      operationId: exportAdminAnalyticsPdf
+      tags: [Analytics]
+      summary: Mengunduh analitik sebagai PDF
+      description: Hanya admin ACTIVE. Filter startDate, endDate, dan location sama dengan ekspor CSV.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: startDate, in: query, schema: { type: string, format: date } }
+        - { name: endDate, in: query, schema: { type: string, format: date } }
+        - { name: location, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: File PDF dengan header Content-Disposition.
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/analitik/ekspor/xlsx:
+    get:
+      operationId: exportAdminAnalyticsXlsx
+      tags: [Analytics]
+      summary: Mengunduh analitik sebagai XLSX
+      description: Hanya admin ACTIVE. Filter startDate, endDate, dan location sama dengan ekspor CSV; nilai sel dengan awalan formula dinetralkan.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: startDate, in: query, schema: { type: string, format: date } }
+        - { name: endDate, in: query, schema: { type: string, format: date } }
+        - { name: location, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: File XLSX dengan header Content-Disposition.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/cron/expire-reservations:
+    get:
+      operationId: expirePendingReservations
+      tags: [Reservations]
+      summary: Kedaluwarsakan reservasi tertunda
+      description: Dipanggil penjadwal dengan Authorization Bearer CRON_SECRET. Bila secret server belum dikonfigurasi, respons 500.
+      security:
+        - cronBearer: []
+      responses:
+        '200':
+          description: Jumlah reservasi yang kedaluwarsa.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [expired, processedAt]
+                properties:
+                  expired: { type: integer, minimum: 0 }
+                  processedAt: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
 components:
   securitySchemes:
+    cronBearer:
+      type: http
+      scheme: bearer
     cookieAuth:
       type: apiKey
       in: cookie
@@ -2298,7 +1981,7 @@ components:
                 title: Idempotensi tidak cocok
                 status: 409
                 detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
-                instance: /api/report-uploads
+                instance: /api/reports/photo-uploads
                 code: IDEMPOTENCY_KEY_REUSED
     ReservationApprovalConflict:
       description: Alternatif tertutup untuk konflik availability atau transisi reservasi stale saat approval.
@@ -2497,7 +2180,7 @@ components:
             title: Batas upload tercapai
             status: 429
             detail: Batas penerbitan upload intent per jam tercapai.
-            instance: /api/report-uploads
+            instance: /api/reports/photo-uploads
             code: UPLOAD_RATE_LIMITED
     BlobFailure:
       description: Upstream Vercel Blob gagal atau tidak dapat diverifikasi.
@@ -2509,7 +2192,7 @@ components:
             title: Penyimpanan foto tidak tersedia
             status: 502
             detail: Penyimpanan foto gagal diproses; silakan coba lagi.
-            instance: /api/report-uploads
+            instance: /api/reports/photo-uploads
             code: BLOB_UPSTREAM_FAILURE
     UploadQuotaExhausted:
       description: Kuota Vercel Blob tercapai; tidak ada laporan parsial yang dibuat.
@@ -2521,7 +2204,7 @@ components:
             title: Kuota upload habis
             status: 503
             detail: Upload baru ditolak sampai kuota penyimpanan tersedia kembali.
-            instance: /api/report-uploads
+            instance: /api/reports/photo-uploads
             code: UPLOAD_QUOTA_EXHAUSTED
     AdminUserMutationConflict:
       description: Email telah digunakan atau Idempotency-Key dipakai untuk payload berbeda.
