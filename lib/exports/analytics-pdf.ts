@@ -1,7 +1,6 @@
 import * as PdfMakeModule from "pdfmake";
+import fontVfs from "pdfmake/build/vfs_fonts";
 import type { TCreatedPdf } from "pdfmake";
-import { createRequire } from "node:module";
-import { dirname } from "node:path";
 
 import type { Content, ContentText, TDocumentDefinitions, TFontDictionary } from "pdfmake/interfaces";
 import type { AnalyticsExportModel, AnalyticsExportSection } from "@/lib/exports/analytics-export-model";
@@ -16,22 +15,22 @@ interface PdfMakeNodeApi {
   setFonts(fonts: TFontDictionary): void;
   setLocalAccessPolicy(callback: (path: string) => boolean): void;
   setUrlAccessPolicy(callback: (url: string) => boolean): void;
+  virtualfs: { writeFileSync(filename: string, content: string, encoding: string): void };
 }
 
-const require = createRequire(`${process.cwd()}/package.json`);
 const pdfMakeNamespace = PdfMakeModule as unknown as { default?: PdfMakeNodeApi };
 const pdfMake = pdfMakeNamespace.default ?? (PdfMakeModule as unknown as PdfMakeNodeApi);
-const robotoDirectory = dirname(require.resolve("pdfmake/fonts/Roboto/Roboto-Regular.ttf"));
 const FONTS: TFontDictionary = {
   Roboto: {
-    normal: require.resolve("pdfmake/fonts/Roboto/Roboto-Regular.ttf"),
-    bold: require.resolve("pdfmake/fonts/Roboto/Roboto-Medium.ttf"),
-    italics: require.resolve("pdfmake/fonts/Roboto/Roboto-Italic.ttf"),
-    bolditalics: require.resolve("pdfmake/fonts/Roboto/Roboto-MediumItalic.ttf"),
+    normal: "Roboto-Regular.ttf",
+    bold: "Roboto-Medium.ttf",
+    italics: "Roboto-Italic.ttf",
+    bolditalics: "Roboto-MediumItalic.ttf",
   },
 };
+for (const [name, data] of Object.entries(fontVfs)) pdfMake.virtualfs.writeFileSync(name, data, "base64");
 pdfMake.setFonts(FONTS);
-pdfMake.setLocalAccessPolicy((path) => path.startsWith(`${robotoDirectory}/`));
+pdfMake.setLocalAccessPolicy(() => false);
 pdfMake.setUrlAccessPolicy(() => false);
 
 const TABLE_LAYOUT = {

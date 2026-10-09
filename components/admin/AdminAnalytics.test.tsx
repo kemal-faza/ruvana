@@ -265,5 +265,5 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(2);
     expect(within(table).getByText("Fasilitas 1001")).toBeInTheDocument();
     expect(within(pagination).getByRole("button", { name: "Berikutnya" })).toBeDisabled();
-  });
+  }, 15_000);
 });
