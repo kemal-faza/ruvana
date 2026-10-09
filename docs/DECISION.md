@@ -340,7 +340,11 @@ untuk foto laporan tanpa memelihara server sendiri.
 Deploy aplikasi production ke Vercel, gunakan Prisma Postgres sebagai database,
 dan gunakan private Vercel Blob untuk foto laporan. PostgreSQL hanya menyimpan
 referensi objek serta metadata yang diperlukan, bukan binary foto.
-Auto-deployment Vercel hanya aktif untuk branch `main`, sesuai `vercel.json`.
+Auto-deployment Vercel dimatikan. Setelah CI pada `main` lulus, workflow
+`Release Production` membangun deployment Production tanpa mengalihkan domain,
+memeriksa variabel Production, menerapkan `prisma migrate deploy`, lalu
+mempromosikan deployment tersebut. Kegagalan pada salah satu tahap sebelum
+promosi mempertahankan versi aplikasi yang sedang melayani traffic.
 
 ### Alasan
 
@@ -353,8 +357,13 @@ Auto-deployment Vercel hanya aktif untuk branch `main`, sesuai `vercel.json`.
 
 - Kredensial database dan storage production disimpan sebagai environment
   variable platform, bukan di repository.
-- Migrasi production dijalankan dengan `prisma migrate deploy`.
-- Perubahan pada branch selain `main` tidak memicu auto-deployment production.
+- Migrasi production dijalankan dengan `prisma migrate deploy` terhadap
+  `DATABASE_URL` dari environment Production Vercel, terpisah dari build.
+- Secret GitHub environment `production` berisi `VERCEL_TOKEN`,
+  `VERCEL_ORG_ID`, dan `VERCEL_PROJECT_ID`. Vercel Production wajib memiliki
+  `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `NEXT_PUBLIC_SITE_URL`,
+  `ALLOWED_ORIGINS`, dan `CRON_SECRET`.
+- Build preview dan build paralel tidak menjalankan migrasi Production.
 - Batas free tier database dan storage harus dipantau sesuai PRD.
 
 ### Alternatif yang dipertimbangkan

@@ -1,0 +1,101 @@
+name: Release Production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ruvana-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: production
+    env:
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout commit yang lulus CI
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Periksa kredensial dan commit main
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "Secret $name belum diatur di environment production." >&2
+              exit 1
+            fi
+          done
+          current_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$current_sha" != "$RELEASE_SHA" ]]; then
+            echo "Commit rilis bukan lagi HEAD main; promosi dibatalkan." >&2
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10.30.2
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59.16.0
+
+      - name: Bangun deployment Production tanpa traffic
+        id: staged
+        shell: bash
+        run: |
+          set -euo pipefail
+          deployment_url="$(vercel deploy --prod --skip-domain --yes --token "$VERCEL_TOKEN")"
+          if [[ "$deployment_url" != https://* ]]; then
+            echo "Vercel tidak mengembalikan URL deployment yang valid." >&2
+            exit 1
+          fi
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Periksa variabel Production
+        run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- node scripts/check-production-env.mjs
+
+      - name: Terapkan migrasi pada database Production
+        run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- pnpm exec prisma migrate deploy
+
+      - name: Pastikan commit main belum berubah
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$current_sha" != "$RELEASE_SHA" ]]; then
+            echo "Main berubah selama migrasi; deployment tidak dipromosikan." >&2
+            exit 1
+          fi
+
+      - name: Promosikan deployment setelah migrasi berhasil
+        run: vercel promote "${{ steps.staged.outputs.url }}" --yes --token "$VERCEL_TOKEN"
+
+      - name: Verifikasi cron pada domain Production
+        run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- node scripts/check-production-cron.mjs
