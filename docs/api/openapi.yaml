@@ -1735,13 +1735,6 @@ components:
       description: Filter fasilitas admin. Nilai dinormalisasi dengan trim dan Unicode-aware casefold, lalu dicocokkan substring secara case-insensitive pada lokasi tersimpan.
       schema: { type: string, minLength: 1, maxLength: 200 }
       example: Gedung A
-    AnalyticsLocation:
-      name: location
-      in: query
-      required: false
-      description: Filter analytics opsional. Nilai dinormalisasi dengan trim dan Unicode-aware casefold, lalu dicocokkan exact secara case-insensitive; omission atau null berarti semua lokasi.
-      schema: { type: [string, 'null'], maxLength: 200 }
-      example: Gedung A
     MinCapacity:
       name: minCapacity
       in: query
@@ -1770,13 +1763,6 @@ components:
       description: Filter status reservasi milik user.
       schema: { $ref: '#/components/schemas/ReservationStatus' }
       example: APPROVED
-    ReportStatusQuery:
-      name: status
-      in: query
-      required: false
-      description: Filter status laporan milik user.
-      schema: { $ref: '#/components/schemas/ReportStatus' }
-      example: NEW
     ReportQueue:
       name: queue
       in: query
@@ -1810,27 +1796,6 @@ components:
       description: Tanggal kalender Asia/Jakarta dalam YYYY-MM-DD.
       schema: { type: string, format: date }
       example: '2026-09-15'
-    DateFrom:
-      name: dateFrom
-      in: query
-      required: true
-      description: Batas awal inklusif kalender Asia/Jakarta.
-      schema: { type: string, format: date }
-      example: '2026-09-01'
-    DateTo:
-      name: dateTo
-      in: query
-      required: true
-      description: Batas akhir inklusif kalender Asia/Jakarta; harus tidak sebelum dateFrom.
-      schema: { type: string, format: date }
-      example: '2026-09-30'
-    ExportFormat:
-      name: format
-      in: query
-      required: true
-      description: Format file ekspor.
-      schema: { type: string, enum: [csv, xlsx, pdf] }
-      example: csv
     FacilityId:
       name: facilityId
       in: path
@@ -1852,13 +1817,6 @@ components:
       description: Identifier laporan positif.
       schema: { type: integer, minimum: 1 }
       example: 15
-    UserId:
-      name: userId
-      in: path
-      required: true
-      description: Identifier user positif.
-      schema: { type: integer, minimum: 1 }
-      example: 42
   headers:
     SessionCookie:
       description: Cookie ruvana_session yang HttpOnly, SameSite=Lax, Secure di production, Path=/ dan memiliki expiry dengan lifetime bounded yang dikonfigurasi implementasi (durasi tidak ditetapkan oleh kontrak ini).
@@ -1875,10 +1833,6 @@ components:
       description: Jumlah detik minimum sebelum request boleh dicoba lagi.
       schema: { type: integer, minimum: 1 }
       example: 900
-    ExportContentDisposition:
-      description: Attachment filename memuat dateFrom dan dateTo.
-      schema: { type: string }
-      example: attachment; filename="ruvana-analytics-2026-09-01-2026-09-30.csv"
   responses:
     BadRequest:
       description: JSON atau parameter query/path malformed.
@@ -1957,32 +1911,6 @@ components:
             detail: Resource yang diminta tidak ditemukan.
             instance: /api/resource/1
             code: NOT_FOUND
-    IdempotencyConflict:
-      description: >-
-        Payload berbeda memakai identity yang sama. Identity mencakup authenticated
-        principal, HTTP method/operation ID, canonical path parameters, relevant
-        query, dan canonical body; retensi 24 jam. Authorization role/status dan
-        ownership diperiksa sebelum lookup atau replay.
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/IdempotencyConflictProblem' }
-          examples:
-            reservation:
-              value:
-                type: https://app.example.invalid/problems/idempotency-key-reused
-                title: Idempotensi tidak cocok
-                status: 409
-                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
-                instance: /api/reservations
-                code: IDEMPOTENCY_KEY_REUSED
-            reportUpload:
-              value:
-                type: https://app.example.invalid/problems/idempotency-key-reused
-                title: Idempotensi tidak cocok
-                status: 409
-                detail: Idempotency-Key telah digunakan untuk payload berbeda pada identity yang sama.
-                instance: /api/reports/photo-uploads
-                code: IDEMPOTENCY_KEY_REUSED
     ReservationApprovalConflict:
       description: Alternatif tertutup untuk konflik availability atau transisi reservasi stale saat approval.
       content:
@@ -2101,18 +2029,6 @@ components:
             detail: Laporan sudah berada pada status terminal.
             instance: /api/staff/reports/15/start
             code: INVALID_REPORT_TRANSITION
-    AccountTransitionConflict:
-      description: Transisi akun ditolak oleh state machine atau target sudah stale/expired.
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/AccountTransitionProblem' }
-          example:
-            type: https://app.example.invalid/problems/invalid-account-transition
-            title: Transisi akun tidak valid
-            status: 409
-            detail: Akun sudah tidak berada pada status PENDING.
-            instance: /api/admin/users/42/approve
-            code: INVALID_ACCOUNT_TRANSITION
     FacilityTransitionConflict:
       description: Transisi fasilitas ditolak oleh state machine atau target sudah stale/expired.
       content:
@@ -2194,18 +2110,6 @@ components:
             detail: Penyimpanan foto gagal diproses; silakan coba lagi.
             instance: /api/reports/photo-uploads
             code: BLOB_UPSTREAM_FAILURE
-    UploadQuotaExhausted:
-      description: Kuota Vercel Blob tercapai; tidak ada laporan parsial yang dibuat.
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          example:
-            type: https://app.example.invalid/problems/upload-quota-exhausted
-            title: Kuota upload habis
-            status: 503
-            detail: Upload baru ditolak sampai kuota penyimpanan tersedia kembali.
-            instance: /api/reports/photo-uploads
-            code: UPLOAD_QUOTA_EXHAUSTED
     AdminUserMutationConflict:
       description: Email telah digunakan atau Idempotency-Key dipakai untuk payload berbeda.
       content:
@@ -2516,34 +2420,6 @@ components:
             - $ref: '#/components/schemas/StaffUser'
             - type: 'null'
           readOnly: true
-    ReportUploadRequest:
-      type: object
-      additionalProperties: false
-      required: [fileName, contentType, size]
-      properties:
-        fileName:
-          type: string
-          minLength: 1
-          maxLength: 255
-          pattern: '^(?!\\.{1,2}$)(?!.*[/\\\\])(?!.*[\\x00-\\x1F\\x7F]).+$'
-          description: Hanya basename tanpa separator, control character, atau dot segment; nama asli tidak pernah masuk pathname. Server boleh mengabaikannya setelah validasi.
-        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
-        size: { type: integer, minimum: 1, maximum: 5242880, description: 'Ukuran byte, maksimum 5 MiB.' }
-    UploadIntent:
-      type: object
-      additionalProperties: false
-      required: [uploadId, pathname, uploadUrl, method, requiredHeaders, expiresAt, maximumSizeInBytes]
-      properties:
-        uploadId: { type: string, format: uuid, readOnly: true }
-        pathname: { type: string, minLength: 1, maxLength: 512, readOnly: true, description: Path dibuat server hanya dari owner terautentikasi dan nilai random server; original fileName tidak pernah masuk pathname dan path bukan URL permanen. }
-        uploadUrl: { type: string, format: uri, readOnly: true, description: Presigned URL upload maksimum 10 menit. }
-        method: { type: string, const: PUT, readOnly: true }
-        requiredHeaders:
-          type: object
-          additionalProperties: { type: string }
-          readOnly: true
-        expiresAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
-        maximumSizeInBytes: { type: integer, const: 5242880, readOnly: true }
     PhotoMetadata:
       type: object
       additionalProperties: false
@@ -2552,38 +2428,6 @@ components:
         hasPhoto: { type: boolean, const: true, readOnly: true }
         contentType: { type: string, enum: [image/jpeg, image/png, image/webp], readOnly: true }
         size: { type: integer, minimum: 1, maximum: 5242880, readOnly: true }
-    ReportCreateRequest:
-      type: object
-      additionalProperties: false
-      required: [uploadId, facilityId, kategori, deskripsi]
-      properties:
-        uploadId: { type: string, format: uuid }
-        facilityId: { type: integer, minimum: 1 }
-        kategori: { $ref: '#/components/schemas/ReportCategory' }
-        deskripsi: { type: string, minLength: 1, maxLength: 2000 }
-    Report:
-      type: object
-      additionalProperties: false
-      required: [id, facility, kategori, deskripsi, foto, status, catatanResolusi, ditanganiOleh, createdAt, processedAt]
-      properties:
-        id: { type: integer, minimum: 1, readOnly: true }
-        facility: { $ref: '#/components/schemas/FacilitySnapshot' }
-        kategori: { $ref: '#/components/schemas/ReportCategory' }
-        deskripsi: { type: string, minLength: 1, maxLength: 2000 }
-        foto: { $ref: '#/components/schemas/PhotoMetadata' }
-        status: { $ref: '#/components/schemas/ReportStatus' }
-        catatanResolusi: { type: [string, 'null'], maxLength: 500, readOnly: true }
-        ditanganiOleh:
-          anyOf:
-            - $ref: '#/components/schemas/StaffUser'
-            - type: 'null'
-          readOnly: true
-        createdAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true }
-        processedAt:
-          anyOf:
-            - $ref: '#/components/schemas/UtcInstant'
-            - type: 'null'
-          readOnly: true
     StaffReport:
       type: object
       additionalProperties: false
@@ -2831,13 +2675,6 @@ components:
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/StaffReservation' } }
         meta: { $ref: '#/components/schemas/PageMeta' }
-    ReportCollection:
-      type: object
-      additionalProperties: false
-      required: [items, meta]
-      properties:
-        items: { type: array, items: { $ref: '#/components/schemas/Report' } }
-        meta: { $ref: '#/components/schemas/PageMeta' }
     StaffReportCollection:
       type: object
       additionalProperties: false
@@ -2975,24 +2812,6 @@ components:
             status: { type: integer, const: 409 }
             code: { type: string, const: INVALID_REPORT_TRANSITION }
       unevaluatedProperties: false
-    ReportFinalizationConflictProblem:
-      allOf:
-        - $ref: '#/components/schemas/ProblemBase'
-        - type: object
-          required: [status, code]
-          properties:
-            status: { type: integer, const: 409 }
-            code: { type: string, const: UPLOAD_ALREADY_FINALIZED }
-      unevaluatedProperties: false
-    AccountTransitionProblem:
-      allOf:
-        - $ref: '#/components/schemas/ProblemBase'
-        - type: object
-          required: [status, code]
-          properties:
-             status: { type: integer, const: 409 }
-             code: { type: string, const: INVALID_ACCOUNT_TRANSITION }
-      unevaluatedProperties: false
     AdminUserEmailConflictProblem:
       allOf:
         - $ref: '#/components/schemas/ProblemBase'
@@ -3020,60 +2839,3 @@ components:
             status: { type: integer, const: 409 }
             code: { type: string, const: FACILITY_NAME_ALREADY_USED }
       unevaluatedProperties: false
-    DamageGroup:
-      type: object
-      additionalProperties: false
-      required: [facilityId, facilityName, kategori, status, count]
-      properties:
-        facilityId: { type: integer, minimum: 1 }
-        facilityName: { type: string }
-        kategori: { $ref: '#/components/schemas/ReportCategory' }
-        status: { $ref: '#/components/schemas/ReportStatus' }
-        count: { type: integer, minimum: 0 }
-    Analytics:
-      type: object
-      additionalProperties: false
-      required: [filter, timezone, effectiveRange, generatedAt, occupancy, damageGroups, methodology]
-      properties:
-        filter:
-          type: object
-          additionalProperties: false
-          required: [dateFrom, dateTo, location]
-          properties:
-            dateFrom: { type: string, format: date }
-            dateTo: { type: string, format: date }
-            location:
-              type: [string, 'null']
-              maxLength: 200
-              description: >-
-                Requested/effective location; null means all locations. Matching is
-                trim + case-fold + exact, case-insensitive.
-        timezone: { type: string, const: Asia/Jakarta }
-        effectiveRange:
-          type: object
-          additionalProperties: false
-          required: [from, until]
-          properties:
-            from: { $ref: '#/components/schemas/UtcInstant', description: 00:00 dateFrom Asia/Jakarta sebagai UTC. }
-            until: { $ref: '#/components/schemas/UtcInstant', description: 00:00 sehari setelah dateTo Asia/Jakarta sebagai UTC; batas exclusive. }
-        generatedAt: { $ref: '#/components/schemas/UtcInstant', readOnly: true, description: Waktu server saat dataset dashboard/export yang sama dibuat. }
-        occupancy:
-          type: object
-          additionalProperties: false
-          required: [numeratorMinutes, denominatorMinutes, percentage]
-          properties:
-            numeratorMinutes: { type: integer, minimum: 0, description: Total menit irisan reservasi APPROVED. }
-            denominatorMinutes: { type: integer, minimum: 0, description: 'Setiap fasilitas yang cocok dengan location ternormalisasi, tanpa mengecualikan ACTIVE, UNDER_MAINTENANCE, atau INACTIVE, × hari kalender × 780; status historis tidak direkonstruksi.' }
-            percentage: { type: number, minimum: 0, maximum: 100 }
-        damageGroups:
-          type: array
-          items: { $ref: '#/components/schemas/DamageGroup' }
-        methodology:
-          type: object
-          additionalProperties: false
-          required: [operatingMinutesPerDay, approvedOnly, maintenanceExcludedFromDenominator, damageCountedFrom]
-          properties:
-            operatingMinutesPerDay: { type: integer, const: 780 }
-            approvedOnly: { type: boolean, const: true }
-            maintenanceExcludedFromDenominator: { type: boolean, const: false }
-            damageCountedFrom: { type: string, const: createdAt }
