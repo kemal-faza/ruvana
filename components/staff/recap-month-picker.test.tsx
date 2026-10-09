@@ -58,7 +58,7 @@ describe("RecapMonthPicker", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("menjaga fokus tetap pada kontrol saat navigasi parsial selesai", async () => {
+  it("tidak me-remount kontrol saat bulan baru tiba sehingga fokus tidak lepas", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<RecapMonthPicker currentMonth="2026-09" />);
 
@@ -68,8 +68,17 @@ describe("RecapMonthPicker", () => {
     expect(replaceMock).toHaveBeenCalledWith("/petugas?bulan=2026-10", { scroll: false });
 
     rerender(<RecapMonthPicker currentMonth="2026-10" />);
-    expect(screen.getByRole("button", { name: "Tampilkan rekap" })).toBeEnabled();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Tampilkan rekap" }));
+
+    // Prasyarat: pending sudah dibersihkan, jadi tombol memang bisa memegang fokus.
+    expect(screen.getByRole("form", { name: "Pilih bulan rekap" })).not.toHaveAttribute("aria-busy");
+    expect(tombol).toBeEnabled();
+
+    // Node yang sama, bukan sekadar tombol bernama sama: kalau kontrol dipaksa
+    // remount (mis. diberi key), referensi lama jadi terlepas dan fokus pindah
+    // ke body. Properti "navigasi parsial tidak menghilangkan fokus" sendiri
+    // adalah perilaku browser, di luar jangkauan uji jsdom ini.
+    expect(document.activeElement).toBe(tombol);
+    expect(tombol.isConnected).toBe(true);
   });
 
   it("menampilkan nama bulan dalam Bahasa Indonesia", () => {
