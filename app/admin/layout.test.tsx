@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }))
 
+import AdminAnalitikLoading from "./analitik/loading"
 import AdminLayout from "./layout"
 
 afterEach(() => {
@@ -32,7 +33,8 @@ describe("AdminLayout", () => {
       status: AccountStatus.ACTIVE,
     })
 
-    const { container } = render(await AdminLayout({ children: <main id="konten" tabIndex={-1}>Analitik</main> }))
+    // Konten nyata (bukan main buatan tes) supaya id target tautan lewati ikut teruji.
+    const { container } = render(await AdminLayout({ children: <AdminAnalitikLoading /> }))
     const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" })
 
     expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink)
