@@ -3,10 +3,13 @@ import { AccountStatus, Role } from "@/generated/prisma/enums";
 import { currentAccount } from "@/lib/services/auth-service";
 import { badRequest, internalError, problemResponse, validationFailed } from "@/lib/http/problem";
 import { originError } from "@/lib/http/origin";
+import { buildIdempotencyScope, hashCanonicalBody } from "@/lib/http/idempotency";
+import { claimIdempotentRoute, readIdempotencyKey } from "@/lib/http/idempotent-route";
 import { createManagedUser, getManagedUsers } from "@/lib/services/admin-users-service";
 
 const roles = Object.values(Role);
 const statuses = Object.values(AccountStatus);
+const CREATE_USER_SCOPE = buildIdempotencyScope("POST", "/api/admin/users");
 
 function accessDenied(instance: string, role: Role | undefined) {
   if (role === undefined) return problemResponse({ status: 401, code: "UNAUTHORIZED", title: "Autentikasi diperlukan", detail: "Sesi tidak valid atau akun tidak aktif.", instance });
@@ -49,23 +52,39 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const instance = request.nextUrl.pathname;
-  const rejected = originError(request);
-  if (rejected) return rejected;
   try {
     const actor = await currentAccount();
     const denied = accessDenied(instance, actor?.role);
     if (denied) return denied;
+
+    const rejected = originError(request);
+    if (rejected) return rejected;
+    const key = readIdempotencyKey(request, instance);
+    if (key instanceof NextResponse) return key;
+
     let body: unknown;
     try { body = await request.json(); } catch { return badRequest(instance, "JSON tidak dapat diproses."); }
 
-    const key = request.headers.get("Idempotency-Key") ?? "";
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) {
-      return problemResponse({ status: 400, code: "BAD_REQUEST", title: "Permintaan tidak valid", detail: "Idempotency-Key harus berupa UUID.", instance });
+    const idempotency = await claimIdempotentRoute({
+      key,
+      principalId: actor!.id,
+      scope: CREATE_USER_SCOPE,
+      requestHash: hashCanonicalBody(body),
+      instance,
+    });
+    if (idempotency instanceof NextResponse) return idempotency;
+
+    let result: Awaited<ReturnType<typeof createManagedUser>>;
+    try {
+      result = await createManagedUser(actor!.id, body, async (tx, user) => {
+        await idempotency.commit(tx, 201, { user });
+      });
+    } catch (error) {
+      console.error("Gagal membuat akun melalui admin", error);
+      return idempotency.fail();
     }
-    const result = await createManagedUser(actor!.id, key, body);
-    if (result.kind === "validation") return validationFailed(instance, result.errors);
-    if (result.kind === "duplicate") return problemResponse({ status: 409, code: "EMAIL_ALREADY_USED", title: "Konflik data", detail: "Email tersebut sudah terdaftar.", instance });
-    if (result.kind === "key_reused") return problemResponse({ status: 409, code: "IDEMPOTENCY_KEY_REUSED", title: "Konflik permintaan", detail: "Idempotency-Key telah digunakan untuk payload berbeda.", instance });
+    if (result.kind === "validation") return idempotency.settle(validationFailed(instance, result.errors));
+    if (result.kind === "duplicate") return idempotency.settle(problemResponse({ status: 409, code: "EMAIL_ALREADY_USED", title: "Konflik data", detail: "Email tersebut sudah terdaftar.", instance }));
     return NextResponse.json({ user: result.user }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Gagal membuat akun melalui admin", error);

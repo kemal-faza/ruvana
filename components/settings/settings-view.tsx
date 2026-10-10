@@ -11,6 +11,7 @@ import { ButtonGroup } from "@/components/ui/button-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
+import { BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
 
 type Section = "general" | "profil" | "keamanan"
 type ThemePreference = "system" | "light" | "dark"
@@ -26,7 +27,7 @@ const ROLE_LABEL: Record<SessionUser["role"], string> = {
 }
 
 const SECTION_ITEMS: { id: Section; label: string; icon: typeof UserRound }[] = [
-  { id: "general", label: "General", icon: Settings2 },
+  { id: "general", label: "Umum", icon: Settings2 },
   { id: "profil", label: "Profil", icon: UserRound },
   { id: "keamanan", label: "Keamanan & masuk", icon: ShieldCheck },
 ]
@@ -93,7 +94,6 @@ function ProfileSection({ account }: SettingsViewProps) {
               name="nama"
               defaultValue={account.nama}
               autoComplete="name"
-              minLength={3}
               maxLength={100}
               className={INPUT_BASELINE_CLASS}
               required
@@ -145,7 +145,7 @@ function SecuritySection() {
             <PasswordField name="currentPassword" label="Kata sandi saat ini" error={passwordState.fieldErrors?.currentPassword} autoComplete="current-password" />
             <PasswordField name="newPassword" label="Kata sandi baru" error={passwordState.fieldErrors?.newPassword} autoComplete="new-password" />
             <PasswordField name="confirmation" label="Ulangi kata sandi baru" error={passwordState.fieldErrors?.confirmation} autoComplete="new-password" />
-            <p className="text-sm text-muted-foreground">Gunakan 8–72 byte UTF-8. Setelah diperbarui, sesi di perangkat lain akan diakhiri.</p>
+            <p className="text-sm text-muted-foreground">Gunakan minimal 8 karakter. Setelah diperbarui, sesi di perangkat lain akan diakhiri.</p>
             <ActionFeedback ok={passwordState.ok} message={passwordState.message} />
             <div>
               <Button type="submit" disabled={passwordPending} className={BUTTON_ACTION_CLASS}>
@@ -185,9 +185,8 @@ function validatePasswordForm(event: FormEvent<HTMLFormElement>) {
 
   const bytes = new TextEncoder().encode(password.value).length
   if (!current.value) current.setCustomValidity("Kata sandi saat ini wajib diisi.")
-  if (bytes < 8 || bytes > 72) {
-    password.setCustomValidity("Kata sandi baru harus berukuran 8–72 byte UTF-8.")
-  }
+  if (bytes < BATAS_PASSWORD_AKUN_MIN_BYTE) password.setCustomValidity(`Kata sandi minimal ${BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.`)
+  else if (bytes > BATAS_PASSWORD_AKUN_BYTE) password.setCustomValidity(`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} karakter.`)
   if (password.value !== confirmation.value) {
     confirmation.setCustomValidity("Konfirmasi kata sandi belum cocok.")
   }
@@ -238,7 +237,7 @@ function GeneralSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>General</CardTitle>
+        <CardTitle>Umum</CardTitle>
       </CardHeader>
       <CardContent className="flex max-w-xl flex-col gap-5">
         <Field>

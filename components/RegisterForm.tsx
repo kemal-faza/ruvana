@@ -12,12 +12,15 @@ import { Input } from "@/components/ui/input"
 import {
   BATAS_EMAIL_AKUN_KARAKTER,
   BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_MIN_BYTE,
   BATAS_PASSWORD_AKUN_BYTE,
 } from "@/config/business"
+import { useHydrated } from "@/lib/use-hydrated"
 
 export default function RegisterForm() {
   const [state, setState] = useState<{ ok: boolean; pesan: string; fieldErrors?: Record<string, string[]> }>({ ok: false, pesan: "" })
   const [pending, setPending] = useState(false)
+  const hydrated = useHydrated()
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -36,10 +39,10 @@ export default function RegisterForm() {
           : "",
     )
     password.setCustomValidity(
-      passwordLength < 8
-        ? "Kata sandi terlalu pendek. Tambahkan beberapa karakter."
+      passwordLength < BATAS_PASSWORD_AKUN_MIN_BYTE
+        ? `Kata sandi minimal ${BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.`
         : passwordLength > BATAS_PASSWORD_AKUN_BYTE
-          ? "Kata sandi terlalu panjang. Kurangi beberapa karakter."
+          ? `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} karakter.`
           : "",
     )
     const firstInvalid = [nama, email, password].find((input) => !input.validity.valid)
@@ -109,6 +112,7 @@ export default function RegisterForm() {
           <form
             onSubmit={submit}
             className="flex flex-col gap-5"
+            method="post"
             noValidate
           >
             <Field data-invalid={!!state.fieldErrors?.nama || undefined}>
@@ -183,7 +187,7 @@ export default function RegisterForm() {
                 />
               </div>
               <p id="daftar-password-help" className="text-sm text-muted-foreground">
-                Sebaiknya gunakan setidaknya 8 karakter.
+                Kata sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.
               </p>
               {state.fieldErrors?.password && (
                 <FieldError id="daftar-password-error">{state.fieldErrors.password[0]}</FieldError>
@@ -205,7 +209,7 @@ export default function RegisterForm() {
               </p>
             )}
 
-            <Button type="submit" size="lg" loading={pending} disabled={state.ok} className="mt-1 min-h-11 w-full">
+            <Button type="submit" size="lg" loading={pending} disabled={!hydrated || state.ok} className="mt-1 min-h-11 w-full">
               Daftar
             </Button>
             <p className="text-center text-sm">

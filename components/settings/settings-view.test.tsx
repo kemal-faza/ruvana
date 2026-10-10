@@ -62,10 +62,10 @@ describe("SettingsView", () => {
 
   })
 
-  it("menyatukan bahasa dan pilihan tema di General dengan indikator pilihan aktif", () => {
+  it("menyatukan bahasa dan pilihan tema di Umum dengan indikator pilihan aktif", () => {
     render(<SettingsView account={pengguna} />)
 
-    expect(screen.getByRole("button", { name: "General" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Umum" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByLabelText("Bahasa")).toHaveValue("Bahasa Indonesia")
     expect(screen.queryByRole("button", { name: "Notifikasi" })).not.toBeInTheDocument()
 
@@ -86,7 +86,7 @@ describe("SettingsView", () => {
   it("tidak menampilkan menu notifikasi untuk admin", () => {
     render(<SettingsView account={{ ...pengguna, role: "admin", nama: "Admin Kampus" }} />)
 
-    expect(screen.getByRole("button", { name: "General" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Umum" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.queryByRole("button", { name: "Notifikasi" })).not.toBeInTheDocument()
   })
 

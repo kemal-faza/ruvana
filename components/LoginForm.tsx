@@ -3,30 +3,27 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useState } from "react"
 
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
+import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
 import { getPostLoginPath } from "@/lib/auth-routing"
+import { useHydrated } from "@/lib/use-hydrated"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const subscribeHydration = () => () => {}
-const clientHydrated = () => true
-const serverHydrated = () => false
 
 export default function LoginForm() {
   const router = useRouter()
   const [state, setState] = useState({
-    ok: false,
     pesan: "",
     fieldErrors: {} as Record<string, string[]>,
   })
   const [pending, setPending] = useState(false)
-  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated)
+  const hydrated = useHydrated()
 
   const emailError = state.fieldErrors?.email?.[0]
   const passwordError = state.fieldErrors?.password?.[0]
@@ -80,12 +77,12 @@ export default function LoginForm() {
                 fieldErrors.email = ["Format email tidak valid."]
               }
               if (!password) fieldErrors.password = ["Kata sandi wajib diisi."]
-              else if (passwordBytes < 8) fieldErrors.password = ["Kata sandi terlalu pendek. Tambahkan beberapa karakter."]
+              else if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE) fieldErrors.password = [`Kata sandi minimal ${BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.`]
               else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
-                fieldErrors.password = ["Kata sandi terlalu panjang. Kurangi beberapa karakter."]
+                fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} karakter.`]
               }
               if (Object.keys(fieldErrors).length > 0) {
-                setState({ ok: false, pesan: "", fieldErrors })
+                setState({ pesan: "", fieldErrors })
                 return
               }
               setPending(true)
@@ -109,9 +106,9 @@ export default function LoginForm() {
                     }
                   }
                 }
-                setState({ ok: false, pesan: result.detail ?? "Gagal masuk. Coba lagi.", fieldErrors })
+                setState({ pesan: result.detail ?? "Gagal masuk. Coba lagi.", fieldErrors })
               } catch {
-                setState({ ok: false, pesan: "Gagal terhubung. Coba lagi.", fieldErrors: {} })
+                setState({ pesan: "Gagal terhubung. Coba lagi.", fieldErrors: {} })
               } finally {
                 setPending(false)
               }
@@ -176,7 +173,7 @@ export default function LoginForm() {
                   className="h-11 pl-10"
                 />
               </div>
-              <FieldDescription id="login-password-help">Sebaiknya gunakan setidaknya 8 karakter.</FieldDescription>
+              <FieldDescription id="login-password-help">Kata sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.</FieldDescription>
               {passwordError && (
                 <FieldError id="login-password-error">{passwordError}</FieldError>
               )}
@@ -186,12 +183,8 @@ export default function LoginForm() {
               <p
                 id="login-error"
                 tabIndex={-1}
-                role={state.ok ? "status" : "alert"}
-                className={
-                  state.ok
-                    ? "rounded-lg bg-success-subdued px-3 py-2.5 text-sm text-success-subdued-foreground"
-                    : "rounded-lg bg-destructive-subdued px-3 py-2.5 text-sm text-destructive-subdued-foreground"
-                }
+                role="alert"
+                className="rounded-lg bg-destructive-subdued px-3 py-2.5 text-sm text-destructive-subdued-foreground"
               >
                 {state.pesan}
               </p>

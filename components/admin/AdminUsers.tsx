@@ -1,12 +1,20 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useCallback, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Search, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 
-import { buatAkun, ubahStatusAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions";
+import {
+  buatAkun,
+  ubahStatusAkun,
+  verifikasiPendaftaran,
+  type StateBuatAkun,
+  type StateStatusAkun,
+  type StateVerifikasiPendaftaran,
+} from "@/app/admin/pengguna/actions";
 import {
   BATAS_EMAIL_AKUN_KARAKTER,
   BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_MIN_BYTE,
   BATAS_PASSWORD_AKUN_BYTE,
 } from "@/config/business";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +38,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { AdminUserRow, RingkasanAkun } from "@/lib/admin/users";
+import type { AdminUserRow } from "@/lib/admin/users";
+import { ringkasAkun } from "@/lib/admin/ringkasan-akun";
 
 const ROLE_LABEL: Record<AdminUserRow["role"], string> = {
   pengguna: "Pengguna",
@@ -121,13 +130,19 @@ function inisial(nama: string) {
 
 export default function AdminUsers({
   users,
-  ringkasan,
   adminId,
 }: {
   users: AdminUserRow[];
-  ringkasan: RingkasanAkun;
   adminId: number;
 }) {
+  const [dataLokal, setDataLokal] = useState({ sumber: users, daftar: users });
+  const daftar = dataLokal.sumber === users ? dataLokal.daftar : users;
+  const perbaruiDaftar = useCallback((ubah: (current: AdminUserRow[]) => AdminUserRow[]) => {
+    setDataLokal((current) => ({
+      sumber: users,
+      daftar: ubah(current.sumber === users ? current.daftar : users),
+    }));
+  }, [users]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -136,19 +151,43 @@ export default function AdminUsers({
   const [arahUrut, setArahUrut] = useState<ArahUrut>("naik");
   const [halaman, setHalaman] = useState(1);
   const [hasilVerifikasi, aksiVerifikasi, memverifikasi] = useActionState(
-    verifikasiPendaftaran,
+    async (previous: StateVerifikasiPendaftaran, form: FormData) => {
+      const result = await verifikasiPendaftaran(previous, form);
+      if (result.ok && result.perubahan) {
+        const { id, status, waktuVerifikasi } = result.perubahan;
+        perbaruiDaftar((current) => current.map((user) =>
+          user.id === id ? { ...user, status, waktuVerifikasi } : user,
+        ));
+      }
+      return result;
+    },
     { ok: false, pesan: "" },
   );
   const [hasilStatus, aksiStatus, memprosesStatus] = useActionState(
-    ubahStatusAkun,
+    async (previous: StateStatusAkun, form: FormData) => {
+      const result = await ubahStatusAkun(previous, form);
+      if (result.ok && result.perubahan) {
+        const { id, status } = result.perubahan;
+        perbaruiDaftar((current) => current.map((user) =>
+          user.id === id ? { ...user, status } : user,
+        ));
+      }
+      return result;
+    },
     { ok: false, pesan: "" },
   );
   const [aksiTerakhir, setAksiTerakhir] = useState<"verifikasi" | "status" | null>(null);
   const umpanBalik = aksiTerakhir === "status" ? hasilStatus : hasilVerifikasi;
 
+  const tambahAkun = useCallback((user: AdminUserRow) => {
+    perbaruiDaftar((current) => current.some((item) => item.id === user.id) ? current : [user, ...current]);
+  }, [perbaruiDaftar]);
+
+  const ringkasan = useMemo(() => ringkasAkun(daftar), [daftar]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return users.filter(
+    return daftar.filter(
       (u) =>
         (q === "" ||
           u.nama.toLowerCase().includes(q) ||
@@ -156,7 +195,7 @@ export default function AdminUsers({
         (!roleFilter || u.role === roleFilter) &&
         (!statusFilter || u.status === statusFilter),
     );
-  }, [users, search, roleFilter, statusFilter]);
+  }, [daftar, search, roleFilter, statusFilter]);
 
   function toggleUrut(kunci: KunciUrut) {
     if (kunciUrut === kunci) {
@@ -311,7 +350,7 @@ export default function AdminUsers({
           </CardContent>
         </Card>
         <p aria-live="polite" className="mt-2 text-xs text-muted-foreground">
-          Menampilkan {filtered.length} dari {users.length} akun.
+          Menampilkan {filtered.length} dari {daftar.length} akun.
         </p>
       </section>
 
@@ -509,7 +548,7 @@ export default function AdminUsers({
         </Card>
       </section>
 
-      <SheetBuatAkun terbuka={sheetTerbuka} onTerbukaChange={setSheetTerbuka} />
+      <SheetBuatAkun terbuka={sheetTerbuka} onTerbukaChange={setSheetTerbuka} onCreated={tambahAkun} />
     </main>
   );
 }
@@ -517,11 +556,20 @@ export default function AdminUsers({
 function SheetBuatAkun({
   terbuka,
   onTerbukaChange,
+  onCreated,
 }: {
   terbuka: boolean;
   onTerbukaChange: (terbuka: boolean) => void;
+  onCreated: (user: AdminUserRow) => void;
 }) {
-  const [state, action, pending] = useActionState(buatAkun, { ok: false, pesan: "" });
+  const [state, action, pending] = useActionState(
+    async (previous: StateBuatAkun, form: FormData) => {
+      const result = await buatAkun(previous, form);
+      if (result.ok && result.user) onCreated(result.user);
+      return result;
+    },
+    { ok: false, pesan: "" },
+  );
 
   return (
     <Sheet open={terbuka} onOpenChange={onTerbukaChange}>
@@ -541,12 +589,12 @@ function SheetBuatAkun({
             const password = form.elements.namedItem("password") as HTMLInputElement;
             const ukuranPassword = new TextEncoder().encode(password.value).length;
 
-            nama.setCustomValidity(nama.value.trim().length < 3 ? "Nama minimal 3 karakter." : "");
+            nama.setCustomValidity(!nama.value.trim() ? "Nama lengkap wajib diisi." : "");
             password.setCustomValidity(
-              ukuranPassword > BATAS_PASSWORD_AKUN_BYTE
-                ? `Password maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
-                : !/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/.test(password.value)
-                  ? "Password harus mengandung huruf dan angka."
+              ukuranPassword < BATAS_PASSWORD_AKUN_MIN_BYTE
+                ? `Kata sandi minimal ${BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.`
+                : ukuranPassword > BATAS_PASSWORD_AKUN_BYTE
+                  ? `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} karakter.`
                   : "",
             );
 
@@ -567,7 +615,6 @@ function SheetBuatAkun({
               placeholder="cth. Andi Wijaya"
               autoComplete="name"
               required
-              minLength={3}
               maxLength={BATAS_NAMA_AKUN_KARAKTER}
               onInput={(event) => event.currentTarget.setCustomValidity("")}
               aria-invalid={state.fieldErrors?.nama ? true : undefined}
@@ -604,10 +651,9 @@ function SheetBuatAkun({
               id="buat-password"
               name="password"
               type="password"
-              placeholder="Min. 8 karakter, huruf & angka"
+              placeholder="Buat kata sandi awal"
               autoComplete="new-password"
               required
-              minLength={8}
               onInput={(event) => event.currentTarget.setCustomValidity("")}
               aria-invalid={state.fieldErrors?.password ? true : undefined}
               aria-describedby={
@@ -615,7 +661,7 @@ function SheetBuatAkun({
               }
             />
             <p id="buat-password-help" className="text-sm text-muted-foreground">
-              Minimal 8 karakter dengan huruf dan angka, maksimal {BATAS_PASSWORD_AKUN_BYTE} byte.
+              Kata sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter, maksimal {BATAS_PASSWORD_AKUN_BYTE} karakter.
             </p>
             {state.fieldErrors?.password && (
               <FieldError id="buat-password-error">

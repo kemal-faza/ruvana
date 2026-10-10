@@ -30,10 +30,13 @@ function formatCalendarDate(value: string): string {
   }).format(date);
 }
 
-function Figure({ label, value }: { label: string; value: string }) {
+function Figure({ label, value, formula }: { label: string; value: string; formula?: string }) {
   return (
-    <div className="flex min-w-0 items-baseline justify-between gap-4 border-b border-border/60 py-2.5 last:border-0">
-      <dt className="min-w-0 text-sm text-muted-foreground">{label}</dt>
+    <div className="flex min-w-0 items-start justify-between gap-4 border-b border-border/60 py-2.5 last:border-0">
+      <dt className="min-w-0 text-sm text-muted-foreground">
+        {label}
+        {formula && <span className="mt-1 block text-xs">{formula}</span>}
+      </dt>
       <dd className="shrink-0 text-sm font-semibold tabular-nums">{value}</dd>
     </div>
   );
@@ -125,6 +128,11 @@ export default function AdminAnalyticsDashboard({
               <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,9fr)] lg:items-center lg:gap-10">
                 <div className="flex min-w-0 flex-col gap-1">
                   <p className="text-xs text-muted-foreground">Okupansi periode terpilih</p>
+                  <p className="text-xs text-muted-foreground">
+                    {snapshot.occupancy.capacityMinutes > 0
+                      ? `${formatNumber(snapshot.occupancy.totalApprovedMinutes)} ÷ ${formatNumber(snapshot.occupancy.capacityMinutes)} × 100%`
+                      : snapshot.methodology.occupancyFormula}
+                  </p>
                   <p
                     className={`font-bold tabular-nums ${
                       snapshot.occupancy.occupancyPercent === null ? "text-xl" : "text-4xl"
@@ -147,6 +155,7 @@ export default function AdminAnalyticsDashboard({
                   <Figure
                     label="Kapasitas periode"
                     value={`${formatNumber(snapshot.occupancy.capacityMinutes)} menit`}
+                    formula={`${formatNumber(snapshot.occupancy.facilityCount)} fasilitas × ${formatNumber(snapshot.occupancy.dayCount)} hari × ${formatNumber(snapshot.methodology.minutesPerDay)} menit`}
                   />
                   <Figure label="Fasilitas dihitung" value={formatNumber(snapshot.occupancy.facilityCount)} />
                   <Figure label="Hari kalender" value={formatNumber(snapshot.occupancy.dayCount)} />

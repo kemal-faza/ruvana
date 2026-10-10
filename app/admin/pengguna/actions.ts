@@ -1,35 +1,38 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { AccountStatus, Role } from "@/generated/prisma/enums";
 import {
   BATAS_EMAIL_AKUN_KARAKTER,
   BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_MIN_BYTE,
   BATAS_PASSWORD_AKUN_BYTE,
 } from "@/config/business";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import type { AdminUserRow } from "@/lib/admin/users";
 
 export type StateBuatAkun = {
   ok: boolean;
   pesan: string;
   fieldErrors?: Record<string, string[]>;
+  user?: AdminUserRow;
 };
 
 export type StateVerifikasiPendaftaran = {
   ok: boolean;
   pesan: string;
+  perubahan?: { id: number; status: AccountStatus; waktuVerifikasi: Date | null };
 };
 
 export type StateStatusAkun = {
   ok: boolean;
   pesan: string;
+  perubahan?: { id: number; status: AccountStatus };
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_RE = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 
 export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<StateBuatAkun> {
   const admin = await requireAdmin();
@@ -39,16 +42,17 @@ export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<St
   const role = String(form.get("role") ?? "");
 
   const fieldErrors: Record<string, string[]> = {};
-  if (nama.length < 3 || nama.length > BATAS_NAMA_AKUN_KARAKTER) {
-    fieldErrors.nama = [`Nama harus berisi 3–${BATAS_NAMA_AKUN_KARAKTER} karakter.`];
+  if (!nama || nama.length > BATAS_NAMA_AKUN_KARAKTER) {
+    fieldErrors.nama = [`Nama wajib diisi dan maksimal ${BATAS_NAMA_AKUN_KARAKTER} karakter.`];
   }
   if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) {
     fieldErrors.email = ["Format email tidak valid atau terlalu panjang."];
   }
-  if (password.length < 8 || !PASSWORD_RE.test(password)) {
-    fieldErrors.password = ["Password minimal 8 karakter, mengandung huruf dan angka."];
-  } else if (Buffer.byteLength(password, "utf8") > BATAS_PASSWORD_AKUN_BYTE) {
-    fieldErrors.password = [`Password maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`];
+  const passwordBytes = Buffer.byteLength(password, "utf8");
+  if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE) {
+    fieldErrors.password = [`Kata sandi minimal ${BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.`];
+  } else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
+    fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} karakter.`];
   }
   if (role !== "pengguna" && role !== "petugas") {
     fieldErrors.role = ["Role yang diizinkan: pengguna atau petugas."];
@@ -60,7 +64,7 @@ export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<St
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         nama,
         email,
@@ -69,16 +73,23 @@ export async function buatAkun(_prev: StateBuatAkun, form: FormData): Promise<St
         status: AccountStatus.ACTIVE,
         dibuatOleh: admin.id,
       },
+      select: {
+        id: true,
+        nama: true,
+        email: true,
+        role: true,
+        status: true,
+        waktuDaftar: true,
+        waktuVerifikasi: true,
+      },
     });
+    return { ok: true, pesan: "Akun berhasil dibuat.", user };
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       return { ok: false, pesan: "Email sudah terdaftar. Gunakan email lain.", fieldErrors: { email: ["Email sudah terdaftar."] } };
     }
     return { ok: false, pesan: "Gagal menyimpan akun. Coba lagi." };
   }
-
-  revalidatePath("/admin/pengguna");
-  return { ok: true, pesan: "Akun berhasil dibuat." };
 }
 
 export async function verifikasiPendaftaran(
@@ -94,12 +105,13 @@ export async function verifikasiPendaftaran(
   }
 
   const disetujui = keputusan === "setujui";
+  const waktuVerifikasi = disetujui ? new Date() : null;
   try {
     const hasil = await prisma.user.updateMany({
       where: { id, role: Role.pengguna, status: AccountStatus.PENDING },
       data: {
         status: disetujui ? AccountStatus.ACTIVE : AccountStatus.REJECTED,
-        ...(disetujui ? { waktuVerifikasi: new Date() } : {}),
+        ...(disetujui ? { waktuVerifikasi } : {}),
       },
     });
     if (hasil.count !== 1) {
@@ -109,8 +121,11 @@ export async function verifikasiPendaftaran(
     return { ok: false, pesan: "Gagal memverifikasi akun. Coba lagi." };
   }
 
-  revalidatePath("/admin/pengguna");
-  return { ok: true, pesan: disetujui ? "Akun berhasil disetujui." : "Pendaftaran ditolak." };
+  return {
+    ok: true,
+    pesan: disetujui ? "Akun berhasil disetujui." : "Pendaftaran ditolak.",
+    perubahan: { id, status: disetujui ? AccountStatus.ACTIVE : AccountStatus.REJECTED, waktuVerifikasi },
+  };
 }
 
 export async function ubahStatusAkun(
@@ -149,9 +164,9 @@ export async function ubahStatusAkun(
     return { ok: false, pesan: "Gagal mengubah status akun. Coba lagi." };
   }
 
-  revalidatePath("/admin/pengguna");
   return {
     ok: true,
     pesan: tindakan === "nonaktifkan" ? "Akun berhasil dinonaktifkan." : "Akun berhasil diaktifkan kembali.",
+    perubahan: { id, status: statusBaru },
   };
 }
