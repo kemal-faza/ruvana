@@ -15,6 +15,16 @@ const adminFacilitySelect = {
   statusChangedBy: { select: { id: true, nama: true, role: true } },
 } satisfies Prisma.FacilitySelect;
 
+const archivedFacilitySelect = {
+  id: true,
+  nama: true,
+  tipe: true,
+  lokasi: true,
+  kapasitas: true,
+  deletedAt: true,
+  deletedByNama: true,
+} satisfies Prisma.FacilitySelect;
+
 export interface AdminFacilityFilters {
   search?: string;
   type?: TipeFasilitas;
@@ -36,6 +46,7 @@ export interface CreateFacilityData {
 /** Klausa `where` admin yang murni; tanpa filter status berarti semua status termasuk INACTIVE. */
 export function buildAdminFacilityWhere(filters: AdminFacilityFilters = {}): Prisma.FacilityWhereInput {
   return {
+    deletedAt: null,
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.search ? { nama: { contains: filters.search, mode: "insensitive" } } : {}),
     ...(filters.type ? { tipe: filters.type } : {}),
@@ -63,7 +74,7 @@ export function countAdminFacilities(filters: AdminFacilityFilters = {}) {
 }
 
 export function findAdminFacilityById(id: number) {
-  return prisma.facility.findUnique({ where: { id }, select: adminFacilitySelect });
+  return prisma.facility.findFirst({ where: { id, deletedAt: null }, select: adminFacilitySelect });
 }
 
 /** Fasilitas yang memakai pathname foto tertentu; untuk cegah hapus blob yang masih terpakai. */
@@ -74,7 +85,7 @@ export function findFacilityByFoto(foto: string) {
 /** Nama lokasi unik untuk pilihan filter admin. */
 export function findAdminFacilityLocations() {
   return prisma.facility.findMany({
-    where: { lokasi: { not: "" } },
+    where: { lokasi: { not: "" }, deletedAt: null },
     select: { lokasi: true },
     distinct: ["lokasi"],
     orderBy: { lokasi: "asc" },
@@ -93,7 +104,7 @@ export function updateAdminFacility(
   return client.facility.update({ where: { id }, data, select: adminFacilitySelect });
 }
 
-/** Hitung riwayat (reservasi + laporan) yang menghalangi hapus fisik fasilitas. */
+/** Hitung riwayat (reservasi + laporan) yang menghalangi pengarsipan fasilitas. */
 export async function countFacilityHistory(client: Prisma.TransactionClient, facilityId: number) {
   const [reservations, reports] = await Promise.all([
     client.reservation.count({ where: { facilityId } }),
@@ -102,6 +113,32 @@ export async function countFacilityHistory(client: Prisma.TransactionClient, fac
   return reservations + reports;
 }
 
-export function deleteAdminFacility(client: Prisma.TransactionClient, id: number) {
-  return client.facility.delete({ where: { id }, select: { id: true, foto: true } });
+/** Daftar fasilitas terarsip (soft delete) untuk halaman riwayat admin. */
+export function findArchivedFacilities(take: number) {
+  return prisma.facility.findMany({
+    where: { deletedAt: { not: null } },
+    orderBy: { deletedAt: "desc" },
+    take,
+    select: archivedFacilitySelect,
+  });
+}
+
+export function archiveAdminFacility(
+  client: Prisma.TransactionClient,
+  id: number,
+  data: { deletedAt: Date; deletedById: number; deletedByNama: string },
+) {
+  return client.facility.update({
+    where: { id },
+    data: { deletedAt: data.deletedAt, deletedById: data.deletedById, deletedByNama: data.deletedByNama },
+    select: { id: true },
+  });
+}
+
+export function restoreAdminFacility(client: Prisma.TransactionClient, id: number) {
+  return client.facility.update({
+    where: { id },
+    data: { deletedAt: null, deletedById: null, deletedByNama: null },
+    select: { id: true },
+  });
 }

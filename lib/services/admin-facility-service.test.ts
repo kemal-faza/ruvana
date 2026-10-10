@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Prisma } from "@/generated/prisma/client";
 import {
+  archiveAdminFacility,
   countAdminFacilities,
   countFacilityHistory,
   createAdminFacility,
-  deleteAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
+  findArchivedFacilities,
+  restoreAdminFacility,
   updateAdminFacility,
 } from "@/lib/db/admin-facilities";
 import { lockFacilityById } from "@/lib/db/facilities";
@@ -15,10 +17,12 @@ import { handleFacilityStatusChanged } from "@/lib/reservations/maintenance-list
 import { removeFacilityPhotoObject, verifyFacilityPhotoUpload } from "@/lib/storage/facility-photo";
 
 import {
+  archiveFacility,
   createFacility,
-  deleteFacility,
   getAdminFacility,
   listAdminFacilities,
+  listArchivedFacilities,
+  restoreFacility,
   updateFacility,
 } from "./admin-facility-service";
 
@@ -40,7 +44,9 @@ vi.mock("@/lib/db/admin-facilities", () => ({
   createAdminFacility: vi.fn(),
   updateAdminFacility: vi.fn(),
   countFacilityHistory: vi.fn(),
-  deleteAdminFacility: vi.fn(),
+  archiveAdminFacility: vi.fn(),
+  restoreAdminFacility: vi.fn(),
+  findArchivedFacilities: vi.fn(),
 }));
 
 const now = new Date("2026-09-30T05:00:00Z");
@@ -309,43 +315,106 @@ function mockCreateTxForFoto() {
   mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn({ facility: { create: vi.fn() } }));
 }
 
-describe("deleteFacility", () => {
-  function mockDeleteTx(facility: Record<string, unknown> | null) {
-    const tx = { facility: { delete: vi.fn() } };
+describe("archiveFacility", () => {
+  function mockArchiveTx(facility: Record<string, unknown> | null) {
+    const tx = { facility: { update: vi.fn() } };
     vi.mocked(lockFacilityById).mockResolvedValue(facility as never);
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
     return tx;
   }
 
-  it("menghapus fasilitas tanpa riwayat dan membersihkan blob foto", async () => {
-    mockDeleteTx(row({ foto: "facilities/7/x.jpg" }));
+  it("mengarsipkan fasilitas tanpa riwayat dengan aktor dan waktu", async () => {
+    mockArchiveTx(row());
     vi.mocked(countFacilityHistory).mockResolvedValue(0);
-    vi.mocked(deleteAdminFacility).mockResolvedValue({ id: 1, foto: "facilities/7/x.jpg" } as never);
+    vi.mocked(archiveAdminFacility).mockResolvedValue({ id: 1 } as never);
 
-    const result = await deleteFacility(1);
+    const result = await archiveFacility({ id: 7, nama: "Admin Ruvana" }, 1, now);
 
-    expect(deleteAdminFacility).toHaveBeenCalledWith(expect.anything(), 1);
-    expect(removeFacilityPhotoObject).toHaveBeenCalledWith("facilities/7/x.jpg");
+    expect(archiveAdminFacility).toHaveBeenCalledWith(expect.anything(), 1, {
+      deletedAt: now,
+      deletedById: 7,
+      deletedByNama: "Admin Ruvana",
+    });
     expect(result.ok).toBe(true);
   });
 
-  it("menolak hapus bila fasilitas punya riwayat", async () => {
-    mockDeleteTx(row());
+  it("menolak arsip bila fasilitas punya riwayat", async () => {
+    mockArchiveTx(row());
     vi.mocked(countFacilityHistory).mockResolvedValue(2);
 
-    const result = await deleteFacility(1);
+    const result = await archiveFacility({ id: 7, nama: "Admin Ruvana" }, 1);
 
-    expect(deleteAdminFacility).not.toHaveBeenCalled();
+    expect(archiveAdminFacility).not.toHaveBeenCalled();
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("has_history");
   });
 
   it("mengembalikan not_found bila fasilitas tidak ada", async () => {
-    mockDeleteTx(null);
+    mockArchiveTx(null);
 
-    const result = await deleteFacility(999);
+    const result = await archiveFacility({ id: 7, nama: "Admin Ruvana" }, 999);
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("not_found");
+  });
+});
+
+describe("restoreFacility", () => {
+  function mockRestoreTx(facility: Record<string, unknown> | null) {
+    const tx = { facility: { update: vi.fn() } };
+    vi.mocked(lockFacilityById).mockResolvedValue(facility as never);
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    return tx;
+  }
+
+  it("memulihkan fasilitas terarsip", async () => {
+    mockRestoreTx(row({ deletedAt: new Date("2026-10-10T00:00:00Z") }));
+    vi.mocked(restoreAdminFacility).mockResolvedValue({ id: 1 } as never);
+
+    const result = await restoreFacility(1);
+
+    expect(restoreAdminFacility).toHaveBeenCalledWith(expect.anything(), 1);
+    expect(result.ok).toBe(true);
+  });
+
+  it("not_found bila fasilitas tidak terarsip", async () => {
+    mockRestoreTx(row());
+
+    const result = await restoreFacility(1);
+
+    expect(restoreAdminFacility).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("not_found");
+  });
+});
+
+describe("listArchivedFacilities", () => {
+  it("memetakan baris terarsip ke bentuk UI", async () => {
+    vi.mocked(findArchivedFacilities).mockResolvedValue([
+      {
+        id: 5,
+        nama: "Gudang Lama",
+        tipe: "aula",
+        lokasi: "Blok C",
+        kapasitas: 10,
+        deletedAt: new Date("2026-10-10T00:00:00Z"),
+        deletedByNama: "Admin Ruvana",
+      },
+    ] as never);
+
+    const result = await listArchivedFacilities(10);
+
+    expect(findArchivedFacilities).toHaveBeenCalledWith(10);
+    expect(result).toEqual([
+      {
+        id: 5,
+        nama: "Gudang Lama",
+        tipe: "aula",
+        lokasi: "Blok C",
+        kapasitas: 10,
+        deletedAt: "2026-10-10T00:00:00.000Z",
+        deletedByNama: "Admin Ruvana",
+      },
+    ]);
   });
 });

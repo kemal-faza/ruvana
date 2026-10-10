@@ -30,6 +30,7 @@ export interface PublicFacilityFilters {
 export function buildPublicFacilityWhere(filters: PublicFacilityFilters = {}): Prisma.FacilityWhereInput {
   return {
     status: { in: PUBLIC_FACILITY_STATUSES },
+    deletedAt: null,
     ...(filters.search ? { nama: { contains: filters.search, mode: "insensitive" } } : {}),
     ...(filters.type ? { tipe: filters.type } : {}),
     ...(filters.location ? { lokasi: { contains: filters.location, mode: "insensitive" } } : {}),
@@ -60,7 +61,7 @@ export function countPublicFacilities(filters: PublicFacilityFilters = {}) {
 
 export function findPublicFacilityById(id: number) {
   return prisma.facility.findFirst({
-    where: { id, status: { in: PUBLIC_FACILITY_STATUSES } },
+    where: { id, status: { in: PUBLIC_FACILITY_STATUSES }, deletedAt: null },
     select: publicFacilitySelect,
   });
 }
@@ -81,6 +82,7 @@ const staffFacilitySelect = {
  */
 export function findStaffFacilities() {
   return prisma.facility.findMany({
+    where: { deletedAt: null },
     orderBy: { id: "asc" },
     select: staffFacilitySelect,
   });

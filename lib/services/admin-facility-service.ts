@@ -2,13 +2,15 @@ import { Prisma } from "@/generated/prisma/client";
 import type { Role, StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import { lockFacilityById } from "@/lib/db/facilities";
 import {
+  archiveAdminFacility,
   countAdminFacilities,
   countFacilityHistory,
   createAdminFacility,
-  deleteAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
   findAdminFacilityLocations,
+  findArchivedFacilities,
+  restoreAdminFacility,
   updateAdminFacility,
   type AdminFacilityFilters,
   type CreateFacilityData,
@@ -196,7 +198,7 @@ export async function updateFacility(
   try {
     const result = await prisma.$transaction(async (tx) => {
       const facility = await lockFacilityById(tx, facilityId);
-      if (!facility) throw { kind: "not_found" as const };
+      if (!facility || facility.deletedAt) throw { kind: "not_found" as const };
 
       const data: Prisma.FacilityUncheckedUpdateInput = {};
       if (input.nama !== undefined) data.nama = input.nama;
@@ -271,28 +273,55 @@ export async function updateFacility(
   }
 }
 
+export interface ArchivedFacility {
+  id: number;
+  nama: string;
+  tipe: TipeFasilitas;
+  lokasi: string;
+  kapasitas: number;
+  deletedAt: string;
+  deletedByNama: string | null;
+}
+
+/** Fasilitas terarsip terbaru untuk halaman riwayat penghapusan admin. */
+export async function listArchivedFacilities(take = 10): Promise<ArchivedFacility[]> {
+  const rows = await findArchivedFacilities(take);
+  return rows.map((row) => ({
+    id: row.id,
+    nama: row.nama,
+    tipe: row.tipe,
+    lokasi: row.lokasi,
+    kapasitas: row.kapasitas,
+    deletedAt: row.deletedAt ? row.deletedAt.toISOString() : new Date(0).toISOString(),
+    deletedByNama: row.deletedByNama,
+  }));
+}
+
 /**
- * Hapus permanen fasilitas. Hanya diizinkan bila fasilitas belum punya riwayat
- * (reservasi/laporan); jika ada, gunakan penonaktifan (status INACTIVE). Foto
- * unggahan ikut dibersihkan setelah baris terhapus.
+ * Arsipkan fasilitas (soft delete). Hanya diizinkan bila fasilitas belum punya
+ * riwayat (reservasi/laporan); jika ada, gunakan penonaktifan (status INACTIVE).
+ * Baris tetap tersimpan beserta fotonya sehingga dapat dipulihkan.
  */
-export async function deleteFacility(
+export async function archiveFacility(
+  actor: { id: number; nama: string },
   facilityId: number,
+  now: Date = new Date(),
 ): Promise<{ ok: true } | { ok: false; error: AdminFacilityMutationError }> {
-  const riwayatPesan = "Fasilitas memiliki riwayat sehingga tidak dapat dihapus permanen.";
-  let fotoUntukDihapus: string | null = null;
+  const riwayatPesan = "Fasilitas memiliki riwayat sehingga tidak dapat diarsipkan.";
   try {
     await prisma.$transaction(async (tx) => {
       const facility = await lockFacilityById(tx, facilityId);
-      if (!facility) throw { kind: "not_found" as const };
+      if (!facility || facility.deletedAt) throw { kind: "not_found" as const };
 
       if ((await countFacilityHistory(tx, facilityId)) > 0) throw { kind: "has_history" as const };
 
-      fotoUntukDihapus = facility.foto;
-      await deleteAdminFacility(tx, facilityId);
+      await archiveAdminFacility(tx, facilityId, {
+        deletedAt: now,
+        deletedById: actor.id,
+        deletedByNama: actor.nama,
+      });
     });
 
-    if (fotoUntukDihapus) await removeFacilityPhotoObject(fotoUntukDihapus);
     return { ok: true };
   } catch (e) {
     if (e && typeof e === "object" && "kind" in e) {
@@ -304,9 +333,29 @@ export async function deleteFacility(
         return { ok: false, error: { type: "has_history", message: riwayatPesan } };
       }
     }
-    // Jaring pengaman FK RESTRICT bila ada riwayat yang lolos pengecekan.
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
-      return { ok: false, error: { type: "has_history", message: riwayatPesan } };
+    throw e;
+  }
+}
+
+/** Pulihkan fasilitas terarsip; mengembalikannya ke daftar aktif. */
+export async function restoreFacility(
+  facilityId: number,
+): Promise<{ ok: true } | { ok: false; error: AdminFacilityMutationError }> {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const facility = await lockFacilityById(tx, facilityId);
+      if (!facility || !facility.deletedAt) throw { kind: "not_found" as const };
+
+      await restoreAdminFacility(tx, facilityId);
+    });
+
+    return { ok: true };
+  } catch (e) {
+    if (e && typeof e === "object" && "kind" in e) {
+      const err = e as { kind: string };
+      if (err.kind === "not_found") {
+        return { ok: false, error: { type: "not_found", message: "Fasilitas terarsip tidak ditemukan" } };
+      }
     }
     throw e;
   }

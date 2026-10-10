@@ -12,7 +12,7 @@ import {
   notFound,
   validationFailed,
 } from "@/lib/http/problem";
-import { deleteFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
+import { archiveFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
 import { parseFacilityId } from "@/lib/validation/facility-query";
 import { parseFacilityUpdateBody } from "@/lib/validation/admin-facility";
 
@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/
   return NextResponse.json(result.data, { status: 200, headers: { "Cache-Control": "no-store" } });
 }
 
-/** Hapus permanen fasilitas; ditolak bila masih punya riwayat (reservasi/laporan). */
+/** Arsipkan fasilitas (soft delete); ditolak bila masih punya riwayat (reservasi/laporan). */
 export async function DELETE(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
   const instance = request.nextUrl.pathname;
   const session = await guardAdmin(request);
@@ -123,9 +123,9 @@ export async function DELETE(request: NextRequest, ctx: RouteContext<"/api/admin
 
   let result;
   try {
-    result = await deleteFacility(parsedId.value);
+    result = await archiveFacility({ id: session.id, nama: session.nama }, parsedId.value);
   } catch (error) {
-    console.error("Gagal menghapus fasilitas", error);
+    console.error("Gagal mengarsipkan fasilitas", error);
     return internalError(instance);
   }
 

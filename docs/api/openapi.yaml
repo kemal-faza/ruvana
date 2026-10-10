@@ -1665,15 +1665,15 @@ paths:
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
         '500': { $ref: '#/components/responses/InternalServerError' }
     delete:
-      operationId: deleteFacility
+      operationId: archiveFacility
       tags: [Administration]
-      summary: Menghapus permanen fasilitas tanpa riwayat
+      summary: Mengarsipkan (soft delete) fasilitas tanpa riwayat
       description: >-
-        Hanya role admin dengan status ACTIVE. Hapus permanen hanya diizinkan bila
-        fasilitas belum memiliki riwayat (reservasi atau laporan); bila ada, server
-        menolak dengan 409 dan menyarankan penonaktifan (status INACTIVE). Foto
-        unggahan fasilitas ikut dibersihkan dan representasi publik terdampak
-        di-invalidate sebelum 204.
+        Hanya role admin dengan status ACTIVE. Mengarsipkan fasilitas hanya diizinkan
+        bila fasilitas belum memiliki riwayat (reservasi atau laporan); bila ada, server
+        menolak dengan 409 dan menyarankan penonaktifan (status INACTIVE). Baris dan
+        fotonya tetap tersimpan sehingga dapat dipulihkan lewat operasi restore;
+        representasi publik terdampak di-invalidate sebelum 204.
       x-requirement-ids: [FAC-05, IAM-03]
       security: [{ cookieAuth: [] }]
       parameters:
@@ -1681,12 +1681,33 @@ paths:
         - $ref: '#/components/parameters/Origin'
       responses:
         '204':
-          description: Fasilitas dihapus permanen.
+          description: Fasilitas diarsipkan dan disembunyikan dari daftar publik.
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/MutationForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/FacilityMutationConflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/facilities/{facilityId}/restore:
+    post:
+      operationId: restoreFacility
+      tags: [Administration]
+      summary: Memulihkan fasilitas terarsip
+      description: >-
+        Hanya role admin dengan status ACTIVE. Mengembalikan fasilitas yang diarsipkan
+        (soft delete) ke daftar aktif dan tampilan publik, beserta foto unggahannya.
+      x-requirement-ids: [FAC-05, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '204':
+          description: Fasilitas dipulihkan dan tampil kembali.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalServerError' }
   /api/admin/analitik/ekspor/csv:
     get:

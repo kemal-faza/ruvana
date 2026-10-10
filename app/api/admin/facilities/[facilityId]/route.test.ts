@@ -9,7 +9,7 @@ import {
 import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
 import { hashCanonicalBody } from "@/lib/http/idempotency";
 import { currentAccount } from "@/lib/services/auth-service";
-import { deleteFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
+import { archiveFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
 
 import { DELETE, GET, PATCH } from "./route";
 
@@ -17,7 +17,7 @@ vi.mock("@/lib/services/auth-service", () => ({ currentAccount: vi.fn() }));
 vi.mock("@/lib/services/admin-facility-service", () => ({
   getAdminFacility: vi.fn(),
   updateFacility: vi.fn(),
-  deleteFacility: vi.fn(),
+  archiveFacility: vi.fn(),
 }));
 vi.mock("@/lib/db/idempotency", () => ({
   claimOrGetIdempotencyKey: vi.fn(),
@@ -167,21 +167,21 @@ describe("DELETE /api/admin/facilities/[facilityId]", () => {
     const response = await DELETE(deleteRequest({ origin: null }), makeContext());
 
     expect(response.status).toBe(403);
-    expect(deleteFacility).not.toHaveBeenCalled();
+    expect(archiveFacility).not.toHaveBeenCalled();
   });
 
-  it("204 menghapus dan merevalidasi", async () => {
-    vi.mocked(deleteFacility).mockResolvedValue({ ok: true } as never);
+  it("204 mengarsipkan dan merevalidasi", async () => {
+    vi.mocked(archiveFacility).mockResolvedValue({ ok: true } as never);
 
     const response = await DELETE(deleteRequest(), makeContext());
 
     expect(response.status).toBe(204);
-    expect(deleteFacility).toHaveBeenCalledWith(1);
+    expect(archiveFacility).toHaveBeenCalledWith({ id: 1, nama: "Admin Ruvana" }, 1);
     expect(revalidateFacilityViews).toHaveBeenCalledWith(1);
   });
 
   it("404 bila tidak ada", async () => {
-    vi.mocked(deleteFacility).mockResolvedValue({
+    vi.mocked(archiveFacility).mockResolvedValue({
       ok: false,
       error: { type: "not_found", message: "Fasilitas tidak ditemukan" },
     } as never);
@@ -192,7 +192,7 @@ describe("DELETE /api/admin/facilities/[facilityId]", () => {
   });
 
   it("409 bila fasilitas punya riwayat", async () => {
-    vi.mocked(deleteFacility).mockResolvedValue({
+    vi.mocked(archiveFacility).mockResolvedValue({
       ok: false,
       error: { type: "has_history", message: "punya riwayat" },
     } as never);

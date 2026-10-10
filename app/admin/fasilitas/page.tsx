@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import AdminFacilities from "@/components/admin/AdminFacilities";
 import { requireAdmin } from "@/lib/auth";
-import { listAdminFacilities, listAdminLocations } from "@/lib/services/admin-facility-service";
+import { listAdminFacilities, listAdminLocations, listArchivedFacilities } from "@/lib/services/admin-facility-service";
 import { cleanSearchParams } from "@/lib/validation/facility-query";
 import { parseAdminListQuery, type AdminListQuery } from "@/lib/validation/admin-facility";
 
@@ -29,9 +29,10 @@ export default async function AdminFasilitasPage({ searchParams }: AdminFasilita
 
   const parsed = parseAdminListQuery(cleanSearchParams(params));
   const query: AdminListQuery = parsed.ok ? parsed.value : { page: 1, perPage: 20 };
-  const [{ items, meta }, locations] = await Promise.all([
+  const [{ items, meta }, locations, archived] = await Promise.all([
     listAdminFacilities(query),
     listAdminLocations(),
+    listArchivedFacilities(10),
   ]);
 
   // Halaman di luar rentang diarahkan ke halaman terakhir yang valid, sama seperti
@@ -52,6 +53,7 @@ export default async function AdminFasilitasPage({ searchParams }: AdminFasilita
       items={items}
       meta={meta}
       locations={locations}
+      archived={archived}
       filters={{
         search: query.search,
         type: query.type,

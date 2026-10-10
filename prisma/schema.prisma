@@ -91,6 +91,10 @@ model Facility {
   statusChangedAt   DateTime?       @db.Timestamptz(3)
   statusChangedBy   User?           @relation("FacilityStatusChangedBy", fields: [statusChangedById], references: [id])
   statusChangedById Int?
+  // Arsip (soft delete FAC-05): baris tetap ada agar bisa dipulihkan.
+  deletedAt         DateTime?       @db.Timestamptz(3)
+  deletedById       Int?
+  deletedByNama     String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 

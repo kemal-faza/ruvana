@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { listAdminFacilities, listAdminLocations, redirect } = vi.hoisted(() => ({
+const { listAdminFacilities, listAdminLocations, listArchivedFacilities, redirect } = vi.hoisted(() => ({
   listAdminFacilities: vi.fn(),
   listAdminLocations: vi.fn(),
+  listArchivedFacilities: vi.fn(),
   redirect: vi.fn(() => {
     throw new Error("redirect")
   }),
@@ -10,7 +11,7 @@ const { listAdminFacilities, listAdminLocations, redirect } = vi.hoisted(() => (
 
 vi.mock("next/navigation", () => ({ redirect }))
 vi.mock("@/lib/auth", () => ({ requireAdmin: vi.fn(async () => ({ id: 1, role: "admin" })) }))
-vi.mock("@/lib/services/admin-facility-service", () => ({ listAdminFacilities, listAdminLocations }))
+vi.mock("@/lib/services/admin-facility-service", () => ({ listAdminFacilities, listAdminLocations, listArchivedFacilities }))
 vi.mock("@/components/admin/AdminFacilities", () => ({ default: () => null }))
 
 import AdminFasilitasPage from "./page"
@@ -19,8 +20,10 @@ describe("halaman kelola fasilitas", () => {
   beforeEach(() => {
     listAdminFacilities.mockReset()
     listAdminLocations.mockReset()
+    listArchivedFacilities.mockReset()
     redirect.mockClear()
     listAdminLocations.mockResolvedValue([])
+    listArchivedFacilities.mockResolvedValue([])
     listAdminFacilities.mockResolvedValue({
       items: [],
       meta: { page: 2, perPage: 20, totalItems: 60, totalPages: 3 },
