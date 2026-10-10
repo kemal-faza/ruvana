@@ -39,6 +39,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { AdminUserRow } from "@/lib/admin/users";
+import { ringkasAkun } from "@/lib/admin/ringkasan-akun";
 
 const ROLE_LABEL: Record<AdminUserRow["role"], string> = {
   pengguna: "Pengguna",
@@ -182,12 +183,7 @@ export default function AdminUsers({
     perbaruiDaftar((current) => current.some((item) => item.id === user.id) ? current : [user, ...current]);
   }, [perbaruiDaftar]);
 
-  const ringkasan = useMemo(() => daftar.reduce((counts, user) => {
-    if (user.status === "ACTIVE") counts.aktif += 1;
-    if (user.status === "PENDING") counts.pending += 1;
-    if (user.status === "DISABLED") counts.dinonaktifkan += 1;
-    return counts;
-  }, { total: daftar.length, aktif: 0, pending: 0, dinonaktifkan: 0 }), [daftar]);
+  const ringkasan = useMemo(() => ringkasAkun(daftar), [daftar]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
