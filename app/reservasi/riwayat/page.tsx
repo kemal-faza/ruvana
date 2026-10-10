@@ -26,7 +26,7 @@ export default async function RiwayatReservasiPage() {
           <p className="text-sm font-medium tracking-wide text-primary">Reservasi</p>
           <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Reservasi Saya</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Riwayat reservasi milik Anda dalam semua status. Pilih salah satu untuk melihat detail lengkap.
+            Periksa status, waktu, dan keputusan untuk tiap pengajuan reservasi Anda.
           </p>
         </header>
         <ReservationHistoryList />

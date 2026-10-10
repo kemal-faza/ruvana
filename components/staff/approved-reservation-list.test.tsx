@@ -138,6 +138,6 @@ describe("ApprovedReservationList loading", () => {
       meta: { page: 1, perPage: 10, totalItems: 0, totalPages: 0 },
     }), { status: 200 }));
 
-    expect(await screen.findByText("Tidak ada reservasi disetujui")).toBeInTheDocument();
+    expect(await screen.findByText("Tidak ada reservasi yang disetujui")).toBeInTheDocument();
   });
 });

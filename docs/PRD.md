@@ -342,7 +342,7 @@ Admin dapat mencari dan memfilter akun serta menonaktifkan atau mengaktifkan kem
 
 #### IAM-08 — Pengaturan akun
 
-Pengguna, petugas, dan admin dapat mengelola profil, keamanan masuk, bahasa, tampilan, dan informasi pembaruan sesuai perannya.
+Pengguna, petugas, dan admin dapat mengelola profil, keamanan masuk, bahasa, dan tampilan.
 
 **Acceptance criteria:**
 
@@ -350,7 +350,7 @@ Pengguna, petugas, dan admin dapat mengelola profil, keamanan masuk, bahasa, tam
 - Nama profil dapat diperbarui; perubahan email belum tersedia karena belum ada alur verifikasi email baru.
 - Pengguna dapat mengganti kata sandi setelah memasukkan kata sandi saat ini. Kata sandi baru harus 8–72 byte UTF-8, disimpan sebagai hash, dan perubahan mengakhiri sesi lain tanpa mengakhiri sesi saat ini.
 - Pengguna dapat mengakhiri sesi di perangkat lain tanpa mengakhiri sesi saat ini.
-- Bagian notifikasi hanya menjelaskan tempat untuk memantau pembaruan sesuai role. Notifikasi otomatis email, WhatsApp, dan push tetap di luar cakupan rilis ini.
+- Notifikasi otomatis email, WhatsApp, dan push belum termasuk cakupan rilis ini.
 - Bahasa antarmuka yang tersedia pada rilis ini adalah Bahasa Indonesia.
 - Tema terang/gelap tersedia melalui pengaturan tampilan.
 

@@ -19,20 +19,17 @@ import {
 } from "@/lib/validation/report-processing";
 import type { StaffReportCollection, StaffReportResult } from "@/lib/services/report-processing-service";
 
-const KETERANGAN_ANTREAN: Record<AntreanLaporan, { title: string; description: string; kosong: string }> = {
+const META_ANTREAN: Record<AntreanLaporan, { title: string; kosong: string }> = {
   intake: {
     title: "Laporan masuk",
-    description: "Laporan baru yang belum ditangani. Antrean ini tidak memuat pekerjaan yang sudah berjalan.",
     kosong: "Tidak ada laporan baru yang menunggu.",
   },
   work: {
     title: "Daftar pekerjaan",
-    description: "Laporan baru dan yang sedang ditangani agar pekerjaan berjalan tetap dapat ditemukan dan diselesaikan.",
     kosong: "Tidak ada pekerjaan laporan yang perlu ditangani.",
   },
   riwayat: {
     title: "Riwayat laporan",
-    description: "Laporan yang sudah selesai atau ditolak. Isinya arsip dan tidak dapat diubah lagi.",
     kosong: "Belum ada laporan yang selesai atau ditolak.",
   },
 };
@@ -44,24 +41,18 @@ interface ReportQueueResponse {
 
 function kosongState(access: ReportQueueResponse["access"], queue: AntreanLaporan) {
   if (access === "login") {
-    return {
-      title: "Masuk sebagai petugas",
-      description: "Antrean laporan hanya tersedia untuk petugas atau admin yang masuk.",
-    };
+    return { title: "Masuk sebagai petugas atau admin untuk melihat antrean laporan." };
   }
   if (access === "forbidden") {
-    return {
-      title: "Akses ditolak",
-      description: "Halaman ini membutuhkan role petugas atau admin.",
-    };
+    return { title: "Antrean laporan hanya untuk petugas atau admin." };
   }
   if (access === "error") {
     return {
       title: "Gagal memuat antrean",
-      description: "Antrean laporan tidak dapat dimuat. Silakan muat ulang halaman.",
+      description: "Muat ulang halaman untuk mencoba lagi.",
     };
   }
-  return { title: KETERANGAN_ANTREAN[queue].kosong, description: "Ringkasan di dasbor petugas tetap diperbarui otomatis." };
+  return { title: META_ANTREAN[queue].kosong };
 }
 
 export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: UrutanLaporan }) {
@@ -74,7 +65,7 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
   const [catatan, setCatatan] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  const meta = KETERANGAN_ANTREAN[queue];
+  const meta = META_ANTREAN[queue];
 
   const load = useCallback(
     async (targetPage: number) => {
@@ -186,12 +177,12 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
   }
 
   const totalPages = state.data?.meta.totalPages ?? 0;
+  const empty = kosongState(state.access, queue);
 
   return (
     <section aria-label={meta.title} className="flex min-w-0 flex-col gap-5">
       <header className="flex flex-col gap-2">
         <h2 className="font-heading text-xl font-semibold tracking-tight">{meta.title}</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">{meta.description}</p>
       </header>
 
       {notice && (
@@ -232,10 +223,12 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
             <EmptyMedia variant="icon">
               <ClipboardList aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>{kosongState(state.access, queue).title}</EmptyTitle>
-            <EmptyContent>
-              <EmptyDescription>{kosongState(state.access, queue).description}</EmptyDescription>
-            </EmptyContent>
+            <EmptyTitle>{empty.title}</EmptyTitle>
+            {empty.description && (
+              <EmptyContent>
+                <EmptyDescription>{empty.description}</EmptyDescription>
+              </EmptyContent>
+            )}
           </EmptyHeader>
         </Empty>
       )}

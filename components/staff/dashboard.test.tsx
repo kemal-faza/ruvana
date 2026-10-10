@@ -56,7 +56,7 @@ describe("dashboard Petugas", () => {
   it("mengarahkan pintasan status fasilitas ke halaman kerja Petugas", () => {
     render(<StaffDashboard reservations={[]} totalReservations={0} />);
 
-    expect(screen.getByRole("link", { name: "Lihat status operasional fasilitas" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Kelola fasilitas" })).toHaveAttribute(
       "href",
       "/petugas/fasilitas",
     );
@@ -128,7 +128,8 @@ describe("dashboard Petugas", () => {
 
     expect(screen.getByText("Ringkasan reservasi")).toBeInTheDocument();
     expect(screen.getByText("Rekap bulanan")).toBeInTheDocument();
-    expect(screen.getByText(/Pada September 2026 terdapat 5 reservasi/)).toBeInTheDocument();
+    expect(screen.queryByText(/Pada September 2026 terdapat 5 reservasi/)).not.toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Jumlah reservasi per status" })).toBeInTheDocument();
   });
 
   it("aksi tunggal pada kotak galat memakai varian primary", () => {

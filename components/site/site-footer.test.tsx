@@ -30,10 +30,10 @@ describe("SiteFooter", () => {
     }
   })
 
-  it("mencantumkan tagline tanpa atribusi foto", () => {
+  it("menampilkan hak cipta tanpa atribusi foto", () => {
     render(<SiteFooter />)
 
-    expect(screen.getByText("Ruang bersama, kegiatan lebih bermakna.")).toBeVisible()
+    expect(screen.getByText("© 2026 Ruvana.")).toBeVisible()
     expect(screen.queryByText("Foto: Unsplash")).not.toBeInTheDocument()
   })
 })
