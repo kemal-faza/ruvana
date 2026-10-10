@@ -8,6 +8,7 @@
 import {
   STATUS_RESERVASI_DISETUJUI,
   STATUS_RESERVASI_MENUNGGU,
+  STATUS_RESERVASI_PEMELIHARAAN,
   ZONA_WAKTU,
 } from "@/config/business";
 import {
@@ -124,6 +125,10 @@ export interface TampilanDetailReservasi extends TampilanReservasi {
   tujuan: string;
   alasan: string | null;
   dapatDibatalkan: boolean;
+  // Pembatalan otomatis sistem akibat fasilitas UNDER_MAINTENANCE (RES-09):
+  // memicu banner penjelasan di detail sehingga alasan tidak menumpuk pada
+  // pembatalan petugas manual.
+  dibatalkanOlehPemeliharaan: boolean;
 }
 
 export function tampilanDetailReservasi(
@@ -141,6 +146,7 @@ export function tampilanDetailReservasi(
     alasan: masukan.alasan,
     dapatDibatalkan:
       status === STATUS_RESERVASI_MENUNGGU || status === STATUS_RESERVASI_DISETUJUI,
+    dibatalkanOlehPemeliharaan: status === STATUS_RESERVASI_PEMELIHARAAN,
   };
 }
 

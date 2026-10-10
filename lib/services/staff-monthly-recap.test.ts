@@ -48,7 +48,8 @@ describe("getStaffMonthlyRecapService", () => {
 
     expect(rekap.month).toBe(BULAN);
     expect(rekap.total).toBe(5);
-    expect(rekap.perStatus).toHaveLength(6);
+    expect(rekap.perStatus).toHaveLength(7);
+    expect(rekap.perStatus.find((item) => item.status === "CANCELLED_BY_MAINTENANCE")?.count).toBe(0);
     expect(rekap.perStatus.find((item) => item.status === "PENDING")?.count).toBe(2);
     expect(rekap.perStatus.find((item) => item.status === "APPROVED")?.count).toBe(3);
     expect(rekap.perStatus.find((item) => item.status === "REJECTED")?.count).toBe(0);

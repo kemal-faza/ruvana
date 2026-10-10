@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "StatusReservasi" ADD VALUE 'CANCELLED_BY_MAINTENANCE';

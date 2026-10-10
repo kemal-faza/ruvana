@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ClipboardList, FileImage, MapPin, UserRound, Wrench } from "lucide-react";
+import { Building2, ClipboardList, FileImage, MapPin, UserRound, Wrench } from "lucide-react";
 
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReportStatusBadge } from "@/components/reports/report-status-badge";
 import { formatWaktu } from "@/components/reports/format";
-import { LABEL_TIPE_FASILITAS } from "@/config/labels";
+import { LABEL_STATUS_FASILITAS, LABEL_TIPE_FASILITAS } from "@/config/labels";
 import { MAKS_CATATAN_RESOLUSI_LAPORAN } from "@/config/business";
 import {
   PER_HALAMAN_ANTREAN_LAPORAN,
@@ -252,6 +253,10 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
                 </CardAction>
               </CardHeader>
               <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+                <p className="inline-flex items-center gap-1.5">
+                  <Building2 aria-hidden="true" className="size-3.5 shrink-0" />
+                  Status fasilitas: {LABEL_STATUS_FASILITAS[report.facility.status]}
+                </p>
                 <p className="text-foreground">{report.deskripsi}</p>
                 <p className="inline-flex items-center gap-1.5">
                   <UserRound aria-hidden="true" className="size-3.5 shrink-0" />
@@ -310,6 +315,18 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
                     Tolak laporan
                   </Button>
                 )}
+                {report.facility.status === "ACTIVE" &&
+                  (report.status === "NEW" || report.status === "IN_PROGRESS") && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={BUTTON_ACTION_CLASS}
+                      nativeButton={false}
+                      render={<Link href={`/petugas/fasilitas?facilityId=${report.facility.id}`} />}
+                    >
+                      Tandai pemeliharaan
+                    </Button>
+                  )}
               </div>
             </Card>
           ))}
@@ -349,7 +366,7 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
           setFinalize(null);
           setCatatan("");
         }}
-        className="w-full rounded-card border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
+        className="fixed inset-0 m-auto h-fit w-full max-w-md rounded-card border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
       >
         <form
           method="dialog"

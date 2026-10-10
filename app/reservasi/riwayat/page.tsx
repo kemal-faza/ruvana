@@ -5,6 +5,8 @@ import { cn } from "cn";
 
 import { ReservationHistoryList } from "@/components/reservation/reservation-history-list";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
+import { requirePengguna } from "@/lib/auth";
+import { getMaintenanceCancellationSummaryService } from "@/lib/services/reservation-service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,19 @@ export const metadata: Metadata = {
   description: "Lihat status dan detail seluruh reservasi milik Anda.",
 };
 
-export default function RiwayatReservasiPage() {
+export default async function RiwayatReservasiPage() {
+  // Guard server (IAM-03): tanpa sesi ke /login, role lain ke /403.
+  // Shell tidak dirender di sini — layout segmen /reservasi yang menyediakannya.
+  const pengguna = await requirePengguna();
+  // Banner hanya pelengkap: kegagalan hitungan tidak boleh menggagalkan halaman.
+  // Daftar riwayat tetap dirender dan menampilkan galatnya sendiri.
+  const pembatalanPemeliharaan = await getMaintenanceCancellationSummaryService(pengguna.id).catch(
+    (e: unknown) => {
+      console.error("Gagal menghitung ringkasan pembatalan pemeliharaan", e);
+      return { total: 0, namaFasilitas: [] };
+    },
+  );
+
   return (
     <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -31,7 +45,7 @@ export default function RiwayatReservasiPage() {
           Ajukan Reservasi
         </Button>
       </header>
-      <ReservationHistoryList />
+      <ReservationHistoryList pembatalanPemeliharaan={pembatalanPemeliharaan} />
     </main>
   );
 }

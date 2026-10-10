@@ -12,6 +12,7 @@ const SEMUA_STATUS: StatusReservasi[] = [
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
+  "CANCELLED_BY_MAINTENANCE",
   "EXPIRED",
 ]
 
@@ -23,6 +24,7 @@ const KELAS_VARIAN_RESERVASI: Record<StatusReservasi, string[]> = {
   REJECTED: ["bg-destructive-subdued", "text-destructive-subdued-foreground"],
   CANCELLED_BY_USER: ["text-destructive"],
   CANCELLED_BY_OFFICER: ["bg-destructive", "text-destructive-foreground"],
+  CANCELLED_BY_MAINTENANCE: ["bg-warning-subdued", "text-warning-subdued-foreground"],
   EXPIRED: ["bg-status-neutral-surface", "text-status-neutral-text"],
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Wrench } from "lucide-react";
 
 import { BATAS_ALASAN_MAX, BATAS_PEMBATALAN_JAM } from "@/config/business";
 import { tampilanDetailReservasi } from "@/lib/reservations/reservation-display";
@@ -149,6 +150,39 @@ export function ReservationDetail({ id }: { id: number }) {
         <h1 className="font-heading text-3xl font-semibold tracking-tight">{data.namaFasilitas}</h1>
         <ReservationStatusBadge label={data.labelStatus} variant={data.varianStatus} />
       </header>
+
+      {data.dibatalkanOlehPemeliharaan && (
+        <section
+          role="alert"
+          aria-labelledby="banner-pemeliharaan-titel"
+          className="flex flex-col gap-4 rounded-card border border-border bg-warning-subdued p-4 text-warning-subdued-foreground sm:flex-row sm:items-start sm:justify-between sm:gap-6"
+        >
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Wrench aria-hidden="true" className="size-4 shrink-0" />
+              <h2 id="banner-pemeliharaan-titel" className="font-heading text-base font-semibold">
+                Dibatalkan karena pemeliharaan fasilitas
+              </h2>
+            </div>
+            <p className="text-sm">
+              Fasilitas <span className="font-medium">{data.namaFasilitas}</span> sedang dalam perbaikan,
+              sehingga reservasi kamu pada{" "}
+              <span className="font-medium">
+                {data.tanggal} · {data.waktu}
+              </span>{" "}
+              dibatalkan otomatis. Kamu tidak perlu menghubungi petugas.
+            </p>
+          </div>
+          <Button
+            variant="soft"
+            className="min-h-11 w-fit shrink-0 self-start"
+            nativeButton={false}
+            render={<Link href="/fasilitas" />}
+          >
+            Cari fasilitas lain
+          </Button>
+        </section>
+      )}
 
       <dl className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-card border border-border bg-card p-4">

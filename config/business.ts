@@ -97,12 +97,17 @@ export const ROLE = ["pengguna", "petugas", "admin"] as const;
 export const STATUS_AKUN = ["PENDING", "ACTIVE", "REJECTED", "DISABLED"] as const;
 export const STATUS_RESERVASI_MENUNGGU = "PENDING" as const;
 export const STATUS_RESERVASI_DISETUJUI = "APPROVED" as const;
+// Status eksklusif pembatalan otomatis akibat fasilitas UNDER_MAINTENANCE (RES-09,
+// REP-04); berbeda dari pembatalan petugas manual agar badge/filter/statistik
+// dapat membedakannya.
+export const STATUS_RESERVASI_PEMELIHARAAN = "CANCELLED_BY_MAINTENANCE" as const;
 export const STATUS_RESERVASI = [
   STATUS_RESERVASI_MENUNGGU,
   STATUS_RESERVASI_DISETUJUI,
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
+  STATUS_RESERVASI_PEMELIHARAAN,
   "EXPIRED",
 ] as const;
 export const STATUS_LAPORAN_BARU = "NEW" as const;

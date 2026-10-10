@@ -11,6 +11,7 @@ const LABEL_DESIGN: Record<string, string> = {
   REJECTED: "Ditolak",
   CANCELLED_BY_USER: "Dibatalkan Pengguna",
   CANCELLED_BY_OFFICER: "Dibatalkan Petugas",
+  CANCELLED_BY_MAINTENANCE: "Dibatalkan Pemeliharaan",
   EXPIRED: "Kedaluwarsa",
 }
 
