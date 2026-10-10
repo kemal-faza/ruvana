@@ -18,9 +18,10 @@ const navItems = [
 
 interface SiteHeaderProps {
   current?: SiteSection
+  accountHomeHref?: string
 }
 
-export function SiteHeader({ current }: SiteHeaderProps) {
+export function SiteHeader({ current, accountHomeHref }: SiteHeaderProps) {
   return (
     <header className="border-b border-border">
       <div className="mx-auto flex h-header w-full max-w-shell items-center justify-between gap-3 px-4 sm:h-header-lg sm:gap-7 sm:px-7">
@@ -50,19 +51,27 @@ export function SiteHeader({ current }: SiteHeaderProps) {
 
         <div className="flex items-center gap-2.5">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "hidden min-h-11 px-4 text-muted-foreground md:inline-flex",
-            )}
-          >
-            Masuk
-          </Link>
-          <Link href="/daftar" className={cn(buttonVariants(), "min-h-11 gap-2 px-3 sm:px-4")}>
-            Daftar
-            <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
-          </Link>
+          {accountHomeHref ? (
+            <Link href={accountHomeHref} className={cn(buttonVariants(), "min-h-11 px-3 sm:px-4")}>
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "hidden min-h-11 px-4 text-muted-foreground md:inline-flex",
+                )}
+              >
+                Masuk
+              </Link>
+              <Link href="/daftar" className={cn(buttonVariants(), "min-h-11 gap-2 px-3 sm:px-4")}>
+                Daftar
+                <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
