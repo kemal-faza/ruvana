@@ -1352,7 +1352,7 @@ paths:
             Cache-Control: { $ref: '#/components/headers/NoStore' }
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Facility' }
+              schema: { $ref: '#/components/schemas/StaffFacilitySnapshot' }
               example:
                 id: 1
                 nama: RK-101
@@ -2495,6 +2495,31 @@ components:
         kapasitas: { type: integer, minimum: 1, readOnly: true }
         deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
         status: { $ref: '#/components/schemas/FacilityStatus' }
+    StaffFacilitySnapshot:
+      type: object
+      additionalProperties: false
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status, statusChangedAt, statusChangedBy]
+      description: >-
+        Snapshot fasilitas untuk respons staf. Memuat provenance status terbaru,
+        tetapi bukan foto unggahan fasilitas.
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200, readOnly: true }
+        kapasitas: { type: integer, minimum: 1, readOnly: true }
+        deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
+        status: { $ref: '#/components/schemas/FacilityStatus' }
+        statusChangedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+        statusChangedBy:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
     ReservationCreateRequest:
       type: object
       additionalProperties: false
@@ -2550,7 +2575,7 @@ components:
       required: [id, facility, pemohon, date, timezone, startTime, endTime, startsAt, endsAt, tujuanPenggunaan, status, alasan, submittedAt, processedAt, processedBy]
       properties:
         id: { type: integer, minimum: 1, readOnly: true }
-        facility: { $ref: '#/components/schemas/Facility' }
+        facility: { $ref: '#/components/schemas/FacilitySnapshot' }
         pemohon: { $ref: '#/components/schemas/SafeUser' }
         date: { type: string, format: date, readOnly: true, description: Tanggal kalender Asia/Jakarta. }
         timezone: { type: string, const: Asia/Jakarta, readOnly: true }
@@ -2586,7 +2611,7 @@ components:
       required: [id, facility, pelapor, kategori, deskripsi, foto, status, catatanResolusi, ditanganiOleh, createdAt, processedAt]
       properties:
         id: { type: integer, minimum: 1, readOnly: true }
-        facility: { $ref: '#/components/schemas/Facility' }
+        facility: { $ref: '#/components/schemas/StaffFacilitySnapshot' }
         pelapor: { $ref: '#/components/schemas/SafeUser' }
         kategori: { $ref: '#/components/schemas/ReportCategory' }
         deskripsi: { type: string, minLength: 1, maxLength: 2000 }
