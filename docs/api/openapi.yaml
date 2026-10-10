@@ -2085,17 +2085,15 @@ components:
             instance: /api/auth/login
             code: LOGIN_RATE_LIMITED
     UploadRateLimited:
-      description: 'Batas upload intent terlampaui: 20 per user per jam atau 60 per IP per jam.'
-      headers:
-        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+      description: 'Batas penerbitan URL unggah terlampaui: 20 per pengguna per jam atau 60 per IP per jam. Retry-After tidak dikirim karena waktu pemulihan tiap bucket tidak dihitung oleh handler.'
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
           example:
-            type: https://app.example.invalid/problems/upload-rate-limited
-            title: Batas upload tercapai
+            type: https://ruvana.invalid/problems/upload-rate-limited
+            title: Batas unggah tercapai
             status: 429
-            detail: Batas penerbitan upload intent per jam tercapai.
+            detail: Batas penerbitan URL unggah per jam tercapai. Coba lagi nanti.
             instance: /api/reports/photo-uploads
             code: UPLOAD_RATE_LIMITED
     BlobFailure:
