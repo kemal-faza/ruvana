@@ -136,7 +136,7 @@ function NotificationsSection({ role }: { role: SessionUser["role"] }) {
       title: "Pantau reservasi dan laporan Anda",
       description: "Status dan keputusan terbaru dapat dilihat langsung di halaman berikut.",
       links: [
-        { label: "Reservasi Saya", href: "/reservasi/riwayat" },
+        { label: "Reservasi", href: "/reservasi/riwayat" },
         { label: "Laporan", href: "/reports" },
       ],
     },
