@@ -42,7 +42,6 @@ const items: ReportItem[] = statuses.map((status, index) => {
 
   return {
     id: number,
-    facilityId: number,
     facilityNama: `Fasilitas ${String(number).padStart(2, "0")}`,
     facilityTipe: "ruang_kelas",
     facilityLokasi: `Gedung ${number}`,
@@ -54,12 +53,10 @@ const items: ReportItem[] = statuses.map((status, index) => {
     catatanResolusi: null,
     ditanganiOleh: null,
     createdAt: date,
-    updatedAt: date,
   }
 })
 
 const view: ReportListView = {
-  userId: 1,
   items,
   total: items.length,
   totalByStatus: {
@@ -75,9 +72,6 @@ const facilityOptions: FacilityReportOption[] = [
     id: 1,
     nama: "Fasilitas 01",
     tipe: "ruang_kelas",
-    lokasi: "Gedung 1",
-    kapasitas: 40,
-    status: "ACTIVE",
   },
 ]
 
