@@ -92,11 +92,17 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     setEndTime("");
   }, [date]);
 
-  // Heading form difokuskan eksplisit pada mount dan setelah ketersediaan baru
-  // diterapkan (prop fasilitas/tanggal berubah). Efek ini menggantikan fokus
-  // ulang yang dulu terjadi lewat remount per facilityId+date.
+  // Heading form difokuskan setelah ketersediaan baru diterapkan (prop
+  // fasilitas/tanggal berubah). Efek ini menggantikan fokus ulang yang dulu
+  // terjadi lewat remount per facilityId+date. Mount pertama dilewati agar
+  // fokus tidak berpindah tanpa tindakan pengguna saat halaman baru dibuka.
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const sudahMountRef = useRef(false);
   useEffect(() => {
+    if (!sudahMountRef.current) {
+      sudahMountRef.current = true;
+      return;
+    }
     headingRef.current?.focus();
   }, [facilityId, date]);
 

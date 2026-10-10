@@ -568,6 +568,12 @@ describe("ReservationForm pilihan pengguna vs data server", () => {
     expect(opsi).not.toHaveAttribute("aria-disabled", "true")
   }, 20000)
 
+  it("tidak memindahkan fokus saat halaman pertama kali dirender", () => {
+    render(<ReservationForm {...propsDasar} />)
+
+    expect(document.activeElement).toBe(document.body)
+  })
+
   it("menyertakan teks bantu alasan slot tidak dapat dipilih", () => {
     const { container } = render(
       <ReservationForm
