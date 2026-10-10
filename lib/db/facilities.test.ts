@@ -24,7 +24,7 @@ describe("buildPublicFacilityWhere", () => {
     vi.mocked(prisma.facility.findMany).mockResolvedValue([]);
     await findPublicFacilities({ skip: 0, take: 20 });
     expect(prisma.facility.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { status: { in: PUBLIC_STATUSES } } }),
+      expect.objectContaining({ where: { status: { in: PUBLIC_STATUSES }, deletedAt: null } }),
     );
   });
 
@@ -35,6 +35,7 @@ describe("buildPublicFacilityWhere", () => {
       expect.objectContaining({
         where: {
           status: { in: PUBLIC_STATUSES },
+          deletedAt: null,
           nama: { contains: "lab", mode: "insensitive" },
         },
       }),
@@ -54,6 +55,7 @@ describe("buildPublicFacilityWhere", () => {
       expect.objectContaining({
         where: {
           status: { in: PUBLIC_STATUSES },
+          deletedAt: null,
           tipe: "laboratorium",
           lokasi: { contains: "Gedung A", mode: "insensitive" },
           kapasitas: { gte: 30 },
@@ -76,6 +78,7 @@ describe("buildPublicFacilityWhere", () => {
       expect.objectContaining({
         where: {
           status: { in: PUBLIC_STATUSES },
+          deletedAt: null,
           nama: { contains: "lab", mode: "insensitive" },
           tipe: "laboratorium",
           lokasi: { contains: "Gedung", mode: "insensitive" },
@@ -107,12 +110,12 @@ describe("findPublicFacilities", () => {
 });
 
 describe("findStaffFacilities", () => {
-  it("memuat seluruh status beserta provenance tanpa where", async () => {
+  it("memuat seluruh status beserta provenance, mengecualikan yang terarsip", async () => {
     vi.mocked(prisma.facility.findMany).mockResolvedValue([]);
     await findStaffFacilities();
 
     const argumen = vi.mocked(prisma.facility.findMany).mock.calls[0][0];
-    expect(argumen).not.toHaveProperty("where");
+    expect(argumen?.where).toEqual({ deletedAt: null });
     expect(argumen?.orderBy).toEqual({ id: "asc" });
     expect(argumen?.select).toMatchObject({
       statusChangedAt: true,

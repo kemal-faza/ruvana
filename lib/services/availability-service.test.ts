@@ -21,6 +21,7 @@ const activeFacility = {
   kapasitas: 40,
   deskripsi: "Ruang kelas standar",
   status: "ACTIVE" as const,
+  foto: null,
 };
 
 const maintenanceFacility = { ...activeFacility, status: "UNDER_MAINTENANCE" as const };

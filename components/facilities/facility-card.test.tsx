@@ -15,6 +15,7 @@ const facility: PublicFacility = {
   kapasitas: 40,
   deskripsi: "Ruang kelas standar ber-AC",
   status: "ACTIVE",
+  fotoUrl: null,
 }
 
 describe("FacilityCard", () => {
@@ -74,5 +75,17 @@ describe("FacilityCard", () => {
     render(<FacilityCard facility={{ ...facility, status: "UNDER_MAINTENANCE" }} />)
 
     expect(screen.getByText("Dalam Perbaikan")).toBeInTheDocument()
+  })
+
+  it("memakai foto unggahan ketika tersedia", () => {
+    const { container } = render(<FacilityCard facility={{ ...facility, fotoUrl: "/api/facilities/1/photo" }} />)
+
+    expect(container.querySelector("img")).toHaveAttribute("src", "/api/facilities/1/photo")
+  })
+
+  it("memakai placeholder statis saat belum ada foto unggahan", () => {
+    const { container } = render(<FacilityCard facility={facility} />)
+
+    expect(container.querySelector("img")?.getAttribute("src")).toContain("ruang-kelas.jpeg")
   })
 })

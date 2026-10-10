@@ -9,14 +9,15 @@ import {
 import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
 import { hashCanonicalBody } from "@/lib/http/idempotency";
 import { currentAccount } from "@/lib/services/auth-service";
-import { getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
+import { archiveFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
 
-import { GET, PATCH } from "./route";
+import { DELETE, GET, PATCH } from "./route";
 
 vi.mock("@/lib/services/auth-service", () => ({ currentAccount: vi.fn() }));
 vi.mock("@/lib/services/admin-facility-service", () => ({
   getAdminFacility: vi.fn(),
   updateFacility: vi.fn(),
+  archiveFacility: vi.fn(),
 }));
 vi.mock("@/lib/db/idempotency", () => ({
   claimOrGetIdempotencyKey: vi.fn(),
@@ -78,6 +79,13 @@ describe("GET /api/admin/facilities/[facilityId]", () => {
     vi.mocked(getAdminFacility).mockResolvedValue(null as never);
     const response = await GET(new NextRequest("http://localhost:3000/api/admin/facilities/1"), makeContext());
     expect(response.status).toBe(404);
+  });
+
+  it("500 problem+json ketika service gagal", async () => {
+    vi.mocked(getAdminFacility).mockRejectedValue(new Error("db down"));
+    const response = await GET(new NextRequest("http://localhost:3000/api/admin/facilities/1"), makeContext());
+    expect(response.status).toBe(500);
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
   });
 });
 
@@ -144,5 +152,55 @@ describe("PATCH /api/admin/facilities/[facilityId]", () => {
 
     expect(response.status).toBe(200);
     expect(updateFacility).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /api/admin/facilities/[facilityId]", () => {
+  function deleteRequest(overrides: { origin?: string | null } = {}) {
+    const headers = new Headers();
+    const origin = overrides.origin === undefined ? "http://localhost:3000" : overrides.origin;
+    if (origin !== null) headers.set("Origin", origin);
+    return new NextRequest("http://localhost:3000/api/admin/facilities/1", { method: "DELETE", headers });
+  }
+
+  it("403 tanpa Origin", async () => {
+    const response = await DELETE(deleteRequest({ origin: null }), makeContext());
+
+    expect(response.status).toBe(403);
+    expect(archiveFacility).not.toHaveBeenCalled();
+  });
+
+  it("204 mengarsipkan dan merevalidasi", async () => {
+    vi.mocked(archiveFacility).mockResolvedValue({ ok: true } as never);
+
+    const response = await DELETE(deleteRequest(), makeContext());
+
+    expect(response.status).toBe(204);
+    expect(archiveFacility).toHaveBeenCalledWith({ id: 1, nama: "Admin Ruvana" }, 1);
+    expect(revalidateFacilityViews).toHaveBeenCalledWith(1);
+  });
+
+  it("404 bila tidak ada", async () => {
+    vi.mocked(archiveFacility).mockResolvedValue({
+      ok: false,
+      error: { type: "not_found", message: "Fasilitas tidak ditemukan" },
+    } as never);
+
+    const response = await DELETE(deleteRequest(), makeContext());
+
+    expect(response.status).toBe(404);
+  });
+
+  it("409 bila fasilitas punya riwayat", async () => {
+    vi.mocked(archiveFacility).mockResolvedValue({
+      ok: false,
+      error: { type: "has_history", message: "punya riwayat" },
+    } as never);
+
+    const response = await DELETE(deleteRequest(), makeContext());
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("FACILITY_HAS_HISTORY");
+    expect(revalidateFacilityViews).not.toHaveBeenCalled();
   });
 });

@@ -37,6 +37,7 @@ model User {
   reports               Report[]
   sessions              Session[]
   facilityStatusChanges Facility[]    @relation("FacilityStatusChangedBy")
+  facilityArchives      Facility[]    @relation("FacilityDeletedBy")
 
   @@map("users")
 }
@@ -82,11 +83,21 @@ model Facility {
   lokasi            String
   kapasitas         Int
   deskripsi         String?
+  // Foto unggahan admin (FAC-05): pathname private Vercel Blob + metadata.
+  foto              String?         @unique(map: "facilities_foto_key")
+  fotoContentType   String?
+  fotoSize          Int?
   status            StatusFasilitas @default(ACTIVE)
   // Provenance status terbaru (PRD Bagian 10, REP-04): aktor + satu instant server.
   statusChangedAt   DateTime?       @db.Timestamptz(3)
   statusChangedBy   User?           @relation("FacilityStatusChangedBy", fields: [statusChangedById], references: [id])
   statusChangedById Int?
+  // Arsip (soft delete FAC-05): baris tetap ada agar bisa dipulihkan.
+  // deletedByNama disimpan agar riwayat tetap terbaca bila akun admin dihapus.
+  deletedAt         DateTime?       @db.Timestamptz(3)
+  deletedBy         User?           @relation("FacilityDeletedBy", fields: [deletedById], references: [id])
+  deletedById       Int?
+  deletedByNama     String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 

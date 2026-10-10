@@ -164,6 +164,10 @@ export async function createReservationService(
       if (!facility) {
         throw { kind: "not_found" as const };
       }
+      // Fasilitas terarsip (soft delete) diperlakukan seperti tidak ada.
+      if (facility.deletedAt) {
+        throw { kind: "not_found" as const };
+      }
       if (facility.status !== "ACTIVE") {
         throw { kind: "facility_unavailable" as const, status: facility.status };
       }
