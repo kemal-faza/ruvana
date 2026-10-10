@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 const { requirePengguna } = vi.hoisted(() => ({ requirePengguna: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ requirePengguna }));
@@ -20,6 +20,7 @@ describe("PengaturanAkunPage", () => {
     render(await PengaturanAkunPage());
 
     expect(requirePengguna).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Profil" }));
     expect(screen.getByLabelText(/Nama/)).toHaveValue("Siti Aminah");
     expect(screen.getByLabelText("Email")).toHaveValue("siti@kampus.ac.id");
   });

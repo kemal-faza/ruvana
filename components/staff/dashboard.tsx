@@ -8,11 +8,10 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { ReportWorkSummaries } from "@/components/staff/report-work-summaries";
 import { ReservationSummaryCard } from "@/components/staff/reservation-summary-card";
@@ -81,14 +80,7 @@ export function StaffDashboard({
   return (
     <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-shell min-w-0 flex-col gap-8 px-4 pt-8 pb-12 sm:gap-10 sm:px-7 sm:pt-12 sm:pb-16 lg:gap-12 lg:pt-section-top">
       <header className="max-w-heading">
-        <p className="mb-4 flex items-center gap-3 text-caption font-semibold tracking-eyebrow text-brand-olive uppercase">
-          Ringkasan operasional
-          <span aria-hidden="true" className="h-px w-eyebrow-rule bg-brand-olive" />
-        </p>
-        <h1 className="mb-4 text-display-md font-semibold tracking-heading">Dashboard Petugas</h1>
-        <p className="text-lede text-muted-foreground sm:text-lede-lg">
-          Reservasi dan laporan yang perlu ditangani.
-        </p>
+        <h1 className="text-display-md font-semibold tracking-heading">Dashboard Petugas</h1>
       </header>
 
       <ReservationSummaryCard
@@ -107,9 +99,6 @@ export function StaffDashboard({
                 <CardTitle id="rekap-bulanan-gagal-title" className="text-base">
                   Rekap bulanan
                 </CardTitle>
-                <CardDescription>
-                  Jumlah reservasi per status, per fasilitas, dan 6 bulan terakhir.
-                </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-start gap-3">
                 <p role="alert" className="text-sm text-destructive">
@@ -133,7 +122,6 @@ export function StaffDashboard({
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle id="reservasi-pending-title" className="text-base">Menunggu persetujuan</CardTitle>
-            <CardDescription>Reservasi aktif yang belum diproses.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end justify-between gap-4">
             <p aria-live="polite" className="font-heading text-4xl font-semibold tabular-nums">
@@ -166,9 +154,6 @@ export function StaffDashboard({
                 <EmptyHeader>
                   <EmptyMedia variant="icon"><ClipboardList aria-hidden="true" /></EmptyMedia>
                   <EmptyTitle>Belum ada reservasi menunggu.</EmptyTitle>
-                  <EmptyContent>
-                    <EmptyDescription>Reservasi baru akan muncul di sini setelah diajukan.</EmptyDescription>
-                  </EmptyContent>
                 </EmptyHeader>
               </Empty>
             )}
@@ -197,13 +182,10 @@ export function StaffDashboard({
 
       <section aria-labelledby="status-fasilitas-title" className="min-w-0 border-t border-border pt-6">
         <h2 id="status-fasilitas-title" className="font-heading text-lg font-semibold tracking-subtitle">
-          Status operasional fasilitas
+          Status fasilitas
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Periksa dan perbarui status fasilitas yang sedang dikelola.
-        </p>
         <Button render={<Link href="/petugas/fasilitas" />} variant="outline" className="mt-4 min-h-11 gap-2.5 px-4 text-sm">
-          Lihat status operasional fasilitas
+          Kelola fasilitas
           <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
         </Button>
       </section>

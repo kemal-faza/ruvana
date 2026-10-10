@@ -7,7 +7,7 @@ import { BATAS_ALASAN_MAX, ZONA_WAKTU } from "@/config/business";
 import { ReservationStatusBadge } from "@/components/reservation/reservation-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StaffReservationResult } from "@/lib/services/reservation-service";
@@ -146,10 +146,7 @@ export function ReservationQueue() {
           <EmptyMedia variant="icon">
             <ClipboardList aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>Masuk sebagai petugas</EmptyTitle>
-          <EmptyContent>
-            <EmptyDescription>Antrean reservasi hanya tersedia untuk petugas atau admin yang masuk.</EmptyDescription>
-          </EmptyContent>
+          <EmptyTitle>Masuk sebagai petugas atau admin untuk melihat antrean reservasi.</EmptyTitle>
         </EmptyHeader>
       </Empty>
     );
@@ -162,10 +159,7 @@ export function ReservationQueue() {
           <EmptyMedia variant="icon">
             <ClipboardList aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>Akses ditolak</EmptyTitle>
-          <EmptyContent>
-            <EmptyDescription>Halaman ini membutuhkan role petugas atau admin.</EmptyDescription>
-          </EmptyContent>
+          <EmptyTitle>Antrean reservasi hanya untuk petugas atau admin.</EmptyTitle>
         </EmptyHeader>
       </Empty>
     );
@@ -208,10 +202,7 @@ export function ReservationQueue() {
             <EmptyMedia variant="icon">
               <ClipboardList aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>Antrean kosong</EmptyTitle>
-            <EmptyContent>
-              <EmptyDescription>Tidak ada reservasi menunggu saat ini.</EmptyDescription>
-            </EmptyContent>
+            <EmptyTitle>Belum ada reservasi yang menunggu.</EmptyTitle>
           </EmptyHeader>
         </Empty>
       )}

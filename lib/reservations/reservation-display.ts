@@ -183,7 +183,7 @@ export function petakanGalatField(errors: unknown): GalatFieldTampil[] {
 // Pesan sukses pengajuan memakai label domain "Menunggu" tanpa enum,
 // id teknis, atau dump JSON.
 export function pesanSuksesPengajuan(): string {
-  return "Reservasi Anda tercatat sebagai Menunggu. Pantau perkembangannya di Reservasi Saya.";
+  return "Reservasi Anda tercatat sebagai Menunggu. Pantau perkembangannya di menu Reservasi.";
 }
 
 interface GalatField {

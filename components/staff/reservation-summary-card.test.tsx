@@ -28,7 +28,7 @@ describe("ReservationSummaryCard", () => {
     expect(screen.getByText("Menunggu")).toBeInTheDocument();
     expect(screen.getByText("Disetujui")).toBeInTheDocument();
     expect(screen.getByText("Ditolak")).toBeInTheDocument();
-    expect(screen.getByText("Lainnya")).toBeInTheDocument();
+    expect(screen.getByText("Batal / kedaluwarsa")).toBeInTheDocument();
     expect(screen.getByText("Total reservasi")).toBeInTheDocument();
     expect(screen.getByText("Sedang berlangsung")).toBeInTheDocument();
     expect(
@@ -38,14 +38,14 @@ describe("ReservationSummaryCard", () => {
     expect(screen.queryByText("APPROVED")).not.toBeInTheDocument();
   });
 
-  it("menampilkan nilai nol dengan jelas beserta penjelasan saat belum ada reservasi", () => {
+  it("menampilkan nilai nol tanpa kalimat yang mengulang total", () => {
     render(
       <ReservationSummaryCard
         ringkasan={{ menunggu: 0, disetujui: 0, sedangBerlangsung: 0, ditolak: 0, lainnya: 0, total: 0 }}
       />,
     );
 
-    expect(screen.getByText("Belum ada reservasi yang tercatat.")).toBeInTheDocument();
+    expect(screen.queryByText("Belum ada reservasi yang tercatat.")).not.toBeInTheDocument();
     expect(screen.getAllByText("0").length).toBeGreaterThan(0);
   });
 

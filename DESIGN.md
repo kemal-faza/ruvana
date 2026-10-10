@@ -220,7 +220,7 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 | Peran | Tujuan dan navigasi yang tersedia |
 |---|---|
 | Pengunjung | Menemukan fasilitas dan jadwal publik; lihat aturan privasi publik di **Desain konten** |
-| Pengguna | Dashboard, Fasilitas, Reservasi Saya, Laporan Saya |
+| Pengguna | Dashboard, Fasilitas, Reservasi, Laporan Saya |
 | Petugas | Dashboard, Persetujuan Reservasi, Laporan Kerusakan, status operasional fasilitas sesuai kewenangan |
 | Admin | Dashboard, Verifikasi Akun, Pengguna, Fasilitas, Analitik, Ekspor |
 
@@ -250,7 +250,7 @@ Setiap komponen yang relevan harus mendefinisikan keadaan default, hover, focus-
 | Toast | Ringkas, tidak mengganggu tugas | Tidak berlaku | Bukan satu-satunya bukti success; error menawarkan pemulihan |
 | Upload | Format dan batasan jelas; progress terlihat | Disabled selama proses yang tidak boleh digandakan | Success/error dan retry |
 | Kartu fasilitas | Identitas, tipe, lokasi, kapasitas, status, fasilitas pendukung, akses jadwal | Skeleton kartu | Empty/error tetap menjelaskan fasilitas atau pemulihan |
-| Pemilih slot | Tersedia, Dipilih, Tidak tersedia; kontrol dinonaktifkan; pilihan berurutan; slot dalam jendela 24 jam sebelum mulai ikut dinonaktifkan dengan teks bantu `Reservasi minimal 24 jam sebelum waktu mulai` tanpa menyiratkan slot terisi; disabled selalu disertai teks, bukan hanya warna | Dinonaktifkan saat data disegarkan | Konflik mengikuti alur pemulihan di bagian Alur utama |
+| Pemilih slot | Tersedia, Dipilih, Tidak tersedia; kontrol dinonaktifkan; pilihan berurutan; slot dalam jendela 14 hari sebelum mulai ikut dinonaktifkan dengan teks bantu `Reservasi minimal 14 hari sebelum waktu mulai` tanpa menyiratkan slot terisi; disabled selalu disertai teks, bukan hanya warna | Dinonaktifkan saat data disegarkan | Konflik mengikuti alur pemulihan di bagian Alur utama |
 | Ringkasan reservasi | Fasilitas, tanggal, rentang waktu, status, aksi yang relevan | Skeleton atau action loading | Status dan error dapat dipindai |
 | Ringkasan laporan | Fasilitas, kategori, waktu, status, foto, catatan bila ada | Skeleton atau action loading | Empty/error memiliki langkah berikutnya |
 | Visualisasi data | Nilai utama, label, periode, konteks, alternatif teks | Skeleton mempertahankan struktur | Empty/error menyediakan ringkasan teks |
@@ -269,7 +269,7 @@ Istilah **available**, **selected**, **loading**, **success**, **error**, **empt
 
 ### 2. Reservasi
 
-1. Pengguna memilih fasilitas, tanggal, satu atau lebih interval berurutan, lalu memasukkan tujuan. Pengajuan hanya dapat dilakukan minimal 24 jam sebelum waktu mulai (H−1).
+1. Pengguna memilih fasilitas, tanggal, satu atau lebih interval berurutan, lalu memasukkan tujuan. Pengajuan hanya dapat dilakukan minimal 14 hari sebelum waktu mulai (H−14).
 2. Slot terdiri dari 26 interval setengah jam, mulai **07.00–07.30** dan berakhir **19.30–20.00**.
 3. Pengguna meninjau ringkasan dan mengirim permintaan; status awalnya **Menunggu**.
 4. Hanya reservasi **Disetujui** yang memblokir ketersediaan publik. Permintaan menunggu boleh bertumpang tindih.
@@ -309,7 +309,7 @@ Istilah **available**, **selected**, **loading**, **success**, **error**, **empt
 
 ### 8. Masuk dan keluar
 
-1. Setelah masuk berhasil, pengguna diarahkan ke tujuan sesuai perannya: **Reservasi Saya** (`/reservasi/riwayat`) untuk pengguna, `/petugas` untuk petugas, dan `/admin/analitik` untuk admin.
+1. Setelah masuk berhasil, pengguna diarahkan ke tujuan sesuai perannya: **Reservasi** (`/reservasi/riwayat`) untuk pengguna, `/petugas` untuk petugas, dan `/admin/analitik` untuk admin.
 2. Perpindahan halaman setelah masuk atau keluar tidak memuat ulang seluruh aplikasi; hak akses halaman tujuan tetap ditentukan server pada permintaan berikutnya.
 3. Keluar mengakhiri sesi lalu kembali ke `/login`, dan permintaan berikutnya ke halaman terproteksi dialihkan ke `/login`.
 
@@ -348,6 +348,7 @@ Catatan cakupan: jaminan AA untuk teks di atas permukaan kontrol **tidak berlaku
 ## Desain konten
 
 - Gunakan bahasa Indonesia yang ringkas, langsung, dan tidak menyalahkan pengguna.
+- Tambahkan deskripsi di bawah judul hanya jika memberi aturan, konteks, atau langkah berikutnya yang belum jelas dari judul dan kontrol. Jangan mengulang judul dengan parafrasa atau menumpuk slogan.
 - Gunakan **Anda** untuk tindakan formal atau administratif dan kalimat netral untuk instruksi umum; jangan mencampur “kamu”, “Anda”, dan istilah Inggris yang tidak perlu.
 - Gunakan sentence case untuk judul.
 - Label aksi harus konkret: **Ajukan reservasi**, **Setujui**, **Unggah foto**.
@@ -380,7 +381,7 @@ Catatan cakupan: jaminan AA untuk teks di atas permukaan kontrol **tidak berlaku
 - [ ] Default, loading, disabled, error, success, empty, keyboard, dan responsive behavior didefinisikan untuk komponen yang relevan.
 - [ ] Layout diuji pada mobile, tablet, dan desktop.
 - [ ] Behavior tests mencakup state utama.
-- [ ] Domain tests mencakup konflik slot, aturan pengajuan H−1, aturan H−24, foto wajib, kepemilikan, dan penegakan peran.
+- [ ] Domain tests mencakup konflik slot, aturan pengajuan H−14, aturan H−24, foto wajib, kepemilikan, dan penegakan peran.
 - [ ] Keyboard dan automated accessibility checks dijalankan.
 - [ ] Visual regression mencakup primitives dan layar kunci.
 - [ ] End-to-end journey mencakup pendaftaran-verifikasi, reservasi-persetujuan, pelaporan-penyelesaian, dan perubahan status fasilitas.
@@ -403,9 +404,9 @@ Prototype bersifat **opsional, nonnormatif, dan tidak diperlukan** agar kontrak 
 - Hero memakai mockup dashboard aplikasi horizontal (sidebar menu peran pengguna dan ringkasan aktivitas) serta kartu foto ruang kampus horizontal.
 - Section pencarian fasilitas adalah pintu masuk alur reservasi `/reservasi`: form `GET` dengan parameter
   `type` (nilai dari `TIPE_FASILITAS`) dan `date`, memakai label `TIPE_FASILITAS_LABEL`.
-  Judulnya “Amankan jadwalmu sekarang juga.” dengan aksi “Lihat”. Section ini tampil untuk
+  Judulnya “Pilih tipe fasilitas dan tanggal” dengan aksi “Lihat”. Section ini tampil untuk
   pengunjung dan pengguna; petugas dan admin tidak melihat form reservasi.
-- CTA utama “Jelajahi Fasilitas” menuju `/fasilitas`, dengan tampilan publik untuk pengunjung anonim.
+- CTA utama dan ajakan penutup menuju `/fasilitas`, dengan tampilan publik untuk pengunjung anonim.
 - Konten menjelaskan bahwa pengajuan membutuhkan akun terverifikasi dan persetujuan petugas.
 - Manfaat utama ditampilkan sebagai kartu; ikon fitur dipakai sebagai latar dekoratif di sudut kartu dengan opasitas rendah agar teks tetap dominan.
 - Header publik memakai wordmark teks `ruvana` tanpa brand mark, navigasi Beranda, Fasilitas (`/fasilitas`), dan Jadwal, aksi Masuk dan Daftar, serta pengalih tema terang/gelap.

@@ -179,7 +179,7 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
                   Ajukan laporan
                 </h2>
                 <p id={descriptionId} className="mt-0.5 text-sm text-muted-foreground">
-                  Laporkan kerusakan fasilitas kampus beserta foto pendukung.
+                  Isi detail kerusakan dan lampirkan foto.
                 </p>
               </div>
               <Button variant="ghost" size="icon-sm" aria-label="Tutup formulir" onClick={() => onOpenChange(false)}>
