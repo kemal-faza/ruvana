@@ -325,13 +325,16 @@ paths:
         Mengalihkan (307) ke signed URL private Blob berumur pendek. Fasilitas
         yang tidak tampil publik atau tanpa foto unggahan dimasking sebagai not
         found yang sama. Pathname Blob mentah tidak pernah dikirim ke klien.
+        Redirect boleh di-cache browser sesaat (Cache-Control private, max-age
+        lebih pendek dari masa berlaku signed URL) agar satu halaman katalog
+        tidak menerbitkan signed URL baru untuk setiap foto.
       x-requirement-ids: [FAC-01]
       security: []
       parameters:
         - $ref: '#/components/parameters/FacilityId'
       responses:
         '307':
-          description: Alihkan ke signed URL foto fasilitas.
+          description: Alihkan ke signed URL foto fasilitas; dapat di-cache browser sesaat.
         '404':
           $ref: '#/components/responses/NotFound'
         '500':

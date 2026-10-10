@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { FASILITAS_UPLOAD } from "@/config/business";
 import { findPublicFacilityById } from "@/lib/db/facilities";
 import { internalError, notFound } from "@/lib/http/problem";
 import { createFacilityPhotoReadUrl } from "@/lib/storage/facility-photo";
@@ -24,7 +25,13 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/faciliti
     const url = await createFacilityPhotoReadUrl(facility.foto);
     return NextResponse.redirect(url, {
       status: 307,
-      headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" },
+      headers: {
+        // Cache sesaat di browser: penerbitan signed URL adalah panggilan API Blob,
+        // dan satu halaman katalog memuat banyak foto. Masa cache selalu lebih
+        // pendek dari masa berlaku signed URL (lihat FASILITAS_UPLOAD).
+        "Cache-Control": `private, max-age=${FASILITAS_UPLOAD.masaCacheRedirectFotoDetik}`,
+        "Referrer-Policy": "no-referrer",
+      },
     });
   } catch (error) {
     console.error("Gagal menyajikan foto fasilitas", error);
