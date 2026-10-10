@@ -1,12 +1,13 @@
 "use client"
 
 import { useActionState, useState, useSyncExternalStore, type FormEvent } from "react"
-import { Settings2, ShieldCheck, UserRound } from "lucide-react"
+import { Monitor, Moon, Settings2, ShieldCheck, Sun, UserRound } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { changePasswordAction, revokeOtherSessionsAction, updateProfileAction } from "@/app/pengaturan/actions"
 import type { SessionUser } from "@/lib/auth"
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
@@ -30,10 +31,10 @@ const SECTION_ITEMS: { id: Section; label: string; icon: typeof UserRound }[] = 
   { id: "keamanan", label: "Keamanan & masuk", icon: ShieldCheck },
 ]
 
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: "Sistem" },
-  { value: "light", label: "Terang" },
-  { value: "dark", label: "Gelap" },
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Monitor }[] = [
+  { value: "system", label: "Ikuti tema sistem", icon: Monitor },
+  { value: "light", label: "Tema terang", icon: Sun },
+  { value: "dark", label: "Tema gelap", icon: Moon },
 ]
 
 export function SettingsView({ account }: SettingsViewProps) {
@@ -245,10 +246,10 @@ function GeneralSection() {
           <Input id="settings-language" value="Bahasa Indonesia" readOnly className={INPUT_BASELINE_CLASS} />
         </Field>
 
-        <Field>
-          <FieldLabel id="settings-theme-label">Tema</FieldLabel>
-          <div role="group" aria-labelledby="settings-theme-label" className="flex flex-wrap gap-2">
-            {THEME_OPTIONS.map(({ value, label }) => {
+        <div className="flex flex-col gap-2">
+          <p id="settings-theme-label" className="text-sm font-medium">Tema</p>
+          <ButtonGroup aria-labelledby="settings-theme-label">
+            {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
               const selected = mounted && theme === value
 
               return (
@@ -256,16 +257,19 @@ function GeneralSection() {
                   key={value}
                   type="button"
                   variant={selected ? "secondary" : "outline"}
+                  size="icon"
+                  aria-label={label}
+                  title={label}
                   aria-pressed={selected}
-                  className="min-h-11 px-4"
+                  className="border-border"
                   onClick={() => setTheme(value)}
                 >
-                  {label}
+                  <Icon aria-hidden="true" />
                 </Button>
               )
             })}
-          </div>
-        </Field>
+          </ButtonGroup>
+        </div>
       </CardContent>
     </Card>
   )
