@@ -12,6 +12,13 @@ export interface NavigationItem {
    * (mis. /reservasi vs /reservasi/riwayat) agar tidak double-active.
    */
   exact?: boolean
+  /**
+   * Awalan pathname tambahan yang ikut menandai item ini aktif, di luar `href`.
+   * Dipakai bila satu menu menaungi beberapa rute bersaudara yang tidak berbagi
+   * awalan `href` — mis. "Reservasi" (`/reservasi/riwayat`) juga aktif di form
+   * `/reservasi`. Cocok bila pathname sama persis atau berupa anak (`prefix/...`).
+   */
+  activePrefixes?: readonly string[]
 }
 
 export interface NavigationGroup {
