@@ -8,7 +8,7 @@ export const JAM_OPERASIONAL = {
 
 export const DURASI_SLOT_MENIT = 30;
 export const BATAS_LOGIN_GAGAL = 10;
-export const JENDELA_LOGIN_MENIT = 15;
+export const JENDELA_LOGIN_MENIT = 2;
 export const MASA_SESI_JAM = 12;
 export const RETENSI_IDEMPOTENCY_JAM = 24;
 export const BATAS_NAMA_AKUN_KARAKTER = 100;

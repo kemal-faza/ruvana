@@ -30,30 +30,29 @@ function staggerStyle(index: number) {
 const benefits = [
   {
     icon: CalendarDays,
-    title: "Reservasi lebih terarah",
+    title: "Ajukan reservasi",
     description:
-      "Lihat fasilitas dan jadwalnya, ajukan kebutuhanmu, lalu pantau persetujuan petugas.",
+      "Pilih fasilitas, waktu, dan tujuan kegiatan. Pengajuan memerlukan akun terverifikasi dan persetujuan petugas.",
   },
   {
     icon: Wrench,
     title: "Laporkan kerusakan",
-    description:
-      "Sampaikan kendala pada fasilitas agar petugas dapat menanganinya dengan lebih cepat.",
+    description: "Pilih fasilitas, jelaskan kerusakan, dan lampirkan satu foto.",
   },
 ]
 
 const steps = [
   {
-    title: "Temukan tempat yang tepat",
-    description: "Kenali fasilitas kampus dan lihat ketersediaannya.",
+    title: "Pilih fasilitas",
+    description: "Cari berdasarkan tipe dan tanggal kegiatan.",
   },
   {
-    title: "Ajukan dengan lebih terarah",
-    description: "Pilih fasilitas dan jadwal, lalu pantau persetujuan.",
+    title: "Tentukan jadwal",
+    description: "Pilih waktu dan isi tujuan reservasi.",
   },
   {
-    title: "Ikut merawat fasilitas",
-    description: "Laporkan kendala agar ruang tetap nyaman digunakan.",
+    title: "Pantau pengajuan",
+    description: "Periksa status dan keputusan petugas di halaman Reservasi Saya.",
   },
 ]
 
@@ -71,36 +70,27 @@ export default async function Home() {
         <section aria-labelledby="hero-title" className={`${SHELL} pt-hero-top sm:pt-hero-top-lg`}>
           <div className="grid items-center gap-hero-gap md:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] md:gap-hero-gap-lg">
             <div className="min-w-0">
-              <p
-                className="motion-rise motion-rise-stagger mb-5 flex items-center gap-3 text-xs font-semibold tracking-eyebrow text-brand-olive uppercase"
-                style={staggerStyle(0)}
-              >
-                Ruang kampus, lebih terarah
-                <span aria-hidden="true" className="h-px w-eyebrow-rule bg-brand-olive" />
-              </p>
-
               <h1
                 id="hero-title"
                 className="motion-rise motion-rise-stagger mb-6 max-w-title text-display font-semibold tracking-display"
-                style={staggerStyle(1)}
+                style={staggerStyle(0)}
               >
-                Setiap kegiatan punya ruangnya.
+                Cari ruang untuk kegiatan kampus.
               </h1>
 
               <p
                 className="motion-rise motion-rise-stagger mb-8 max-w-lede text-lede text-muted-foreground sm:text-lede-lg"
-                style={staggerStyle(2)}
+                style={staggerStyle(1)}
               >
-                Temukan fasilitas kampus, pilih jadwal yang sesuai, lalu ajukan reservasi dari
-                satu tempat.
+                Pilih fasilitas dan tanggal, lalu ajukan reservasi.
               </p>
 
               <div
                 className="motion-rise motion-rise-stagger flex min-w-0 flex-wrap items-center gap-3.5 sm:gap-5"
-                style={staggerStyle(3)}
+                style={staggerStyle(2)}
               >
                 <Link href="/fasilitas" className={primaryLink}>
-                  Jelajahi Fasilitas
+                  Lihat fasilitas
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
                 </Link>
                 <a href="#cara-kerja" className={quietLink}>
@@ -121,17 +111,13 @@ export default async function Home() {
 
         <section aria-labelledby="benefits-title" className={`${SHELL} pt-section-top sm:pt-section-top-lg`}>
           <Reveal>
-            <div className="mb-block flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-block sm:mb-block-lg">
+            <div className="mb-block sm:mb-block-lg">
               <h2
                 id="benefits-title"
                 className="max-w-heading text-display-md font-semibold tracking-heading"
               >
-                Satu tempat untuk reservasi dan kepedulian.
+                Reservasi dan laporan fasilitas kampus
               </h2>
-              <p className="max-w-support text-sm text-muted-foreground">
-                Ruvana membantu kegiatan berjalan teratur sekaligus menjaga fasilitas tetap
-                nyaman dipakai bersama.
-              </p>
             </div>
           </Reveal>
 
@@ -162,16 +148,13 @@ export default async function Home() {
           className={`${SHELL} pt-section-top sm:pt-section-top-lg`}
         >
           <Reveal>
-            <div className="mb-block flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-block sm:mb-block-lg">
+            <div className="mb-block sm:mb-block-lg">
               <h2
                 id="steps-title"
                 className="max-w-heading text-display-md font-semibold tracking-heading"
               >
-                Dari rencana, jadi kegiatan.
+                Ajukan reservasi dalam tiga langkah
               </h2>
-              <p className="max-w-support text-sm text-muted-foreground">
-                Alur yang sederhana untuk menemukan ruang dan ikut menjaganya.
-              </p>
             </div>
           </Reveal>
 
@@ -205,16 +188,13 @@ export default async function Home() {
               <div className="max-w-wide">
                 <h2
                   id="closing-title"
-                  className="mb-2 text-display-sm font-semibold tracking-heading"
+                  className="text-display-sm font-semibold tracking-heading"
                 >
-                  Mulai dari ruang yang tepat.
+                  Cari fasilitas sebelum mengajukan reservasi.
                 </h2>
-                <p className="text-caption text-muted-foreground">
-                  Lihat fasilitas kampus dan siapkan kegiatanmu.
-                </p>
               </div>
               <Link href="/fasilitas" className={primaryLink}>
-                Jelajahi Fasilitas
+                Lihat fasilitas
                 <ArrowRight aria-hidden="true" data-motion-icon="inline-end" className="size-5" />
               </Link>
             </div>

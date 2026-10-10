@@ -5,7 +5,7 @@ import { LAPORAN_UPLOAD } from "@/config/business"
 import { Role } from "@/generated/prisma/enums"
 import { findReportByFoto } from "@/lib/db/reports"
 import { consumeReportUploadRateLimit } from "@/lib/db/report-upload-rate-limit"
-import { badRequest, forbidden, internalError, unauthorized, validationFailed } from "@/lib/http/problem"
+import { badRequest, forbidden, internalError, problemResponse, unauthorized, validationFailed } from "@/lib/http/problem"
 import { getSessionUser } from "@/lib/auth"
 import { originError } from "@/lib/http/origin"
 import { createReportPhotoUpload, isOwnedReportPhotoPathname, isReportPhotoContentType, removeReportPhoto } from "@/lib/storage/report-photo"
@@ -51,17 +51,13 @@ export async function POST(request: NextRequest) {
   try {
     const allowed = await consumeReportUploadRateLimit(user.id, ipHash)
     if (!allowed) {
-      return NextResponse.json(
-        {
-          type: "https://ruvana.invalid/problems/rate-limited",
-          title: "Batas unggah tercapai",
-          status: 429,
-          detail: "Batas penerbitan URL unggah per jam tercapai. Coba lagi nanti.",
-          instance,
-          code: "RATE_LIMITED",
-        },
-        { status: 429, headers: { "Cache-Control": "no-store" } },
-      )
+      return problemResponse({
+        status: 429,
+        code: "UPLOAD_RATE_LIMITED",
+        title: "Batas unggah tercapai",
+        detail: "Batas penerbitan URL unggah per jam tercapai. Coba lagi nanti.",
+        instance,
+      })
     }
 
     const upload = await createReportPhotoUpload(user.id, contentType, size as number)

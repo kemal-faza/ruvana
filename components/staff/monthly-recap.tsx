@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -12,17 +11,6 @@ import { RecapMonthPicker } from "@/components/staff/recap-month-picker";
 import type { StaffMonthlyRecap as RekapBulanan } from "@/lib/services/staff-monthly-recap";
 
 const numberFormatter = new Intl.NumberFormat("id-ID");
-
-function kalimatRingkasan(rekap: RekapBulanan): string {
-  if (rekap.total === 0) {
-    return `Pada ${rekap.monthLabel} belum ada reservasi yang memakai fasilitas.`;
-  }
-  const rincian = rekap.perStatus
-    .map((item) => `${numberFormatter.format(item.count)} ${item.label.toLowerCase()}`)
-    .join(", ")
-    .replace(/, ([^,]*)$/, ", dan $1");
-  return `Pada ${rekap.monthLabel} terdapat ${numberFormatter.format(rekap.total)} reservasi: ${rincian}.`;
-}
 
 export function StaffMonthlyRecap({
   recap,
@@ -40,9 +28,6 @@ export function StaffMonthlyRecap({
           <CardTitle id="rekap-bulanan-title" className="text-base">
             Rekap bulanan
           </CardTitle>
-          <CardDescription>
-            Jumlah reservasi per status, per fasilitas, dan 6 bulan terakhir.
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex min-w-0 flex-col gap-6">
           <RecapMonthPicker currentMonth={currentMonth} />
@@ -51,10 +36,6 @@ export function StaffMonthlyRecap({
               {warning}
             </p>
           )}
-
-          <p aria-live="polite" className="text-sm text-muted-foreground">
-            {kalimatRingkasan(recap)}
-          </p>
 
           <div className="grid min-w-0 gap-6 lg:grid-cols-2 lg:items-start">
             <div className="min-w-0">
@@ -108,8 +89,7 @@ export function StaffMonthlyRecap({
                     ) : (
                       <tr>
                         <td colSpan={2} className="px-4 py-6 text-center text-muted-foreground">
-                          Belum ada reservasi pada bulan ini. Reservasi baru akan muncul di sini
-                          setelah diajukan.
+                          Belum ada reservasi pada bulan ini.
                         </td>
                       </tr>
                     )}
