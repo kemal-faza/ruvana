@@ -2,7 +2,8 @@ import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
-import { ALASAN_PERBAIKAN } from "../lib/reservations/maintenance-listener";
+import { prisma as prismaAplikasi } from "../lib/prisma";
+import { updateFacilityOperationalStatusService } from "../lib/services/facility-status-service";
 import { validateSeedConfig } from "./seed-safety";
 
 const seedConfig = validateSeedConfig({
@@ -65,18 +66,16 @@ async function main() {
     });
   }
 
-  // Reservasi contoh gugur pemeliharaan (dibuat bila belum ada — idempoten).
+  // Reservasi contoh gugur pemeliharaan (idempoten). Skenarionya dibentuk lewat
+  // service REP-04, bukan dengan menulis kolom status langsung: reservasi
+  // APPROVED masa depan disiapkan lebih dulu, lalu transisi Lab Kimia ke
+  // UNDER_MAINTENANCE dijalankan sehingga listener RES-09 (Modul 3) yang
+  // membatalkannya di dalam transaksi yang sama.
   {
     const hari = 24 * 60 * 60 * 1000;
     const pengguna = await prisma.user.findFirstOrThrow({ where: { email: "pengguna@ruvana.test" } });
     const petugas = await prisma.user.findFirstOrThrow({ where: { email: "petugas@ruvana.test" } });
     const labKimia = await prisma.facility.findUniqueOrThrow({ where: { nama: "Lab Kimia" } });
-
-    const waktuPerubahan = new Date(Date.now() - hari);
-    await prisma.facility.update({
-      where: { id: labKimia.id },
-      data: { status: "UNDER_MAINTENANCE", statusChangedAt: waktuPerubahan, statusChangedById: petugas.id },
-    });
 
     // Tanggal Jakarta +7 hari; slot 09:00–11:00 WIB (offset +420 menit, tanpa DST).
     const jakartaKini = Date.now() + 420 * 60 * 1000;
@@ -84,32 +83,43 @@ async function main() {
     const y = target.getUTCFullYear();
     const m = target.getUTCMonth();
     const d = target.getUTCDate();
-    const tanggal = new Date(Date.UTC(y, m, d));
-    const mulai = new Date(Date.UTC(y, m, d, 9, 0) - 420 * 60 * 1000);
-    const selesai = new Date(Date.UTC(y, m, d, 11, 0) - 420 * 60 * 1000);
     const tujuan = "Praktikum kimia dasar";
 
     const sudahAda = await prisma.reservation.findFirst({
-      where: { userId: pengguna.id, facilityId: labKimia.id, status: "CANCELLED_BY_MAINTENANCE", tujuanPenggunaan: tujuan },
+      where: { userId: pengguna.id, facilityId: labKimia.id, tujuanPenggunaan: tujuan },
       select: { id: true },
     });
-    if (!sudahAda) {
-      await prisma.reservation.create({
-        data: {
-          userId: pengguna.id,
-          facilityId: labKimia.id,
-          tanggal,
-          startTime: mulai,
-          endTime: selesai,
-          tujuanPenggunaan: tujuan,
-          status: "CANCELLED_BY_MAINTENANCE",
-          alasan: ALASAN_PERBAIKAN,
-          diprosesOleh: null,
-          waktuDiproses: waktuPerubahan,
-          createdAt: new Date(Date.now() - 3 * hari),
-          updatedAt: waktuPerubahan,
-        },
-      });
+
+    if (labKimia.status !== "ACTIVE") {
+      // Sudah dibentuk seed sebelumnya (atau diubah manual): biarkan apa adanya.
+      console.log(`Skenario pemeliharaan dilewati: Lab Kimia berstatus ${labKimia.status}.`);
+    } else {
+      if (!sudahAda) {
+        await prisma.reservation.create({
+          data: {
+            userId: pengguna.id,
+            facilityId: labKimia.id,
+            tanggal: new Date(Date.UTC(y, m, d)),
+            startTime: new Date(Date.UTC(y, m, d, 9, 0) - 420 * 60 * 1000),
+            endTime: new Date(Date.UTC(y, m, d, 11, 0) - 420 * 60 * 1000),
+            tujuanPenggunaan: tujuan,
+            status: "APPROVED",
+            createdAt: new Date(Date.now() - 3 * hari),
+          },
+        });
+      }
+
+      // Instant perubahan satu hari ke belakang supaya cerita demo konsisten:
+      // reservasi diajukan 3 hari lalu, fasilitas rusak 1 hari lalu.
+      const transisi = await updateFacilityOperationalStatusService(
+        petugas.id,
+        labKimia.id,
+        "UNDER_MAINTENANCE",
+        new Date(Date.now() - hari),
+      );
+      if (!transisi.ok) {
+        throw new Error(`Gagal menyiapkan skenario pemeliharaan: ${transisi.error.message}`);
+      }
     }
   }
 
@@ -281,4 +291,9 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    // Service REP-04 memakai singleton lib/prisma; pool-nya ikut ditutup agar
+    // proses seed tidak menggantung.
+    await prisma.$disconnect();
+    await prismaAplikasi.$disconnect();
+  });
