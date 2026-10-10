@@ -31,6 +31,22 @@ describe("ReservationContent", () => {
     ]);
   });
 
+  it("meneruskan tipe aktif ke form agar bertahan saat memuat ketersediaan", async () => {
+    const element = await ReservationContent({
+      searchParams: Promise.resolve({ type: "aula" }),
+    });
+
+    expect(element.props.type).toBe("aula");
+  });
+
+  it("tidak memakai key per facilityId+date agar isian form bertahan di navigasi", async () => {
+    const element = await ReservationContent({
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(element.key).toBeNull();
+  });
+
   it("mengabaikan tipe yang tidak dikenal dan tetap menampilkan semua fasilitas ACTIVE", async () => {
     const element = await ReservationContent({
       searchParams: Promise.resolve({ type: "tidak-dikenal" }),

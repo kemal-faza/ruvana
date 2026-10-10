@@ -68,15 +68,15 @@ export const LABEL_STATUS_RESERVASI: Record<StatusReservasi, string> = {
 
 export const BADGE_STATUS_RESERVASI: Record <
   StatusReservasi,
-  "success" | "pending" | "neutral" | "danger"
+  "success" | "pending" | "neutral" | "danger" | "dangerSoft" | "dangerStrong"
 > = {
   PENDING: "pending",
   APPROVED: "success",
   REJECTED: "danger",
-  CANCELLED_BY_USER: "neutral",
-  CANCELLED_BY_OFFICER: "neutral",
+  CANCELLED_BY_USER: "dangerSoft",
+  CANCELLED_BY_OFFICER: "dangerStrong",
   // Amber menonjolkan pembatalan otomatis sistem agar tidak tertukar dengan
-  // pembatalan manual petugas di tengah deretan status netral.
+  // pembatalan manual pengguna maupun petugas.
   CANCELLED_BY_MAINTENANCE: "pending",
   EXPIRED: "neutral",
 };

@@ -70,25 +70,53 @@ function Button({
   size = "default",
   disabled,
   loading = false,
+  loadingLabel,
   render,
   ...props
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & {
     loading?: boolean
+    loadingLabel?: ReactNode
   }) {
   const classes = cn(buttonVariants({ variant, size, className }))
   const { nativeButton, ...rest } = props
-  const isi = loading ? (
-    <>
-      <span className="opacity-0">{children}</span>
-      <LoaderCircle
-        aria-hidden="true"
-        className="absolute size-4 animate-spin motion-reduce:animate-none"
-      />
-    </>
-  ) : (
-    children
-  )
+  const isi =
+    loadingLabel !== undefined ? (
+      <span className="grid place-items-center">
+        <span
+          aria-hidden={loading || undefined}
+          className={cn(
+            "col-start-1 row-start-1 inline-flex items-center gap-2.5 whitespace-nowrap",
+            loading && "invisible",
+          )}
+        >
+          {children}
+        </span>
+        <span
+          aria-hidden={!loading || undefined}
+          className={cn(
+            "col-start-1 row-start-1 inline-flex items-center gap-2.5 whitespace-nowrap",
+            !loading && "invisible",
+          )}
+        >
+          {loadingLabel}
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-4 animate-spin motion-reduce:animate-none"
+          />
+        </span>
+      </span>
+    ) : loading ? (
+      <>
+        <span className="opacity-0">{children}</span>
+        <LoaderCircle
+          aria-hidden="true"
+          className="absolute size-4 animate-spin motion-reduce:animate-none"
+        />
+      </>
+    ) : (
+      children
+    )
 
   if (!rendersNativeElement(render) && nativeButton === undefined) {
     const element = render as ReactElement<{
