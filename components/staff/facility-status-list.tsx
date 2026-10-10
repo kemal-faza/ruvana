@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, MapPin, Users } from "lucide-react";
 
@@ -45,13 +45,28 @@ function provenance(facility: StaffFacility): string {
  * PATCH /api/staff/facilities/{id}/status yang menjalankan RES-09 dalam satu
  * transaksi; daftar publik di-revalidasi oleh route tersebut.
  */
-export function FacilityStatusList({ facilities }: { facilities: StaffFacility[] }) {
+export function FacilityStatusList({
+  facilities,
+  sorotFacilityId = null,
+}: {
+  facilities: StaffFacility[];
+  // Deep-link dari antrean laporan (?facilityId=): sorot kartu yang cocok,
+  // gulir ke posisinya, dan pindahkan fokus agar petugas langsung menemukan
+  // tombol aksinya. Id tak dikenal diabaikan. Konfirmasi status tetap manual.
+  sorotFacilityId?: number | null;
+}) {
   const router = useRouter();
   const [items, setItems] = useState<StaffFacility[]>(facilities);
   const [actingId, setActingId] = useState<number | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; msg: string } | null>(null);
   const [target, setTarget] = useState<{ facility: StaffFacility; tujuan: TujuanStatus } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const sorotRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    sorotRef.current?.scrollIntoView?.({ block: "center" });
+    sorotRef.current?.focus({ preventScroll: true });
+  }, []);
 
   function openKonfirmasi(facility: StaffFacility) {
     const tujuan = tujuanStatus(facility);
@@ -133,8 +148,15 @@ export function FacilityStatusList({ facilities }: { facilities: StaffFacility[]
       <div className="flex flex-col gap-4">
         {items.map((facility) => {
           const tujuan = tujuanStatus(facility);
+          const disorot = sorotFacilityId === facility.id;
           return (
-            <Card key={facility.id}>
+            <div
+              key={facility.id}
+              ref={disorot ? sorotRef : undefined}
+              tabIndex={disorot ? -1 : undefined}
+              className={disorot ? "rounded-card ring-2 ring-warning ring-offset-2 ring-offset-background" : undefined}
+            >
+            <Card>
               <CardHeader>
                 <CardTitle className="font-heading text-lg">
                   {facility.nama} · {LABEL_TIPE_FASILITAS[facility.tipe]}
@@ -174,6 +196,7 @@ export function FacilityStatusList({ facilities }: { facilities: StaffFacility[]
                 </div>
               )}
             </Card>
+            </div>
           );
         })}
       </div>
