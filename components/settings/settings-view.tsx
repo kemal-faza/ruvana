@@ -1,8 +1,8 @@
 "use client"
 
-import { useActionState, useState, type FormEvent } from "react"
-import Link from "next/link"
-import { Bell, Languages, MoonStar, ShieldCheck, UserRound } from "lucide-react"
+import { useActionState, useState, useSyncExternalStore, type FormEvent } from "react"
+import { Settings2, ShieldCheck, UserRound } from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { changePasswordAction, revokeOtherSessionsAction, updateProfileAction } from "@/app/pengaturan/actions"
 import type { SessionUser } from "@/lib/auth"
@@ -10,9 +10,9 @@ import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { INPUT_BASELINE_CLASS, Input } from "@/components/ui/input"
-import { ThemeToggle } from "@/components/theme-toggle"
 
-type Section = "profil" | "notifikasi" | "keamanan" | "bahasa" | "tampilan"
+type Section = "general" | "profil" | "keamanan"
+type ThemePreference = "system" | "light" | "dark"
 
 interface SettingsViewProps {
   account: SessionUser
@@ -25,15 +25,19 @@ const ROLE_LABEL: Record<SessionUser["role"], string> = {
 }
 
 const SECTION_ITEMS: { id: Section; label: string; icon: typeof UserRound }[] = [
+  { id: "general", label: "General", icon: Settings2 },
   { id: "profil", label: "Profil", icon: UserRound },
-  { id: "notifikasi", label: "Notifikasi", icon: Bell },
   { id: "keamanan", label: "Keamanan & masuk", icon: ShieldCheck },
-  { id: "bahasa", label: "Bahasa", icon: Languages },
-  { id: "tampilan", label: "Tampilan", icon: MoonStar },
+]
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: "system", label: "Sistem" },
+  { value: "light", label: "Terang" },
+  { value: "dark", label: "Gelap" },
 ]
 
 export function SettingsView({ account }: SettingsViewProps) {
-  const [section, setSection] = useState<Section>("profil")
+  const [section, setSection] = useState<Section>("general")
 
   return (
     <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -62,11 +66,9 @@ export function SettingsView({ account }: SettingsViewProps) {
         </nav>
 
         <div className="min-w-0">
+          {section === "general" && <GeneralSection />}
           {section === "profil" && <ProfileSection account={account} />}
-          {section === "notifikasi" && <NotificationsSection role={account.role} />}
           {section === "keamanan" && <SecuritySection />}
-          {section === "bahasa" && <LanguageSection />}
-          {section === "tampilan" && <AppearanceSection />}
         </div>
       </div>
     </main>
@@ -103,9 +105,6 @@ function ProfileSection({ account }: SettingsViewProps) {
           <Field>
             <FieldLabel htmlFor="settings-email">Email</FieldLabel>
             <Input id="settings-email" value={account.email} readOnly className={INPUT_BASELINE_CLASS} />
-            <p className="text-sm text-muted-foreground">
-              Email belum dapat diubah karena Ruvana belum menyediakan verifikasi perubahan email.
-            </p>
           </Field>
 
           <Field>
@@ -120,41 +119,6 @@ function ProfileSection({ account }: SettingsViewProps) {
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
-  )
-}
-
-function NotificationsSection({ role }: { role: SessionUser["role"] }) {
-  const roleLinks: Record<SessionUser["role"], { label: string; href: string }[]> = {
-    pengguna: [
-      { label: "Reservasi Saya", href: "/reservasi/riwayat" },
-      { label: "Laporan", href: "/reports" },
-    ],
-    petugas: [{ label: "Persetujuan reservasi", href: "/petugas/antrian" }],
-    admin: [
-      { label: "Kelola pengguna", href: "/admin/pengguna" },
-      { label: "Analitik", href: "/admin/analitik" },
-    ],
-  }
-  const links = roleLinks[role]
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Notifikasi</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-          Notifikasi email, WhatsApp, dan push belum tersedia. Periksa pembaruan melalui tautan berikut.
-        </p>
-        <ul className="flex flex-wrap gap-3">
-          {links.map((link) => (
-            <li key={link.href}>
-              <Button variant="outline" className={BUTTON_ACTION_CLASS} render={<Link href={link.href} />}>{link.label}</Button>
-            </li>
-          ))}
-        </ul>
       </CardContent>
     </Card>
   )
@@ -266,31 +230,42 @@ function PasswordField({
   )
 }
 
-function LanguageSection() {
+function GeneralSection() {
+  const { theme, setTheme } = useTheme()
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bahasa</CardTitle>
+        <CardTitle>General</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex max-w-xl flex-col gap-5">
         <Field>
           <FieldLabel htmlFor="settings-language">Bahasa antarmuka</FieldLabel>
           <Input id="settings-language" value="Bahasa Indonesia" readOnly className={INPUT_BASELINE_CLASS} />
         </Field>
-      </CardContent>
-    </Card>
-  )
-}
 
-function AppearanceSection() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Tampilan</CardTitle>
-      </CardHeader>
-      <CardContent className="flex items-center justify-between gap-4">
-        <p className="font-medium">Tema</p>
-        <ThemeToggle />
+        <Field>
+          <FieldLabel id="settings-theme-label">Tema</FieldLabel>
+          <div role="group" aria-labelledby="settings-theme-label" className="flex flex-wrap gap-2">
+            {THEME_OPTIONS.map(({ value, label }) => {
+              const selected = mounted && theme === value
+
+              return (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={selected ? "secondary" : "outline"}
+                  aria-pressed={selected}
+                  className="min-h-11 px-4"
+                  onClick={() => setTheme(value)}
+                >
+                  {label}
+                </Button>
+              )
+            })}
+          </div>
+        </Field>
       </CardContent>
     </Card>
   )
