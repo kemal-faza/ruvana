@@ -36,7 +36,7 @@ export function SettingsView({ account }: SettingsViewProps) {
   const [section, setSection] = useState<Section>("profil")
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+    <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <header className="max-w-2xl space-y-2">
         <p className="text-sm font-medium tracking-wide text-primary">Akun</p>
         <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Pengaturan</h1>

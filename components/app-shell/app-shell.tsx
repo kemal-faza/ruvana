@@ -1,6 +1,7 @@
 import { AppShellClient } from "@/components/app-shell/app-shell-client"
 import { navigationIconName } from "@/components/app-shell/navigation-icons"
 import type { AppShellProps, SerializableNavigationGroup } from "@/components/app-shell/types"
+import { SkipToContentLink } from "@/components/site/skip-to-content-link"
 
 function serializeNavigation(
   navigation: AppShellProps["navigation"],
@@ -16,11 +17,14 @@ function serializeNavigation(
 
 export function AppShell({ navigation, account, children }: AppShellProps) {
   return (
-    <AppShellClient
-      navigation={serializeNavigation(navigation)}
-      account={account}
-    >
-      {children}
-    </AppShellClient>
+    <>
+      <SkipToContentLink />
+      <AppShellClient
+        navigation={serializeNavigation(navigation)}
+        account={account}
+      >
+        {children}
+      </AppShellClient>
+    </>
   )
 }

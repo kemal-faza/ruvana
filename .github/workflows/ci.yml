@@ -64,6 +64,9 @@ jobs:
       - name: Cek kata terlarang
         run: pnpm check:banned
 
+      - name: Cek kesesuaian path OpenAPI
+        run: pnpm check:openapi-paths
+
       # Route types (mis. global LayoutProps di app/layout.tsx) baru tersedia
       # setelah `next typegen`. tsc --noEmit harus jalan SETELAH typegen,
       # jika tidak akan error "Cannot find name 'LayoutProps'".
@@ -74,8 +77,8 @@ jobs:
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
-      # Test suite unit vitest (36 file co-located, 154 tes). Urutan ini
-      # mengikuti docs/PRD.md: "... TypeScript, test suite, dan build".
+      # Test suite unit vitest (file *.test.ts(x) co-located dengan sumbernya). Urutan
+      # ini mengikuti docs/PRD.md: "... TypeScript, test suite, dan build".
       # DATABASE_URL dummy disediakan agar konsisten dengan step lain;
       # seluruh tes ini mem-mock lapisan DB dan tidak menyentuh PostgreSQL.
       - name: Test suite

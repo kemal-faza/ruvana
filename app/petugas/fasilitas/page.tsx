@@ -18,7 +18,7 @@ export default async function PetugasFasilitasPage() {
   const facilities = await listStaffFacilitiesService();
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+    <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-col gap-2">
         <p className="text-sm font-medium tracking-wide text-primary">Petugas</p>
         <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Status fasilitas</h1>

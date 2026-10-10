@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/baseline-ui/page"
 import { getSessionUser } from "@/lib/auth"
+import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 
 vi.mock("@/lib/auth", () => ({
   getSessionUser: vi.fn().mockResolvedValue(null),
@@ -13,9 +14,24 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }))
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  resetMatchMedia()
+})
 
 describe("katalog baseline UI", () => {
+  it("menyediakan tautan lewati shell sebagai fokus pertama menuju main", async () => {
+    setMatchMedia("(max-width: 1023px)", false)
+
+    const { container } = render(await Home())
+    const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" })
+
+    expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink)
+    expect(skipLink).toHaveAttribute("href", "#konten")
+    expect(screen.getByRole("main")).toHaveAttribute("id", "konten")
+    expect(screen.getAllByRole("link", { name: /lewati ke/i })).toHaveLength(1)
+  })
+
   it("menampilkan katalog komponen dan shell statis", async () => {
     render(await Home())
 

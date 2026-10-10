@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminAnalitikLoading() {
   return (
-    <main
+    <main id="konten" tabIndex={-1}
       aria-label="Memuat analitik"
       aria-busy="true"
       className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8"

@@ -554,8 +554,9 @@ Buka PR di GitHub dengan target `main`. Isi deskripsi PR dengan:
 - risiko atau dampak terhadap modul lain.
 
 Pastikan diff PR tidak memuat `.env`, secret, generated files, debug log, atau
-perubahan yang tidak terkait. Deployment otomatis Vercel hanya berasal dari
-`main`, bukan dari setiap branch.
+perubahan yang tidak terkait. Auto-deployment Vercel dimatikan; rilis production
+hanya lewat workflow `Release Production` pada `main` (otomatis setelah CI lulus,
+atau manual dari branch `main`), bukan dari setiap branch.
 
 ## Review dan Merge
 

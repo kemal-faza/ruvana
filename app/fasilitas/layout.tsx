@@ -25,11 +25,8 @@ export default async function FasilitasLayout({ children }: { children: ReactNod
   const account = shellAccountFromUser(user)
 
   return (
-    <>
-      <SkipToContentLink />
-      <AppShell navigation={navigationForRole(user.role)} account={account}>
-        <main id="konten" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
-      </AppShell>
-    </>
+    <AppShell navigation={navigationForRole(user.role)} account={account}>
+      <main id="konten" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+    </AppShell>
   )
 }

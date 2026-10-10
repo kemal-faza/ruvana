@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 
 import { AccountStatus, Role } from "@/generated/prisma/enums"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
@@ -36,6 +37,19 @@ const petugas = {
 }
 
 describe("PetugasLayout", () => {
+  it("menempatkan tautan lewati sebelum navigasi dan menargetkan main", async () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    mocks.requirePetugasAtauAdmin.mockResolvedValue(petugas)
+
+    const { container } = render(await PetugasLayout({ children: <LoadingPetugasDashboard /> }))
+    const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" })
+
+    expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink)
+    expect(skipLink).toHaveAttribute("href", "#konten")
+    expect(screen.getByRole("main")).toHaveAttribute("id", "konten")
+    expect((await axe(container)).violations).toEqual([])
+  })
+
   it("menjaga sidebar dan navigasi tampil saat konten dashboard berupa skeleton", async () => {
     setMatchMedia("(max-width: 1023px)", false)
     mocks.requirePetugasAtauAdmin.mockResolvedValue(petugas)

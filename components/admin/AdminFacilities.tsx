@@ -223,7 +223,7 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
+    <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-1 text-sm font-medium text-primary">Administrasi</p>
