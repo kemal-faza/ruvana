@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { ArrowLeft, LockKeyhole, Mail, UserRound } from "lucide-react"
-import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -15,15 +15,12 @@ import {
   BATAS_PASSWORD_AKUN_MIN_BYTE,
   BATAS_PASSWORD_AKUN_BYTE,
 } from "@/config/business"
-
-const subscribeHydration = () => () => {}
-const clientHydrated = () => true
-const serverHydrated = () => false
+import { useHydrated } from "@/lib/use-hydrated"
 
 export default function RegisterForm() {
   const [state, setState] = useState<{ ok: boolean; pesan: string; fieldErrors?: Record<string, string[]> }>({ ok: false, pesan: "" })
   const [pending, setPending] = useState(false)
-  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated)
+  const hydrated = useHydrated()
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

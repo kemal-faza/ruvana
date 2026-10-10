@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useState } from "react"
 
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -12,11 +12,9 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
 import { getPostLoginPath } from "@/lib/auth-routing"
+import { useHydrated } from "@/lib/use-hydrated"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const subscribeHydration = () => () => {}
-const clientHydrated = () => true
-const serverHydrated = () => false
 
 export default function LoginForm() {
   const router = useRouter()
@@ -25,7 +23,7 @@ export default function LoginForm() {
     fieldErrors: {} as Record<string, string[]>,
   })
   const [pending, setPending] = useState(false)
-  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated)
+  const hydrated = useHydrated()
 
   const emailError = state.fieldErrors?.email?.[0]
   const passwordError = state.fieldErrors?.password?.[0]
