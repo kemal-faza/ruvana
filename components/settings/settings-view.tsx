@@ -242,7 +242,7 @@ function GeneralSection() {
       </CardHeader>
       <CardContent className="flex max-w-xl flex-col gap-5">
         <Field>
-          <FieldLabel htmlFor="settings-language">Bahasa antarmuka</FieldLabel>
+          <FieldLabel htmlFor="settings-language">Bahasa</FieldLabel>
           <Input id="settings-language" value="Bahasa Indonesia" readOnly className={INPUT_BASELINE_CLASS} />
         </Field>
 

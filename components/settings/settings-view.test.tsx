@@ -54,7 +54,7 @@ describe("SettingsView", () => {
     }
 
     fireEvent.click(screen.getByRole("button", { name: "Bahasa" }))
-    expect(screen.getByLabelText("Bahasa antarmuka")).toHaveClass("min-h-11")
+    expect(screen.getByLabelText("Bahasa")).toHaveClass("min-h-11")
 
     fireEvent.click(screen.getByRole("button", { name: "Tampilan" }))
     expect(screen.getByRole("button", { name: "Gunakan tema gelap" })).toHaveClass("size-11")
@@ -85,7 +85,7 @@ describe("SettingsView", () => {
     expect(screen.getByRole("button", { name: "Keluar dari perangkat lain" })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Bahasa" }))
-    expect(screen.getByLabelText("Bahasa antarmuka")).toHaveValue("Bahasa Indonesia")
+    expect(screen.getByLabelText("Bahasa")).toHaveValue("Bahasa Indonesia")
 
     fireEvent.click(screen.getByRole("button", { name: "Tampilan" }))
     expect(screen.getByRole("button", { name: "Gunakan tema gelap" })).toBeInTheDocument()
