@@ -12,7 +12,12 @@ import FasilitasDetailPage, { generateMetadata } from "./page"
 
 describe("metadata title detail fasilitas", () => {
   beforeEach(() => {
-    getFacilityAvailability.mockResolvedValue(null)
+    getFacilityAvailability.mockResolvedValue({
+      facilityId: 8,
+      date: "2026-09-15",
+      timezone: "Asia/Jakarta",
+      slots: [],
+    })
     getPublicFacility.mockResolvedValue({
       id: 8,
       nama: "Laboratorium Kimia",

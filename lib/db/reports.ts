@@ -176,7 +176,7 @@ export function findUsersById(ids: number[]) {
 }
 
 export function findFacilityById(id: number) {
-  return prisma.facility.findFirst({ where: { id }, select: reportFacilitySelect });
+  return prisma.facility.findFirst({ where: { id, deletedAt: null }, select: reportFacilitySelect });
 }
 
 export function createReport(data: {
@@ -208,7 +208,7 @@ export function findReportPhotoById(id: number) {
 /** Opsi fasilitas untuk form laporan: fasilitas yang masih terlihat publik (ACTIVE / UNDER_MAINTENANCE). */
 export function findReportFacilityOptions() {
   return prisma.facility.findMany({
-    where: { status: { in: ["ACTIVE", "UNDER_MAINTENANCE"] } },
+    where: { status: { in: ["ACTIVE", "UNDER_MAINTENANCE"] }, deletedAt: null },
     orderBy: { nama: "asc" },
     select: reportFacilitySelect,
   });

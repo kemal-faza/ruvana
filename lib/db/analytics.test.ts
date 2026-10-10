@@ -30,6 +30,7 @@ describe("analytics data access", () => {
     await listAnalyticsFacilities();
 
     expect(findManyFacilities).toHaveBeenCalledWith({
+      where: { deletedAt: null },
       select: { id: true, nama: true, lokasi: true, status: true },
     });
   });

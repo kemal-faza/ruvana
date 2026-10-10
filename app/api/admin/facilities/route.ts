@@ -5,7 +5,7 @@ import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
 import { buildIdempotencyScope, hashCanonicalBody } from "@/lib/http/idempotency";
 import { claimIdempotentRoute, readIdempotencyKey } from "@/lib/http/idempotent-route";
 import { originError } from "@/lib/http/origin";
-import { badRequest, validationFailed } from "@/lib/http/problem";
+import { badRequest, internalError, validationFailed } from "@/lib/http/problem";
 import { createFacility, listAdminFacilities } from "@/lib/services/admin-facility-service";
 import { parseAdminListQuery, parseFacilityCreateBody } from "@/lib/validation/admin-facility";
 
@@ -31,8 +31,13 @@ export async function GET(request: NextRequest) {
   const parsed = parseAdminListQuery(params);
   if (!parsed.ok) return validationFailed(instance, parsed.errors);
 
-  const result = await listAdminFacilities(parsed.value);
-  return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const result = await listAdminFacilities(parsed.value);
+    return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Gagal memuat daftar fasilitas admin", error);
+    return internalError(instance);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -75,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Replay disimpan di dalam transaksi yang sama dengan pembuatan fasilitas,
     // mengikuti PATCH: klaim tidak boleh menggantung tanpa hasil bila proses mati
     // di antara commit dan penyimpanan.
-    result = await createFacility(parsed.value, async (tx, data) => {
+    result = await createFacility(session.id, parsed.value, async (tx, data) => {
       await idempotency.commit(tx, 201, data);
     });
   } catch (error) {
@@ -84,6 +89,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (!result.ok) {
+    if (result.error.type === "invalid_photo") {
+      return idempotency.settle(
+        validationFailed(instance, [{ field: "fotoPathname", code: "INVALID_PHOTO", message: result.error.message }]),
+      );
+    }
     return idempotency.settle(duplicateName(instance));
   }
 

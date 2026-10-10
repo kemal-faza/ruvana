@@ -426,13 +426,18 @@ Perubahan status fasilitas harus tercermin secara konsisten pada daftar, detail,
 
 #### FAC-05 — Pengelolaan fasilitas
 
-Admin dapat membuat, membaca, memperbarui, dan menonaktifkan fasilitas.
+Admin dapat membuat, membaca, memperbarui, menonaktifkan, menghapus (mengarsipkan), dan memulihkan fasilitas, termasuk mengunggah satu foto fasilitas.
 
 **Acceptance criteria:**
 
 - Nama fasilitas unik.
 - Kapasitas berupa bilangan positif.
 - Fasilitas yang memiliki histori tidak dihapus secara fisik; gunakan status `INACTIVE`.
+- Foto fasilitas bersifat opsional, satu per fasilitas, berupa JPEG/PNG/WebP maksimal 5 MB; server memverifikasi MIME type, ukuran, dan signature bytes sebelum menyimpan referensinya.
+- Foto disimpan pada private Blob; PostgreSQL hanya menyimpan pathname dan metadata, dan klien hanya menerima URL same-origin yang mengalihkan ke signed URL berumur pendek.
+- Mengganti atau menghapus foto membuang objek lama setelah perubahan tersimpan; unggahan yang batal dipakai dibersihkan agar tidak menjadi objek yatim.
+- Menghapus fasilitas berarti mengarsipkannya: baris, riwayat, dan fotonya tetap tersimpan sehingga dapat dipulihkan. Penghapusan hanya berlaku untuk fasilitas tanpa reservasi atau laporan; fasilitas beriwayat ditolak dengan `409` dan disarankan dinonaktifkan.
+- Fasilitas terarsip tidak tampil pada katalog publik, daftar admin, daftar petugas, pilihan fasilitas form laporan, maupun perhitungan analitik, dan tidak dapat dipakai untuk reservasi baru. Pemulihan mengembalikannya ke daftar aktif beserta fotonya.
 
 ### 9.3 Modul Reservation
 

@@ -12,6 +12,7 @@ const publicFacilitySelect = {
   kapasitas: true,
   deskripsi: true,
   status: true,
+  foto: true,
 } satisfies Prisma.FacilitySelect;
 
 export interface PublicFacilityFilters {
@@ -29,6 +30,7 @@ export interface PublicFacilityFilters {
 export function buildPublicFacilityWhere(filters: PublicFacilityFilters = {}): Prisma.FacilityWhereInput {
   return {
     status: { in: PUBLIC_FACILITY_STATUSES },
+    deletedAt: null,
     ...(filters.search ? { nama: { contains: filters.search, mode: "insensitive" } } : {}),
     ...(filters.type ? { tipe: filters.type } : {}),
     ...(filters.location ? { lokasi: { contains: filters.location, mode: "insensitive" } } : {}),
@@ -59,7 +61,7 @@ export function countPublicFacilities(filters: PublicFacilityFilters = {}) {
 
 export function findPublicFacilityById(id: number) {
   return prisma.facility.findFirst({
-    where: { id, status: { in: PUBLIC_FACILITY_STATUSES } },
+    where: { id, status: { in: PUBLIC_FACILITY_STATUSES }, deletedAt: null },
     select: publicFacilitySelect,
   });
 }
@@ -80,18 +82,13 @@ const staffFacilitySelect = {
  */
 export function findStaffFacilities() {
   return prisma.facility.findMany({
+    where: { deletedAt: null },
     orderBy: { id: "asc" },
     select: staffFacilitySelect,
   });
 }
 
-// Untuk reservasi: perlu load fasilitas apapun termasuk INACTIVE untuk validasi, plus lock
-export function findFacilityById(id: number) {
-  return prisma.facility.findUnique({
-    where: { id },
-  });
-}
-
+// Untuk reservasi: perlu lock baris fasilitas agar cek konflik APPROVED tidak balapan.
 export async function lockFacilityById(tx: Prisma.TransactionClient, id: number) {
   // Row lock untuk mencegah race saat cek konflik APPROVED
   await tx.$queryRaw`SELECT id FROM "facilities" WHERE id = ${id} FOR UPDATE`;

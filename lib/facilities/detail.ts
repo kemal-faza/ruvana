@@ -31,6 +31,10 @@ export async function getFacilityDetail(facilityId: string, rawDate?: string): P
   const today = todayJakarta()
   const date = rawDate && parseCalendarDate(rawDate) ? rawDate : today
   const availability = await getFacilityAvailability(id, date)
+  // Ketersediaan null berarti fasilitas tidak lagi publik (mis. berubah INACTIVE
+  // setelah pembacaan pertama). Perlakukan sama seperti identifier tak ada supaya
+  // halaman tidak menampilkan detail tanpa grid secara diam-diam (FAC-04).
+  if (!availability) return null
 
   return { facility, date, today, availability }
 }

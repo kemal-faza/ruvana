@@ -20,7 +20,7 @@ export type ParseResult<T> =
 // Batas bilangan bulat PostgreSQL (int4). Nilai di atas batas ini tidak boleh
 // diteruskan ke Prisma: driver menolaknya sebagai parameter query dan permintaan
 // berakhir sebagai 500, bukan 422/404.
-const BATAS_INT4 = 2_147_483_647;
+export const BATAS_INT4 = 2_147_483_647;
 
 /**
  * Helper bersama untuk parameter kuantitatif (`page`, `perPage`, `minCapacity`),
