@@ -42,9 +42,11 @@ jobs:
 
       - name: Periksa kredensial, CI, dan commit main
         shell: bash
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
-          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID CRON_SECRET; do
             if [[ -z "${!name:-}" ]]; then
               echo "Secret $name belum diatur di environment production." >&2
               exit 1
@@ -96,6 +98,9 @@ jobs:
           echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
 
       - name: Periksa variabel Production
+        env:
+          # CRON_SECRET Vercel bertipe Secret dan tidak bisa dibaca oleh env run.
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- node scripts/check-production-env.mjs
 
       - name: Terapkan migrasi pada database Production
@@ -115,4 +120,6 @@ jobs:
         run: vercel promote "${{ steps.staged.outputs.url }}" --yes --token "$VERCEL_TOKEN"
 
       - name: Verifikasi cron pada domain Production
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- node scripts/check-production-cron.mjs

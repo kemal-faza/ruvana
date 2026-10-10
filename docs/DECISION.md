@@ -360,14 +360,18 @@ promosi mempertahankan versi aplikasi yang sedang melayani traffic.
 - Migrasi production dijalankan dengan `prisma migrate deploy` terhadap
   `DATABASE_URL` dari environment Production Vercel, terpisah dari build.
 - Secret GitHub environment `production` berisi `VERCEL_TOKEN`,
-  `VERCEL_ORG_ID`, dan `VERCEL_PROJECT_ID`. Vercel Production wajib memiliki
+  `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, dan `CRON_SECRET` yang sama dengan nilai
+  di Vercel Production agar pemeriksaan cron tidak perlu membaca nilai Secret.
+  Vercel Production wajib memiliki
   `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `NEXT_PUBLIC_SITE_URL`,
   `ALLOWED_ORIGINS`, dan `CRON_SECRET`.
 - Variabel Production yang dibaca workflow lewat `vercel env run` wajib bertipe
   **Config**, bukan Secret: nilai Secret bersifat write-only sehingga tidak dapat
-  dibaca CLI. Periksa dengan `vercel env ls production`; bila tipenya Secret,
-  sediakan nilainya lewat secret environment GitHub `production` atau buat ulang
-  variabel sebagai Config.
+  dibaca CLI. `CRON_SECRET` boleh tetap bertipe Secret karena workflow
+  menyediakannya dari GitHub environment `production`. Periksa tipe dengan
+  `vercel env ls production`; untuk variabel lain yang bertipe Secret, sediakan
+  nilainya lewat secret GitHub environment `production` atau buat ulang sebagai
+  Config.
 - Rilis tahap migrasi dapat dijalankan manual dari branch `main` melalui
   `workflow_dispatch`; commit selain HEAD `main` dan commit yang CI-nya belum
   sukses tetap ditolak.
