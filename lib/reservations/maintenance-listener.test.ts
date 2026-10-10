@@ -133,10 +133,10 @@ describe("handleFacilityStatusChanged", () => {
     expect(result).toEqual({ count: 1 });
     expect(updateMany).toHaveBeenCalledWith({
       where: { facilityId: 1, status: "APPROVED", startTime: { gt: WAKTU } },
-      data: { status: "CANCELLED_BY_OFFICER", alasan: ALASAN_PERBAIKAN, waktuDiproses: WAKTU },
+      data: { status: "CANCELLED_BY_MAINTENANCE", alasan: ALASAN_PERBAIKAN, waktuDiproses: WAKTU },
     });
     expect(byId(store, 1)).toMatchObject({
-      status: "CANCELLED_BY_OFFICER",
+      status: "CANCELLED_BY_MAINTENANCE",
       alasan: ALASAN_PERBAIKAN,
       waktuDiproses: WAKTU,
     });
@@ -157,7 +157,7 @@ describe("handleFacilityStatusChanged", () => {
     }
 
     expect(updateMany).not.toHaveBeenCalled();
-    expect(store.every((row) => row.status !== "CANCELLED_BY_OFFICER")).toBe(true);
+    expect(store.every((row) => row.status !== "CANCELLED_BY_MAINTENANCE")).toBe(true);
   });
 
   it("idempoten: pemicu kedua tidak error dan tidak memproses ulang", async () => {

@@ -20,7 +20,7 @@ export type AntreanLaporan = (typeof ANTREAN_LAPORAN)[number];
 export const URUTAN_LAPORAN = ["terlama", "terbaru"] as const;
 export type UrutanLaporan = (typeof URUTAN_LAPORAN)[number];
 
-export const URUTAN_LAPORAN_BAWAAN: UrutanLaporan = "terlama";
+const URUTAN_LAPORAN_BAWAAN: UrutanLaporan = "terlama";
 
 /** Pemetaan antrean ke status; tipe status mengikuti schema Prisma. */
 export const STATUS_ANTREAN_LAPORAN: Record<AntreanLaporan, readonly StatusLaporan[]> = {
@@ -40,7 +40,7 @@ export function hrefAntreanLaporan(queue: AntreanLaporan, urut: UrutanLaporan): 
     : `/petugas/laporan?queue=${queue}&sort=${urut}`;
 }
 
-export interface StaffReportQueueQuery {
+interface StaffReportQueueQuery {
   queue: AntreanLaporan;
   urut: UrutanLaporan;
   page: number;
@@ -57,8 +57,9 @@ function parsePositiveInt(raw: string | null): number | null {
 }
 
 export function parseReportId(raw: string): ParseResult<number> {
-  const id = parsePositiveInt(raw);
-  if (id === null || Number.isNaN(id) || id < 1) {
+  // raw selalu string (parsed dari path param), sehingga hasilnya tidak pernah null.
+  const id = /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) ? Number(raw) : NaN;
+  if (Number.isNaN(id) || id < 1) {
     return {
       ok: false,
       errors: [{ field: "reportId", code: "INVALID_INTEGER", message: "reportId harus bilangan bulat positif" }],
@@ -133,7 +134,7 @@ export function parseAntreanDanUrutan(searchParams: {
   };
 }
 
-export interface ReportResolutionInput {
+interface ReportResolutionInput {
   catatanResolusi: string;
 }
 
