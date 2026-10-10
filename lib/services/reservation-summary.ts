@@ -40,7 +40,7 @@ export async function getStaffReservationSummaryService(
     }),
     prisma.reservation.count({ where: { status: "REJECTED" } }),
     prisma.reservation.count({
-      where: { status: { in: ["CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"] } },
+      where: { status: { in: ["CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "CANCELLED_BY_MAINTENANCE", "EXPIRED"] } },
     }),
   ]);
 

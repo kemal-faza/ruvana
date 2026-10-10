@@ -62,6 +62,7 @@ export const LABEL_STATUS_RESERVASI: Record<StatusReservasi, string> = {
   REJECTED: "Ditolak",
   CANCELLED_BY_USER: "Dibatalkan Pengguna",
   CANCELLED_BY_OFFICER: "Dibatalkan Petugas",
+  CANCELLED_BY_MAINTENANCE: "Dibatalkan Pemeliharaan",
   EXPIRED: "Kedaluwarsa",
 };
 
@@ -74,5 +75,8 @@ export const BADGE_STATUS_RESERVASI: Record <
   REJECTED: "danger",
   CANCELLED_BY_USER: "neutral",
   CANCELLED_BY_OFFICER: "neutral",
+  // Amber menonjolkan pembatalan otomatis sistem agar tidak tertukar dengan
+  // pembatalan manual petugas di tengah deretan status netral.
+  CANCELLED_BY_MAINTENANCE: "pending",
   EXPIRED: "neutral",
 };
