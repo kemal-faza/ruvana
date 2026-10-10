@@ -56,7 +56,7 @@ describe("dashboard Petugas", () => {
   it("mengarahkan pintasan status fasilitas ke halaman kerja Petugas", () => {
     render(<StaffDashboard reservations={[]} totalReservations={0} />);
 
-    expect(screen.getByRole("link", { name: "Lihat status operasional fasilitas" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Kelola fasilitas" })).toHaveAttribute(
       "href",
       "/petugas/fasilitas",
     );
