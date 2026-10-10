@@ -147,8 +147,11 @@ Prisma types from `generated/prisma`, never directly from `@prisma/client`.
 - Vercel auto-deployment is disabled in `vercel.json`. Production releases run
   through the `Release Production` workflow, which stages a production
   deployment without moving the domain, checks Production variables, applies
-  `prisma migrate deploy`, then promotes the deployment. It runs automatically
-  when CI succeeds on `main`, or manually via `workflow_dispatch` on `main`.
+  `prisma migrate deploy` through the direct (non-pooler) database host via
+  `scripts/apply-production-migrations.mjs` — `DATABASE_URL_UNPOOLED` when set,
+  otherwise the pooler suffix is stripped from `DATABASE_URL` — then promotes the
+  deployment. It runs automatically when CI succeeds on `main`, or manually via
+  `workflow_dispatch` on `main`.
 
 ## Repository gotchas
 
