@@ -190,3 +190,36 @@ describe("FacilityStatusList", () => {
     expect((await axe(container)).violations).toEqual([]);
   });
 });
+
+describe("FacilityStatusList sorotan deep-link", () => {
+  it("menyorot dan memindahkan fokus ke fasilitas yang cocok", () => {
+    mockFetch();
+    render(
+      <FacilityStatusList
+        facilities={[fasilitas(), fasilitas({ id: 2, nama: "RK-102" })]}
+        sorotFacilityId={2}
+      />,
+    );
+
+    expect(screen.getByText("RK-101 · Ruang kelas")).toBeInTheDocument();
+    expect(document.activeElement?.textContent).toContain("RK-102");
+    expect(document.activeElement).toHaveClass("ring-2", "ring-warning");
+  });
+
+  it("tanpa sorotan saat id tidak cocok", () => {
+    mockFetch();
+    const { container } = render(
+      <FacilityStatusList facilities={[fasilitas()]} sorotFacilityId={99} />,
+    );
+
+    expect(container.querySelector(".ring-2")).not.toBeInTheDocument();
+    expect(document.activeElement?.tagName).toBe("BODY");
+  });
+
+  it("tanpa sorotan saat prop tidak diberikan", () => {
+    mockFetch();
+    const { container } = render(<FacilityStatusList facilities={[fasilitas()]} />);
+
+    expect(container.querySelector(".ring-2")).not.toBeInTheDocument();
+  });
+});

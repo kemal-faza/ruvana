@@ -149,6 +149,47 @@ describe("ReportQueue", () => {
     expect(screen.queryByRole("button", { name: "Tolak laporan" })).not.toBeInTheDocument();
   });
 
+  it("menampilkan status fasilitas dan tautan pemeliharaan untuk fasilitas aktif", async () => {
+    mockFetch([laporan()]);
+    render(<ReportQueue queue="intake" urut="terlama" />);
+
+    expect(await screen.findByText("Status fasilitas: Aktif")).toBeInTheDocument();
+    const tautan = screen.getByRole("button", { name: "Tandai pemeliharaan" });
+    expect(tautan).toHaveAttribute("href", "/petugas/fasilitas?facilityId=1");
+  });
+
+  it("menyembunyikan tautan pemeliharaan saat fasilitas sudah dalam perbaikan", async () => {
+    mockFetch([
+      laporan({
+        status: "IN_PROGRESS",
+        facility: {
+          id: 1,
+          nama: "RK-101",
+          tipe: "ruang_kelas",
+          lokasi: "Gedung A Lt.1",
+          kapasitas: 40,
+          deskripsi: "Ruang kelas standar ber-AC",
+          status: "UNDER_MAINTENANCE",
+          statusChangedAt: "2026-09-10T02:00:00.000Z",
+          statusChangedBy: null,
+        },
+      }),
+    ]);
+    render(<ReportQueue queue="work" urut="terlama" />);
+
+    expect(await screen.findByText("Status fasilitas: Dalam Perbaikan")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tandai pemeliharaan" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tandai selesai" })).toBeInTheDocument();
+  });
+
+  it("menyembunyikan tautan pemeliharaan pada status terminal", async () => {
+    mockFetch([laporan({ status: "RESOLVED", catatanResolusi: "Lampu diganti." })]);
+    render(<ReportQueue queue="riwayat" urut="terlama" />);
+
+    expect(await screen.findByText("Status fasilitas: Aktif")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tandai pemeliharaan" })).not.toBeInTheDocument();
+  });
+
   it("menolak penyimpanan laporan tanpa catatan penyelesaian", async () => {
     const user = userEvent.setup();
     mockFetch([laporan({ status: "IN_PROGRESS" })]);
