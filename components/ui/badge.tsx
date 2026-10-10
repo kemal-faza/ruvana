@@ -13,6 +13,8 @@ const badgeVariants = cva(
         pending: "bg-warning-subdued text-warning-subdued-foreground",
         success: "bg-success-subdued text-success-subdued-foreground",
         danger: "bg-destructive-subdued text-destructive-subdued-foreground",
+        dangerSoft: "text-destructive",
+        dangerStrong: "bg-destructive text-destructive-foreground [a]:hover:bg-destructive/90",
         info: "bg-status-info-surface text-status-info-text",
         neutral: "bg-status-neutral-surface text-status-neutral-text",
         secondary:
