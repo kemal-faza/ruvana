@@ -55,30 +55,54 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
   const mengirimRef = useRef(false);
   const router = useRouter();
 
-  // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
-  // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
-  // dimuat ulang via "Tampilkan ketersediaan"). Komponen di-remount per
-  // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
-  const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
-
-  // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
-  // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
-  const [tanggalResetKe, setTanggalResetKe] = useState(0);
-
   // Tanggal pilihan user yang belum tentu sama dengan tanggal server (prop).
   const [selectedDate, setSelectedDate] = useState(date);
+
+  // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
+  // dropdown (bukan prop facilityId dari halaman). Form TIDAK di-remount per
+  // facilityId+date lagi (key navigasi dihapus agar isian pengguna bertahan),
+  // jadi pilihan di bawah disinkronkan dari prop via efek ketika halaman
+  // ketersediaan baru tiba — termasuk saat back/forward mengubah URL tanpa
+  // melalui handler di bawah.
+  const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
+
+  // Penanda pemilih tanggal: "Reset waktu" mengembalikan field Tanggal ke
+  // tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
+  const [tanggalResetKe, setTanggalResetKe] = useState(0);
 
   // Pelacak transisi navigasi lunak: selama slot baru dimuat, teks bantu
   // menampilkan "Memuat slot…" alih-alih ajakan menekan tombol.
   const [isPending, startTransition] = useTransition();
 
-  // Heading form difokuskan eksplisit setelah navigasi. Komponen di-remount per
-  // facilityId+date, jadi efek ini kembali dipanggil saat halaman ketersediaan
-  // baru tampil.
+  // Pembanding nilai prop "sebelumnya": mendeteksi perubahan yang datang dari
+  // luar handler (back/forward, tautan langsung). Ketersediaan baru milik
+  // pasangan fasilitas/tanggal lain, jadi pemilihan waktu ikut direset.
+  const prevFacilityRef = useRef(facilityId);
+  const prevDateRef = useRef(date);
+
+  useEffect(() => {
+    if (facilityId === prevFacilityRef.current) return;
+    prevFacilityRef.current = facilityId;
+    setSelectedFacilityId(facilityId);
+    setStartTime("");
+    setEndTime("");
+  }, [facilityId]);
+
+  useEffect(() => {
+    if (date === prevDateRef.current) return;
+    prevDateRef.current = date;
+    setSelectedDate(date);
+    setStartTime("");
+    setEndTime("");
+  }, [date]);
+
+  // Heading form difokuskan eksplisit pada mount dan setelah ketersediaan baru
+  // diterapkan (prop fasilitas/tanggal berubah). Efek ini menggantikan fokus
+  // ulang yang dulu terjadi lewat remount per facilityId+date.
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     headingRef.current?.focus();
-  }, []);
+  }, [facilityId, date]);
 
   // Pilihan belum selaras dengan data server (fasilitas/tanggal berubah tetapi
   // ketersediaan belum dimuat ulang).
