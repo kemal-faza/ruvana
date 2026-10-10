@@ -2,7 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LABEL_BATAS_PENGAJUAN, BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
+import {
+  BATAS_TUJUAN_MAX,
+  PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
+  VALID_START_TIMES,
+} from "@/config/business";
 import {
   blockedByLabel,
   getValidEndTimes,
@@ -34,7 +38,7 @@ interface ReservationFormProps {
   serverNow: string;
 }
 
-const PESAN_BATAS_PENGAJUAN = `Reservasi minimal ${LABEL_BATAS_PENGAJUAN} sebelum waktu mulai.`;
+const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
 
 export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
   const [startTime, setStartTime] = useState("");
@@ -167,7 +171,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     } else if (mepetByStart.get(startTime)) {
       // pertahanan client memakai waktu server saat render: slot dalam
       // jendela H-14 langsung ditolak tanpa menunggu respons server.
-      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN);
+      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN_FORM);
     }
     if (!endTime) {
       catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
@@ -250,7 +254,9 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
           const fieldServer: typeof galatField = {};
           for (const item of pemetaan) {
             if (item.idKontrol === "jam-mulai")
-              fieldServer.jamMulai = galatBatasPengajuan ? PESAN_BATAS_PENGAJUAN : "Nilai jam mulai tidak valid. Periksa kembali.";
+              fieldServer.jamMulai = galatBatasPengajuan
+                ? PESAN_BATAS_PENGAJUAN_FORM
+                : "Nilai jam mulai tidak valid. Periksa kembali.";
             if (item.idKontrol === "jam-selesai") fieldServer.jamSelesai = "Nilai jam selesai tidak valid. Periksa kembali.";
             if (item.idKontrol === "tujuan") fieldServer.tujuan = "Nilai tujuan tidak valid. Periksa kembali.";
           }

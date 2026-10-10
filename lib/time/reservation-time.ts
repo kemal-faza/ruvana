@@ -1,4 +1,10 @@
-import { BATAS_PENGAJUAN_JAM, DURASI_SLOT_MENIT, JAM_OPERASIONAL, OFFSET_ZONA_WAKTU_MENIT } from "@/config/business";
+import {
+  BATAS_PENGAJUAN_JAM,
+  BUFFER_TANGGAL_DEFAULT_PENGAJUAN_HARI,
+  DURASI_SLOT_MENIT,
+  JAM_OPERASIONAL,
+  OFFSET_ZONA_WAKTU_MENIT,
+} from "@/config/business";
 
 export function parseTimeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -62,6 +68,14 @@ export function formatTimeAsiaJakarta(date: Date): string {
 
 export function getTodayDateAsiaJakarta(now: Date = new Date()): string {
   return formatDateAsiaJakarta(now);
+}
+
+export function getDefaultReservationDate(now: Date = new Date()): string {
+  const [year, month, day] = getTodayDateAsiaJakarta(now).split("-").map(Number);
+  const hariSampaiDefault = BATAS_PENGAJUAN_JAM / 24 + BUFFER_TANGGAL_DEFAULT_PENGAJUAN_HARI;
+  return new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + hariSampaiDefault))
+    .toISOString()
+    .slice(0, 10);
 }
 
 export function isPastDate(dateStr: string, now: Date = new Date()): boolean {

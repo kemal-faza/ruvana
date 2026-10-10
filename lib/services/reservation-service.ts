@@ -1,4 +1,4 @@
-import { BATAS_PEMBATALAN_JAM, LABEL_BATAS_PENGAJUAN, ZONA_WAKTU } from "@/config/business";
+import { BATAS_PEMBATALAN_JAM, PESAN_BATAS_PENGAJUAN, ZONA_WAKTU } from "@/config/business";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
@@ -137,7 +137,7 @@ export async function createReservationService(
           {
             field: "startTime",
             code: "INSUFFICIENT_LEAD_TIME",
-            message: `Reservasi minimal ${LABEL_BATAS_PENGAJUAN} sebelum waktu mulai`,
+            message: PESAN_BATAS_PENGAJUAN,
           },
         ],
       },

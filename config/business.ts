@@ -16,7 +16,9 @@ export const BATAS_EMAIL_AKUN_KARAKTER = 254;
 export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 24; // H-24 jam sebelum mulai (PRD Bagian 20 menggantikan H-2 TASK lama)
 export const BATAS_PENGAJUAN_JAM = 336; // Pengajuan minimal H-14: waktu mulai sekurang-kurangnya 336 jam (14 hari) dari instant pengajuan (keputusan pemilik menggantikan H-1)
+export const BUFFER_TANGGAL_DEFAULT_PENGAJUAN_HARI = 1; // Tambahan satu hari agar semua slot pada tanggal default lolos batas pengajuan
 export const LABEL_BATAS_PENGAJUAN = "14 hari"; // Label manusiawi batas pengajuan; pesan UI memakai ini, bukan angka jam
+export const PESAN_BATAS_PENGAJUAN = `Reservasi minimal ${LABEL_BATAS_PENGAJUAN} sebelum waktu mulai`;
 
 export const BATAS_TUJUAN_MIN = 1;
 export const BATAS_TUJUAN_MAX = 500;

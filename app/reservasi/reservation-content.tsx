@@ -1,8 +1,8 @@
 import { ReservationForm } from "@/components/reservation/reservation-form"
-import { BATAS_PENGAJUAN_JAM, TIPE_FASILITAS } from "@/config/business"
+import { TIPE_FASILITAS } from "@/config/business"
 import { computeFacilityAvailability } from "@/lib/reservations/availability"
 import { listPublicFacilities } from "@/lib/services/facility-service"
-import { getTodayDateAsiaJakarta, isValidDateFormat } from "@/lib/time/reservation-time"
+import { getDefaultReservationDate, isValidDateFormat } from "@/lib/time/reservation-time"
 
 async function getFacilities(tipe?: string) {
   const { items } = await listPublicFacilities({ page: 1, perPage: 500 })
@@ -27,13 +27,8 @@ export async function ReservationContent({
   const rawFacilityId = Array.isArray(query.facilityId) ? query.facilityId[0] : query.facilityId
   const rawDate = Array.isArray(query.date) ? query.date[0] : query.date
 
-  // Tanggal default dihitung dari batas pengajuan + 1 hari buffer (H+15 untuk
-  // batas 14 hari) agar seluruh slot hari itu lolos berapa pun jam halaman dibuka.
-  const fallbackDate = (() => {
-    const [y, m, d] = getTodayDateAsiaJakarta(new Date()).split("-").map(Number)
-    const hariBuffer = BATAS_PENGAJUAN_JAM / 24 + 1
-    return new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, (d ?? 1) + hariBuffer)).toISOString().slice(0, 10)
-  })()
+  // Helper domain memilih H+15 agar seluruh slot pada tanggal default lolos.
+  const fallbackDate = getDefaultReservationDate()
   const date = rawDate && isValidDateFormat(rawDate) ? rawDate : fallbackDate
 
   const parsedFacilityId = rawFacilityId ? Number(rawFacilityId) : NaN
@@ -44,7 +39,7 @@ export async function ReservationContent({
   const availability =
     facilityId > 0 ? await computeFacilityAvailability(facilityId, date) : null
 
-  // Waktu server saat render: pemilih slot menghitung jendela 24 jam dari
+  // Waktu server saat render: pemilih slot menghitung jendela 14 hari dari
   // instant ini, bukan dari jam klien.
   const serverNow = new Date().toISOString()
 
