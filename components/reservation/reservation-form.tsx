@@ -7,11 +7,7 @@ import {
   PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
   VALID_START_TIMES,
 } from "@/config/business";
-import {
-  blockedByLabel,
-  getValidEndTimes,
-  type FacilityAvailability,
-} from "@/lib/reservations/slot-range";
+import { getValidEndTimes, type FacilityAvailability } from "@/lib/reservations/slot-range";
 import {
   pesanSuksesPengajuan,
   petakanGalatField,
@@ -451,21 +447,26 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                   <SelectContent>
                     {VALID_START_TIMES.map((time) => {
                       const status = statusByStart.get(time);
-                      // Slot mepet H-14 dinonaktifkan dengan label netral
-                      // "Tidak tersedia" — jangan menyiratkan slot terisi.
+                      // Slot tidak tersedia (APPROVED, pemeliharaan, atau di
+                      // dalam batas pengajuan) tetap tampil dengan label jam
+                      // saja; alasan tidak per opsi, cukup teks bantu di bawah.
                       const mepet = mepetByStart.get(time) ?? false;
                       const disabled = mepet || (status ? !status.available : false);
-                      const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
                       return (
-                        <SelectItem key={time} value={time} disabled={disabled}>
-                          {reason ? `${time} — ${reason}` : time}
+                        <SelectItem
+                          key={time}
+                          value={time}
+                          disabled={disabled}
+                          className="data-disabled:text-muted-foreground data-disabled:opacity-100!"
+                        >
+                          {time}
                         </SelectItem>
                       );
                     })}
                   </SelectContent>
                 </Select>
                 {adaSlotMepet && !galatField.jamMulai && (
-                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
+                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_DASAR}</FieldDescription>
                 )}
                 {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
