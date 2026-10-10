@@ -201,6 +201,17 @@ describe("ReportQueue", () => {
     expect(within(dialog).getByRole("button", { name: "Tandai selesai" })).toBeDisabled();
   });
 
+  it("dialog konfirmasi tampil di tengah viewport", async () => {
+    const user = userEvent.setup();
+    mockFetch([laporan()]);
+    render(<ReportQueue queue="intake" urut="terlama" />);
+
+    await user.click(await screen.findByRole("button", { name: "Tolak laporan" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Tolak laporan" });
+    expect(dialog).toHaveClass("fixed", "inset-0", "m-auto");
+  });
+
   it("menjalankan transisi dengan catatan yang diisi", async () => {
     const user = userEvent.setup();
     const fetchMock = mockFetch([laporan({ status: "IN_PROGRESS" })]);

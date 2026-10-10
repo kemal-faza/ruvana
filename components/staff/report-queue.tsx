@@ -365,7 +365,7 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
           setFinalize(null);
           setCatatan("");
         }}
-        className="w-full max-w-md rounded-card border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
+        className="fixed inset-0 m-auto h-fit w-full max-w-md rounded-card border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
       >
         <form
           method="dialog"
