@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ClipboardList } from "lucide-react";
 
 import { BATAS_ALASAN_MAX, ZONA_WAKTU } from "@/config/business";
@@ -18,6 +18,16 @@ interface QueueResponse {
   meta: { page: number; perPage: number; totalItems: number; totalPages: number };
 }
 
+interface ProblemBody {
+  detail?: string;
+  title?: string;
+  code?: string;
+}
+
+type QueueNotice =
+  | { kind: "success"; msg: string }
+  | { kind: "error"; msg: string; itemId: number; scope: "card" | "modal" | "top" };
+
 const PER_PAGE = 10;
 
 function formatTanggal(date: string): string {
@@ -27,13 +37,35 @@ function formatTanggal(date: string): string {
   );
 }
 
+function classifyFailure(status: number, code?: string): "conflict" | "stale" | "validation" | "other" {
+  if (status === 409 && code === "APPROVAL_CONFLICT") return "conflict";
+  if (status === 404 || code === "NOT_FOUND" || code === "INVALID_RESERVATION_TRANSITION") return "stale";
+  if (status === 422 || status === 400 || code === "VALIDATION_FAILED" || code === "BAD_REQUEST") return "validation";
+  return "other";
+}
+
+function AlertMessage({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  return (
+    <p ref={ref} role="alert" tabIndex={-1} className="text-sm font-medium text-destructive">
+      {children}
+    </p>
+  );
+}
+
 export function ReservationQueue() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<QueueResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<"ok" | "login" | "forbidden" | "error">("ok");
   const [actingId, setActingId] = useState<number | null>(null);
-  const [notice, setNotice] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [actingKind, setActingKind] = useState<"approve" | "reject" | null>(null);
+  const [notice, setNotice] = useState<QueueNotice | null>(null);
   const [rejectTarget, setRejectTarget] = useState<StaffReservationResult | null>(null);
   const [rejectAlasan, setRejectAlasan] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -85,33 +117,41 @@ export function ReservationQueue() {
   async function submitApprove(item: StaffReservationResult) {
     if (actingId !== null) return;
     setActingId(item.id);
+    setActingKind("approve");
     setNotice(null);
     try {
       const res = await fetch(`/api/staff/reservations/${item.id}/approve`, { method: "POST" });
-      const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
+      const payload = (await res.json().catch(() => null)) as ProblemBody | null;
       if (res.ok) {
         setNotice({
-          ok: true,
+          kind: "success",
           msg: `Reservasi ${item.facility.nama} pada ${formatTanggal(item.date)} pukul ${item.startTime}–${item.endTime} telah disetujui.`,
         });
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal menyetujui. Silakan coba lagi." });
-      await load(page);
+      const kegagalan = classifyFailure(res.status, payload?.code);
+      const msg = payload?.detail || payload?.title || "Gagal menyetujui. Silakan coba lagi.";
+      setNotice({ kind: "error", msg, itemId: item.id, scope: "card" });
+      if (kegagalan === "stale") {
+        await load(page);
+      }
     } catch {
-      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
+      setNotice({ kind: "error", msg: "Kesalahan jaringan. Silakan coba lagi.", itemId: item.id, scope: "card" });
     } finally {
       setActingId(null);
+      setActingKind(null);
     }
   }
 
   async function submitReject() {
     if (!rejectTarget || !rejectAlasan.trim() || actingId !== null) return;
-    setActingId(rejectTarget.id);
+    const target = rejectTarget;
+    setActingId(target.id);
+    setActingKind("reject");
     setNotice(null);
     try {
-      const res = await fetch(`/api/staff/reservations/${rejectTarget.id}/reject`, {
+      const res = await fetch(`/api/staff/reservations/${target.id}/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,23 +159,30 @@ export function ReservationQueue() {
         },
         body: JSON.stringify({ alasan: rejectAlasan.trim() }),
       });
-      const payload = (await res.json().catch(() => null)) as { detail?: string; title?: string } | null;
+      const payload = (await res.json().catch(() => null)) as ProblemBody | null;
       if (res.ok) {
         setNotice({
-          ok: true,
-          msg: `Reservasi ${rejectTarget.facility.nama} pada ${formatTanggal(rejectTarget.date)} pukul ${rejectTarget.startTime}–${rejectTarget.endTime} telah ditolak.`,
+          kind: "success",
+          msg: `Reservasi ${target.facility.nama} pada ${formatTanggal(target.date)} pukul ${target.startTime}–${target.endTime} telah ditolak.`,
         });
         closeRejectModal();
         await load(page);
         return;
       }
-      setNotice({ ok: false, msg: payload?.detail || payload?.title || "Gagal menolak. Silakan coba lagi." });
-      closeRejectModal();
-      await load(page);
+      const kegagalan = classifyFailure(res.status, payload?.code);
+      const msg = payload?.detail || payload?.title || "Gagal menolak. Silakan coba lagi.";
+      if (kegagalan === "stale") {
+        closeRejectModal();
+        setNotice({ kind: "error", msg, itemId: target.id, scope: "top" });
+        await load(page);
+        return;
+      }
+      setNotice({ kind: "error", msg, itemId: target.id, scope: "modal" });
     } catch {
-      setNotice({ ok: false, msg: "Kesalahan jaringan. Silakan coba lagi." });
+      setNotice({ kind: "error", msg: "Kesalahan jaringan. Silakan coba lagi.", itemId: target.id, scope: "modal" });
     } finally {
       setActingId(null);
+      setActingKind(null);
     }
   }
 
@@ -166,13 +213,21 @@ export function ReservationQueue() {
   }
 
   const totalPages = data?.meta.totalPages ?? 0;
+  const noticeErrorAtTop =
+    notice?.kind === "error" &&
+    (notice.scope === "top" ||
+      (notice.scope === "card" && (loading || !data?.items.some((item) => item.id === notice.itemId))));
 
   return (
     <div className="flex flex-col gap-5">
-      {notice && (
-        <p aria-live="polite" className={`text-sm font-medium ${notice.ok ? "text-success-subdued-foreground" : "text-destructive"}`}>
+      {notice?.kind === "success" && (
+        <p aria-live="polite" className="text-sm font-medium text-success-subdued-foreground">
           {notice.msg}
         </p>
+      )}
+
+      {noticeErrorAtTop && notice?.kind === "error" && (
+        <AlertMessage key={`${notice.itemId}-${notice.msg}`}>{notice.msg}</AlertMessage>
       )}
 
       {loading && (
@@ -233,12 +288,16 @@ export function ReservationQueue() {
                     timeZone: ZONA_WAKTU,
                   }).format(new Date(item.submittedAt))}
                 </p>
+                {notice?.kind === "error" && notice.scope === "card" && notice.itemId === item.id && !loading && (
+                  <AlertMessage key={`${notice.itemId}-${notice.msg}`}>{notice.msg}</AlertMessage>
+                )}
               </CardContent>
               <CardFooter className="flex gap-3">
                 <Button
                   type="button"
                   className="min-h-11"
-                  loading={actingId === item.id}
+                  loading={actingKind === "approve" && actingId === item.id}
+                  loadingLabel="Memproses…"
                   disabled={actingId !== null}
                   onClick={() => void submitApprove(item)}
                 >
@@ -324,12 +383,16 @@ export function ReservationQueue() {
             />
             <FieldDescription>{rejectAlasan.length}/{BATAS_ALASAN_MAX} karakter.</FieldDescription>
           </Field>
+          {notice?.kind === "error" && notice.scope === "modal" && (
+            <AlertMessage key={`${notice.itemId}-${notice.msg}`}>{notice.msg}</AlertMessage>
+          )}
           <div className="flex gap-3">
             <Button
               type="submit"
               variant="danger"
               className="min-h-11"
-              loading={actingId !== null}
+              loading={actingKind === "reject"}
+              loadingLabel="Memproses…"
               disabled={!rejectAlasan.trim() || actingId !== null}
             >
               Tolak reservasi
