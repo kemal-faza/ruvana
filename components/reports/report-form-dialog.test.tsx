@@ -185,7 +185,10 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
 
     const kategori = screen.getByRole("combobox", { name: /Kategori/ })
     await user.click(kategori)
-    await user.keyboard("{Home}{Enter}")
+    // Pilih lewat pointer, bukan keyboard: setelah popup terbuka, fokus kadang
+    // masih di trigger sehingga {Home}{Enter} tidak memilih apa pun dan submit
+    // ditolak validasi (flaky di CI). Jalur keyboard diuji di tes sebelumnya.
+    await user.click(await screen.findByRole("option", { name: "Listrik" }))
     await user.type(screen.getByLabelText(/Deskripsi kerusakan/), "Lampu ruang kelas tidak menyala.")
     await user.upload(screen.getByLabelText(/Foto/), new File(["foto"], "lampu.png", { type: "image/png" }))
     await user.click(screen.getByRole("button", { name: "Kirim laporan" }))

@@ -365,7 +365,10 @@ promosi mempertahankan versi aplikasi yang sedang melayani traffic.
   di Vercel Production agar pemeriksaan cron tidak perlu membaca nilai Secret.
   Vercel Production wajib memiliki
   `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `NEXT_PUBLIC_SITE_URL`,
-  `ALLOWED_ORIGINS`, dan `CRON_SECRET`.
+  `ALLOWED_ORIGINS`, dan `CRON_SECRET`. `NEXT_PUBLIC_SITE_URL` wajib memakai
+  domain kanonis publik (custom domain), bukan alias `*.vercel.app` yang
+  dilindungi Deployment Protection: permintaan anonim ke alias itu dialihkan ke
+  SSO, sehingga cron dan verifikasi rilis tidak dapat menjangkaunya.
 - Variabel Production yang dibaca workflow lewat `vercel env run` wajib bertipe
   **Config**, bukan Secret: nilai Secret bersifat write-only sehingga tidak dapat
   dibaca CLI. `CRON_SECRET` boleh tetap bertipe Secret karena workflow

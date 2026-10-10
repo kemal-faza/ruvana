@@ -19,7 +19,7 @@ interface FacilityCardProps {
 export function FacilityCard({ facility, eager = false, detailBasePath = "/fasilitas" }: FacilityCardProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
-  const photo = getFacilityPhoto(facility.nama, facility.tipe)
+  const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
 
   return (
     <Card>
@@ -36,7 +36,7 @@ export function FacilityCard({ facility, eager = false, detailBasePath = "/fasil
             alt={facility.nama}
             fill
             sizes="(min-width: 1024px) 33vw, 100vw"
-            unoptimized={eager}
+            unoptimized={eager || facility.fotoUrl !== null}
             loading={eager ? "eager" : "lazy"}
             className="object-cover"
           />

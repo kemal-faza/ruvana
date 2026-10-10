@@ -36,8 +36,13 @@ export interface ReportAnalyticsAggregates {
   byStatus: Array<{ status: StatusLaporan; count: number }>;
 }
 
+/**
+ * Fasilitas yang dihitung pada analitik. Fasilitas terarsip (soft delete)
+ * dikecualikan agar daftar lokasi, sebaran status, dan kapasitas periode tidak
+ * memuat fasilitas yang sudah tidak ada di daftar admin maupun katalog publik.
+ */
 export function listAnalyticsFacilities(): Promise<AnalyticsFacilityRow[]> {
-  return prisma.facility.findMany({ select: analyticsFacilitySelect });
+  return prisma.facility.findMany({ where: { deletedAt: null }, select: analyticsFacilitySelect });
 }
 
 /** Menjumlahkan durasi reservasi disetujui berdasarkan DATE kalender kampus di PostgreSQL. */

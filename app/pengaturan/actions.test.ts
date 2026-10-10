@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import bcrypt from "bcryptjs"
+import { revalidatePath } from "next/cache"
 import { getCurrentSessionTokenHash, getSessionUser } from "@/lib/auth"
 import { AccountStatus } from "@/generated/prisma/enums"
 import {
@@ -64,13 +65,20 @@ describe("pengaturan profil dan keamanan", () => {
 
     expect(result).toEqual({ ok: true, message: "Profil berhasil diperbarui." })
     expect(updateUserName).toHaveBeenCalledWith(account.id, "Siti Aminah")
+    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/pengaturan")
   })
 
-  it("menolak nama terlalu pendek tanpa menulis ke database", async () => {
-    const result = await updateProfileAction({ ok: false, message: "" }, form({ nama: "AB" }))
+  it("menolak nama kosong tanpa menulis ke database", async () => {
+    const result = await updateProfileAction({ ok: false, message: "" }, form({ nama: "  " }))
 
     expect(result.ok).toBe(false)
     expect(updateUserName).not.toHaveBeenCalled()
+  })
+
+  it("menerima nama satu karakter sesuai batas pendaftaran", async () => {
+    const result = await updateProfileAction({ ok: false, message: "" }, form({ nama: "A" }))
+    expect(result.ok).toBe(true)
+    expect(updateUserName).toHaveBeenCalledWith(account.id, "A")
   })
 
   it("menolak kata sandi baru di bawah 8 byte sebelum cek kredensial", async () => {
@@ -79,7 +87,16 @@ describe("pengaturan profil dan keamanan", () => {
       form({ currentPassword: "sandi-uji-lama", newPassword: "1234567", confirmation: "1234567" }),
     )
 
-    expect(result.fieldErrors?.newPassword).toContain("8–72 byte UTF-8")
+    expect(result.fieldErrors?.newPassword).toBe("Kata sandi minimal 8 karakter.")
+    expect(findPasswordHashByUserId).not.toHaveBeenCalled()
+  })
+
+  it("menolak kata sandi baru di atas 72 byte dari FormData yang dimanipulasi", async () => {
+    const result = await changePasswordAction(
+      { ok: false, message: "" },
+      form({ currentPassword: "sandi-uji-lama", newPassword: "é".repeat(37), confirmation: "é".repeat(37) }),
+    )
+    expect(result.fieldErrors?.newPassword).toBe("Kata sandi maksimal 72 karakter.")
     expect(findPasswordHashByUserId).not.toHaveBeenCalled()
   })
 
@@ -95,6 +112,7 @@ describe("pengaturan profil dan keamanan", () => {
     })
     expect(bcrypt.hash).toHaveBeenCalledWith("password456", 10)
     expect(updatePasswordAndRevokeOtherSessions).toHaveBeenCalledWith(account.id, "new-hash", "session-hash")
+    expect(revalidatePath).not.toHaveBeenCalled()
   })
 
   it("mengakhiri sesi lain tanpa menghapus sesi yang sedang digunakan", async () => {

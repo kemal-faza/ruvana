@@ -56,4 +56,39 @@ describe("prasyarat Production", () => {
     expect(output).toContain("Konfigurasi wajib Production tersedia")
     expect(output).not.toContain(valid.CRON_SECRET)
   })
+
+  it("menolak NEXT_PUBLIC_SITE_URL berupa alias *.vercel.app yang dilindungi", () => {
+    const run = spawnSync(process.execPath, [script], {
+      env: { ...valid, NEXT_PUBLIC_SITE_URL: "https://ruvana-kemal-fazas-projects.vercel.app" },
+      encoding: "utf8",
+    })
+    expect(run.status).toBe(1)
+    expect(run.stderr).toContain("Deployment Protection")
+    expect(run.stderr).toContain("domain kanonis")
+  })
+
+  it("menolak NEXT_PUBLIC_SITE_URL non-https dan alamat lokal", () => {
+    const http = spawnSync(process.execPath, [script], {
+      env: { ...valid, NEXT_PUBLIC_SITE_URL: "http://ruvana.example.invalid" },
+      encoding: "utf8",
+    })
+    expect(http.status).toBe(1)
+    expect(http.stderr).toContain("https")
+
+    const lokal = spawnSync(process.execPath, [script], {
+      env: { ...valid, NEXT_PUBLIC_SITE_URL: "https://localhost:3001" },
+      encoding: "utf8",
+    })
+    expect(lokal.status).toBe(1)
+    expect(lokal.stderr).toContain("alamat lokal")
+  })
+
+  it("menolak NEXT_PUBLIC_SITE_URL yang bukan URL", () => {
+    const run = spawnSync(process.execPath, [script], {
+      env: { ...valid, NEXT_PUBLIC_SITE_URL: "ruvana.example.invalid" },
+      encoding: "utf8",
+    })
+    expect(run.status).toBe(1)
+    expect(run.stderr).toContain("NEXT_PUBLIC_SITE_URL Production tidak valid")
+  })
 })

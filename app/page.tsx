@@ -15,6 +15,7 @@ import { CookieConsentBanner } from "@/components/site/cookie-consent-banner"
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { getSessionUser } from "@/lib/auth"
+import { getPostLoginPath } from "@/lib/auth-routing"
 
 const SHELL = "mx-auto w-full max-w-shell px-4 sm:px-7"
 const primaryLink = buttonVariants({ className: "min-h-11 gap-2.5 px-4 text-sm" })
@@ -64,7 +65,7 @@ export default async function Home() {
     <>
       <SkipToContentLink />
 
-      <SiteHeader current="beranda" />
+      <SiteHeader current="beranda" accountHomeHref={user ? getPostLoginPath(user.role) : undefined} />
 
       <main id="konten">
         <section aria-labelledby="hero-title" className={`${SHELL} pt-hero-top sm:pt-hero-top-lg`}>

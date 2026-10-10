@@ -43,4 +43,13 @@ describe("SiteHeader", () => {
     expect(screen.getByRole("link", { name: "Masuk" })).toHaveAttribute("href", "/login")
     expect(screen.getByRole("link", { name: "Daftar" })).toHaveAttribute("href", "/daftar")
   })
+
+  it("mengganti aksi masuk dan daftar dengan tombol Dashboard saat pengguna sudah masuk", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    render(<SiteHeader current="beranda" accountHomeHref="/petugas" />)
+
+    expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/petugas")
+    expect(screen.queryByRole("link", { name: "Masuk" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Daftar" })).not.toBeInTheDocument()
+  })
 })

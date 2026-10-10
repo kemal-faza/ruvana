@@ -1,8 +1,8 @@
-import { cleanup, render, screen, within } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { buatAkun } from "@/app/admin/pengguna/actions"
+import { buatAkun, verifikasiPendaftaran } from "@/app/admin/pengguna/actions"
 import AdminUsers from "@/components/admin/AdminUsers"
 import type { AdminUserRow } from "@/lib/admin/users"
 
@@ -51,8 +51,6 @@ const users: AdminUserRow[] = [
   },
 ]
 
-const ringkasan = { total: 4, aktif: 1, pending: 1, dinonaktifkan: 1 }
-
 const banyakPengguna: AdminUserRow[] = Array.from({ length: 12 }, (_, index) => ({
   id: 100 + index,
   nama: `Pengguna ${String(index + 1).padStart(2, "0")}`,
@@ -64,7 +62,7 @@ const banyakPengguna: AdminUserRow[] = Array.from({ length: 12 }, (_, index) => 
 }))
 
 function renderFixture() {
-  return render(<AdminUsers users={users} ringkasan={ringkasan} adminId={99} />)
+  return render(<AdminUsers users={users} adminId={99} />)
 }
 
 afterEach(cleanup)
@@ -85,6 +83,41 @@ describe("AdminUsers (kelola akun)", () => {
     expect(within(tabel).getByText("Aktif")).toBeInTheDocument()
     expect(within(tabel).getByText("Ditolak")).toBeInTheDocument()
     expect(within(tabel).getByText("Dinonaktifkan")).toBeInTheDocument()
+  })
+
+  it("mengikuti data server terbaru ketika rute diperbarui", () => {
+    const { rerender } = renderFixture()
+    const terbaru: AdminUserRow[] = users.map((akun) => akun.id === 1
+      ? { ...akun, nama: "Ayu Terbaru", status: "DISABLED" }
+      : akun)
+
+    rerender(<AdminUsers users={terbaru} adminId={99} />)
+
+    expect(screen.queryByText("Ayu Pratama")).not.toBeInTheDocument()
+    const baris = screen.getByText("Ayu Terbaru").closest("tr")
+    expect(baris).not.toBeNull()
+    expect(within(baris!).getByText("Dinonaktifkan")).toBeInTheDocument()
+    expect(within(baris!).getByRole("button", { name: "Aktifkan kembali" })).toBeInTheDocument()
+  })
+
+  it("memperbarui status di client setelah verifikasi berhasil", async () => {
+    vi.mocked(verifikasiPendaftaran).mockResolvedValueOnce({
+      ok: true,
+      pesan: "Akun berhasil disetujui.",
+      perubahan: { id: 2, status: "ACTIVE", waktuVerifikasi: new Date("2026-09-06T00:00:00Z") },
+    })
+    const user = userEvent.setup()
+    renderFixture()
+
+    const baris = screen.getByText("Budi Santoso").closest("tr")
+    expect(baris).not.toBeNull()
+    await user.click(within(baris!).getByRole("button", { name: "Setujui" }))
+
+    await waitFor(() => {
+      expect(within(baris!).getByText("Aktif")).toBeInTheDocument()
+      expect(within(baris!).getByRole("button", { name: "Nonaktifkan" })).toBeInTheDocument()
+    })
+    expect(verifikasiPendaftaran).toHaveBeenCalledOnce()
   })
 
   it("menampilkan keputusan verifikasi hanya untuk pengguna yang masih PENDING", () => {
@@ -113,7 +146,6 @@ describe("AdminUsers (kelola akun)", () => {
     render(
       <AdminUsers
         users={[{ ...users[0], role: "admin" }]}
-        ringkasan={{ total: 1, aktif: 1, pending: 0, dinonaktifkan: 0 }}
         adminId={1}
       />,
     )
@@ -204,7 +236,7 @@ describe("AdminUsers (kelola akun)", () => {
     await user.click(await screen.findByRole("option", { name: "Pengguna" }))
     await user.click(within(dialog).getByRole("button", { name: "Buat akun" }))
 
-    expect(password.validationMessage).toBe("Password maksimal 72 byte.")
+    expect(password.validationMessage).toBe("Kata sandi maksimal 72 karakter.")
     expect(buatAkun).not.toHaveBeenCalled()
   })
 
@@ -266,7 +298,6 @@ describe("AdminUsers (kelola akun)", () => {
     render(
       <AdminUsers
         users={banyakPengguna}
-        ringkasan={{ total: 12, aktif: 12, pending: 0, dinonaktifkan: 0 }}
         adminId={99}
       />,
     )

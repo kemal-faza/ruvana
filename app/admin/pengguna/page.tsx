@@ -10,6 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPenggunaPage() {
-  const { users, ringkasan, adminId } = await daftarPengguna();
-  return <AdminUsers users={users} ringkasan={ringkasan} adminId={adminId} />;
+  const { users, adminId } = await daftarPengguna();
+  return <AdminUsers users={users} adminId={adminId} />;
 }

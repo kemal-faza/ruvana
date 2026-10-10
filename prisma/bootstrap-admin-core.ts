@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs"
 
-import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_NAMA_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "../config/business"
+import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_NAMA_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "../config/business"
 import { AccountStatus, Role } from "../generated/prisma/enums"
 import type { prisma } from "../lib/prisma"
 
@@ -22,8 +22,8 @@ export async function bootstrapAdmin(input: BootstrapAdminInput, database: Pick<
     throw new Error("BOOTSTRAP_ADMIN_EMAIL tidak valid.")
   }
   if (!nama || nama.length > BATAS_NAMA_AKUN_KARAKTER) throw new Error("BOOTSTRAP_ADMIN_NAME tidak valid.")
-  if (passwordBytes < 16 || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
-    throw new Error(`BOOTSTRAP_ADMIN_PASSWORD wajib berukuran 16 sampai ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`)
+  if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
+    throw new Error(`BOOTSTRAP_ADMIN_PASSWORD wajib berukuran ${BATAS_PASSWORD_AKUN_MIN_BYTE} sampai ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`)
   }
   if (await database.user.findUnique({ where: { email }, select: { id: true } })) {
     throw new Error("Email admin sudah terdaftar; bootstrap tidak mengubah akun yang ada.")

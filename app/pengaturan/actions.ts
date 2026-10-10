@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 
 import {
   BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_MIN_BYTE,
   BATAS_PASSWORD_AKUN_BYTE,
 } from "@/config/business"
 import {
@@ -13,7 +14,7 @@ import {
   updatePasswordAndRevokeOtherSessions,
   updateUserName,
 } from "@/lib/db/auth"
-import { getCurrentSessionTokenHash, getSessionUser } from "@/lib/auth"
+import { getCurrentSessionTokenHash, getSessionUser, type SessionUser } from "@/lib/auth"
 
 export interface SettingsActionState {
   ok: boolean
@@ -21,12 +22,10 @@ export interface SettingsActionState {
   fieldErrors?: Record<string, string>
 }
 
-export const SETTINGS_ACTION_INITIAL_STATE: SettingsActionState = { ok: false, message: "" }
-
-const SETTINGS_PATHS = ["/pengaturan", "/petugas/pengaturan", "/admin/pengaturan"]
-
-function refreshSettings() {
-  for (const path of SETTINGS_PATHS) revalidatePath(path)
+const SETTINGS_PATH_BY_ROLE: Record<SessionUser["role"], string> = {
+  pengguna: "/pengaturan",
+  petugas: "/petugas/pengaturan",
+  admin: "/admin/pengaturan",
 }
 
 export async function updateProfileAction(
@@ -37,11 +36,11 @@ export async function updateProfileAction(
   if (!user) return { ok: false, message: "Sesi berakhir. Masuk kembali untuk mengubah profil." }
 
   const nama = String(formData.get("nama") ?? "").trim()
-  if (nama.length < 3 || nama.length > BATAS_NAMA_AKUN_KARAKTER) {
+  if (!nama || nama.length > BATAS_NAMA_AKUN_KARAKTER) {
     return {
       ok: false,
       message: "Periksa kembali nama Anda.",
-      fieldErrors: { nama: `Nama harus berisi 3–${BATAS_NAMA_AKUN_KARAKTER} karakter.` },
+      fieldErrors: { nama: `Nama wajib diisi dan maksimal ${BATAS_NAMA_AKUN_KARAKTER} karakter.` },
     }
   }
 
@@ -52,7 +51,7 @@ export async function updateProfileAction(
     return { ok: false, message: "Gagal memperbarui profil. Coba lagi." }
   }
 
-  refreshSettings()
+  revalidatePath(SETTINGS_PATH_BY_ROLE[user.role])
   return { ok: true, message: "Profil berhasil diperbarui." }
 }
 
@@ -70,9 +69,8 @@ export async function changePasswordAction(
 
   if (!currentPassword) fieldErrors.currentPassword = "Kata sandi saat ini wajib diisi."
   const passwordBytes = Buffer.byteLength(newPassword, "utf8")
-  if (passwordBytes < 8 || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
-    fieldErrors.newPassword = `Kata sandi baru harus berukuran 8–${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`
-  }
+  if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE) fieldErrors.newPassword = `Kata sandi minimal ${BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.`
+  else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) fieldErrors.newPassword = `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} karakter.`
   if (newPassword !== confirmation) fieldErrors.confirmation = "Konfirmasi kata sandi belum cocok."
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, message: "Periksa kembali isian kata sandi.", fieldErrors }
@@ -105,7 +103,6 @@ export async function changePasswordAction(
     return { ok: false, message: "Gagal memperbarui kata sandi. Coba lagi." }
   }
 
-  refreshSettings()
   return { ok: true, message: "Kata sandi diperbarui. Sesi di perangkat lain telah diakhiri." }
 }
 

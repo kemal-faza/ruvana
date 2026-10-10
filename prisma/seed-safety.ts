@@ -1,4 +1,4 @@
-import { BATAS_PASSWORD_AKUN_BYTE } from "../config/business"
+import { BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "../config/business"
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"])
 
@@ -23,8 +23,8 @@ export function validateSeedConfig(config: {
   }
 
   const passwordBytes = Buffer.byteLength(config.demoPassword ?? "", "utf8")
-  if (passwordBytes < 16 || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
-    throw new Error(`SEED_DEMO_PASSWORD wajib berukuran 16 sampai ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`)
+  if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
+    throw new Error(`SEED_DEMO_PASSWORD wajib berukuran ${BATAS_PASSWORD_AKUN_MIN_BYTE} sampai ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`)
   }
 
   return { databaseUrl: config.databaseUrl, demoPassword: config.demoPassword! }

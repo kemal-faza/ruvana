@@ -13,6 +13,7 @@ export const MASA_SESI_JAM = 12;
 export const RETENSI_IDEMPOTENCY_JAM = 24;
 export const BATAS_NAMA_AKUN_KARAKTER = 100;
 export const BATAS_EMAIL_AKUN_KARAKTER = 254;
+export const BATAS_PASSWORD_AKUN_MIN_BYTE = 8;
 export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 24; // H-24 jam sebelum mulai (PRD Bagian 20 menggantikan H-2 TASK lama)
 export const BATAS_PENGAJUAN_JAM = 336; // Pengajuan minimal H-14: waktu mulai sekurang-kurangnya 336 jam (14 hari) dari instant pengajuan (keputusan pemilik menggantikan H-1)
@@ -181,6 +182,18 @@ export const LAPORAN_UPLOAD = {
   jendelaRateLimitMs: 60 * 60 * 1000,
   maksUnggahPerJamPengguna: 20,
   maksUnggahPerJamIp: 60,
+} as const
+
+// Batas unggah foto fasilitas admin (FAC-05): JPEG/PNG/WebP, maksimal 5 MiB.
+export const FASILITAS_UPLOAD = {
+  tipeDiizinkan: ["image/jpeg", "image/png", "image/webp"] as const,
+  maksByte: 5 * 1024 * 1024,
+  masaBerlakuUrlUnggahMs: 10 * 60 * 1000,
+  masaBerlakuUrlBacaMs: 5 * 60 * 1000,
+  // Redirect foto publik boleh di-cache browser sesaat supaya satu halaman
+  // katalog tidak memicu satu panggilan API Blob per kartu. Wajib lebih pendek
+  // dari masaBerlakuUrlBacaMs agar signed URL di cache tidak kedaluwarsa.
+  masaCacheRedirectFotoDetik: 60,
 } as const
 
 // Deskripsi laporan mengikuti batas global PRD (2.000 karakter).

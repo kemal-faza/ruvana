@@ -7,16 +7,17 @@ import { claimIdempotentRoute, readIdempotencyKey } from "@/lib/http/idempotent-
 import { originError } from "@/lib/http/origin";
 import {
   badRequest,
+  internalError,
   invalidFacilityTransition,
   notFound,
   validationFailed,
 } from "@/lib/http/problem";
-import { getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
+import { archiveFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
 import { parseFacilityId } from "@/lib/validation/facility-query";
 import { parseFacilityUpdateBody } from "@/lib/validation/admin-facility";
 
 import { guardAdmin } from "../guard";
-import { adminIdempotencyConflict, duplicateName } from "../problem";
+import { adminIdempotencyConflict, duplicateName, facilityHasHistory } from "../problem";
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
   const instance = request.nextUrl.pathname;
@@ -27,9 +28,14 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/admin/fa
   const parsedId = parseFacilityId(facilityId);
   if (!parsedId.ok) return validationFailed(instance, parsedId.errors);
 
-  const facility = await getAdminFacility(parsedId.value);
-  if (!facility) return notFound(instance, "Fasilitas tidak ditemukan");
-  return NextResponse.json(facility, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const facility = await getAdminFacility(parsedId.value);
+    if (!facility) return notFound(instance, "Fasilitas tidak ditemukan");
+    return NextResponse.json(facility, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Gagal memuat detail fasilitas admin", error);
+    return internalError(instance);
+  }
 }
 
 export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
@@ -90,9 +96,46 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/
     if (result.error.type === "transition") {
       return idempotency.settle(invalidFacilityTransition(instance, result.error.message));
     }
+    if (result.error.type === "invalid_photo") {
+      return idempotency.settle(
+        validationFailed(instance, [{ field: "fotoPathname", code: "INVALID_PHOTO", message: result.error.message }]),
+      );
+    }
     return idempotency.settle(duplicateName(instance));
   }
 
   revalidateFacilityViews(parsedId.value);
   return NextResponse.json(result.data, { status: 200, headers: { "Cache-Control": "no-store" } });
+}
+
+/** Arsipkan fasilitas (soft delete); ditolak bila masih punya riwayat (reservasi/laporan). */
+export async function DELETE(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
+  const instance = request.nextUrl.pathname;
+  const session = await guardAdmin(request);
+  if (session instanceof NextResponse) return session;
+
+  const rejected = originError(request);
+  if (rejected) return rejected;
+
+  const { facilityId } = await ctx.params;
+  const parsedId = parseFacilityId(facilityId);
+  if (!parsedId.ok) return validationFailed(instance, parsedId.errors);
+
+  let result;
+  try {
+    result = await archiveFacility({ id: session.id, nama: session.nama }, parsedId.value);
+  } catch (error) {
+    console.error("Gagal mengarsipkan fasilitas", error);
+    return internalError(instance);
+  }
+
+  if (!result.ok) {
+    if (result.error.type === "not_found") {
+      return notFound(instance, result.error.message);
+    }
+    return facilityHasHistory(instance);
+  }
+
+  revalidateFacilityViews(parsedId.value);
+  return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }

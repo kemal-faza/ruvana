@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -17,6 +17,7 @@ const items: AdminFacility[] = [
     kapasitas: 40,
     deskripsi: null,
     status: "ACTIVE",
+    fotoUrl: null,
     statusChangedAt: null,
     statusChangedBy: null,
   },
@@ -28,6 +29,7 @@ const items: AdminFacility[] = [
     kapasitas: 30,
     deskripsi: null,
     status: "UNDER_MAINTENANCE",
+    fotoUrl: null,
     statusChangedAt: "2026-09-30T05:00:00.000Z",
     statusChangedBy: { id: 1, nama: "Admin Ruvana", role: "admin" },
   },
@@ -38,7 +40,7 @@ const filters = {};
 const locations = ["Gedung A Lt.1", "Gedung B Lt.2"];
 
 function renderFixture(list: AdminFacility[] = items, metaValue: AdminFacilityCollection["meta"] = meta) {
-  return render(<AdminFacilities items={list} meta={metaValue} locations={locations} filters={filters} />);
+  return render(<AdminFacilities items={list} meta={metaValue} locations={locations} archived={[]} filters={filters} />);
 }
 
 afterEach(cleanup);
@@ -87,6 +89,7 @@ describe("AdminFacilities", () => {
         items={items}
         meta={meta}
         locations={locations}
+        archived={[]}
         filters={{ search: "lab", type: "aula", location: "Gedung A Lt.1", status: "ACTIVE" }}
       />,
     );
@@ -96,7 +99,7 @@ describe("AdminFacilities", () => {
 
     // Navigasi lunak ke /admin/fasilitas tanpa query merender komponen yang sama;
     // key membuat state filter diinisialisasi ulang.
-    rerender(<AdminFacilities items={items} meta={meta} locations={locations} filters={{}} />);
+    rerender(<AdminFacilities items={items} meta={meta} locations={locations} archived={[]} filters={{}} />);
 
     expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("");
     expect(screen.getByRole("combobox", { name: "Status" })).toHaveValue("");
@@ -123,6 +126,140 @@ describe("AdminFacilities", () => {
     expect(screen.getByText("lokasi wajib diisi")).toBeInTheDocument();
     expect(screen.getByText("kapasitas harus minimal 1")).toBeInTheDocument();
 
+    vi.unstubAllGlobals();
+  });
+
+  it("menyediakan input unggah foto pada sheet tambah", async () => {
+    const user = userEvent.setup();
+    renderFixture();
+
+    await user.click(screen.getByRole("button", { name: /Tambah fasilitas/ }));
+    const sheet = within(await screen.findByRole("dialog"));
+
+    const input = sheet.getByLabelText("Foto (opsional)");
+    expect(input).toHaveAttribute("type", "file");
+    expect(input).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+  });
+
+  it("menampilkan pratinjau dan opsi hapus foto saat mengubah fasilitas berfoto", async () => {
+    const user = userEvent.setup();
+    renderFixture([{ ...items[0], fotoUrl: "/api/facilities/1/photo" }]);
+
+    await user.click(screen.getAllByRole("button", { name: /Ubah/ })[0]);
+    const sheet = within(await screen.findByRole("dialog"));
+
+    expect(sheet.getByAltText("Pratinjau foto fasilitas")).toHaveAttribute("src", "/api/facilities/1/photo");
+    expect(sheet.getByRole("checkbox", { name: /Hapus foto saat ini/ })).toBeInTheDocument();
+  });
+
+  it("mengunggah foto lalu menyertakan pathname pada create", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url) === "/api/admin/facilities/photo-uploads" && init?.method === "POST") {
+        return { ok: true, json: async () => ({ pathname: "facilities/7/x.png", uploadUrl: "https://blob.test/put" }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn(() => "blob:preview") as never;
+    URL.revokeObjectURL = vi.fn() as never;
+
+    renderFixture();
+    await user.click(screen.getByRole("button", { name: /Tambah fasilitas/ }));
+    const sheet = within(await screen.findByRole("dialog"));
+    await user.type(sheet.getByLabelText("Nama"), "Studio Musik");
+    await user.type(sheet.getByLabelText("Lokasi"), "Gedung C");
+    await user.upload(sheet.getByLabelText("Foto (opsional)"), new File(["x"], "foto.png", { type: "image/png" }));
+    await user.click(sheet.getByRole("button", { name: "Simpan" }));
+
+    await waitFor(() => {
+      const createCall = fetchMock.mock.calls.find(([url]) => String(url) === "/api/admin/facilities");
+      expect(createCall).toBeTruthy();
+    });
+    const createCall = fetchMock.mock.calls.find(([url]) => String(url) === "/api/admin/facilities")!;
+    const body = JSON.parse(String(createCall[1]?.body));
+    expect(body.fotoPathname).toBe("facilities/7/x.png");
+    expect(body.fotoType).toBe("image/png");
+    expect(fetchMock).toHaveBeenCalledWith("https://blob.test/put", expect.objectContaining({ method: "PUT" }));
+
+    URL.createObjectURL = originalCreate;
+    URL.revokeObjectURL = originalRevoke;
+    vi.unstubAllGlobals();
+  });
+
+  it("menghapus fasilitas setelah konfirmasi", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderFixture();
+
+    await user.click(screen.getAllByRole("button", { name: /Hapus/ })[0]);
+    const sheet = within(await screen.findByRole("dialog"));
+    await user.click(sheet.getByRole("button", { name: "Hapus" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/facilities/1", { method: "DELETE" }),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("menampilkan saran nonaktifkan saat fasilitas beriwayat", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      json: async () => ({ detail: "Fasilitas dengan riwayat tidak dapat dihapus. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya." }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderFixture();
+
+    await user.click(screen.getAllByRole("button", { name: /Hapus/ })[0]);
+    const sheet = within(await screen.findByRole("dialog"));
+    await user.click(sheet.getByRole("button", { name: "Hapus" }));
+
+    expect(await screen.findByText(/tidak dapat dihapus/i)).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("menampilkan keadaan kosong riwayat penghapusan", () => {
+    renderFixture();
+
+    expect(screen.getByRole("heading", { name: "Riwayat penghapusan" })).toBeInTheDocument();
+    expect(screen.getByText("Belum ada fasilitas yang dihapus.")).toBeInTheDocument();
+  });
+
+  it("memulihkan fasilitas dari riwayat penghapusan", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AdminFacilities
+        items={items}
+        meta={meta}
+        locations={locations}
+        archived={[
+          {
+            id: 5,
+            nama: "Gudang Lama",
+            tipe: "aula",
+            lokasi: "Blok C",
+            kapasitas: 10,
+            deletedAt: "2026-10-10T00:00:00.000Z",
+            deletedByNama: "Admin Ruvana",
+          },
+        ]}
+        filters={{}}
+      />,
+    );
+
+    expect(screen.getByText("Gudang Lama")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Pulihkan/ }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/facilities/5/restore", { method: "POST" }),
+    );
     vi.unstubAllGlobals();
   });
 });

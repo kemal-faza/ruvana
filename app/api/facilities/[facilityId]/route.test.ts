@@ -17,6 +17,7 @@ const mockFacility = {
   kapasitas: 40,
   deskripsi: "Ruang kelas standar",
   status: "ACTIVE" as const,
+  fotoUrl: null,
 };
 
 beforeEach(() => {

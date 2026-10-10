@@ -4,6 +4,7 @@ import { AccountStatus, Role } from "@/generated/prisma/enums";
 import {
   BATAS_EMAIL_AKUN_KARAKTER,
   BATAS_NAMA_AKUN_KARAKTER,
+  BATAS_PASSWORD_AKUN_MIN_BYTE,
   BATAS_PASSWORD_AKUN_BYTE,
 } from "@/config/business";
 import { prisma } from "@/lib/prisma";
@@ -54,13 +55,26 @@ export async function getManagedUsers(query: ManagedUsersQuery) {
   };
 }
 
-export type CreateManagedUserResult =
-  | { kind: "ok"; user: { id: number; nama: string; email: string; role: Role; status: AccountStatus; waktuDaftar: string; waktuVerifikasi: string | null } }
-  | { kind: "validation"; errors: { field: string; code: string; message: string }[] }
-  | { kind: "duplicate" }
-  | { kind: "key_reused" };
+export interface CreatedManagedUser {
+  id: number;
+  nama: string;
+  email: string;
+  role: Role;
+  status: AccountStatus;
+  waktuDaftar: string;
+  waktuVerifikasi: string | null;
+}
 
-export async function createManagedUser(adminId: number, _idempotencyKey: string, body: unknown): Promise<CreateManagedUserResult> {
+export type CreateManagedUserResult =
+  | { kind: "ok"; user: CreatedManagedUser }
+  | { kind: "validation"; errors: { field: string; code: string; message: string }[] }
+  | { kind: "duplicate" };
+
+export async function createManagedUser(
+  adminId: number,
+  body: unknown,
+  persistSuccess?: (tx: Prisma.TransactionClient, user: CreatedManagedUser) => Promise<void>,
+): Promise<CreateManagedUserResult> {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { kind: "validation", errors: [{ field: "body", code: "INVALID_BODY", message: "Data akun tidak valid." }] };
   }
@@ -73,25 +87,36 @@ export async function createManagedUser(adminId: number, _idempotencyKey: string
   if (!nama || nama.length > BATAS_NAMA_AKUN_KARAKTER) errors.push({ field: "nama", code: "NAME_INVALID", message: "Nama wajib diisi dan maksimal 100 karakter." });
   if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) errors.push({ field: "email", code: "EMAIL_INVALID", message: "Format email tidak valid." });
   const passwordBytes = Buffer.byteLength(password, "utf8");
-  if (passwordBytes < 8 || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) errors.push({ field: "password", code: "PASSWORD_INVALID", message: "Kata sandi harus berukuran 8 sampai 72 byte UTF-8." });
+  if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) errors.push({ field: "password", code: "PASSWORD_INVALID", message: `Kata sandi harus berukuran ${BATAS_PASSWORD_AKUN_MIN_BYTE} sampai ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.` });
   if (role !== Role.pengguna && role !== Role.petugas) errors.push({ field: "role", code: "ROLE_INVALID", message: "Role akun tidak valid." });
   if (Object.keys(input).some((key) => !["nama", "email", "password", "role"].includes(key))) errors.push({ field: "body", code: "UNKNOWN_FIELD", message: "Data akun tidak valid." });
   if (errors.length) return { kind: "validation", errors };
 
   try {
-    const user = await prisma.user.create({
-      data: {
-        nama,
-        email,
-        password: await bcrypt.hash(password, 10),
-        role: role as Role,
-        status: AccountStatus.ACTIVE,
-        dibuatOleh: adminId,
-        waktuVerifikasi: new Date(),
-      },
-      select: { id: true, nama: true, email: true, role: true, status: true, waktuDaftar: true, waktuVerifikasi: true },
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          nama,
+          email,
+          password: passwordHash,
+          role: role as Role,
+          status: AccountStatus.ACTIVE,
+          dibuatOleh: adminId,
+        },
+        select: { id: true, nama: true, email: true, role: true, status: true, waktuDaftar: true, waktuVerifikasi: true },
+      });
+      const response = {
+        ...created,
+        waktuDaftar: created.waktuDaftar.toISOString(),
+        waktuVerifikasi: created.waktuVerifikasi?.toISOString() ?? null,
+      };
+      // Akun dan hasil replay disimpan bersama agar retry tidak kehilangan
+      // respons pertama setelah pembuatan akun sudah berhasil.
+      await persistSuccess?.(tx, response);
+      return response;
     });
-    return { kind: "ok", user: { ...user, waktuDaftar: user.waktuDaftar.toISOString(), waktuVerifikasi: user.waktuVerifikasi?.toISOString() ?? null } };
+    return { kind: "ok", user };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { kind: "duplicate" };
     throw error;
