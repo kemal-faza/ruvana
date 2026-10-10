@@ -42,6 +42,15 @@ describe("FacilityCard", () => {
     expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/fasilitas/1")
   })
 
+  it("menyertakan tanggal pada tautan detail ketika diberikan", () => {
+    render(<FacilityCard facility={facility} date="2026-10-15" />)
+
+    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute(
+      "href",
+      "/fasilitas/1?date=2026-10-15",
+    )
+  })
+
   it("memuat foto secara eager saat diminta agar cepat menjadi LCP", () => {
     const { container } = render(<FacilityCard facility={facility} eager />)
 

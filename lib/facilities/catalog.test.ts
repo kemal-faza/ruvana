@@ -32,4 +32,19 @@ describe("getFacilityCatalog", () => {
     expect(listPublicFacilities).toHaveBeenCalledWith({ page: 9, perPage: 20, search: "lab" })
     expect(result).toEqual({ redirectQuery: "search=lab&page=2" })
   })
+
+  it("meneruskan tanggal valid dari landing ke data katalog dan pagination", async () => {
+    const result = await getFacilityCatalog({ date: "2026-10-15" })
+
+    expect(result).toMatchObject({
+      date: "2026-10-15",
+      paginationQuery: { date: "2026-10-15" },
+    })
+  })
+
+  it("mengabaikan tanggal yang tidak valid", async () => {
+    const result = await getFacilityCatalog({ date: "bukan-tanggal" })
+
+    expect((result as { date?: string }).date).toBeUndefined()
+  })
 })

@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button"
 import { AvailabilityDateForm } from "@/components/facilities/availability-date-form"
 import { AvailabilityGrid } from "@/components/facilities/availability-grid"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
+import type { AvailabilitySlot } from "@/lib/availability/slots"
 import type { FacilityDetailData } from "@/lib/facilities/detail"
+
+/**
+ * Tujuan tautan slot tersedia: `reservasi` untuk pengguna, `login` untuk
+ * pengunjung anonim, `none` untuk peran yang tidak memesan (petugas/admin).
+ */
+export type SlotLinkMode = "reservasi" | "login" | "none"
 
 interface FacilityDetailContentProps extends FacilityDetailData {
   basePath: string
+  slotLinkMode?: SlotLinkMode
 }
 
 export function FacilityDetailContent({
@@ -20,10 +28,19 @@ export function FacilityDetailContent({
   today,
   availability,
   basePath,
+  slotLinkMode = "none",
 }: FacilityDetailContentProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
+
+  const slotHref =
+    slotLinkMode === "reservasi"
+      ? (slot: AvailabilitySlot) =>
+          `/reservasi?facilityId=${facility.id}&date=${date}&startTime=${slot.startTime}`
+      : slotLinkMode === "login"
+        ? () => "/login"
+        : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -91,7 +108,7 @@ export function FacilityDetailContent({
           Ketersediaan slot
         </h2>
         <AvailabilityDateForm facilityId={facility.id} date={date} today={today} basePath={basePath} />
-        {availability && <AvailabilityGrid slots={availability.slots} />}
+        {availability && <AvailabilityGrid slots={availability.slots} slotHref={slotHref} />}
       </div>
     </div>
   )

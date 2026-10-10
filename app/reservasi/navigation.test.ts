@@ -26,19 +26,19 @@ describe("navigasi reservasi pengguna", () => {
     expect(navigation.flatMap((grup) => grup.items.map((item) => item.href))).not.toContain("/");
   });
 
-  it("menggabungkan Reservasi Saya dan Reservasi menjadi satu menu Reservasi", () => {
+  it("menjadikan menu Reservasi sebagai Riwayat Reservasi", () => {
     const label = navigation.flatMap((grup) => grup.items.map((item) => item.label));
 
     expect(reservasiNavigation[0].items[0]).toMatchObject({
-      label: "Reservasi",
+      label: "Riwayat Reservasi",
       href: "/reservasi/riwayat",
     });
     expect(navigation[0].items[0]).toMatchObject({
-      label: "Reservasi",
+      label: "Riwayat Reservasi",
       href: "/reservasi/riwayat",
     });
     expect(label).not.toContain("Reservasi Saya");
-    expect(label.filter((item) => item === "Reservasi")).toHaveLength(1);
+    expect(label.filter((item) => item === "Riwayat Reservasi")).toHaveLength(1);
     expect(semuaHref()).not.toContain("/baseline-ui");
     expect(navigation.flatMap((grup) => grup.items.map((item) => item.href))).not.toContain("/baseline-ui");
   });

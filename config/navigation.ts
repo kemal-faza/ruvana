@@ -15,10 +15,9 @@ export const navigation: readonly NavigationGroup[] = [
     items: [
       {
         key: "reservasi",
-        label: "Reservasi",
+        label: "Riwayat Reservasi",
         href: "/reservasi/riwayat",
         icon: CalendarDays,
-        activePrefixes: ["/reservasi"],
       },
       {
         key: "fasilitas",

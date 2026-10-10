@@ -7,7 +7,7 @@ interface FacilityCatalogProps extends FacilityCatalogData {
   basePath: string
 }
 
-export function FacilityCatalog({ items, meta, filterValue, paginationQuery, hasActiveFilters, basePath }: FacilityCatalogProps) {
+export function FacilityCatalog({ items, meta, filterValue, paginationQuery, hasActiveFilters, basePath, date }: FacilityCatalogProps) {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -17,13 +17,14 @@ export function FacilityCatalog({ items, meta, filterValue, paginationQuery, has
         </p>
       </header>
 
-      <FacilityFilterForm value={filterValue} actionPath={basePath} />
+      <FacilityFilterForm value={filterValue} actionPath={basePath} date={date} />
 
       <FacilityList
         items={items}
         hasActiveFilters={hasActiveFilters}
         basePath={basePath}
         detailBasePath={basePath}
+        date={date}
       />
 
       <FacilityPagination page={meta.page} totalPages={meta.totalPages} query={paginationQuery} basePath={basePath} />

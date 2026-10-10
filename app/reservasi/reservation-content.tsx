@@ -1,5 +1,5 @@
 import { ReservationForm } from "@/components/reservation/reservation-form"
-import { TIPE_FASILITAS } from "@/config/business"
+import { TIPE_FASILITAS, VALID_START_TIMES } from "@/config/business"
 import { computeFacilityAvailability } from "@/lib/reservations/availability"
 import { listPublicFacilities } from "@/lib/services/facility-service"
 import { getDefaultReservationDate, isValidDateFormat } from "@/lib/time/reservation-time"
@@ -26,10 +26,18 @@ export async function ReservationContent({
 
   const rawFacilityId = Array.isArray(query.facilityId) ? query.facilityId[0] : query.facilityId
   const rawDate = Array.isArray(query.date) ? query.date[0] : query.date
+  const rawStartTime = Array.isArray(query.startTime) ? query.startTime[0] : query.startTime
 
   // Helper domain memilih H+15 agar seluruh slot pada tanggal default lolos.
   const fallbackDate = getDefaultReservationDate()
   const date = rawDate && isValidDateFormat(rawDate) ? rawDate : fallbackDate
+
+  // Jam mulai opsional dari tautan slot ketersediaan; hanya diterima bila
+  // termasuk slot valid, sisanya dibiarkan kosong dan divalidasi saat submit.
+  const initialStartTime =
+    rawStartTime && (VALID_START_TIMES as readonly string[]).includes(rawStartTime)
+      ? rawStartTime
+      : undefined
 
   const parsedFacilityId = rawFacilityId ? Number(rawFacilityId) : NaN
   const facilityId = facilities.some((f) => f.id === parsedFacilityId)
@@ -45,10 +53,11 @@ export async function ReservationContent({
 
   return (
     <ReservationForm
-      key={`${facilityId}:${date}`}
+      key={`${facilityId}:${date}:${initialStartTime ?? ""}`}
       facilities={facilities}
       facilityId={facilityId}
       date={date}
+      initialStartTime={initialStartTime}
       availability={availability}
       serverNow={serverNow}
     />

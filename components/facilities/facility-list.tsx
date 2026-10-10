@@ -10,6 +10,8 @@ interface FacilityListProps {
   items: PublicFacility[]
   basePath?: string
   detailBasePath?: string
+  /** Tanggal pilihan dari landing yang diteruskan ke tautan detail. */
+  date?: string
   /** True ketika ada filter/pencarian aktif, supaya empty state membedakan "kosong" vs "tidak cocok". */
   hasActiveFilters?: boolean
 }
@@ -19,6 +21,7 @@ export function FacilityList({
   hasActiveFilters = false,
   basePath = "/fasilitas",
   detailBasePath = "/fasilitas",
+  date,
 }: FacilityListProps) {
   if (items.length === 0) {
     if (hasActiveFilters) {
@@ -67,7 +70,7 @@ export function FacilityList({
   return (
     <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((facility, index) => (
-        <FacilityCard key={facility.id} facility={facility} eager={index === 0} detailBasePath={detailBasePath} />
+        <FacilityCard key={facility.id} facility={facility} eager={index === 0} detailBasePath={detailBasePath} date={date} />
       ))}
     </div>
   )

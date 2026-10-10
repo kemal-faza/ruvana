@@ -153,8 +153,8 @@ describe("AppShell", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Navigasi utama" })).not.toBeInTheDocument())
   })
 
-  it.each(["/reservasi", "/reservasi/riwayat", "/reservasi/riwayat/91"])(
-    "menandai menu Reservasi aktif di %s tanpa double-active",
+  it.each(["/reservasi/riwayat", "/reservasi/riwayat/91"])(
+    "menandai menu Riwayat Reservasi aktif di %s tanpa double-active",
     (pathname) => {
       setMatchMedia("(max-width: 1023px)", false)
       routeState.pathname = pathname
@@ -167,7 +167,7 @@ describe("AppShell", () => {
         </AppShell>,
       )
 
-      expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).toHaveAttribute(
+      expect(screen.getAllByRole("link", { name: "Riwayat Reservasi" })[0]).toHaveAttribute(
         "aria-current",
         "page",
       )
@@ -177,6 +177,21 @@ describe("AppShell", () => {
       expect(active).toHaveLength(1)
     },
   )
+
+  it("tidak menandai menu Riwayat Reservasi aktif pada form pengajuan /reservasi", () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    routeState.pathname = "/reservasi"
+    render(
+      <AppShell
+        navigation={penggunaNavigation}
+        account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
+      >
+        <p>Form reservasi</p>
+      </AppShell>,
+    )
+
+    expect(screen.getAllByRole("link", { name: "Riwayat Reservasi" })[0]).not.toHaveAttribute("aria-current")
+  })
 
   it("memindahkan active state ketika pathname berubah tanpa filter role", () => {
     setMatchMedia("(max-width: 1023px)", false)

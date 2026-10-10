@@ -54,16 +54,16 @@ describe("RiwayatReservasiPage", () => {
     expect(page.props.account).toEqual({ displayName: "Siti Aminah", roleLabel: "Pengguna" });
   });
 
-  it("memakai judul halaman Reservasi dan tombol Ajukan Reservasi menuju form pengajuan", async () => {
+  it("memakai judul halaman Riwayat Reservasi dan tombol Ajukan Reservasi menuju daftar fasilitas", async () => {
     setMatchMedia("(max-width: 1023px)", false);
     requirePengguna.mockResolvedValue(penggunaAktif());
 
     render(await RiwayatReservasiPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "Reservasi" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Riwayat Reservasi" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ajukan Reservasi" })).toHaveAttribute(
       "href",
-      "/reservasi",
+      "/fasilitas",
     );
   });
 });

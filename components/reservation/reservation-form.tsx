@@ -33,6 +33,8 @@ interface ReservationFormProps {
   facilities: FacilityOption[];
   facilityId: number;
   date: string;
+  /** Jam mulai awal dari tautan slot ketersediaan (opsional). */
+  initialStartTime?: string;
   availability: FacilityAvailability | null;
   /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 14 hari, bukan jam klien. */
   serverNow: string;
@@ -40,8 +42,8 @@ interface ReservationFormProps {
 
 const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
 
-export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
-  const [startTime, setStartTime] = useState("");
+export function ReservationForm({ facilities, facilityId, date, initialStartTime, availability, serverNow }: ReservationFormProps) {
+  const [startTime, setStartTime] = useState(initialStartTime ?? "");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [loading, setLoading] = useState(false);

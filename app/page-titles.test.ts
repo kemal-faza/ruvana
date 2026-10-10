@@ -25,7 +25,7 @@ const metadataCases = [
   { route: "/fasilitas", actualTitle: fasilitasMetadata.title, title: "Fasilitas | ruvana" },
   { route: "/reports", actualTitle: reportsMetadata.title, title: "Laporan | ruvana" },
   { route: "/reservasi", actualTitle: reservationMetadata.title, title: "Ajukan reservasi | ruvana" },
-  { route: "/reservasi/riwayat", actualTitle: reservationHistoryMetadata.title, title: "Reservasi | ruvana" },
+  { route: "/reservasi/riwayat", actualTitle: reservationHistoryMetadata.title, title: "Riwayat Reservasi | ruvana" },
   { route: "/reservasi/riwayat/[id]", actualTitle: reservationDetailMetadata.title, title: "Detail reservasi | ruvana" },
   { route: "/petugas", actualTitle: petugasMetadata.title, title: "Dashboard Petugas | ruvana" },
   { route: "/petugas/antrian", actualTitle: antrianMetadata.title, title: "Antrean reservasi | ruvana" },

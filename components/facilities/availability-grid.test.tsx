@@ -62,4 +62,26 @@ describe("AvailabilityGrid", () => {
 
     expect(screen.queryByText(/sedang dalam perbaikan/i)).not.toBeInTheDocument()
   })
+
+  it("menautkan slot tersedia ketika slotHref diberikan", () => {
+    render(
+      <AvailabilityGrid
+        slots={[availableSlots[0]]}
+        slotHref={(slot) => `/reservasi?startTime=${slot.startTime}`}
+      />,
+    )
+
+    expect(screen.getByRole("link", { name: /Tersedia/ })).toHaveAttribute(
+      "href",
+      `/reservasi?startTime=${availableSlots[0].startTime}`,
+    )
+  })
+
+  it("tidak menautkan slot terblokir meski slotHref diberikan", () => {
+    const slots = withBlockedSlot("08:00", "APPROVED")
+    render(<AvailabilityGrid slots={slots} slotHref={() => "/reservasi"} />)
+
+    expect(screen.getByText("08:00").closest("a")).toBeNull()
+    expect(screen.getByText("08:00").closest('[aria-disabled="true"]')).not.toBeNull()
+  })
 })

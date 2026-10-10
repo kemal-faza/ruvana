@@ -12,14 +12,17 @@ import type { PublicFacility } from "@/lib/services/facility-service"
 interface FacilityCardProps {
   facility: PublicFacility
   detailBasePath?: string
+  /** Tanggal pilihan dari landing, dipakai agar ketersediaan detail tampil pada tanggal itu. */
+  date?: string
   /** Muat foto segera; pakai untuk card pertama yang berpotensi jadi LCP. */
   eager?: boolean
 }
 
-export function FacilityCard({ facility, eager = false, detailBasePath = "/fasilitas" }: FacilityCardProps) {
+export function FacilityCard({ facility, eager = false, detailBasePath = "/fasilitas", date }: FacilityCardProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
+  const detailQuery = date ? `?date=${encodeURIComponent(date)}` : ""
 
   return (
     <Card>
@@ -70,7 +73,7 @@ export function FacilityCard({ facility, eager = false, detailBasePath = "/fasil
           variant="outline"
           className="min-h-11 w-full"
           nativeButton={false}
-          render={<Link href={`${detailBasePath}/${facility.id}`} />}
+          render={<Link href={`${detailBasePath}/${facility.id}${detailQuery}`} />}
         >
           Lihat detail
         </Button>
