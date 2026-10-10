@@ -259,7 +259,6 @@ function GeneralSection() {
                   variant={selected ? "secondary" : "outline"}
                   size="icon"
                   aria-label={label}
-                  title={label}
                   aria-pressed={selected}
                   className="border-border"
                   onClick={() => setTheme(value)}
