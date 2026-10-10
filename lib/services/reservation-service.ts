@@ -1,4 +1,4 @@
-import { BATAS_PEMBATALAN_JAM, BATAS_PENGAJUAN_JAM, ZONA_WAKTU } from "@/config/business";
+import { BATAS_PEMBATALAN_JAM, LABEL_BATAS_PENGAJUAN, ZONA_WAKTU } from "@/config/business";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
@@ -124,8 +124,8 @@ export async function createReservationService(
     };
   }
 
-  // Batas minimal pengajuan H-1 (PRD Bagian 20): selisih tepat startsAt - now
-  // memakai waktu server, sama seperti batas pembatalan H-24. Tepat 24 jam
+  // Batas minimal pengajuan H-14 (keputusan pemilik): selisih tepat startsAt - now
+  // memakai waktu server, sama seperti cara batas pembatalan H-24. Tepat 14 hari
   // diterima; kurang dari itu ditolak. Field startTime agar galat tampil di
   // dekat kontrol Jam mulai dan fokus diarahkan ke sana.
   if (isKurangDariBatasPengajuan(startsAt, now)) {
@@ -137,7 +137,7 @@ export async function createReservationService(
           {
             field: "startTime",
             code: "INSUFFICIENT_LEAD_TIME",
-            message: `Reservasi minimal ${BATAS_PENGAJUAN_JAM} jam sebelum waktu mulai`,
+            message: `Reservasi minimal ${LABEL_BATAS_PENGAJUAN} sebelum waktu mulai`,
           },
         ],
       },
