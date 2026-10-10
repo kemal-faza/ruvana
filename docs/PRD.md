@@ -544,7 +544,7 @@ Reservasi `PENDING` yang waktu mulainya telah lewat menjadi `EXPIRED` dan tidak 
 
 #### RES-09 — Dampak maintenance
 
-Saat fasilitas berubah menjadi `UNDER_MAINTENANCE`, semua reservasi masa depan berstatus `APPROVED` berubah menjadi `CANCELLED_BY_OFFICER` dengan alasan otomatis yang dapat dilihat pengguna.
+Saat fasilitas berubah menjadi `UNDER_MAINTENANCE`, semua reservasi masa depan berstatus `APPROVED` berubah menjadi `CANCELLED_BY_MAINTENANCE` dengan alasan otomatis yang dapat dilihat pengguna.
 
 **Acceptance criteria:**
 
@@ -588,7 +588,7 @@ Petugas dapat melihat rekap reservasi per bulan pada dashboard petugas, ditampil
 **Transisi status reservasi:**
 
 - `PENDING → APPROVED | REJECTED | EXPIRED | CANCELLED_BY_USER`
-- `APPROVED → CANCELLED_BY_USER | CANCELLED_BY_OFFICER`
+- `APPROVED → CANCELLED_BY_USER | CANCELLED_BY_OFFICER | CANCELLED_BY_MAINTENANCE`
 - Status terminal tidak dapat dibuka kembali.
 
 ### 9.4 Modul Reporting & Maintenance
@@ -716,7 +716,7 @@ Menyimpan pelapor, fasilitas, kategori, deskripsi, URL/pathname foto private, MI
 
 - Akun: `PENDING`, `ACTIVE`, `REJECTED`, `DISABLED`
 - Fasilitas: `ACTIVE`, `UNDER_MAINTENANCE`, `INACTIVE`
-- Reservasi: `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED_BY_USER`, `CANCELLED_BY_OFFICER`, `EXPIRED`
+- Reservasi: `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED_BY_USER`, `CANCELLED_BY_OFFICER`, `CANCELLED_BY_MAINTENANCE`, `EXPIRED`
 - Laporan: `NEW`, `IN_PROGRESS`, `RESOLVED`, `REJECTED`
 
 Nilai teknis status menggunakan bahasa Inggris. Role, tipe fasilitas, dan label domain untuk pengguna menggunakan bahasa Indonesia sesuai konvensi repository.
