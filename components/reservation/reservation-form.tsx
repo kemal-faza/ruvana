@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BATAS_PENGAJUAN_JAM, BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
+import { LABEL_BATAS_PENGAJUAN, BATAS_TUJUAN_MAX, VALID_START_TIMES } from "@/config/business";
 import {
   blockedByLabel,
   getValidEndTimes,
@@ -30,11 +30,11 @@ interface ReservationFormProps {
   facilityId: number;
   date: string;
   availability: FacilityAvailability | null;
-  /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 24 jam, bukan jam klien. */
+  /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 14 hari, bukan jam klien. */
   serverNow: string;
 }
 
-const PESAN_BATAS_PENGAJUAN = `Reservasi minimal ${BATAS_PENGAJUAN_JAM} jam sebelum waktu mulai.`;
+const PESAN_BATAS_PENGAJUAN = `Reservasi minimal ${LABEL_BATAS_PENGAJUAN} sebelum waktu mulai.`;
 
 export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
   const [startTime, setStartTime] = useState("");
@@ -76,7 +76,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     return map;
   }, [availabilityForSelected]);
 
-  // Slot dalam jendela pengajuan H-1 dihitung dari waktu server, bukan jam
+  // Slot dalam jendela pengajuan H-14 dihitung dari waktu server, bukan jam
   // klien. Aturan yang sama ditegakkan otoritatif oleh service saat submit.
   const mepetByStart = useMemo(() => {
     const acuan = new Date(serverNow);
@@ -166,7 +166,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
       catat("jamMulai", "jam-mulai", "Jam mulai", "Jam mulai wajib dipilih.");
     } else if (mepetByStart.get(startTime)) {
       // pertahanan client memakai waktu server saat render: slot dalam
-      // jendela H-1 langsung ditolak tanpa menunggu respons server.
+      // jendela H-14 langsung ditolak tanpa menunggu respons server.
       catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN);
     }
     if (!endTime) {
@@ -236,7 +236,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
         const konflik = res.status === 409;
         const body = data as { errors?: unknown } | null;
         const pemetaan = petakanGalatField(body?.errors);
-        // Kode aturan dari server agar pesan H-1 tampil apa adanya di dekat
+        // Kode aturan dari server agar pesan H-14 tampil apa adanya di dekat
         // field, bukan pesan generik.
         const galatBatasPengajuan =
           Array.isArray(body?.errors) &&
@@ -367,7 +367,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   <SelectContent>
                     {VALID_START_TIMES.map((time) => {
                       const status = statusByStart.get(time);
-                      // Slot mepet H-1 dinonaktifkan dengan label netral
+                      // Slot mepet H-14 dinonaktifkan dengan label netral
                       // "Tidak tersedia" — jangan menyiratkan slot terisi.
                       const mepet = mepetByStart.get(time) ?? false;
                       const disabled = mepet || (status ? !status.available : false);
