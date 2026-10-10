@@ -209,7 +209,7 @@ describe("AdminFacilities", () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn(async () => ({
       ok: false,
-      json: async () => ({ detail: "Fasilitas memiliki riwayat sehingga tidak dapat dihapus permanen." }),
+      json: async () => ({ detail: "Fasilitas dengan riwayat tidak dapat dihapus. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya." }),
     }));
     vi.stubGlobal("fetch", fetchMock);
     renderFixture();
@@ -218,7 +218,7 @@ describe("AdminFacilities", () => {
     const sheet = within(await screen.findByRole("dialog"));
     await user.click(sheet.getByRole("button", { name: "Hapus" }));
 
-    expect(await screen.findByText(/memiliki riwayat/i)).toBeInTheDocument();
+    expect(await screen.findByText(/tidak dapat dihapus/i)).toBeInTheDocument();
     vi.unstubAllGlobals();
   });
 

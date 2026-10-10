@@ -1632,7 +1632,7 @@ paths:
            status, sebelum mengembalikan 200 server wajib invalidate seluruh representasi
            public list/detail/availability yang terdampak; client wajib refetch representasi
            tersebut. Minimal satu field wajib dikirim dan nama tetap unik; penghapusan
-           permanen dilakukan lewat operasi delete yang menolak fasilitas beriwayat.
+           dilakukan lewat operasi delete yang mengarsipkan fasilitas tanpa riwayat.
       x-requirement-ids: [FAC-05, FAC-04, REP-04, RES-09, IAM-03]
       security: [{ cookieAuth: [] }]
       parameters:
@@ -2271,13 +2271,14 @@ components:
                 instance: /api/admin/users
                 code: IDEMPOTENCY_KEY_REUSED
     FacilityMutationConflict:
-      description: Nama fasilitas, transisi status, atau Idempotency-Key menimbulkan konflik.
+      description: Nama fasilitas, transisi status, riwayat fasilitas, atau Idempotency-Key menimbulkan konflik.
       content:
         application/problem+json:
           schema:
             anyOf:
               - $ref: '#/components/schemas/FacilityMutationProblem'
               - $ref: '#/components/schemas/FacilityTransitionProblem'
+              - $ref: '#/components/schemas/FacilityHasHistoryProblem'
               - $ref: '#/components/schemas/IdempotencyConflictProblem'
           examples:
             name:
@@ -2296,6 +2297,14 @@ components:
                 detail: Transisi status fasilitas tidak diizinkan dari status saat ini.
                 instance: /api/admin/facilities/1
                 code: INVALID_FACILITY_TRANSITION
+            history:
+              value:
+                type: https://app.example.invalid/problems/facility-has-history
+                title: Fasilitas memiliki riwayat
+                status: 409
+                detail: Fasilitas dengan riwayat tidak dapat dihapus. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya.
+                instance: /api/admin/facilities/1
+                code: FACILITY_HAS_HISTORY
             idempotency:
               value:
                 type: https://app.example.invalid/problems/idempotency-key-reused
@@ -2982,3 +2991,13 @@ components:
             status: { type: integer, const: 409 }
             code: { type: string, const: FACILITY_NAME_ALREADY_USED }
       unevaluatedProperties: false
+    FacilityHasHistoryProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: FACILITY_HAS_HISTORY }
+      unevaluatedProperties: false
+      description: Fasilitas memiliki reservasi atau laporan sehingga tidak dapat diarsipkan.

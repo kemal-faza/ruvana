@@ -27,12 +27,16 @@ export function duplicateName(instance: string) {
   });
 }
 
+/**
+ * Fasilitas tanpa riwayat dihapus lewat arsip (soft delete) dan masih dapat
+ * dipulihkan; fasilitas beriwayat harus dinonaktifkan, bukan dihapus.
+ */
 export function facilityHasHistory(instance: string) {
   return problemResponse({
     status: 409,
     code: "FACILITY_HAS_HISTORY",
     title: "Fasilitas memiliki riwayat",
-    detail: "Fasilitas dengan riwayat tidak dapat dihapus permanen. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya.",
+    detail: "Fasilitas dengan riwayat tidak dapat dihapus. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya.",
     instance,
   });
 }
