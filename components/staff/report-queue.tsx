@@ -247,7 +247,8 @@ export function ReportQueue({ queue, urut }: { queue: AntreanLaporan; urut: Urut
                     <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
                     {report.facility.lokasi} · {LABEL_TIPE_FASILITAS[report.facility.tipe]}
                   </span>
-                </CardDescription>                <CardAction>
+                </CardDescription>
+                <CardAction>
                   <ReportStatusBadge status={report.status} />
                 </CardAction>
               </CardHeader>
