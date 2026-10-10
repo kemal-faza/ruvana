@@ -45,6 +45,7 @@ Status keputusan:
 | D-008 | `deployment` | Vercel, Prisma Postgres, dan private Vercel Blob untuk production |
 | D-009 | `project-wide` | Listener status fasilitas menerima client transaksi (tx-first) |
 | D-010 | `project-wide` | Kontrak OpenAPI hanya memuat route handler HTTP |
+| D-011 | `project-wide` | Batas pengajuan reservasi H−14 (14 hari / 336 jam); pembatalan tetap H−24 |
 
 ---
 
@@ -473,6 +474,52 @@ Ekspor analitik memakai tiga handler terpisah di `/api/admin/analitik/ekspor/`.
 
 Jalankan `pnpm check:openapi-paths` untuk membandingkan path kontrak dan route
 handler. Tambahkan path kontrak pada perubahan route agar pemeriksaan CI lulus.
+
+## D-011 — Batas pengajuan reservasi H−14
+
+- **Status:** `accepted`
+- **Scope:** `project-wide`
+- **Diterima:** 2026-10-10
+
+### Konteks
+
+PRD awal menetapkan batas minimal pengajuan reservasi H−1 (24 jam) lewat
+`BATAS_PENGAJUAN_JAM`. Pemilik produk memutuskan pengguna harus mengajukan
+reservasi lebih awal, yaitu 14 hari (336 jam), agar petugas memiliki waktu
+meninjau dan menyiapkan fasilitas. Batas pembatalan pengguna tetap H−24 dan
+tidak ikut berubah.
+
+### Keputusan
+
+`BATAS_PENGAJUAN_JAM` menjadi 336 (14 hari). Pengajuan diterima bila
+`startTime - instantPengajuan >= 336 jam`; tepat 14 hari diterima, kurang dari
+itu ditolak. Pengecekan memakai selisih instant UTC yang sama seperti batas
+pembatalan. Pesan UI memakai `LABEL_BATAS_PENGAJUAN = "14 hari"` sehingga angka
+konstanta tidak ditulis mentah di UI. Tanggal default halaman pengajuan
+dihitung dari batas + 1 hari buffer (H+15). `BATAS_PEMBATALAN_JAM` tetap 24 dan
+tidak disentuh.
+
+### Alasan
+
+- Memberi jeda cukup bagi petugas untuk meninjau dan menyiapkan fasilitas.
+- Memakai fungsi/konstanta bersama menjaga konsistensi antara penonaktifan slot
+  di klien dan penolakan otoritatif di server.
+- Memisahkan label tampilan dari nilai jam menghindari copy `336 jam`.
+
+### Konsekuensi
+
+- `config/business.ts`, service, form, test, README, PRD, dan OpenAPI harus
+  diselaraskan; `DESIGN.md` memuat snapshot yang perlu diperbarui terpisah.
+- Test batas memakai 336 jam, bukan 24 jam; pembatalan tetap menguji H−24.
+- Reservasi `PENDING` yang sudah ada tidak diubah.
+
+### Alternatif yang dipertimbangkan
+
+| Alternatif | Trade-off utama |
+|---|---|
+| Tetap H−1 | Lebih fleksibel bagi pengguna, tetapi tidak memberi jeda peninjauan yang diminta pemilik. |
+| H−7 (168 jam) | Kompromi antara fleksibilitas dan jeda, tetapi tidak dipilih pemilik. |
+| Tanpa batas pengajuan | Sederhana, tetapi membuka pengajuan mendadak yang sulit disiapkan petugas. |
 
 ## Sumber kebenaran
 
