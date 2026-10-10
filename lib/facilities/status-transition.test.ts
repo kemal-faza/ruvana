@@ -4,7 +4,6 @@ import { TRANSISI_STATUS_FASILITAS_OPERASIONAL } from "@/config/business";
 import type { Role, StatusFasilitas } from "@/generated/prisma/enums";
 import {
   TRANSISI_STATUS_ADMIN,
-  TRANSISI_STATUS_PETUGAS,
   allowedTransitions,
   canTransition,
 } from "./status-transition";
@@ -20,28 +19,24 @@ describe("canTransition", () => {
     ["UNDER_MAINTENANCE", "INACTIVE", "admin", true],
     ["INACTIVE", "UNDER_MAINTENANCE", "admin", false],
     ["ACTIVE", "ACTIVE", "admin", false],
-    ["ACTIVE", "UNDER_MAINTENANCE", "petugas", true],
-    ["UNDER_MAINTENANCE", "ACTIVE", "petugas", true],
-    ["ACTIVE", "INACTIVE", "petugas", false],
-    ["INACTIVE", "ACTIVE", "petugas", false],
-    ["ACTIVE", "UNDER_MAINTENANCE", "pengguna", false],
   ])("%s -> %s sebagai %s = %s", (from, to, role, expected) => {
     expect(canTransition(from, to, role)).toBe(expected);
+  });
+
+  it("hanya admin yang memiliki matriks; peran lain tidak pernah bisa transisi", () => {
+    expect(canTransition("ACTIVE", "UNDER_MAINTENANCE", "petugas")).toBe(false);
+    expect(canTransition("UNDER_MAINTENANCE", "ACTIVE", "petugas")).toBe(false);
+    expect(canTransition("ACTIVE", "UNDER_MAINTENANCE", "pengguna")).toBe(false);
   });
 });
 
 describe("matriks", () => {
-  it("matriks petugas sama dengan matriks operasional di config", () => {
-    expect(TRANSISI_STATUS_PETUGAS.ACTIVE).toEqual([
-      TRANSISI_STATUS_FASILITAS_OPERASIONAL.ACTIVE,
-    ]);
-    expect(TRANSISI_STATUS_PETUGAS.UNDER_MAINTENANCE).toEqual([
-      TRANSISI_STATUS_FASILITAS_OPERASIONAL.UNDER_MAINTENANCE,
-    ]);
-    expect(TRANSISI_STATUS_PETUGAS.INACTIVE).toEqual([]);
+  it("jalur operasional petugas (REP-04) tetap satu-satunya sumber di config", () => {
+    expect(TRANSISI_STATUS_FASILITAS_OPERASIONAL.ACTIVE).toBe("UNDER_MAINTENANCE");
+    expect(TRANSISI_STATUS_FASILITAS_OPERASIONAL.UNDER_MAINTENANCE).toBe("ACTIVE");
   });
 
-  it("pengguna tidak boleh melakukan transisi apa pun", () => {
+  it("pengguna tidak boleh mengubah status fasilitas", () => {
     expect(allowedTransitions("ACTIVE", "pengguna")).toEqual([]);
     expect(allowedTransitions("UNDER_MAINTENANCE", "pengguna")).toEqual([]);
     expect(allowedTransitions("INACTIVE", "pengguna")).toEqual([]);
