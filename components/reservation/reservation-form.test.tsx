@@ -568,4 +568,30 @@ describe("ReservationForm pilihan pengguna vs data server", () => {
     expect(opsi).not.toHaveAttribute("aria-disabled", "true")
   }, 20000)
 
+  it("menyertakan teks bantu alasan slot tidak dapat dipilih", () => {
+    const { container } = render(
+      <ReservationForm
+        {...propsDasar}
+        availability={{
+          facilityId: 3,
+          date: "2026-12-02",
+          timezone: "Asia/Jakarta",
+          slots: [
+            { startTime: "10:00", endTime: "10:30", available: false, blockedBy: "APPROVED" },
+            { startTime: "10:30", endTime: "11:00", available: false, blockedBy: "APPROVED" },
+            { startTime: "13:00", endTime: "13:30", available: false, blockedBy: "MAINTENANCE" },
+          ],
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText("Tidak dapat dipilih: 10:00–11:00 sudah disetujui; 13:00–13:30 dalam pemeliharaan."),
+    ).toBeInTheDocument()
+    expect(container.querySelector("#bantuan-slot-tidak-tersedia")).not.toBeNull()
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveAttribute(
+      "aria-describedby",
+      "bantuan-slot-tidak-tersedia",
+    )
+  }, 20000)
 })

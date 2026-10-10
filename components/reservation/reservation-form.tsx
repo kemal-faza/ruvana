@@ -7,7 +7,7 @@ import {
   PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
   VALID_START_TIMES,
 } from "@/config/business";
-import { getValidEndTimes, type FacilityAvailability } from "@/lib/reservations/slot-range";
+import { getValidEndTimes, ringkasSlotTidakTersedia, type FacilityAvailability } from "@/lib/reservations/slot-range";
 import {
   pesanSuksesPengajuan,
   petakanGalatField,
@@ -160,6 +160,14 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
   }, [selectedDate, serverNow]);
 
   const adaSlotMepet = useMemo(() => [...mepetByStart.values()].some(Boolean), [mepetByStart]);
+
+  // Teks bantu alasan slot tidak dapat dipilih (APPROVED/pemeliharaan):
+  // DESIGN.md mewajibkan keadaan nonaktif selalu disertai teks, bukan hanya
+  // warna. Label per opsi tidak dipakai agar dropdown tetap bersih.
+  const ringkasanBlokir = useMemo(
+    () => ringkasSlotTidakTersedia(availabilityForSelected?.slots ?? null),
+    [availabilityForSelected],
+  );
 
   // Opsi jam selesai: setelah jam mulai & seluruh slot di antaranya tersedia
   const validEndTimes = useMemo(
@@ -443,7 +451,12 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                     // Rujuk deskripsi hanya saat ia dirender; saat galat field
                     // menggantikannya, IDREF akan menggantung.
                     aria-describedby={
-                      adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
+                      [
+                        adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : null,
+                        ringkasanBlokir.length > 0 && !galatField.jamMulai ? "bantuan-slot-tidak-tersedia" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || undefined
                     }
                   >
                     <SelectValue placeholder="Pilih jam mulai" />
@@ -452,8 +465,9 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                     {VALID_START_TIMES.map((time) => {
                       const status = statusByStart.get(time);
                       // Slot tidak tersedia (APPROVED, pemeliharaan, atau di
-                      // dalam batas pengajuan) tetap tampil dengan label jam
-                      // saja; alasan tidak per opsi, cukup teks bantu di bawah.
+                      // dalam batas pengajuan) tampil dengan label jam saja;
+                      // alasannya disampaikan sebagai teks bantu di bawah field
+                      // (DESIGN.md: nonaktif selalu disertai teks, bukan warna).
                       const mepet = mepetByStart.get(time) ?? false;
                       const disabled = mepet || (status ? !status.available : false);
                       return (
@@ -472,7 +486,14 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                 {adaSlotMepet && !galatField.jamMulai && (
                   <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_DASAR}</FieldDescription>
                 )}
-                {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {ringkasanBlokir.length > 0 && !galatField.jamMulai && (
+                  <FieldDescription id="bantuan-slot-tidak-tersedia">
+                    Tidak dapat dipilih: {ringkasanBlokir.join("; ")}.
+                  </FieldDescription>
+                )}
+                {!startTime && !galatField.jamMulai && !adaSlotMepet && ringkasanBlokir.length === 0 && (
+                  <FieldDescription>Pilih jam mulai.</FieldDescription>
+                )}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
               </Field>
 

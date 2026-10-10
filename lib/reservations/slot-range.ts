@@ -6,11 +6,19 @@
 //   berstatus tersedia (tidak boleh lompat melewati slot yang tidak tersedia).
 
 import { VALID_END_TIMES, VALID_START_TIMES } from "@/config/business";
-import type { AvailabilitySlot } from "@/lib/availability/slots";
+import type { AvailabilitySlot, BlockedBy } from "@/lib/availability/slots";
 
 // Satu sumber tipe ketersediaan ada di lib/availability/slots.ts. Re-export ini
 // menjaga jalur impor lama (form reservasi) tanpa menduplikasi deklarasi.
 export type { AvailabilitySlot, FacilityAvailability } from "@/lib/availability/slots";
+export type AvailabilityBlockedBy = NonNullable<BlockedBy>;
+
+/** Keterangan singkat alasan sebuah slot tidak dapat dipilih. */
+export function blockedByLabel(blockedBy: AvailabilityBlockedBy | null): string | null {
+  if (blockedBy === "APPROVED") return "sudah disetujui";
+  if (blockedBy === "MAINTENANCE") return "dalam pemeliharaan";
+  return null;
+}
 
 /**
  * Daftar jam selesai yang valid untuk sebuah jam mulai:
@@ -43,4 +51,50 @@ export function getValidEndTimes(
 /** Daftar waktu mulai yang valid — representasi ulang VALID_START_TIMES. */
 export function getStartTimeOptions(): string[] {
   return [...(VALID_START_TIMES as readonly string[])];
+}
+
+/**
+ * Ringkasan tekstual slot yang tidak dapat dipilih, dikelompokkan per rentang
+ * dan alasan blokir. Dipakai sebagai teks bantu di dekat field Jam mulai:
+ * DESIGN.md mensyaratkan keadaan nonaktif selalu disertai teks, bukan hanya
+ * warna, tanpa harus menempelkan alasan pada setiap opsi dropdown.
+ *
+ * Slot dengan `blockedBy` null (mis. jendela pengajuan H-14) tidak termasuk —
+ * alasannya sudah disampaikan teks bantu terpisah.
+ *
+ * Contoh: ["08:00–10:00 sudah disetujui", "13:00–13:30 dalam pemeliharaan"].
+ */
+export function ringkasSlotTidakTersedia(slots: readonly AvailabilitySlot[] | null): string[] {
+  if (!slots) return [];
+
+  const hasil: string[] = [];
+  let mulai: string | null = null;
+  let selesai: string | null = null;
+  let alasan: AvailabilityBlockedBy | null = null;
+
+  function tutupRentang() {
+    const label = blockedByLabel(alasan);
+    if (mulai && selesai && label) hasil.push(`${mulai}–${selesai} ${label}`);
+    mulai = null;
+    selesai = null;
+    alasan = null;
+  }
+
+  for (const slot of slots) {
+    const blokir = slot.available ? null : slot.blockedBy;
+    // Lanjutkan rentang hanya bila alasannya sama dan slotnya benar-benar bersambung.
+    if (blokir && blokir === alasan && selesai === slot.startTime) {
+      selesai = slot.endTime;
+      continue;
+    }
+    tutupRentang();
+    if (blokir) {
+      mulai = slot.startTime;
+      selesai = slot.endTime;
+      alasan = blokir;
+    }
+  }
+  tutupRentang();
+
+  return hasil;
 }
