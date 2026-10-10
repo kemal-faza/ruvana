@@ -128,7 +128,7 @@ paths:
       operationId: loginUser
       tags: [Authentication]
       summary: Memulai sesi pengguna
-      description: Hanya akun ACTIVE yang dapat login. Semua kegagalan kredensial, email tidak ada, dan status akun memakai respons generik 401. Kegagalan dihitung atomik per IP dan email ternormalisasi, maksimum 10 dalam 15 menit. Origin yang hilang, malformed, null, atau dikirim lebih dari sekali ditolak.
+      description: Hanya akun ACTIVE yang dapat login. Semua kegagalan kredensial, email tidak ada, dan status akun memakai respons generik 401. Kegagalan dihitung atomik per IP dan email ternormalisasi, maksimum 10 dalam 2 menit. Origin yang hilang, malformed, null, atau dikirim lebih dari sekali ditolak.
       x-requirement-ids: [IAM-02, IAM-03]
       security: []
       parameters:
@@ -1832,7 +1832,7 @@ components:
     RetryAfter:
       description: Jumlah detik minimum sebelum request boleh dicoba lagi.
       schema: { type: integer, minimum: 1 }
-      example: 900
+      example: 120
   responses:
     BadRequest:
       description: JSON atau parameter query/path malformed.
@@ -2071,7 +2071,7 @@ components:
                 code: SLOT_ALIGNMENT_INVALID
                 message: Waktu harus berada pada kelipatan 30 menit.
     LoginRateLimited:
-      description: Lebih dari 10 kegagalan login dalam 15 menit untuk kombinasi IP dan email ternormalisasi.
+      description: Lebih dari 10 kegagalan login dalam 2 menit untuk kombinasi IP dan email ternormalisasi.
       headers:
         Retry-After: { $ref: '#/components/headers/RetryAfter' }
       content:

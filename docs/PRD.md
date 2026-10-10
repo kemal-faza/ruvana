@@ -747,7 +747,7 @@ Nilai teknis status menggunakan bahasa Inggris. Role, tipe fasilitas, dan label 
   - Route handler mutasi memvalidasi header `Origin` terhadap daftar host aplikasi yang diizinkan atau menggunakan token CSRF.
   - Permintaan cross-origin yang tidak sah ditolak.
 - Rate limit disimpan secara durable di PostgreSQL dan diperbarui secara atomik agar berlaku lintas instance serverless:
-  - login: maksimal 10 percobaan gagal per kombinasi IP dan email dalam 15 menit;
+  - login: maksimal 10 percobaan gagal per kombinasi IP dan email dalam 2 menit;
   - penerbitan URL upload: maksimal 20 kali per pengguna dan 60 kali per IP per jam.
 - Foto disimpan pada private Vercel Blob dan hanya dibaca melalui signed URL yang berlaku maksimal 5 menit setelah pemeriksaan akses. URL upload berlaku maksimal 10 menit.
 - Token Blob, `DATABASE_URL`, dan secret sesi dikelola sebagai environment variable server.
