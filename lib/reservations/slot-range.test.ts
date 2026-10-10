@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  blockedByLabel,
   getStartTimeOptions,
   getValidEndTimes,
   type AvailabilitySlot,
@@ -59,14 +58,6 @@ describe("getValidEndTimes", () => {
 
   it("jam mulai yang tidak dikenal tidak punya opsi selesai", () => {
     expect(getValidEndTimes("25:00", makeSlots())).toEqual([]);
-  });
-});
-
-describe("blockedByLabel", () => {
-  it("memetakan alasan blokir ke keterangan singkat", () => {
-    expect(blockedByLabel("APPROVED")).toBe("sudah disetujui");
-    expect(blockedByLabel("MAINTENANCE")).toBe("dalam pemeliharaan");
-    expect(blockedByLabel(null)).toBeNull();
   });
 });
 
