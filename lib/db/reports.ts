@@ -12,6 +12,13 @@ const reportFacilitySelect = {
   status: true,
 } satisfies Prisma.FacilitySelect;
 
+// Opsi form laporan (REP-01): cukup identitas, nama, dan tipe untuk dipilih.
+const reportFacilityOptionSelect = {
+  id: true,
+  nama: true,
+  tipe: true,
+} satisfies Prisma.FacilitySelect;
+
 const reportUserSelect = {
   id: true,
   nama: true,
@@ -20,13 +27,10 @@ const reportUserSelect = {
 
 const reportSelect = {
   id: true,
-  userId: true,
   facilityId: true,
   kategori: true,
   deskripsi: true,
   foto: true,
-  fotoContentType: true,
-  fotoSize: true,
   status: true,
   catatanResolusi: true,
   ditanganiOleh: true,
@@ -89,16 +93,15 @@ export type StaffReportRow = Prisma.ReportGetPayload<{ select: typeof staffRepor
 type StaffReportClient = Pick<Prisma.TransactionClient, "report" | "user">;
 type StaffReportHandlerClient = Pick<Prisma.TransactionClient, "user">;
 
-export interface FindReportsByUserParams {
+interface FindReportsByUserParams {
   userId: number;
-  status?: StatusLaporan;
   skip: number;
   take: number;
 }
 
-export function findReportsByUser({ userId, status, skip, take }: FindReportsByUserParams) {
+export function findReportsByUser({ userId, skip, take }: FindReportsByUserParams) {
   return prisma.report.findMany({
-    where: { userId, ...(status ? { status } : {}) },
+    where: { userId },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: reportSelect,
     skip,
@@ -210,6 +213,6 @@ export function findReportFacilityOptions() {
   return prisma.facility.findMany({
     where: { status: { in: ["ACTIVE", "UNDER_MAINTENANCE"] } },
     orderBy: { nama: "asc" },
-    select: reportFacilitySelect,
+    select: reportFacilityOptionSelect,
   });
 }
