@@ -10,11 +10,14 @@ import pg from "pg"
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), "..")
 const nextCli = join(projectRoot, "node_modules", "next", "dist", "bin", "next")
-const protectedRoutes = ["/reports", "/petugas", "/petugas/antrian", "/petugas/pengaturan"]
+const protectedRoutes = ["/reports", "/petugas", "/petugas/antrian", "/petugas/pengaturan", "/reservasi", "/reservasi/riwayat"]
 const roleRoutes = {
   petugas: ["/petugas", "/petugas/antrian", "/petugas/pengaturan"],
   admin: ["/petugas/antrian"],
 }
+// Guard segmen /reservasi dipasang di layout, bukan di tiap halaman. Rute ini
+// memastikan layout itu benar-benar menahan anonim dan menolak peran non-pengguna.
+const penggunaRoutes = ["/reservasi", "/reservasi/riwayat"]
 
 async function seededSession(client, role) {
   const { rows } = await client.query(
@@ -172,6 +175,16 @@ try {
   sessionHashes.push(pengguna.tokenHash)
   for (const path of ["/petugas", "/petugas/antrian", "/petugas/pengaturan"]) {
     await checkRedirect(path, pengguna.cookie, "/403")
+  }
+  for (const path of penggunaRoutes) {
+    await checkAllowed(path, pengguna.cookie, "pengguna")
+  }
+  for (const role of ["petugas", "admin"]) {
+    const session = await seededSession(client, role)
+    sessionHashes.push(session.tokenHash)
+    for (const path of penggunaRoutes) {
+      await checkRedirect(path, session.cookie, "/403")
+    }
   }
   await checkCatalogStatuses()
 } finally {
