@@ -358,6 +358,55 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
   }, 20000)
 })
 
+describe("ReservationForm navigasi prop tanpa remount", () => {
+  const propsAwal = {
+    facilities,
+    facilityId: 3,
+    date: "2026-12-02",
+    availability: null as null,
+    serverNow: "2026-09-01T00:00:00.000Z",
+  }
+
+  it("mempertahankan isian tujuan saat facility/date prop berubah (form tidak remount)", async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(<ReservationForm {...propsAwal} />)
+
+    const tujuan = screen.getByLabelText("Tujuan penggunaan")
+    await user.type(tujuan, "Diskusi kelompok")
+
+    rerender(<ReservationForm {...propsAwal} facilityId={4} date="2026-12-10" />)
+
+    expect(screen.getByLabelText("Tujuan penggunaan")).toHaveValue("Diskusi kelompok")
+    expect(tujuan).toBeInTheDocument()
+    expect(tujuan.isConnected).toBe(true)
+  }, 20000)
+
+  it("sinkron pilihan fasilitas/tanggal dari prop baru dan mereset waktu", async () => {
+    const user = userEvent.setup()
+    const { container, rerender } = render(<ReservationForm {...propsAwal} />)
+
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+    await user.click(await screen.findByRole("option", { name: "09:00" }))
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("09:00")
+
+    rerender(<ReservationForm {...propsAwal} facilityId={4} date="2026-12-10" />)
+
+    expect(container.querySelector('input[name="facilityId"]')).toHaveValue("4")
+    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-10")
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("Pilih jam mulai")
+  }, 20000)
+
+  it("memindahkan fokus ke heading setelah ketersediaan baru tiba", async () => {
+    const { rerender } = render(<ReservationForm {...propsAwal} />)
+    const heading = screen.getByRole("heading", { name: "Fasilitas & tanggal" })
+
+    rerender(<ReservationForm {...propsAwal} facilityId={4} date="2026-12-10" />)
+
+    expect(document.activeElement).toBe(heading)
+    expect(heading.isConnected).toBe(true)
+  }, 20000)
+})
+
 describe("ReservationForm navigasi ketersediaan", () => {
   it("memakai router.push alih-alih navigasi penuh saat menampilkan ketersediaan", async () => {
     const user = userEvent.setup()
