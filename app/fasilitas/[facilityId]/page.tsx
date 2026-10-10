@@ -26,7 +26,14 @@ export default async function FasilitasDetailPage({ params, searchParams }: Fasi
 
   const user = await getSessionUser()
   const slotLinkMode: SlotLinkMode =
-    user === null ? "login" : user.role === Role.pengguna ? "reservasi" : "none"
+    user === null ? "login" : user.role === Role.pengguna ? "form" : "none"
 
-  return <FacilityDetailContent {...detail} basePath="/fasilitas" slotLinkMode={slotLinkMode} />
+  return (
+    <FacilityDetailContent
+      {...detail}
+      basePath="/fasilitas"
+      slotLinkMode={slotLinkMode}
+      serverNow={new Date().toISOString()}
+    />
+  )
 }

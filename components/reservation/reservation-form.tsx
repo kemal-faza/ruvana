@@ -38,11 +38,18 @@ interface ReservationFormProps {
   availability: FacilityAvailability | null;
   /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 14 hari, bukan jam klien. */
   serverNow: string;
+  /** Target form GET "Tampilkan ketersediaan". Default halaman /reservasi. */
+  actionPath?: string;
+  /**
+   * Kunci fasilitas ke `facilityId` (mis. saat form ditempel di halaman detail
+   * fasilitas): dropdown Fasilitas diganti teks statis.
+   */
+  lockFacility?: boolean;
 }
 
 const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
 
-export function ReservationForm({ facilities, facilityId, date, initialStartTime, availability, serverNow }: ReservationFormProps) {
+export function ReservationForm({ facilities, facilityId, date, initialStartTime, availability, serverNow, actionPath = "/reservasi", lockFacility = false }: ReservationFormProps) {
   const [startTime, setStartTime] = useState(initialStartTime ?? "");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
@@ -287,31 +294,45 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
           </div>
           {/* Form GET native: memuat ulang Server Component agar
               availability dihitung ulang untuk facilityId + date baru */}
-          <form method="get" action="/reservasi" className="flex flex-col gap-5">
+          <form method="get" action={actionPath} className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>
-                <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
-                  <SelectTrigger id="fasilitas" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
-                    <SelectValue placeholder="Pilih fasilitas">
-                      {(value: string) => {
-                        const match = facilities.find((f) => String(f.id) === value);
-                        return match ? `${match.nama} | ${match.lokasi}` : "Pilih fasilitas";
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {facilities.map((f) => (
-                      <SelectItem key={f.id} value={String(f.id)}>
-                        {f.nama} | {f.lokasi}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedFacilityId !== facilityId && (
-                  <FieldDescription>
-                    Fasilitas berubah — klik Tampilkan ketersediaan untuk memuat slot terbaru sebelum memilih waktu.
-                  </FieldDescription>
+                {lockFacility ? (
+                  <>
+                    <p
+                      id="fasilitas"
+                      className="flex min-h-11 items-center rounded-control border border-input bg-muted px-3 text-sm"
+                    >
+                      {selectedFacility ? `${selectedFacility.nama} | ${selectedFacility.lokasi}` : "Fasilitas"}
+                    </p>
+                    <input type="hidden" name="facilityId" value={String(selectedFacilityId)} />
+                  </>
+                ) : (
+                  <>
+                    <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
+                      <SelectTrigger id="fasilitas" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
+                        <SelectValue placeholder="Pilih fasilitas">
+                          {(value: string) => {
+                            const match = facilities.find((f) => String(f.id) === value);
+                            return match ? `${match.nama} | ${match.lokasi}` : "Pilih fasilitas";
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {facilities.map((f) => (
+                          <SelectItem key={f.id} value={String(f.id)}>
+                            {f.nama} | {f.lokasi}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedFacilityId !== facilityId && (
+                      <FieldDescription>
+                        Fasilitas berubah — klik Tampilkan ketersediaan untuk memuat slot terbaru sebelum memilih waktu.
+                      </FieldDescription>
+                    )}
+                  </>
                 )}
               </Field>
 

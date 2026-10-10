@@ -357,3 +357,24 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     expect((await axe(wilayahWaktu as HTMLElement)).violations).toEqual([])
   }, 20000)
 })
+
+describe("ReservationForm fasilitas terkunci", () => {
+  it("mengganti dropdown Fasilitas dengan teks statis dan tetap mengirim facilityId", () => {
+    const { container } = render(
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-09-27"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        actionPath="/fasilitas/3"
+        lockFacility
+      />,
+    )
+
+    expect(screen.queryByRole("combobox", { name: "Fasilitas" })).not.toBeInTheDocument()
+    expect(screen.getByText("Aula Utama | Gedung Serbaguna")).toBeInTheDocument()
+    expect(container.querySelector('input[name="facilityId"]')).toHaveValue("3")
+    expect(container.querySelector("form[method='get']")).toHaveAttribute("action", "/fasilitas/3")
+  })
+})

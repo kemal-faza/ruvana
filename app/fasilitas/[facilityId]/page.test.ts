@@ -53,7 +53,7 @@ describe("metadata title detail fasilitas", () => {
     expect(page.props.slotLinkMode).toBe("login")
   })
 
-  it("mengarahkan pengguna terautentikasi ke alur reservasi", async () => {
+  it("mengarahkan pengguna terautentikasi ke form reservasi di halaman fasilitas", async () => {
     getSessionUser.mockResolvedValue({ id: 1, nama: "Siti", email: "s@example.com", role: "pengguna" })
 
     const page = await FasilitasDetailPage({
@@ -61,7 +61,9 @@ describe("metadata title detail fasilitas", () => {
       searchParams: Promise.resolve({ date: "2026-09-15" }),
     })
 
-    expect(page.props.slotLinkMode).toBe("reservasi")
+    expect(page.props.slotLinkMode).toBe("form")
+    expect(typeof page.props.serverNow).toBe("string")
+    expect(Number.isNaN(Date.parse(page.props.serverNow))).toBe(false)
   })
 
   it("tidak menautkan slot untuk petugas dan admin", async () => {
