@@ -198,7 +198,7 @@ export function ReservationHistoryList() {
         </Select>
         {refetching && (
           <p aria-live="polite" className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
             Memuat…
           </p>
         )}
@@ -271,7 +271,7 @@ export function ReservationHistoryList() {
       {data && data.items.length > 0 && (
         <div
           className={cn(
-            "grid min-w-0 gap-4 transition-opacity duration-300 sm:grid-cols-2 motion-reduce:transition-none",
+            "grid min-w-0 gap-4 transition-opacity duration-motion-standard sm:grid-cols-2 motion-reduce:transition-none",
             refetching && "opacity-60",
           )}
           aria-busy={refetching || undefined}
