@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Plus, Search, Trash2, Wrench } from "lucide-react";
+import { Pencil, Plus, RotateCcw, Search, Trash2, Wrench } from "lucide-react";
 
 import { FASILITAS_UPLOAD, STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/config/labels";
 import type { StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import { allowedTransitions } from "@/lib/facilities/status-transition";
-import type { AdminFacility, AdminFacilityCollection } from "@/lib/services/admin-facility-service";
+import type { AdminFacility, AdminFacilityCollection, ArchivedFacility } from "@/lib/services/admin-facility-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,6 +41,7 @@ interface AdminFacilitiesProps {
   items: AdminFacilityCollection["items"];
   meta: AdminFacilityCollection["meta"];
   locations: string[];
+  archived: ArchivedFacility[];
   filters: { search?: string; type?: string; location?: string; status?: string; perPage?: number };
 }
 
@@ -142,7 +143,7 @@ export default function AdminFacilities(props: AdminFacilitiesProps) {
   return <AdminFacilitiesView key={filterKey(props.filters)} {...props} />;
 }
 
-function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitiesProps) {
+function AdminFacilitiesView({ items, meta, locations, archived, filters }: AdminFacilitiesProps) {
   const router = useRouter();
   const [selectedLocation, setSelectedLocation] = useState(filters.location ?? "");
   const [selectedType, setSelectedType] = useState(filters.type ?? "");
@@ -299,6 +300,30 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
     } catch {
       setHapusTarget(null);
       setFeedback("Gagal menghapus fasilitas.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function kirimPulihkan(facility: ArchivedFacility) {
+    setPending(true);
+    resetFeedback();
+    try {
+      const response = await fetch(`/api/admin/facilities/${facility.id}/restore`, { method: "POST" });
+
+      if (response.ok) {
+        router.refresh();
+        return;
+      }
+
+      const body = await response.json().catch(() => null);
+      setFeedback(
+        body && typeof body === "object" && "detail" in body
+          ? String((body as { detail: string }).detail)
+          : "Gagal memulihkan fasilitas.",
+      );
+    } catch {
+      setFeedback("Gagal memulihkan fasilitas.");
     } finally {
       setPending(false);
     }
@@ -550,6 +575,52 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
           </Button>
         </nav>
       )}
+
+      <section className="flex flex-col gap-3" aria-labelledby="riwayat-hapus-title">
+        <div>
+          <h2 id="riwayat-hapus-title" className="font-heading text-lg font-semibold tracking-tight">
+            Riwayat penghapusan
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Fasilitas yang dihapus disimpan di sini dan bisa dipulihkan kembali.
+          </p>
+        </div>
+        {archived.length === 0 ? (
+          <p className="rounded-card border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            Belum ada fasilitas yang dihapus.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {archived.map((facility) => (
+              <li
+                key={facility.id}
+                className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-subtle sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-heading text-base font-semibold">{facility.nama}</span>
+                  <p className="text-sm text-muted-foreground">
+                    {LABEL_TIPE_FASILITAS[facility.tipe]} · {facility.lokasi} · {facility.kapasitas}{" "}
+                    {LABEL_SATUAN_KAPASITAS[facility.tipe]}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Dihapus {new Date(facility.deletedAt).toLocaleString("id-ID")}
+                    {facility.deletedByNama ? ` oleh ${facility.deletedByNama}` : ""}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={pending}
+                  onClick={() => kirimPulihkan(facility)}
+                >
+                  <RotateCcw aria-hidden="true" className="size-4" />
+                  Pulihkan
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <FormFasilitas
         key={editing ? `edit-${editing.id}` : createOpen ? "create" : "closed"}
@@ -885,8 +956,9 @@ function SheetHapus({
           <div className="flex items-start gap-2 rounded-control border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <Trash2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             <p>
-              Tindakan ini permanen dan tidak bisa dibatalkan. Fasilitas hanya dapat dihapus
-              bila belum punya riwayat reservasi atau laporan; jika ada, nonaktifkan saja.
+              Fasilitas akan dipindahkan ke riwayat penghapusan dan disembunyikan dari daftar
+              publik. Bisa dipulihkan kembali nanti. Hanya fasilitas tanpa riwayat reservasi atau
+              laporan yang dapat dihapus; jika ada riwayat, nonaktifkan saja.
             </p>
           </div>
         </div>

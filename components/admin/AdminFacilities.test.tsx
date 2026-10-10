@@ -40,7 +40,7 @@ const filters = {};
 const locations = ["Gedung A Lt.1", "Gedung B Lt.2"];
 
 function renderFixture(list: AdminFacility[] = items, metaValue: AdminFacilityCollection["meta"] = meta) {
-  return render(<AdminFacilities items={list} meta={metaValue} locations={locations} filters={filters} />);
+  return render(<AdminFacilities items={list} meta={metaValue} locations={locations} archived={[]} filters={filters} />);
 }
 
 afterEach(cleanup);
@@ -89,6 +89,7 @@ describe("AdminFacilities", () => {
         items={items}
         meta={meta}
         locations={locations}
+        archived={[]}
         filters={{ search: "lab", type: "aula", location: "Gedung A Lt.1", status: "ACTIVE" }}
       />,
     );
@@ -98,7 +99,7 @@ describe("AdminFacilities", () => {
 
     // Navigasi lunak ke /admin/fasilitas tanpa query merender komponen yang sama;
     // key membuat state filter diinisialisasi ulang.
-    rerender(<AdminFacilities items={items} meta={meta} locations={locations} filters={{}} />);
+    rerender(<AdminFacilities items={items} meta={meta} locations={locations} archived={[]} filters={{}} />);
 
     expect(screen.getByRole("combobox", { name: "Tipe" })).toHaveValue("");
     expect(screen.getByRole("combobox", { name: "Status" })).toHaveValue("");
@@ -218,6 +219,47 @@ describe("AdminFacilities", () => {
     await user.click(sheet.getByRole("button", { name: "Hapus" }));
 
     expect(await screen.findByText(/memiliki riwayat/i)).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("menampilkan keadaan kosong riwayat penghapusan", () => {
+    renderFixture();
+
+    expect(screen.getByRole("heading", { name: "Riwayat penghapusan" })).toBeInTheDocument();
+    expect(screen.getByText("Belum ada fasilitas yang dihapus.")).toBeInTheDocument();
+  });
+
+  it("memulihkan fasilitas dari riwayat penghapusan", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AdminFacilities
+        items={items}
+        meta={meta}
+        locations={locations}
+        archived={[
+          {
+            id: 5,
+            nama: "Gudang Lama",
+            tipe: "aula",
+            lokasi: "Blok C",
+            kapasitas: 10,
+            deletedAt: "2026-10-10T00:00:00.000Z",
+            deletedByNama: "Admin Ruvana",
+          },
+        ]}
+        filters={{}}
+      />,
+    );
+
+    expect(screen.getByText("Gudang Lama")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Pulihkan/ }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/facilities/5/restore", { method: "POST" }),
+    );
     vi.unstubAllGlobals();
   });
 });
