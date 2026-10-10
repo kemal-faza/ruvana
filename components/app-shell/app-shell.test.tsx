@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
-import { CalendarDays, History, Settings } from "lucide-react"
+import { CalendarDays, Settings } from "lucide-react"
 
 import { logoutFromBrowser } from "@/lib/auth-client"
 import { AppShell } from "@/components/app-shell/app-shell"
@@ -24,8 +24,13 @@ const navigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
-      { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
+      {
+        key: "reservasi",
+        label: "Reservasi",
+        href: "/reservasi/riwayat",
+        icon: CalendarDays,
+        activePrefixes: ["/reservasi"],
+      },
     ],
   },
   {
@@ -148,38 +153,30 @@ describe("AppShell", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Navigasi utama" })).not.toBeInTheDocument())
   })
 
-  it("hanya menandai Reservasi Saya di route anak tanpa double-active Reservasi", () => {
-    setMatchMedia("(max-width: 1023px)", false)
-    routeState.pathname = "/reservasi/riwayat"
-    renderFixture()
+  it.each(["/reservasi", "/reservasi/riwayat", "/reservasi/riwayat/91"])(
+    "menandai menu Reservasi aktif di %s tanpa double-active",
+    (pathname) => {
+      setMatchMedia("(max-width: 1023px)", false)
+      routeState.pathname = pathname
+      render(
+        <AppShell
+          navigation={penggunaNavigation}
+          account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
+        >
+          <p>Halaman reservasi</p>
+        </AppShell>,
+      )
 
-    expect(screen.getAllByRole("link", { name: "Reservasi Saya" })[0]).toHaveAttribute(
-      "aria-current",
-      "page",
-    )
-    expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute("aria-current")
-  })
-
-  it("memakai satu menu aktif pada navigasi pengguna produksi di Reservasi Saya", () => {
-    setMatchMedia("(max-width: 1023px)", false)
-    routeState.pathname = "/reservasi/riwayat"
-    render(
-      <AppShell
-        navigation={penggunaNavigation}
-        account={{ displayName: "Ayu Pratama", roleLabel: "Pengguna" }}
-      >
-        <p>Riwayat reservasi</p>
-      </AppShell>,
-    )
-
-    expect(screen.getAllByRole("link", { name: "Reservasi Saya" })[0]).toHaveAttribute(
-      "aria-current",
-      "page",
-    )
-    expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).not.toHaveAttribute(
-      "aria-current",
-    )
-  })
+      expect(screen.getAllByRole("link", { name: "Reservasi" })[0]).toHaveAttribute(
+        "aria-current",
+        "page",
+      )
+      const active = screen
+        .getAllByRole("link")
+        .filter((link) => link.getAttribute("aria-current") === "page")
+      expect(active).toHaveLength(1)
+    },
+  )
 
   it("memindahkan active state ketika pathname berubah tanpa filter role", () => {
     setMatchMedia("(max-width: 1023px)", false)

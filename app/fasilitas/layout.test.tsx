@@ -45,7 +45,7 @@ describe("FasilitasLayout", () => {
   })
 
   it.each([
-    [Role.pengguna, ["/reservasi/riwayat", "/reservasi", "/fasilitas", "/reports", "/pengaturan"], ["/petugas", "/admin"]],
+    [Role.pengguna, ["/reservasi/riwayat", "/fasilitas", "/reports", "/pengaturan"], ["/reservasi", "/petugas", "/admin"]],
     [Role.petugas, ["/petugas", "/petugas/antrian", "/petugas/pengaturan"], ["/reservasi", "/reports", "/admin"]],
     [Role.admin, ["/admin/analitik", "/admin/pengguna", "/admin/pengaturan"], ["/reservasi", "/reports", "/petugas"]],
   ] as const)("memakai navigasi sesuai peran terautentikasi %s", async (role, expected, forbidden) => {
