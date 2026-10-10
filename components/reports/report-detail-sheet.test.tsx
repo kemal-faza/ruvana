@@ -6,7 +6,6 @@ import type { ReportItem } from "@/lib/services/report-service"
 
 const report: ReportItem = {
   id: 1,
-  facilityId: 2,
   facilityNama: "Ruang Kuliah",
   facilityTipe: "ruang_kelas",
   facilityLokasi: "Gedung Akademik Barat, Lantai 4, dekat ruang administrasi",
@@ -18,7 +17,6 @@ const report: ReportItem = {
   catatanResolusi: null,
   ditanganiOleh: null,
   createdAt: "2026-09-26T02:30:00.000Z",
-  updatedAt: "2026-09-26T02:30:00.000Z",
 }
 
 function renderDetail(overrides: Partial<ReportItem> = {}) {

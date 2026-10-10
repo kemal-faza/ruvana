@@ -15,23 +15,16 @@ const facilityOptions: FacilityReportOption[] = [
     id: 1,
     nama: "RK-101",
     tipe: "ruang_kelas",
-    lokasi: "Gedung A Lt.1",
-    kapasitas: 40,
-    status: "ACTIVE",
   },
   {
     id: 2,
     nama: "RK-102",
     tipe: "ruang_kelas",
-    lokasi: "Gedung A Lt.2",
-    kapasitas: 40,
-    status: "ACTIVE",
   },
 ]
 
 const createdReport: ReportItem = {
   id: 17,
-  facilityId: 2,
   facilityNama: "RK-102",
   facilityTipe: "ruang_kelas",
   facilityLokasi: "Gedung A Lt.2",
@@ -43,7 +36,6 @@ const createdReport: ReportItem = {
   catatanResolusi: null,
   ditanganiOleh: null,
   createdAt: "2026-09-27T00:00:00.000Z",
-  updatedAt: "2026-09-27T00:00:00.000Z",
 }
 
 function renderDialog(open = true, options = facilityOptions) {

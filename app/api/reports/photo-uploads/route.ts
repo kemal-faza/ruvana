@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const contentType = typeof record.contentType === "string" ? record.contentType.toLowerCase() : ""
   const size = record.size
   const errors = []
-  if (!isReportPhotoContentType(contentType) || !LAPORAN_UPLOAD.tipeDiizinkan.includes(contentType as (typeof LAPORAN_UPLOAD.tipeDiizinkan)[number])) {
+  if (!isReportPhotoContentType(contentType)) {
     errors.push({ field: "contentType", code: "INVALID_CONTENT_TYPE", message: "Foto harus berupa JPEG, PNG, atau WebP." })
   }
   if (!Number.isSafeInteger(size) || (size as number) < 1 || (size as number) > LAPORAN_UPLOAD.maksByte) {

@@ -4,17 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Role } from "@/generated/prisma/enums";
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup";
 
-const { requirePengguna } = vi.hoisted(() => ({
+const { requirePengguna, getMaintenanceCancellationSummaryService } = vi.hoisted(() => ({
   requirePengguna: vi.fn(),
+  getMaintenanceCancellationSummaryService: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requirePengguna }));
+vi.mock("@/lib/services/reservation-service", () => ({ getMaintenanceCancellationSummaryService }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/reservasi/riwayat",
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("@/components/reservation/reservation-history-list", () => ({
-  ReservationHistoryList: () => <p>Daftar reservasi</p>,
+  ReservationHistoryList: ({ pembatalanPemeliharaan }: { pembatalanPemeliharaan?: { total: number } }) => (
+    <p>Daftar reservasi:{pembatalanPemeliharaan?.total ?? "kosong"}</p>
+  ),
 }));
 
 import RiwayatReservasiPage from "@/app/reservasi/riwayat/page";
@@ -29,7 +33,10 @@ function penggunaAktif() {
   };
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  getMaintenanceCancellationSummaryService.mockResolvedValue({ total: 0, namaFasilitas: [] });
+});
 
 afterEach(() => {
   cleanup();
@@ -65,5 +72,30 @@ describe("RiwayatReservasiPage", () => {
       "href",
       "/reservasi",
     );
+  });
+
+  it("menghitung ringkasan pemeliharaan milik sesi dan meneruskannya ke daftar riwayat", async () => {
+    requirePengguna.mockResolvedValue(penggunaAktif());
+    getMaintenanceCancellationSummaryService.mockResolvedValue({
+      total: 4,
+      namaFasilitas: ["Lab Kimia"],
+    });
+
+    render(await RiwayatReservasiPage());
+
+    expect(getMaintenanceCancellationSummaryService).toHaveBeenCalledWith(42);
+    expect(screen.getByText("Daftar reservasi:4")).toBeInTheDocument();
+  });
+
+  it("tetap merender daftar riwayat saat hitungan ringkasan gagal", async () => {
+    requirePengguna.mockResolvedValue(penggunaAktif());
+    getMaintenanceCancellationSummaryService.mockRejectedValue(new Error("database mati"));
+    const catatGalat = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(await RiwayatReservasiPage());
+
+    expect(screen.getByText("Daftar reservasi:0")).toBeInTheDocument();
+    expect(catatGalat).toHaveBeenCalled();
+    catatGalat.mockRestore();
   });
 });
