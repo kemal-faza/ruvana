@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   BATAS_TUJUAN_MAX,
@@ -33,6 +33,8 @@ interface ReservationFormProps {
   facilities: FacilityOption[];
   facilityId: number;
   date: string;
+  /** Tipe fasilitas aktif dari query, diteruskan agar bertahan saat memuat slot. */
+  type?: string;
   availability: FacilityAvailability | null;
   /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 14 hari, bukan jam klien. */
   serverNow: string;
@@ -40,7 +42,7 @@ interface ReservationFormProps {
 
 const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
 
-export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
+export function ReservationForm({ facilities, facilityId, date, type: tipe, availability, serverNow }: ReservationFormProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
@@ -62,6 +64,50 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
   // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
   // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
   const [tanggalResetKe, setTanggalResetKe] = useState(0);
+
+  // Tanggal pilihan user yang belum tentu sama dengan tanggal server (prop).
+  const [selectedDate, setSelectedDate] = useState(date);
+
+  // Pelacak transisi navigasi lunak: selama slot baru dimuat, teks bantu
+  // menampilkan "Memuat slot…" alih-alih ajakan menekan tombol.
+  const [isPending, startTransition] = useTransition();
+
+  // Heading form difokuskan eksplisit setelah navigasi. Komponen di-remount per
+  // facilityId+date, jadi efek ini kembali dipanggil saat halaman ketersediaan
+  // baru tampil.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  // Pilihan belum selaras dengan data server (fasilitas/tanggal berubah tetapi
+  // ketersediaan belum dimuat ulang).
+  const belumDiterapkan = selectedFacilityId !== facilityId || selectedDate !== date;
+
+  // Navigasi lunak ke URL berbagi yang sama (?facilityId&date&type) tanpa
+  // memuat ulang seluruh dokumen. `type` hanya diikutkan bila memang aktif.
+  function terapkanKetersediaan(nextFacilityId: number, nextDate: string) {
+    const params = new URLSearchParams({
+      facilityId: String(nextFacilityId),
+      date: nextDate,
+    });
+    if (tipe) params.set("type", tipe);
+    startTransition(() => {
+      router.push(`/reservasi?${params.toString()}`);
+    });
+  }
+
+  // Cadangan submit tanpa JavaScript tetap lewat form GET; dengan JavaScript
+  // event ini mencegah reload penuh dan memakai router.push.
+  function onPilihKetersediaan(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isPending) return;
+    const data = new FormData(event.currentTarget);
+    const nextFacilityId = Number(data.get("facilityId"));
+    const nextDate = String(data.get("date") ?? "");
+    if (!Number.isInteger(nextFacilityId) || nextFacilityId < 1 || !nextDate) return;
+    terapkanKetersediaan(nextFacilityId, nextDate);
+  }
 
   // Availability dihitung server untuk prop facilityId. Bila user memilih
   // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
@@ -117,6 +163,17 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     // user memilih ulang slot untuk fasilitas yang baru.
     setStartTime("");
     setEndTime("");
+    // Ganti fasilitas langsung memuat slot terbaru tanpa menunggu tombol.
+    terapkanKetersediaan(id, selectedDate);
+  }
+
+  function handleDateChange(value: string) {
+    if (!value || value === selectedDate) return;
+    setSelectedDate(value);
+    setStartTime("");
+    setEndTime("");
+    // Ganti tanggal langsung memuat slot terbaru tanpa menunggu tombol.
+    terapkanKetersediaan(selectedFacilityId, value);
   }
 
   const selectedFacility = facilities.find((f) => f.id === selectedFacilityId);
@@ -280,12 +337,14 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
               1
             </span>
-            <h2 className="text-sm font-semibold">Fasilitas & tanggal</h2>
+            <h2 ref={headingRef} tabIndex={-1} className="text-sm font-semibold outline-none">Fasilitas & tanggal</h2>
             <Separator className="flex-1" />
           </div>
-          {/* Form GET native: memuat ulang Server Component agar
-              availability dihitung ulang untuk facilityId + date baru */}
-          <form method="get" action="/reservasi" className="flex flex-col gap-5">
+          {/* Form GET native tetap jalan tanpa JavaScript (fallback reload
+              penuh); dengan JavaScript submit dicegat agar memuat ulang Server
+              Component lewat navigasi lunak. */}
+          <form method="get" action="/reservasi" onSubmit={onPilihKetersediaan} className="flex flex-col gap-5">
+            {tipe ? <input type="hidden" name="type" value={tipe} /> : null}
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>
@@ -306,11 +365,13 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                     ))}
                   </SelectContent>
                 </Select>
-                {selectedFacilityId !== facilityId && (
+                {isPending ? (
+                  <FieldDescription aria-live="polite">Memuat slot…</FieldDescription>
+                ) : belumDiterapkan ? (
                   <FieldDescription>
-                    Fasilitas berubah — klik Tampilkan ketersediaan untuk memuat slot terbaru sebelum memilih waktu.
+                    Slot belum diperbarui. Tekan Tampilkan ketersediaan.
                   </FieldDescription>
-                )}
+                ) : null}
               </Field>
 
               <Field>
@@ -321,6 +382,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   name="date"
                   aria-label="Tanggal"
                   defaultValue={date}
+                  onValueChange={handleDateChange}
                   className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
                 />
               </Field>
@@ -469,6 +531,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   setStartTime("");
                   setEndTime("");
                   // Tanggal ikut kembali ke tanggal yang sedang aktif di halaman.
+                  setSelectedDate(date);
                   setTanggalResetKe((ke) => ke + 1);
                   setResult(null);
                   setGalatField({});
