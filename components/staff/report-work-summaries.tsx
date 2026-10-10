@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 
 import { ReportStatusBadge } from "@/components/reports/report-status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   STATUS_LAPORAN_BARU,
@@ -18,17 +18,15 @@ import type { StaffReportWorkStatus, StaffReportWorkView } from "@/lib/services/
 
 const RINGKASAN_STATUS: Record<
   StaffReportWorkStatus,
-  { title: string; description: string; empty: string; linkText: string }
+  { title: string; empty: string; linkText: string }
 > = {
   [STATUS_LAPORAN_BARU]: {
     title: "Laporan baru",
-    description: "Laporan yang menunggu penanganan.",
     empty: "Belum ada laporan baru.",
     linkText: "Lihat laporan baru",
   },
   [STATUS_LAPORAN_DIPROSES]: {
     title: "Sedang dikerjakan",
-    description: "Laporan yang sudah mulai ditangani.",
     empty: "Belum ada laporan yang sedang dikerjakan.",
     linkText: "Lihat pekerjaan berjalan",
   },
@@ -99,7 +97,6 @@ export function ReportWorkSummaries() {
         <h2 id="ringkasan-laporan-title" className="font-heading text-lg font-semibold tracking-tight">
           Laporan kerusakan
         </h2>
-        <p className="text-sm text-muted-foreground">Pekerjaan aktif dari seluruh pelapor.</p>
       </header>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
@@ -112,7 +109,6 @@ export function ReportWorkSummaries() {
                   <h3 className="font-medium">{item.title}</h3>
                   {!loading && !error && <span className="font-heading text-2xl font-semibold tabular-nums">{work?.total}</span>}
                 </div>
-                <CardDescription>{item.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex min-w-0 flex-col gap-4">
                 {loading && (

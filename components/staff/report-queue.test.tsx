@@ -205,7 +205,7 @@ describe("ReportQueue", () => {
     );
     render(<ReportQueue queue="intake" urut="terlama" />);
 
-    expect(await screen.findByText("Akses ditolak")).toBeInTheDocument();
+    expect(await screen.findByText("Antrean laporan hanya untuk petugas atau admin.")).toBeInTheDocument();
   });
 
   it("menjelaskan sesi berakhir", async () => {
@@ -215,7 +215,7 @@ describe("ReportQueue", () => {
     );
     render(<ReportQueue queue="intake" urut="terlama" />);
 
-    expect(await screen.findByText("Masuk sebagai petugas")).toBeInTheDocument();
+    expect(await screen.findByText("Masuk sebagai petugas atau admin untuk melihat antrean laporan.")).toBeInTheDocument();
   });
 
   it("memenuhi pemeriksaan aksesibilitas", async () => {

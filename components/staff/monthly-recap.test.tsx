@@ -49,12 +49,12 @@ afterEach(() => {
 });
 
 describe("StaffMonthlyRecap", () => {
-  it("menampilkan ringkasan tertulis sebelum tabel", () => {
+  it("menampilkan rekap dan tabel tanpa kalimat yang mengulang isi", () => {
     render(<StaffMonthlyRecap recap={buatRekap()} currentMonth="2026-09" warning={null} />);
 
     expect(screen.getByText("Rekap bulanan")).toBeInTheDocument();
-    const ringkasan = screen.getByText(/Pada September 2026 terdapat 5 reservasi/);
-    expect(ringkasan).toBeInTheDocument();
+    expect(screen.queryByText(/Pada September 2026 terdapat 5 reservasi/)).not.toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Jumlah reservasi per status" })).toBeInTheDocument();
     expect(screen.getByText(/tanggal pemakaian/i)).toBeInTheDocument();
   });
 

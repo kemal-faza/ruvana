@@ -13,7 +13,7 @@ export function FacilityCatalog({ items, meta, filterValue, paginationQuery, has
       <header className="flex flex-col gap-2">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Fasilitas</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Lihat fasilitas kampus yang tersedia lengkap dengan lokasi, kapasitas, dan status terkini.
+          Cari fasilitas berdasarkan nama, tipe, lokasi, atau kapasitas.
         </p>
       </header>
 

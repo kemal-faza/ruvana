@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 
 const { requirePetugas } = vi.hoisted(() => ({ requirePetugas: vi.fn() }))
 vi.mock("@/lib/auth", () => ({ requirePetugas }))
@@ -20,6 +20,7 @@ describe("PengaturanPetugasPage", () => {
     render(await PengaturanPetugasPage())
 
     expect(requirePetugas).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole("button", { name: "Profil" }))
     expect(screen.getByLabelText(/Nama/)).toHaveValue("Budi Petugas")
     expect(screen.getByText("Petugas")).toBeInTheDocument()
   })
