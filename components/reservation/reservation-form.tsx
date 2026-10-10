@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 import {
   BATAS_TUJUAN_MAX,
   PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
@@ -421,7 +422,13 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
             </div>
           </form>
           {adaSlotMepet && !galatField.jamMulai && (
-            <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
+            <p
+              id="bantuan-batas-pengajuan"
+              className="flex items-center gap-2 rounded-card border border-border bg-warning-subdued px-4 py-3 text-sm text-warning-subdued-foreground"
+            >
+              <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+              <span>{PESAN_BATAS_PENGAJUAN_FORM}</span>
+            </p>
           )}
         </section>
 
