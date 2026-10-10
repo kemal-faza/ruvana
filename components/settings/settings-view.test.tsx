@@ -42,7 +42,7 @@ describe("SettingsView", () => {
     }
 
     fireEvent.click(screen.getByRole("button", { name: "Notifikasi" }))
-    expect(screen.getByRole("link", { name: "Reservasi Saya" })).toHaveClass("min-h-11")
+    expect(screen.getByRole("link", { name: "Reservasi" })).toHaveClass("min-h-11")
     expect(screen.getByRole("link", { name: "Laporan" })).toHaveClass("min-h-11")
 
     fireEvent.click(screen.getByRole("button", { name: "Keamanan & masuk" }))
@@ -64,7 +64,7 @@ describe("SettingsView", () => {
     render(<SettingsView account={pengguna} />)
     fireEvent.click(screen.getByRole("button", { name: "Notifikasi" }))
 
-    expect(screen.getByRole("link", { name: "Reservasi Saya" })).toHaveAttribute("href", "/reservasi/riwayat")
+    expect(screen.getByRole("link", { name: "Reservasi" })).toHaveAttribute("href", "/reservasi/riwayat")
     expect(screen.getByRole("link", { name: "Laporan" })).toHaveAttribute("href", "/reports")
     expect(screen.getByText(/Notifikasi otomatis melalui email/)).toBeInTheDocument()
   })
