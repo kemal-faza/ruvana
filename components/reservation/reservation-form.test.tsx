@@ -574,6 +574,20 @@ describe("ReservationForm pilihan pengguna vs data server", () => {
     expect(document.activeElement).toBe(document.body)
   })
 
+  it("membuang galat lama saat fasilitas berganti", async () => {
+    const user = userEvent.setup()
+    render(<ReservationForm {...propsDasar} />)
+
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+    expect(await screen.findByText(/Periksa kembali isian berikut/)).toBeInTheDocument()
+
+    await user.click(comboboxFasilitas())
+    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
+
+    expect(screen.queryByText(/Periksa kembali isian berikut/)).not.toBeInTheDocument()
+    expect(screen.queryAllByRole("alert")).toHaveLength(0)
+  }, 20000)
+
   it("menyertakan teks bantu alasan slot tidak dapat dipilih", () => {
     const { container } = render(
       <ReservationForm

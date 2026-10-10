@@ -190,6 +190,14 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     }
   }
 
+  // Error dan ringkasan lama merujuk pilihan fasilitas/tanggal sebelumnya, jadi
+  // dibuang saat pilihan berganti (dulu ter-reset otomatis oleh remount).
+  function bersihkanHasilSebelumnya() {
+    setResult(null);
+    setGalatField({});
+    setRingkasan(null);
+  }
+
   function handleFacilityChange(value: string | null) {
     const id = Number(value);
     if (!value || !Number.isInteger(id) || id < 1) return;
@@ -199,6 +207,7 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     // user memilih ulang slot untuk fasilitas yang baru.
     setStartTime("");
     setEndTime("");
+    bersihkanHasilSebelumnya();
     // Ganti fasilitas langsung memuat slot terbaru tanpa menunggu tombol.
     terapkanKetersediaan(id, selectedDate);
   }
@@ -208,6 +217,7 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     setSelectedDate(value);
     setStartTime("");
     setEndTime("");
+    bersihkanHasilSebelumnya();
     // Ganti tanggal langsung memuat slot terbaru tanpa menunggu tombol.
     terapkanKetersediaan(selectedFacilityId, value);
   }
@@ -589,9 +599,7 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                   // Tanggal ikut kembali ke tanggal yang sedang aktif di halaman.
                   setSelectedDate(date);
                   setTanggalResetKe((ke) => ke + 1);
-                  setResult(null);
-                  setGalatField({});
-                  setRingkasan(null);
+                  bersihkanHasilSebelumnya();
                 }}
               >
                 Reset waktu
