@@ -3,13 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-import { AppShell } from "@/components/app-shell/app-shell";
 import { ReservationDetail } from "@/components/reservation/reservation-detail";
 import { ReservationSuccessBanner } from "@/components/reservation/reservation-success-banner";
 import { Button } from "@/components/ui/button";
-import { reservasiNavigation } from "../../navigation";
-import { shellAccountFromUser } from "@/config/navigation";
-import { requirePengguna } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +26,6 @@ function parseId(raw: string): number | null {
 }
 
 export default async function RiwayatDetailPage({ params, searchParams }: RiwayatDetailPageProps) {
-  // Guard server dulu (IAM-03) sebelum id diproses.
-  const pengguna = await requirePengguna();
-  const account = shellAccountFromUser(pengguna);
   const { id } = await params;
   const reservationId = parseId(id);
   if (reservationId === null) notFound();
@@ -44,20 +37,18 @@ export default async function RiwayatDetailPage({ params, searchParams }: Riwaya
   const dariPengajuan = penanda === "1";
 
   return (
-    <AppShell navigation={reservasiNavigation} account={account}>
-      <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
-        {dariPengajuan && <ReservationSuccessBanner />}
-        <Button
-          variant="ghost"
-          className="min-h-11 w-fit -ml-3"
-          nativeButton={false}
-          render={<Link href="/reservasi/riwayat" />}
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          Kembali ke Reservasi
-        </Button>
-        <ReservationDetail id={reservationId} />
-      </main>
-    </AppShell>
+    <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      {dariPengajuan && <ReservationSuccessBanner />}
+      <Button
+        variant="ghost"
+        className="min-h-11 w-fit -ml-3"
+        nativeButton={false}
+        render={<Link href="/reservasi/riwayat" />}
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Kembali ke Reservasi
+      </Button>
+      <ReservationDetail id={reservationId} />
+    </main>
   );
 }

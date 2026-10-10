@@ -1,17 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   BATAS_TUJUAN_MAX,
-  PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
+  PESAN_BATAS_PENGAJUAN,
   VALID_START_TIMES,
 } from "@/config/business";
-import {
-  blockedByLabel,
-  getValidEndTimes,
-  type FacilityAvailability,
-} from "@/lib/reservations/slot-range";
+import { getValidEndTimes, ringkasSlotTidakTersedia, type FacilityAvailability } from "@/lib/reservations/slot-range";
 import {
   pesanSuksesPengajuan,
   petakanGalatField,
@@ -33,14 +29,14 @@ interface ReservationFormProps {
   facilities: FacilityOption[];
   facilityId: number;
   date: string;
+  /** Tipe fasilitas aktif dari query, diteruskan agar bertahan saat memuat slot. */
+  type?: string;
   availability: FacilityAvailability | null;
   /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 14 hari, bukan jam klien. */
   serverNow: string;
 }
 
-const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
-
-export function ReservationForm({ facilities, facilityId, date, availability, serverNow }: ReservationFormProps) {
+export function ReservationForm({ facilities, facilityId, date, type: tipe, availability, serverNow }: ReservationFormProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
@@ -53,21 +49,96 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
   const mengirimRef = useRef(false);
   const router = useRouter();
 
+  // Tanggal pilihan user yang belum tentu sama dengan tanggal server (prop).
+  const [selectedDate, setSelectedDate] = useState(date);
+
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
-  // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
-  // dimuat ulang via "Tampilkan ketersediaan"). Komponen di-remount per
-  // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
+  // dropdown (bukan prop facilityId dari halaman). Form TIDAK di-remount per
+  // facilityId+date lagi (key navigasi dihapus agar isian pengguna bertahan),
+  // jadi pilihan di bawah disinkronkan dari prop via efek ketika halaman
+  // ketersediaan baru tiba — termasuk saat back/forward mengubah URL tanpa
+  // melalui handler di bawah.
   const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
 
-  // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
-  // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
+  // Penanda pemilih tanggal: "Reset waktu" mengembalikan field Tanggal ke
+  // tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
   const [tanggalResetKe, setTanggalResetKe] = useState(0);
 
-  // Availability dihitung server untuk prop facilityId. Bila user memilih
-  // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
-  // baru — perlakukan sebagai tidak diketahui (fallback: semua waktu aktif,
-  // server tetap memvalidasi dan menolak saat submit).
-  const availabilityForSelected = selectedFacilityId === facilityId ? availability : null;
+  // Pelacak transisi navigasi lunak: selama slot baru dimuat, teks bantu
+  // menampilkan "Memuat slot…" alih-alih ajakan menekan tombol.
+  const [isPending, startTransition] = useTransition();
+
+  // Pembanding nilai prop "sebelumnya": mendeteksi perubahan yang datang dari
+  // luar handler (back/forward, tautan langsung). Ketersediaan baru milik
+  // pasangan fasilitas/tanggal lain, jadi pemilihan waktu ikut direset.
+  const prevFacilityRef = useRef(facilityId);
+  const prevDateRef = useRef(date);
+
+  useEffect(() => {
+    if (facilityId === prevFacilityRef.current) return;
+    prevFacilityRef.current = facilityId;
+    setSelectedFacilityId(facilityId);
+    setStartTime("");
+    setEndTime("");
+  }, [facilityId]);
+
+  useEffect(() => {
+    if (date === prevDateRef.current) return;
+    prevDateRef.current = date;
+    setSelectedDate(date);
+    setStartTime("");
+    setEndTime("");
+  }, [date]);
+
+  // Heading form difokuskan setelah ketersediaan baru diterapkan (prop
+  // fasilitas/tanggal berubah). Efek ini menggantikan fokus ulang yang dulu
+  // terjadi lewat remount per facilityId+date. Mount pertama dilewati agar
+  // fokus tidak berpindah tanpa tindakan pengguna saat halaman baru dibuka.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const sudahMountRef = useRef(false);
+  useEffect(() => {
+    if (!sudahMountRef.current) {
+      sudahMountRef.current = true;
+      return;
+    }
+    headingRef.current?.focus();
+  }, [facilityId, date]);
+
+  // Pilihan belum selaras dengan data server (fasilitas/tanggal berubah tetapi
+  // ketersediaan belum dimuat ulang).
+  const belumDiterapkan = selectedFacilityId !== facilityId || selectedDate !== date;
+
+  // Navigasi lunak ke URL berbagi yang sama (?facilityId&date&type) tanpa
+  // memuat ulang seluruh dokumen. `type` hanya diikutkan bila memang aktif.
+  function terapkanKetersediaan(nextFacilityId: number, nextDate: string) {
+    const params = new URLSearchParams({
+      facilityId: String(nextFacilityId),
+      date: nextDate,
+    });
+    if (tipe) params.set("type", tipe);
+    startTransition(() => {
+      router.push(`/reservasi?${params.toString()}`);
+    });
+  }
+
+  // Cadangan submit tanpa JavaScript tetap lewat form GET; dengan JavaScript
+  // event ini mencegah reload penuh dan memakai router.push.
+  function onPilihKetersediaan(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isPending) return;
+    const data = new FormData(event.currentTarget);
+    const nextFacilityId = Number(data.get("facilityId"));
+    const nextDate = String(data.get("date") ?? "");
+    if (!Number.isInteger(nextFacilityId) || nextFacilityId < 1 || !nextDate) return;
+    terapkanKetersediaan(nextFacilityId, nextDate);
+  }
+
+  // Availability dihitung server untuk pasangan prop facilityId+date. Bila
+  // pilihan user belum selaras dengan prop (navigasi lunak belum selesai),
+  // data itu bukan milik pilihan baru — perlakukan sebagai tidak diketahui
+  // (fallback: semua waktu aktif, server tetap memvalidasi saat submit).
+  const availabilityForSelected =
+    selectedFacilityId === facilityId && selectedDate === date ? availability : null;
 
   // Peta status per jam mulai dari availability server (null = tidak diketahui)
   const statusByStart = useMemo(() => {
@@ -81,17 +152,26 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
   }, [availabilityForSelected]);
 
   // Slot dalam jendela pengajuan H-14 dihitung dari waktu server, bukan jam
-  // klien. Aturan yang sama ditegakkan otoritatif oleh service saat submit.
+  // klien, dan mengikuti tanggal yang dipilih pengguna (tanggal itulah yang
+  // divalidasi dan dikirim). Aturan yang sama ditegakkan otoritatif oleh service.
   const mepetByStart = useMemo(() => {
     const acuan = new Date(serverNow);
     const map = new Map<string, boolean>();
     for (const time of VALID_START_TIMES) {
-      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(date, time), acuan));
+      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(selectedDate, time), acuan));
     }
     return map;
-  }, [date, serverNow]);
+  }, [selectedDate, serverNow]);
 
   const adaSlotMepet = useMemo(() => [...mepetByStart.values()].some(Boolean), [mepetByStart]);
+
+  // Teks bantu alasan slot tidak dapat dipilih (APPROVED/pemeliharaan):
+  // DESIGN.md mewajibkan keadaan nonaktif selalu disertai teks, bukan hanya
+  // warna. Label per opsi tidak dipakai agar dropdown tetap bersih.
+  const ringkasanBlokir = useMemo(
+    () => ringkasSlotTidakTersedia(availabilityForSelected?.slots ?? null),
+    [availabilityForSelected],
+  );
 
   // Opsi jam selesai: setelah jam mulai & seluruh slot di antaranya tersedia
   const validEndTimes = useMemo(
@@ -108,6 +188,14 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     }
   }
 
+  // Error dan ringkasan lama merujuk pilihan fasilitas/tanggal sebelumnya, jadi
+  // dibuang saat pilihan berganti (dulu ter-reset otomatis oleh remount).
+  function bersihkanHasilSebelumnya() {
+    setResult(null);
+    setGalatField({});
+    setRingkasan(null);
+  }
+
   function handleFacilityChange(value: string | null) {
     const id = Number(value);
     if (!value || !Number.isInteger(id) || id < 1) return;
@@ -117,12 +205,25 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     // user memilih ulang slot untuk fasilitas yang baru.
     setStartTime("");
     setEndTime("");
+    bersihkanHasilSebelumnya();
+    // Ganti fasilitas langsung memuat slot terbaru tanpa menunggu tombol.
+    terapkanKetersediaan(id, selectedDate);
+  }
+
+  function handleDateChange(value: string) {
+    if (!value || value === selectedDate) return;
+    setSelectedDate(value);
+    setStartTime("");
+    setEndTime("");
+    bersihkanHasilSebelumnya();
+    // Ganti tanggal langsung memuat slot terbaru tanpa menunggu tombol.
+    terapkanKetersediaan(selectedFacilityId, value);
   }
 
   const selectedFacility = facilities.find((f) => f.id === selectedFacilityId);
   let summary: string | null = null;
-  if (selectedFacility && date && startTime && endTime) {
-    const [year, month, day] = date.split("-").map(Number);
+  if (selectedFacility && selectedDate && startTime && endTime) {
+    const [year, month, day] = selectedDate.split("-").map(Number);
     const tanggal = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" }).format(
       new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
     );
@@ -167,7 +268,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     } else if (mepetByStart.get(startTime)) {
       // pertahanan client memakai waktu server saat render: slot dalam
       // jendela H-14 langsung ditolak tanpa menunggu respons server.
-      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN_FORM);
+      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN);
     }
     if (!endTime) {
       catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
@@ -203,9 +304,11 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
     mengirimRef.current = true;
     setLoading(true);
     try {
+      // Tanggal pilihan pengguna, bukan prop `date`: saat navigasi lunak belum
+      // selesai, prop masih menunjuk tanggal sebelumnya.
       const body = {
         facilityId: selectedFacilityId,
-        date,
+        date: selectedDate,
         startTime,
         endTime,
         tujuanPenggunaan: tujuan.trim(),
@@ -251,7 +354,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
           for (const item of pemetaan) {
             if (item.idKontrol === "jam-mulai")
               fieldServer.jamMulai = galatBatasPengajuan
-                ? PESAN_BATAS_PENGAJUAN_FORM
+                ? PESAN_BATAS_PENGAJUAN
                 : "Nilai jam mulai tidak valid. Periksa kembali.";
             if (item.idKontrol === "jam-selesai") fieldServer.jamSelesai = "Nilai jam selesai tidak valid. Periksa kembali.";
             if (item.idKontrol === "tujuan") fieldServer.tujuan = "Nilai tujuan tidak valid. Periksa kembali.";
@@ -280,12 +383,14 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
               1
             </span>
-            <h2 className="text-sm font-semibold">Fasilitas & tanggal</h2>
+            <h2 ref={headingRef} tabIndex={-1} className="text-sm font-semibold outline-none">Fasilitas & tanggal</h2>
             <Separator className="flex-1" />
           </div>
-          {/* Form GET native: memuat ulang Server Component agar
-              availability dihitung ulang untuk facilityId + date baru */}
-          <form method="get" action="/reservasi" className="flex flex-col gap-5">
+          {/* Form GET native tetap jalan tanpa JavaScript (fallback reload
+              penuh); dengan JavaScript submit dicegat agar memuat ulang Server
+              Component lewat navigasi lunak. */}
+          <form method="get" action="/reservasi" onSubmit={onPilihKetersediaan} className="flex flex-col gap-5">
+            {tipe ? <input type="hidden" name="type" value={tipe} /> : null}
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>
@@ -306,11 +411,13 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                     ))}
                   </SelectContent>
                 </Select>
-                {selectedFacilityId !== facilityId && (
+                {isPending ? (
+                  <FieldDescription aria-live="polite">Memuat slot…</FieldDescription>
+                ) : belumDiterapkan ? (
                   <FieldDescription>
-                    Fasilitas berubah — klik Tampilkan ketersediaan untuk memuat slot terbaru sebelum memilih waktu.
+                    Slot belum diperbarui. Tekan Tampilkan ketersediaan.
                   </FieldDescription>
-                )}
+                ) : null}
               </Field>
 
               <Field>
@@ -321,6 +428,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   name="date"
                   aria-label="Tanggal"
                   defaultValue={date}
+                  onValueChange={handleDateChange}
                   className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
                 />
               </Field>
@@ -357,7 +465,12 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                     // Rujuk deskripsi hanya saat ia dirender; saat galat field
                     // menggantikannya, IDREF akan menggantung.
                     aria-describedby={
-                      adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
+                      [
+                        adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : null,
+                        ringkasanBlokir.length > 0 && !galatField.jamMulai ? "bantuan-slot-tidak-tersedia" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || undefined
                     }
                   >
                     <SelectValue placeholder="Pilih jam mulai" />
@@ -365,23 +478,36 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   <SelectContent>
                     {VALID_START_TIMES.map((time) => {
                       const status = statusByStart.get(time);
-                      // Slot mepet H-14 dinonaktifkan dengan label netral
-                      // "Tidak tersedia" — jangan menyiratkan slot terisi.
+                      // Slot tidak tersedia (APPROVED, pemeliharaan, atau di
+                      // dalam batas pengajuan) tampil dengan label jam saja;
+                      // alasannya disampaikan sebagai teks bantu di bawah field
+                      // (DESIGN.md: nonaktif selalu disertai teks, bukan warna).
                       const mepet = mepetByStart.get(time) ?? false;
                       const disabled = mepet || (status ? !status.available : false);
-                      const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
                       return (
-                        <SelectItem key={time} value={time} disabled={disabled}>
-                          {reason ? `${time} — ${reason}` : time}
+                        <SelectItem
+                          key={time}
+                          value={time}
+                          disabled={disabled}
+                          className="data-disabled:text-muted-foreground data-disabled:opacity-100!"
+                        >
+                          {time}
                         </SelectItem>
                       );
                     })}
                   </SelectContent>
                 </Select>
                 {adaSlotMepet && !galatField.jamMulai && (
-                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
+                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN}</FieldDescription>
                 )}
-                {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {ringkasanBlokir.length > 0 && !galatField.jamMulai && (
+                  <FieldDescription id="bantuan-slot-tidak-tersedia">
+                    Tidak dapat dipilih: {ringkasanBlokir.join("; ")}.
+                  </FieldDescription>
+                )}
+                {!startTime && !galatField.jamMulai && !adaSlotMepet && ringkasanBlokir.length === 0 && (
+                  <FieldDescription>Pilih jam mulai.</FieldDescription>
+                )}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
               </Field>
 
@@ -469,10 +595,9 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   setStartTime("");
                   setEndTime("");
                   // Tanggal ikut kembali ke tanggal yang sedang aktif di halaman.
+                  setSelectedDate(date);
                   setTanggalResetKe((ke) => ke + 1);
-                  setResult(null);
-                  setGalatField({});
-                  setRingkasan(null);
+                  bersihkanHasilSebelumnya();
                 }}
               >
                 Reset waktu

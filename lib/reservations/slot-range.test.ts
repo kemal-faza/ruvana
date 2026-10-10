@@ -4,6 +4,7 @@ import {
   blockedByLabel,
   getStartTimeOptions,
   getValidEndTimes,
+  ringkasSlotTidakTersedia,
   type AvailabilitySlot,
 } from "./slot-range";
 
@@ -62,6 +63,15 @@ describe("getValidEndTimes", () => {
   });
 });
 
+describe("getStartTimeOptions", () => {
+  it("memuat semua waktu mulai 07:00..19:30 tiap 30 menit", () => {
+    const options = getStartTimeOptions();
+    expect(options).toHaveLength(26);
+    expect(options[0]).toBe("07:00");
+    expect(options[options.length - 1]).toBe("19:30");
+  });
+});
+
 describe("blockedByLabel", () => {
   it("memetakan alasan blokir ke keterangan singkat", () => {
     expect(blockedByLabel("APPROVED")).toBe("sudah disetujui");
@@ -70,11 +80,34 @@ describe("blockedByLabel", () => {
   });
 });
 
-describe("getStartTimeOptions", () => {
-  it("memuat semua waktu mulai 07:00..19:30 tiap 30 menit", () => {
-    const options = getStartTimeOptions();
-    expect(options).toHaveLength(26);
-    expect(options[0]).toBe("07:00");
-    expect(options[options.length - 1]).toBe("19:30");
+describe("ringkasSlotTidakTersedia", () => {
+  it("tanpa slot atau tanpa blokir tidak menghasilkan teks", () => {
+    expect(ringkasSlotTidakTersedia(null)).toEqual([]);
+    expect(ringkasSlotTidakTersedia([])).toEqual([]);
+    expect(ringkasSlotTidakTersedia(makeSlots())).toEqual([]);
+  });
+
+  it("menggabungkan slot terblokir yang bersambung menjadi satu rentang", () => {
+    const slots = makeSlots({ "10:00": "APPROVED", "10:30": "APPROVED", "11:00": "APPROVED" });
+    expect(ringkasSlotTidakTersedia(slots)).toEqual(["10:00–11:30 sudah disetujui"]);
+  });
+
+  it("memisahkan rentang saat alasannya berganti walau slotnya bersambung", () => {
+    const slots = makeSlots({ "08:00": "APPROVED", "08:30": "MAINTENANCE" });
+    expect(ringkasSlotTidakTersedia(slots)).toEqual([
+      "08:00–08:30 sudah disetujui",
+      "08:30–09:00 dalam pemeliharaan",
+    ]);
+  });
+
+  it("memisahkan rentang yang tidak bersambung", () => {
+    const slots = makeSlots({ "07:00": "APPROVED", "13:00": "APPROVED" });
+    expect(ringkasSlotTidakTersedia(slots)).toEqual(["07:00–07:30 sudah disetujui", "13:00–13:30 sudah disetujui"]);
+  });
+
+  it("mengabaikan slot tidak tersedia tanpa alasan blokir (jendela H-14)", () => {
+    const slots = makeSlots();
+    slots[0] = { startTime: "07:00", endTime: "07:30", available: false, blockedBy: null };
+    expect(ringkasSlotTidakTersedia(slots)).toEqual([]);
   });
 });

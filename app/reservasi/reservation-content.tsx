@@ -45,10 +45,10 @@ export async function ReservationContent({
 
   return (
     <ReservationForm
-      key={`${facilityId}:${date}`}
       facilities={facilities}
       facilityId={facilityId}
       date={date}
+      type={tipe}
       availability={availability}
       serverNow={serverNow}
     />
