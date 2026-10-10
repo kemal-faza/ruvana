@@ -1,6 +1,7 @@
 "use client"
 
 import { Menu } from "lucide-react"
+import Link from "next/link"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -22,7 +23,9 @@ export function MobileAppBar() {
       >
         <Menu aria-hidden="true" />
       </Button>
-      <span className="text-base font-semibold">Ruvana</span>
+      <Link href="/" aria-label="Ruvana — beranda" className="inline-flex min-h-11 items-center text-base font-semibold">
+        Ruvana
+      </Link>
       <ThemeToggle />
     </header>
   )

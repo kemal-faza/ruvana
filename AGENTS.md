@@ -50,7 +50,7 @@ request's own loopback origin, so a moved dev server can still log in. Only one
 `next dev` may run per checkout — a second one refuses to start and points back
 at the existing server instead of silently moving to another port. The seed uses
 upserts and is safe to rerun. Stop PostgreSQL with `pnpm db:down`.
-Set a unique `SEED_DEMO_PASSWORD` (16–72 bytes) in `.env` before running the seed;
+Set a unique `SEED_DEMO_PASSWORD` (8–72 bytes) in `.env` before running the seed;
 non-local database URLs require `SEED_ALLOW_NON_LOCAL=1` explicitly.
 
 ### Rootless Podman on `/mnt/DATA`

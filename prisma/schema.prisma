@@ -22,8 +22,8 @@ enum AccountStatus {
 
 model User {
   id              Int           @id @default(autoincrement())
-  nama            String
-  email           String        @unique
+  nama            String        @db.VarChar(100)
+  email           String        @unique @db.VarChar(254)
   password        String
   role            Role          @default(pengguna)
   status          AccountStatus @default(PENDING)
@@ -57,7 +57,7 @@ model Session {
 model LoginAttempt {
   key       String   @id
   failures  Int      @default(0)
-  windowAt  DateTime
+  windowAt  DateTime @db.Timestamptz(3)
 
   @@map("login_attempts")
 }

@@ -1448,7 +1448,7 @@ paths:
                   role: petugas
                   status: ACTIVE
                   waktuDaftar: '2026-09-09T06:00:00Z'
-                  waktuVerifikasi: '2026-09-09T06:00:00Z'
+                  waktuVerifikasi: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/MutationForbidden' }

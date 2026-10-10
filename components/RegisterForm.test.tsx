@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { renderToString } from "react-dom/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import RegisterForm from "./RegisterForm"
 
@@ -20,6 +21,13 @@ async function isiForm() {
 }
 
 describe("RegisterForm", () => {
+  it("memakai POST dan menonaktifkan submit sebelum hidrasi agar kata sandi tidak masuk URL", () => {
+    const container = document.createElement("div")
+    container.innerHTML = renderToString(<RegisterForm />)
+    const form = container.querySelector("form")
+    expect(form?.getAttribute("method")).toBe("post")
+    expect(form?.querySelector("button[type='submit']")).toHaveAttribute("disabled")
+  })
   it("mengirim JSON ke handler registrasi dan menampilkan keberhasilan", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal("fetch", fetchMock)
@@ -44,7 +52,7 @@ describe("RegisterForm", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal("fetch", fetchMock)
     render(<RegisterForm />)
-    expect(screen.getByText("Sebaiknya gunakan setidaknya 8 karakter.")).toBeInTheDocument()
+    expect(screen.getByText("Kata sandi minimal 8 karakter.")).toBeInTheDocument()
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/Nama lengkap/), "Ayu")
     await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
@@ -66,7 +74,7 @@ describe("RegisterForm", () => {
     await user.type(screen.getByLabelText(/Kata sandi/), "ééé")
     await user.click(screen.getByRole("button", { name: "Daftar" }))
 
-    expect((screen.getByLabelText(/Kata sandi/) as HTMLInputElement).validationMessage).toBe("Kata sandi terlalu pendek. Tambahkan beberapa karakter.")
+    expect((screen.getByLabelText(/Kata sandi/) as HTMLInputElement).validationMessage).toBe("Kata sandi minimal 8 karakter.")
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -80,7 +88,7 @@ describe("RegisterForm", () => {
     await user.type(screen.getByLabelText(/Kata sandi/), "é".repeat(37))
     await user.click(screen.getByRole("button", { name: "Daftar" }))
 
-    expect((screen.getByLabelText(/Kata sandi/) as HTMLInputElement).validationMessage).toBe("Kata sandi terlalu panjang. Kurangi beberapa karakter.")
+    expect((screen.getByLabelText(/Kata sandi/) as HTMLInputElement).validationMessage).toBe("Kata sandi maksimal 72 karakter.")
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
