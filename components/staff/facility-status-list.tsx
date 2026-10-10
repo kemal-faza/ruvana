@@ -6,7 +6,7 @@ import { Building2, MapPin, Users } from "lucide-react";
 
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge";
 import { formatWaktu } from "@/components/reports/format";
 import { LABEL_TIPE_FASILITAS } from "@/config/labels";
@@ -114,9 +114,6 @@ export function FacilityStatusList({ facilities }: { facilities: StaffFacility[]
             <Building2 aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle>Belum ada fasilitas</EmptyTitle>
-          <EmptyContent>
-            <EmptyDescription>Fasilitas yang sudah ditambahkan akan tampil di sini.</EmptyDescription>
-          </EmptyContent>
         </EmptyHeader>
       </Empty>
     );

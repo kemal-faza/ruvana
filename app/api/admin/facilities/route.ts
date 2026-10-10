@@ -1,23 +1,16 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { RETENSI_IDEMPOTENCY_JAM } from "@/config/business";
-import {
-  claimOrGetIdempotencyKey,
-  deleteIdempotencyClaim,
-  isIdempotencySettled,
-  storeIdempotencyResult,
-  waitForIdempotencyResult,
-} from "@/lib/db/idempotency";
 import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
-import { buildIdempotencyScope, hashCanonicalBody, isValidIdempotencyKey } from "@/lib/http/idempotency";
+import { buildIdempotencyScope, hashCanonicalBody } from "@/lib/http/idempotency";
+import { claimIdempotentRoute, readIdempotencyKey } from "@/lib/http/idempotent-route";
 import { originError } from "@/lib/http/origin";
-import { badRequest, internalError, problemResponse, validationFailed } from "@/lib/http/problem";
+import { badRequest, validationFailed } from "@/lib/http/problem";
 import { createFacility, listAdminFacilities } from "@/lib/services/admin-facility-service";
 import { parseAdminListQuery, parseFacilityCreateBody } from "@/lib/validation/admin-facility";
 
 import { guardAdmin } from "./guard";
-import { duplicateName, duplicateNameBody, storeBestEffort, validationFailedBody } from "./problem";
+import { adminIdempotencyConflict, duplicateName } from "./problem";
 
 const ALLOWED_LIST_PARAMS = new Set(["page", "perPage", "search", "type", "location", "status"]);
 
@@ -50,11 +43,8 @@ export async function POST(request: NextRequest) {
   const rejected = originError(request);
   if (rejected) return rejected;
 
-  const rawKey = request.headers.get("Idempotency-Key");
-  if (!isValidIdempotencyKey(rawKey)) {
-    return badRequest(instance, "Header Idempotency-Key wajib berupa UUID yang valid");
-  }
-  const idempotencyKey = rawKey!.trim();
+  const idempotencyKey = readIdempotencyKey(request, instance);
+  if (idempotencyKey instanceof NextResponse) return idempotencyKey;
   const scope = buildIdempotencyScope("POST", "/api/admin/facilities");
 
   let rawBody: unknown;
@@ -65,66 +55,19 @@ export async function POST(request: NextRequest) {
   }
 
   const requestHash = hashCanonicalBody(rawBody);
-  const identity = {
+  const idempotency = await claimIdempotentRoute({
     key: idempotencyKey,
     principalId: session.id,
     scope,
     requestHash,
-    expiresAt: new Date(Date.now() + RETENSI_IDEMPOTENCY_JAM * 60 * 60 * 1000),
-  };
-
-  let claim;
-  try {
-    claim = await claimOrGetIdempotencyKey(identity);
-  } catch (error) {
-    console.error("Gagal klaim idempotency", error);
-    return internalError(instance);
-  }
-  if (!claim.claimed) {
-    if (claim.record.requestHash !== requestHash) {
-      return problemResponse({
-        status: 409,
-        code: "IDEMPOTENCY_KEY_REUSED",
-        title: "Konflik permintaan",
-        detail: "Idempotency-Key telah digunakan untuk payload berbeda.",
-        instance,
-      });
-    }
-    if (isIdempotencySettled(claim.record)) {
-      return NextResponse.json(claim.record.responseBody as object, {
-        status: claim.record.responseStatus ?? 500,
-        headers: { "Cache-Control": "no-store" },
-      });
-    }
-    const settled = await waitForIdempotencyResult({ key: idempotencyKey, principalId: session.id, scope });
-    if (settled) {
-      if (settled.requestHash !== requestHash) {
-        return problemResponse({
-          status: 409,
-          code: "IDEMPOTENCY_KEY_REUSED",
-          title: "Konflik permintaan",
-          detail: "Idempotency-Key telah digunakan untuk payload berbeda.",
-          instance,
-        });
-      }
-      return NextResponse.json(settled.responseBody as object, {
-        status: settled.responseStatus ?? 500,
-        headers: { "Cache-Control": "no-store" },
-      });
-    }
-    return problemResponse({
-      status: 409,
-      code: "IDEMPOTENCY_KEY_REUSED",
-      title: "Permintaan sedang diproses",
-      detail: "Permintaan dengan key yang sama sedang diproses, silakan ulangi.",
-      instance,
-    });
-  }
+    instance,
+    conflictResponse: (kind) => adminIdempotencyConflict(instance, kind),
+  });
+  if (idempotency instanceof NextResponse) return idempotency;
 
   const parsed = parseFacilityCreateBody(rawBody);
   if (!parsed.ok) {
-    await storeBestEffort(identity, 422, validationFailedBody(instance, parsed.errors));
-    return validationFailed(instance, parsed.errors);
+    return idempotency.settle(validationFailed(instance, parsed.errors));
   }
 
   let result;
@@ -133,18 +76,15 @@ export async function POST(request: NextRequest) {
     // mengikuti PATCH: klaim tidak boleh menggantung tanpa hasil bila proses mati
     // di antara commit dan penyimpanan.
     result = await createFacility(parsed.value, async (tx, data) => {
-      const stored = await storeIdempotencyResult(identity, { responseStatus: 201, responseBody: data }, tx);
-      if (stored.count !== 1) throw new Error("Klaim idempotency tidak dapat diselesaikan");
+      await idempotency.commit(tx, 201, data);
     });
   } catch (error) {
     console.error("Gagal membuat fasilitas", error);
-    await deleteIdempotencyClaim(identity).catch(() => {});
-    return internalError(instance);
+    return idempotency.fail();
   }
 
   if (!result.ok) {
-    await storeBestEffort(identity, 409, duplicateNameBody(instance));
-    return duplicateName(instance);
+    return idempotency.settle(duplicateName(instance));
   }
 
   revalidateFacilityViews(result.data.id);

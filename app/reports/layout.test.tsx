@@ -1,5 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 
 import { AccountStatus, Role } from "@/generated/prisma/enums"
 import ReportsLayout from "@/app/reports/layout"
@@ -30,6 +31,19 @@ const account = {
 }
 
 describe("ReportsLayout", () => {
+  it("menempatkan tautan lewati sebelum navigasi dan menargetkan main", async () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    mocks.requirePengguna.mockResolvedValue({ ...account, role: Role.pengguna })
+
+    const { container } = render(await ReportsLayout({ children: <p>Laporan</p> }))
+    const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" })
+
+    expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink)
+    expect(skipLink).toHaveAttribute("href", "#konten")
+    expect(screen.getByRole("main")).toHaveAttribute("id", "konten")
+    expect((await axe(container)).violations).toEqual([])
+  })
+
   it("menampilkan navigasi pengguna tanpa tautan petugas dan admin", async () => {
     setMatchMedia("(max-width: 1023px)", false)
     mocks.requirePengguna.mockResolvedValue({ ...account, role: Role.pengguna })

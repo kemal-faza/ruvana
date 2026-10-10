@@ -78,6 +78,7 @@ Match CI's required order:
 pnpm prisma generate
 pnpm lint
 pnpm check:banned
+pnpm check:openapi-paths
 pnpm exec next typegen
 pnpm exec tsc --noEmit
 pnpm test
@@ -143,7 +144,11 @@ Prisma types from `generated/prisma`, never directly from `@prisma/client`.
   `pnpm prisma migrate dev --create-only`, edit the generated SQL, then apply it.
   Existing slot checks are in `20260903150549_add_check_constraints_pg`.
 - Production schema changes use `pnpm prisma migrate deploy`, never `migrate dev`.
-- Vercel auto-deployment is enabled only for `main` in `vercel.json`.
+- Vercel auto-deployment is disabled in `vercel.json`. Production releases run
+  through the `Release Production` workflow, which stages a production
+  deployment without moving the domain, checks Production variables, applies
+  `prisma migrate deploy`, then promotes the deployment. It runs automatically
+  when CI succeeds on `main`, or manually via `workflow_dispatch` on `main`.
 
 ## Repository gotchas
 

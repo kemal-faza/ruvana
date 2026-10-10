@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { axe } from "vitest-axe";
 
 import { Role } from "@/generated/prisma/enums";
 
@@ -64,6 +65,17 @@ describe("ReservationPage", () => {
     expect(screen.getByRole("heading", { name: "Ajukan reservasi" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toBeInTheDocument();
     expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
+  });
+
+  it("menyediakan tautan lewati sebagai fokus pertama menuju main", async () => {
+    const page = await ReservationPage({ searchParams: Promise.resolve({}) });
+    const { container } = render(page);
+    const skipLink = screen.getByRole("link", { name: "Lewati ke konten utama" });
+
+    expect(container.querySelector("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])")).toBe(skipLink);
+    expect(skipLink).toHaveAttribute("href", "#konten");
+    expect(screen.getByRole("main")).toHaveAttribute("id", "konten");
+    expect((await axe(container)).violations).toEqual([]);
   });
 });
 

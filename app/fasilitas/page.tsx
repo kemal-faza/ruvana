@@ -7,7 +7,7 @@ import { getFacilityCatalog } from "@/lib/facilities/catalog"
 export const dynamic = "force-dynamic"
 
 const description =
-  "Lihat fasilitas kampus yang tersedia lengkap dengan lokasi, kapasitas, dan status terkini."
+  "Cari fasilitas kampus berdasarkan nama, tipe, lokasi, atau kapasitas."
 
 export const metadata: Metadata = {
   title: "Fasilitas | ruvana",

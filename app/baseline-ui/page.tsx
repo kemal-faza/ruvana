@@ -80,15 +80,9 @@ export default async function Home() {
 
   return (
     <AppShell navigation={activeNavigation} account={account}>
-      <a
-        href="#katalog"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-control focus:bg-card focus:px-4 focus:py-3 focus:shadow-subtle"
-      >
-        Lewati ke katalog komponen
-      </a>
-
       <main
-        id="katalog"
+        id="konten"
+        tabIndex={-1}
         className="mx-auto flex w-full max-w-shell min-w-0 flex-col gap-8 px-4 pt-8 pb-12 sm:gap-10 sm:px-7 sm:pt-12 sm:pb-16 lg:gap-12 lg:pt-section-top"
       >
         <header className="max-w-heading">

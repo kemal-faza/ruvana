@@ -26,12 +26,12 @@ export default async function ReservationPage({
 
   return (
     <AppShell navigation={reservasiNavigation} account={account}>
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-medium tracking-wide text-primary">Reservasi</p>
           <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Ajukan reservasi</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Lengkapi detail reservasi untuk mengajukan peminjaman fasilitas.
+            Pilih fasilitas dan waktu, lalu tulis tujuan reservasi.
           </p>
         </header>
         <Suspense fallback={<ReservationContentSkeleton />}>

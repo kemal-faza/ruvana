@@ -44,6 +44,7 @@ Status keputusan:
 | D-007 | `development` | TDD dan test otomatis wajib; pemilihan runner ditunda sampai test harness dibuat |
 | D-008 | `deployment` | Vercel, Prisma Postgres, dan private Vercel Blob untuk production |
 | D-009 | `project-wide` | Listener status fasilitas menerima client transaksi (tx-first) |
+| D-010 | `project-wide` | Kontrak OpenAPI hanya memuat route handler HTTP |
 
 ---
 
@@ -339,7 +340,11 @@ untuk foto laporan tanpa memelihara server sendiri.
 Deploy aplikasi production ke Vercel, gunakan Prisma Postgres sebagai database,
 dan gunakan private Vercel Blob untuk foto laporan. PostgreSQL hanya menyimpan
 referensi objek serta metadata yang diperlukan, bukan binary foto.
-Auto-deployment Vercel hanya aktif untuk branch `main`, sesuai `vercel.json`.
+Auto-deployment Vercel dimatikan. Setelah CI pada `main` lulus, workflow
+`Release Production` membangun deployment Production tanpa mengalihkan domain,
+memeriksa variabel Production, menerapkan `prisma migrate deploy`, lalu
+mempromosikan deployment tersebut. Kegagalan pada salah satu tahap sebelum
+promosi mempertahankan versi aplikasi yang sedang melayani traffic.
 
 ### Alasan
 
@@ -352,8 +357,25 @@ Auto-deployment Vercel hanya aktif untuk branch `main`, sesuai `vercel.json`.
 
 - Kredensial database dan storage production disimpan sebagai environment
   variable platform, bukan di repository.
-- Migrasi production dijalankan dengan `prisma migrate deploy`.
-- Perubahan pada branch selain `main` tidak memicu auto-deployment production.
+- Migrasi production dijalankan dengan `prisma migrate deploy` terhadap
+  `DATABASE_URL` dari environment Production Vercel, terpisah dari build.
+- Secret GitHub environment `production` berisi `VERCEL_TOKEN`,
+  `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, dan `CRON_SECRET` yang sama dengan nilai
+  di Vercel Production agar pemeriksaan cron tidak perlu membaca nilai Secret.
+  Vercel Production wajib memiliki
+  `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `NEXT_PUBLIC_SITE_URL`,
+  `ALLOWED_ORIGINS`, dan `CRON_SECRET`.
+- Variabel Production yang dibaca workflow lewat `vercel env run` wajib bertipe
+  **Config**, bukan Secret: nilai Secret bersifat write-only sehingga tidak dapat
+  dibaca CLI. `CRON_SECRET` boleh tetap bertipe Secret karena workflow
+  menyediakannya dari GitHub environment `production`. Periksa tipe dengan
+  `vercel env ls production`; untuk variabel lain yang bertipe Secret, sediakan
+  nilainya lewat secret GitHub environment `production` atau buat ulang sebagai
+  Config.
+- Rilis tahap migrasi dapat dijalankan manual dari branch `main` melalui
+  `workflow_dispatch`; commit selain HEAD `main` dan commit yang CI-nya belum
+  sukses tetap ditolak.
+- Build preview dan build paralel tidak menjalankan migrasi Production.
 - Batas free tier database dan storage harus dipantau sesuai PRD.
 
 ### Alternatif yang dipertimbangkan
@@ -436,6 +458,21 @@ transaksi sendiri atau memakai singleton Prisma untuk operasi dalam event.
 |---|---|
 | Listener payload-only membuka transaksi sendiri | Sederhana bagi pemicu, tetapi status fasilitas dan pembatalan bisa commit terpisah dan saling bertabrakan. |
 | Event asinkron setelah commit | Pemicu tidak menunggu, tetapi kegagalan listener meninggalkan status dan reservasi tidak konsisten tanpa mekanisme retry. |
+
+## D-010 — Kontrak OpenAPI untuk route handler HTTP
+
+- **Status:** `accepted`
+- **Scope:** `project-wide`
+
+`docs/api/openapi.yaml` mendokumentasikan path yang punya route handler di
+`app/api/`. Mutasi akun admin di `app/admin/pengguna/actions.ts` adalah Server
+Action, bukan endpoint JSON `/api/admin/users/{userId}/approve`, `/reject`,
+`/disable`, atau `/enable`. Daftar dan detail laporan pengguna serta dashboard
+analitik admin adalah Server Component. Ketiganya tidak diberi path API palsu.
+Ekspor analitik memakai tiga handler terpisah di `/api/admin/analitik/ekspor/`.
+
+Jalankan `pnpm check:openapi-paths` untuk membandingkan path kontrak dan route
+handler. Tambahkan path kontrak pada perubahan route agar pemeriksaan CI lulus.
 
 ## Sumber kebenaran
 
