@@ -473,6 +473,13 @@
   animation: theme-slide-down var(--motion-duration-cinematic) var(--motion-easing-standard) both;
 }
 
+/* Edge menambahkan tombol mata sendiri pada input password. Form login dan
+   daftar sudah menyediakan tombol yang sama, jadi sembunyikan kontrol bawaan. */
+#login-password::-ms-reveal,
+#daftar-password::-ms-reveal {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

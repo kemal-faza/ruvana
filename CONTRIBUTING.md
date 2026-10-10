@@ -24,6 +24,7 @@ dengan ketiganya, ikuti aturan yang lebih spesifik dan terbaru.
 - [Menjalankan Verifikasi Lokal](#menjalankan-verifikasi-lokal)
 - [Menyinkronkan Branch Sebelum Push](#menyinkronkan-branch-sebelum-push)
 - [Push dan Pull Request](#push-dan-pull-request)
+- [Rilis Production](#rilis-production)
 - [Review dan Merge](#review-dan-merge)
 - [Menangani Merge Conflict](#menangani-merge-conflict)
 - [Masalah Umum](#masalah-umum)
@@ -558,6 +559,109 @@ perubahan yang tidak terkait. Auto-deployment Vercel dimatikan; rilis production
 hanya lewat workflow `Release Production` pada `main` (otomatis setelah CI lulus,
 atau manual dari branch `main`), bukan dari setiap branch.
 
+## Rilis Production
+
+Rilis production hanya berjalan dari `main` dan tidak perlu dijalankan per
+branch. Kebijakan, daftar variabel, dan aturan domain ada di
+[`docs/DECISION.md` D-008](docs/DECISION.md#d-008--vercel-prisma-postgres-dan-vercel-blob-untuk-production);
+bagian ini berisi langkah operasinya.
+
+### Alur rilis
+
+Push ke `main` memicu CI. Bila CI lulus, workflow `Release Production` membuat
+deployment Production tanpa mengalihkan domain, memeriksa variabel Production,
+menjalankan `node scripts/apply-production-migrations.mjs`, lalu mempromosikan
+deployment tersebut. Auto-deployment Vercel dimatikan di `vercel.json` agar
+traffic tidak mendahului migrasi. Rilis juga dapat dijalankan manual dari branch
+`main` melalui Actions, lalu Release Production, lalu Run workflow; rilis manual
+tetap mensyaratkan CI hijau untuk commit HEAD `main`, dan workflow hanya menerima
+hasil CI dari repository ini. Kegagalan sebelum promosi mempertahankan versi
+aplikasi yang sedang melayani traffic.
+
+### Environment dan secret Production
+
+`DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `NEXT_PUBLIC_SITE_URL`, dan
+`ALLOWED_ORIGINS` harus bertipe **Config** di Vercel Production: workflow membaca
+variabel lewat `vercel env run`, sedangkan nilai bertipe Secret bersifat
+write-only. `CRON_SECRET` boleh tetap bertipe Secret selama secret GitHub
+`CRON_SECRET` pada environment `production` berisi nilai yang sama. Bila variabel
+lain bertipe Secret, sediakan nilainya sebagai GitHub environment secret
+`production`. `DATABASE_URL_UNPOOLED` opsional; isi dengan koneksi direct
+database (mis. Neon tanpa akhiran `-pooler`) bila penyedia menyediakan endpoint
+terpisah.
+
+Periksa tipe variabel dengan:
+
+```bash
+vercel env ls production
+```
+
+Isi `CRON_SECRET` dengan nilai acak panjang di Vercel Project Settings, menu
+Environment Variables, khusus **Production**. Vercel Cron mengirimkannya sebagai
+`Authorization: Bearer <CRON_SECRET>`. Setelah mengubah environment variable,
+lakukan redeploy production agar deployment aktif menerima nilainya.
+
+### Memeriksa rilis
+
+`scripts/check-production-env.mjs` menolak rilis lebih awal, sebelum migrasi dan
+promosi, bila `NEXT_PUBLIC_SITE_URL` masih `*.vercel.app`, bukan https, atau
+alamat lokal. Alias `*.vercel.app` proyek ini dilindungi Deployment Protection,
+sehingga permintaan anonim dialihkan ke SSO.
+
+Setelah promosi, periksa cron:
+
+```bash
+curl -i https://<domain-kanonis>/api/cron/expire-reservations
+curl -i -H "Authorization: Bearer <CRON_SECRET>" https://<domain-kanonis>/api/cron/expire-reservations
+```
+
+Permintaan tanpa bearer harus menjawab 401; panggilan dengan bearer yang benar
+menjawab 200 berisi `expired` dan `processedAt`. `scripts/check-production-cron.mjs`
+memeriksa kedua status itu setelah promosi dan menyebut alihan SSO sebagai
+penyebab bila gagal, yang berarti `NEXT_PUBLIC_SITE_URL` Production belum
+memakai domain kanonis publik. Periksa log setelah siklus cron berikutnya untuk
+memastikan pesan "CRON_SECRET belum dikonfigurasi" tidak muncul lagi. Jangan
+menaruh secret pada URL, log, atau repository.
+
+### Bila rilis gagal
+
+Bila build, pemeriksaan variabel, atau migrasi gagal, workflow tidak
+mempromosikan deployment sehingga traffic tetap memakai versi sebelumnya.
+
+1. Baca log workflow tanpa mencetak `DATABASE_URL`.
+2. Bandingkan migrasi yang tertunda dengan `pnpm exec prisma migrate status`
+   memakai environment Production.
+3. Perbaiki penyebabnya, lalu jalankan ulang workflow yang gagal dari branch
+   `main`.
+
+Jangan menjalankan `migrate reset` atau rollback skema otomatis pada data
+Production. Setelah promosi berhasil, pastikan route yang membutuhkan kolom baru
+berjalan dan domain resmi menyajikan commit yang dirilis.
+
+### Menyiapkan admin awal dan menangani akun demo yang terpapar
+
+Lakukan langkah berikut hanya bila kata sandi akun demo production pernah
+terpapar. Simpan seluruh nilai rahasia di environment sementara dan jangan
+menuliskannya di repo atau argumen perintah.
+
+1. Siapkan `DATABASE_URL` production dan nilai unik untuk
+   `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, serta
+   `BOOTSTRAP_ADMIN_PASSWORD` (8–72 byte) melalui environment aman. Jalankan
+   `pnpm db:bootstrap-admin` untuk membuat admin tepercaya tanpa kata sandi
+   bawaan. Perintah menolak email yang sudah terdaftar.
+2. Berikan kata sandi demo lama yang terpapar melalui
+   `COMPROMISED_DEMO_PASSWORD` di environment sementara. Jalankan
+   `pnpm db:remediate-demo` untuk audit tanpa perubahan. Tinjau jumlah reservasi,
+   laporan, perubahan fasilitas, dan sesi aktif yang terkait sebelum melanjutkan.
+3. Setelah admin baru siap dan hasil audit ditinjau, jalankan
+   `pnpm exec tsx prisma/remediate-demo-accounts.ts --apply`. Skrip mengacak kata
+   sandi, menonaktifkan setiap akun yang cocok, dan mencabut sesinya dalam
+   transaksi; data reservasi dan laporan tetap tersimpan. Skrip menolak
+   perubahan bila tidak ada admin aktif lain yang aman.
+4. Pastikan login dengan kredensial demo lama menghasilkan 401. Audit log
+   akses/auth production untuk aktivitas sebelumnya; tabel `sessions` hanya
+   mencatat sesi yang masih ada dan tidak menyimpan seluruh riwayat login.
+
 ## Review dan Merge
 
 1. Tunggu seluruh pemeriksaan CI lulus.
@@ -678,6 +782,24 @@ podman-compose -f docker-compose.local.yml ps
 
 Gunakan alur `docker-compose.local.yml` yang dijelaskan sebelumnya.
 
+### Akun demo yang nonaktif
+
+Seed tidak mengaktifkan kembali akun demo yang statusnya sudah `DISABLED`, jadi
+`pnpm db:seed` saja tidak memulihkannya. Status itu dapat muncul setelah
+`db:remediate-demo --apply` di database lokal. Pulihkan dengan:
+
+```bash
+pnpm prisma migrate reset --force
+pnpm db:seed
+```
+
+`migrate reset` di Prisma 7 tidak menjalankan seed, jadi jalankan `pnpm db:seed`
+setelahnya. Pastikan `SEED_DEMO_PASSWORD` terisi sebelum seed. Perintah ini
+menghapus seluruh data lokal, jadi jangan dipakai pada database yang datanya
+perlu disimpan. Seed menolak database non-lokal kecuali `SEED_ALLOW_NON_LOCAL=1`
+diberikan secara eksplisit; gunakan flag itu hanya untuk database non-produksi
+yang sudah diperiksa.
+
 ### Commit ditolak hook
 
 Jalankan pemeriksaan secara manual, perbaiki file yang dilaporkan, lalu stage
@@ -772,4 +894,5 @@ kasus berbeda dan mengikuti bagian
 - [Git & GitHub 101](https://github.com/Doctor3131/ppk-pertemuan-1/blob/main/git%20%26%20github%20101.md)
 - [`README.md`](README.md)
 - [`docs/PRD.md`](docs/PRD.md)
+- [`docs/DECISION.md`](docs/DECISION.md)
 - [`AGENTS.md`](AGENTS.md)
