@@ -103,8 +103,13 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- node scripts/check-production-env.mjs
 
+      # Migrasi dijalankan lewat host direct (tanpa pooler) lewat
+      # scripts/apply-production-migrations.mjs: Prisma Migrate memakai advisory
+      # lock tingkat sesi, dan di endpoint pooler kunci itu bisa timeout (P1002).
+      # Script memakai DATABASE_URL_UNPOOLED bila environment Production
+      # menyediakannya, dan bila tidak, menurunkan host direct dari DATABASE_URL.
       - name: Terapkan migrasi pada database Production
-        run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- pnpm exec prisma migrate deploy
+        run: vercel env run --environment=production --token "$VERCEL_TOKEN" -- node scripts/apply-production-migrations.mjs
 
       - name: Pastikan commit main belum berubah
         shell: bash
