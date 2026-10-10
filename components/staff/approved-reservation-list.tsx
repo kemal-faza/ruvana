@@ -259,7 +259,7 @@ export function ApprovedReservationList() {
           setCancelTarget(null);
           setCancelAlasan("");
         }}
-        className="w-full max-w-md rounded-card border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
+        className="w-full rounded-card border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
       >
         <form
           method="dialog"

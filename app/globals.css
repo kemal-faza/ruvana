@@ -368,6 +368,13 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
+
+  dialog:modal {
+    margin: auto;
+    max-width: min(32rem, 100% - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
 }
 
 @keyframes theme-slide-down {
