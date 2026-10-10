@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -26,12 +25,11 @@ const KELOMPOK: Array<{
   kunci: "menunggu" | "disetujui" | "ditolak" | "lainnya";
   label: string;
   variant: "pending" | "success" | "danger" | "neutral";
-  keterangan: string;
 }> = [
-  { kunci: "menunggu", label: "Menunggu", variant: "pending", keterangan: "Belum diproses petugas." },
-  { kunci: "disetujui", label: "Disetujui", variant: "success", keterangan: "Telah disetujui petugas." },
-  { kunci: "ditolak", label: "Ditolak", variant: "danger", keterangan: "Ditolak petugas." },
-  { kunci: "lainnya", label: "Lainnya", variant: "neutral", keterangan: "Dibatalkan atau kedaluwarsa." },
+  { kunci: "menunggu", label: "Menunggu", variant: "pending" },
+  { kunci: "disetujui", label: "Disetujui", variant: "success" },
+  { kunci: "ditolak", label: "Ditolak", variant: "danger" },
+  { kunci: "lainnya", label: "Batal / kedaluwarsa", variant: "neutral" },
 ];
 
 export function ReservationSummaryCard({
@@ -49,7 +47,6 @@ export function ReservationSummaryCard({
           <CardTitle id="ringkasan-reservasi-title" className="text-base">
             Ringkasan reservasi
           </CardTitle>
-          <CardDescription>Jumlah reservasi per kelompok status.</CardDescription>
         </CardHeader>
         <CardContent className="flex min-w-0 flex-col gap-4">
           {loading && (
@@ -89,12 +86,11 @@ export function ReservationSummaryCard({
                     <dt>
                       <Badge variant={item.variant}>{item.label}</Badge>
                     </dt>
-                    <dd className="flex flex-col gap-1">
+                    <dd>
                       <p className="font-heading text-2xl font-semibold tabular-nums">
                         {ringkasan[item.kunci]}
                         <span className="sr-only"> reservasi {item.label.toLowerCase()}</span>
                       </p>
-                      <p className="text-xs text-muted-foreground">{item.keterangan}</p>
                     </dd>
                   </div>
                 ))}
@@ -103,7 +99,6 @@ export function ReservationSummaryCard({
                 <Badge variant="info">Sedang berlangsung</Badge>
                 <p className="text-muted-foreground">
                   {ringkasan.sedangBerlangsung} dari {ringkasan.disetujui} reservasi disetujui
-                  sedang berlangsung.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -118,11 +113,6 @@ export function ReservationSummaryCard({
                   <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
                 </Button>
               </div>
-              {ringkasan.total === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Belum ada reservasi yang tercatat.
-                </p>
-              )}
             </>
           )}
         </CardContent>

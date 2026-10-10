@@ -49,10 +49,7 @@ export function FacilitySearch({ visible = true }: { visible?: boolean }) {
           id="pencarian-fasilitas-title"
           className="px-4 text-sm/snug font-medium max-lg:col-span-2 max-md:px-1.5"
         >
-          Amankan jadwalmu sekarang juga.
-          <small className="mt-1 block text-xs font-normal text-muted-foreground">
-            Mulai dari kegiatanmu
-          </small>
+          Pilih tipe fasilitas dan tanggal
         </h2>
 
         <div data-slot="search-field" className={fieldClass}>

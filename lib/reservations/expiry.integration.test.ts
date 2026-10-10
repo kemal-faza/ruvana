@@ -34,7 +34,7 @@ function requireLoopbackDatabaseUrl(value: string | undefined): string {
   return value;
 }
 
-// Tanggal jauh di masa depan: imun aturan pengajuan H-1 Tahap 7. Batas
+// Tanggal jauh di masa depan: imun aturan pengajuan H-14. Batas
 // kedaluwarsa ditentukan lewat param `now` eksplisit agar deterministik.
 const KAPAN = "2027-06-15";
 // Tanggal di masa lalu untuk uji riwayat dan antrean. Uji ini memanggil

@@ -10,7 +10,7 @@ function SkeletonLine({ className }: { className?: string }) {
   return <span className={cn("block rounded-full bg-border/80", className)} />
 }
 
-const sidebarItems = ["Ringkasan", "Fasilitas", "Reservasi Saya", "Laporan Saya"] as const
+const sidebarItems = ["Ringkasan", "Fasilitas", "Reservasi", "Laporan Saya"] as const
 
 function DashboardMockup() {
   return (

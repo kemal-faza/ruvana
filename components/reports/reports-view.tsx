@@ -96,7 +96,7 @@ export function ReportsView({ view, facilityOptions }: ReportsViewProps) {
         <header className="flex flex-col gap-2">
           <h1 className="font-heading text-3xl font-semibold tracking-tight">Laporan</h1>
           <p className="max-w-2xl text-muted-foreground">
-            Pantau laporan kerusakan fasilitas kampus yang telah Anda ajukan beserta progres penanganannya.
+            Lihat status dan tindak lanjut laporan kerusakan yang Anda kirim.
           </p>
         </header>
         <Button

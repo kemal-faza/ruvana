@@ -128,7 +128,7 @@ paths:
       operationId: loginUser
       tags: [Authentication]
       summary: Memulai sesi pengguna
-      description: Hanya akun ACTIVE yang dapat login. Semua kegagalan kredensial, email tidak ada, dan status akun memakai respons generik 401. Kegagalan dihitung atomik per IP dan email ternormalisasi, maksimum 10 dalam 15 menit. Origin yang hilang, malformed, null, atau dikirim lebih dari sekali ditolak.
+      description: Hanya akun ACTIVE yang dapat login. Semua kegagalan kredensial, email tidak ada, dan status akun memakai respons generik 401. Kegagalan dihitung atomik per IP dan email ternormalisasi, maksimum 10 dalam 2 menit. Origin yang hilang, malformed, null, atau dikirim lebih dari sekali ditolak.
       x-requirement-ids: [IAM-02, IAM-03]
       security: []
       parameters:
@@ -539,7 +539,7 @@ paths:
       operationId: createReservation
       tags: [Reservations]
       summary: Mengajukan reservasi fasilitas
-      description: Hanya role=pengguna dengan status=ACTIVE yang dapat membuat satu reservasi PENDING; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. date, startTime, dan endTime adalah waktu lokal Asia/Jakarta; slot harus berurutan pada kelipatan 30 menit dalam 07:00–20:00. Pengajuan hanya diterima bila waktu mulai masih sekurang-kurangnya 24 jam dari instant pengajuan (tepat 24 jam diterima); pelanggaran ditolak dengan 422 (code VALIDATION_FAILED, errors berisi field startTime dengan code INSUFFICIENT_LEAD_TIME dan message Reservasi minimal 24 jam sebelum waktu mulai). Tanggal lampau, slot yang sudah mulai, fasilitas tidak tersedia, dan konflik APPROVED ditolak. PENDING lain tidak dianggap konflik. Relasi endTime > startTime dan pemeriksaan current server time tetap wajib di server.
+      description: Hanya role=pengguna dengan status=ACTIVE yang dapat membuat satu reservasi PENDING; akun non-ACTIVE menghasilkan 401 generik, sedangkan ACTIVE principal dengan role berbeda menghasilkan 403. date, startTime, dan endTime adalah waktu lokal Asia/Jakarta; slot harus berurutan pada kelipatan 30 menit dalam 07:00–20:00. Pengajuan hanya diterima bila waktu mulai masih sekurang-kurangnya 14 hari (336 jam) dari instant pengajuan (tepat 14 hari diterima); pelanggaran ditolak dengan 422 (code VALIDATION_FAILED, errors berisi field startTime dengan code INSUFFICIENT_LEAD_TIME dan message Reservasi minimal 14 hari sebelum waktu mulai). Tanggal lampau, slot yang sudah mulai, fasilitas tidak tersedia, dan konflik APPROVED ditolak. PENDING lain tidak dianggap konflik. Relasi endTime > startTime dan pemeriksaan current server time tetap wajib di server.
       x-requirement-ids: [RES-01, RES-02, IAM-03]
       security:
         - cookieAuth: []
@@ -1969,7 +1969,7 @@ components:
     RetryAfter:
       description: Jumlah detik minimum sebelum request boleh dicoba lagi.
       schema: { type: integer, minimum: 1 }
-      example: 900
+      example: 120
   responses:
     BadRequest:
       description: JSON atau parameter query/path malformed.
@@ -2208,7 +2208,7 @@ components:
                 code: SLOT_ALIGNMENT_INVALID
                 message: Waktu harus berada pada kelipatan 30 menit.
     LoginRateLimited:
-      description: Lebih dari 10 kegagalan login dalam 15 menit untuk kombinasi IP dan email ternormalisasi.
+      description: Lebih dari 10 kegagalan login dalam 2 menit untuk kombinasi IP dan email ternormalisasi.
       headers:
         Retry-After: { $ref: '#/components/headers/RetryAfter' }
       content:
@@ -2222,17 +2222,15 @@ components:
             instance: /api/auth/login
             code: LOGIN_RATE_LIMITED
     UploadRateLimited:
-      description: 'Batas upload intent terlampaui: 20 per user per jam atau 60 per IP per jam.'
-      headers:
-        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+      description: 'Batas penerbitan URL unggah terlampaui: 20 per pengguna per jam atau 60 per IP per jam. Retry-After tidak dikirim karena waktu pemulihan tiap bucket tidak dihitung oleh handler.'
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
           example:
-            type: https://app.example.invalid/problems/upload-rate-limited
-            title: Batas upload tercapai
+            type: https://ruvana.invalid/problems/upload-rate-limited
+            title: Batas unggah tercapai
             status: 429
-            detail: Batas penerbitan upload intent per jam tercapai.
+            detail: Batas penerbitan URL unggah per jam tercapai. Coba lagi nanti.
             instance: /api/reports/photo-uploads
             code: UPLOAD_RATE_LIMITED
     BlobFailure:

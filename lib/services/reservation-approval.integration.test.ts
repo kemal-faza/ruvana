@@ -30,7 +30,7 @@ function requireLoopbackDatabaseUrl(value: string | undefined): string {
   return value;
 }
 
-// Tanggal tetap jauh di masa depan: imun aturan pengajuan H-1 dan H-24,
+// Tanggal tetap jauh di masa depan: imun aturan pengajuan H-14 dan H-24,
 // deterministik, zona Asia/Jakarta.
 // `now` eksplisit untuk service: slot selalu di masa depan relatif ke instant ini.
 const TANGGAL = "2027-06-15";

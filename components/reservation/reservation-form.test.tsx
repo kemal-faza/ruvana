@@ -252,11 +252,11 @@ describe("ReservationForm konfirmasi pengajuan", () => {
   }, 20000)
 })
 
-describe("ReservationForm batas pengajuan 24 jam", () => {
-  // 10.00 UTC = 17.00 WIB 26 Sep. Untuk tanggal 27 Sep:
-  // slot 07.00 WIB (00.00 UTC, selisih 14 jam) wajib nonaktif,
-  // slot 17.00 WIB (10.00 UTC, selisih tepat 24 jam) wajib aktif.
-  const serverNow = "2026-09-26T10:00:00.000Z"
+describe("ReservationForm batas pengajuan 14 hari", () => {
+  // 10.00 UTC = 17.00 WIB 13 Sep. Untuk tanggal 27 Sep:
+  // slot 07.00 WIB (00.00 UTC, selisih 13 hari 14 jam) wajib nonaktif,
+  // slot 17.00 WIB (10.00 UTC, selisih tepat 336 jam / 14 hari) wajib aktif.
+  const serverNow = "2026-09-13T10:00:00.000Z"
 
   function renderBatasPengajuan() {
     return render(
@@ -270,7 +270,7 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     )
   }
 
-  it("menonaktifkan slot dalam jendela 24 jam dengan label Tidak tersedia plus teks bantu", async () => {
+  it("menonaktifkan slot dalam jendela 14 hari dengan label Tidak tersedia plus teks bantu", async () => {
     const user = userEvent.setup()
     renderBatasPengajuan()
 
@@ -279,7 +279,7 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     expect(opsiMepet).toHaveAttribute("aria-disabled", "true")
     expect(await screen.findByRole("option", { name: "17:00" })).toBeInTheDocument()
     expect(
-      screen.getByText("Reservasi minimal 24 jam sebelum waktu mulai."),
+      screen.getByText("Reservasi minimal 14 hari sebelum waktu mulai."),
     ).toBeInTheDocument()
   }, 20000)
 
@@ -307,7 +307,7 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
                 {
                   field: "startTime",
                   code: "INSUFFICIENT_LEAD_TIME",
-                  message: "Reservasi minimal 24 jam sebelum waktu mulai",
+                  message: "Reservasi minimal 14 hari sebelum waktu mulai",
                 },
               ],
             }),
@@ -326,7 +326,7 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
 
     // Pesan domain tampil apa adanya di dekat field, bukan pesan generik atau kode mentah.
-    expect(await screen.findByText("Reservasi minimal 24 jam sebelum waktu mulai.")).toBeInTheDocument()
+    expect(await screen.findByText("Reservasi minimal 14 hari sebelum waktu mulai.")).toBeInTheDocument()
     expect(document.activeElement?.id).toBe("jam-mulai")
     expect(container.textContent ?? "").not.toContain("INSUFFICIENT_LEAD_TIME")
 
@@ -342,7 +342,7 @@ describe("ReservationForm batas pengajuan 24 jam", () => {
     const user = userEvent.setup()
     const { container } = renderBatasPengajuan()
 
-    // Isi slot yang lolos H-1 (17.00 WIB = tepat 24 jam) agar seluruh
+    // Isi slot yang lolos H-14 (17.00 WIB = tepat 336 jam) agar seluruh
     // pemicu punya nama aksesibel sebelum diperiksa.
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
     await user.click(await screen.findByRole("option", { name: "17:00" }))

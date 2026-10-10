@@ -29,8 +29,8 @@ function requireLoopbackDatabaseUrl(value: string | undefined): string {
   return value;
 }
 
-// Tanggal jauh di masa depan (minimal 48 jam dari sekarang): imun aturan
-// pengajuan H-1 Tahap 7 dan aturan H-24 pembatalan.
+// Tanggal tetap jauh di masa depan: tidak dipengaruhi batas pengajuan H-14
+// maupun batas pembatalan H-24.
 const AKHIR_SEPTEMBER = "2027-09-30";
 const AWAL_OKTOBER = "2027-10-01";
 const AKHIR_DESEMBER = "2027-12-31";

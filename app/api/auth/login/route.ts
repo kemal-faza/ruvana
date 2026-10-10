@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return problemResponse({ status: 401, code: "INVALID_CREDENTIALS", title: "Autentikasi gagal", detail: "Email atau kata sandi salah.", instance });
     }
     if (result.kind === "rate_limited") {
-      const response = problemResponse({ status: 429, code: "LOGIN_RATE_LIMITED", title: "Terlalu banyak percobaan login", detail: "Coba lagi setelah 15 menit.", instance });
+      const response = problemResponse({ status: 429, code: "LOGIN_RATE_LIMITED", title: "Terlalu banyak percobaan login", detail: `Coba lagi setelah ${JENDELA_LOGIN_MENIT} menit.`, instance });
       response.headers.set("Retry-After", String(JENDELA_LOGIN_MENIT * 60));
       return response;
     }

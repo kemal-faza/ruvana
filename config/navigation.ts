@@ -2,7 +2,6 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
-  History,
   Settings,
 } from "lucide-react"
 
@@ -14,8 +13,13 @@ export const navigation: readonly NavigationGroup[] = [
     key: "utama",
     label: "Utama",
     items: [
-      { key: "riwayat", label: "Reservasi Saya", href: "/reservasi/riwayat", icon: History },
-      { key: "reservasi", label: "Reservasi", href: "/reservasi", icon: CalendarDays, exact: true },
+      {
+        key: "reservasi",
+        label: "Reservasi",
+        href: "/reservasi/riwayat",
+        icon: CalendarDays,
+        activePrefixes: ["/reservasi"],
+      },
       {
         key: "fasilitas",
         label: "Fasilitas",

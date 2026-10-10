@@ -54,11 +54,11 @@ describe("FasilitasPage", () => {
     expect(listStaffFacilitiesService).not.toHaveBeenCalled();
   });
 
-  it("menjelaskan dampak perubahan status sebelum konfirmasi", async () => {
+  it("menampilkan judul status fasilitas tanpa caption pendamping", async () => {
     render(await FasilitasPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "Status fasilitas" })).toBeInTheDocument();
-    expect(screen.getByText(/dibatalkan otomatis/)).toBeInTheDocument();
+    expect(screen.queryByText(/dibatalkan otomatis/)).not.toBeInTheDocument();
   });
 
   it("merender daftar fasilitas dari service petugas", async () => {

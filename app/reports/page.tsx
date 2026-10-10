@@ -7,7 +7,7 @@ import { listMyReports, listReportFacilityOptions } from "@/lib/services/report-
 export const dynamic = "force-dynamic"
 
 const description =
-  "Pantau laporan kerusakan fasilitas kampus yang telah Anda ajukan beserta progres penanganannya."
+  "Lihat status dan catatan penyelesaian laporan kerusakan yang Anda kirim."
 
 export const metadata: Metadata = {
   title: "Laporan | ruvana",

@@ -40,6 +40,6 @@ describe("POST /api/auth/login", () => {
     expect((await invalid.json()).code).toBe("INVALID_CREDENTIALS");
     const limited = await POST(request("http://localhost:3000"));
     expect(limited.status).toBe(429);
-    expect(limited.headers.get("Retry-After")).toBe("900");
+    expect(limited.headers.get("Retry-After")).toBe("120");
   });
 });

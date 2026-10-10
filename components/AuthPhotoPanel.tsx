@@ -21,11 +21,8 @@ export function AuthPhotoPanel() {
         />
         <div className="absolute inset-x-0 bottom-0 max-w-lg p-8 text-white lg:p-11">
           <h2 id="auth-intro-title" className="text-2xl/tight font-semibold tracking-tight">
-            Kelola kebutuhan fasilitas lebih terstruktur.
+            Reservasi dan laporan fasilitas kampus.
           </h2>
-          <p className="mt-3 text-sm/relaxed text-white/90 sm:text-base/relaxed">
-            Satu akses untuk reservasi ruang, pemantauan permintaan, dan pengelolaan fasilitas.
-          </p>
         </div>
       </div>
     </section>

@@ -69,7 +69,8 @@ describe("createReservationService", () => {
     endTime: "10:00",
     tujuanPenggunaan: "Diskusi kelompok",
   };
-  const now = new Date("2026-09-09T03:00:00Z");
+  // ~15 hari sebelum slot uji: lolos batas pengajuan 14 hari (336 jam).
+  const now = new Date("2026-08-31T03:00:00Z");
 
   it("membuat reservasi PENDING ketika valid dan tidak ada konflik", async () => {
     const tx = makeTxMock();
@@ -156,42 +157,42 @@ describe("createReservationService", () => {
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
-  it("menerima pengajuan tepat 24 jam sebelum waktu mulai", async () => {
+  it("menerima pengajuan tepat 336 jam / 14 hari sebelum waktu mulai", async () => {
     const tx = makeTxMock();
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
-    // 09:00 WIB 15 Sep = 02:00 UTC; tepat 24 jam sebelumnya = 02:00 UTC 14 Sep.
-    const tepat24Jam = new Date("2026-09-14T02:00:00.000Z");
-    const result = await createReservationService(42, validInput, tepat24Jam);
+    // 09:00 WIB 15 Sep = 02:00 UTC; tepat 14 hari sebelumnya = 02:00 UTC 1 Sep.
+    const tepat14Hari = new Date("2026-09-01T02:00:00.000Z");
+    const result = await createReservationService(42, validInput, tepat14Hari);
     expect(result.ok).toBe(true);
   });
 
-  it("menolak pengajuan 24 jam kurang 1 detik dengan galat batas pengajuan", async () => {
+  it("menolak pengajuan 336 jam kurang 1 detik dengan galat batas pengajuan", async () => {
     const tx = makeTxMock();
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
-    const kurangSatuDetik = new Date("2026-09-14T02:00:01.000Z");
+    const kurangSatuDetik = new Date("2026-09-01T02:00:01.000Z");
     const result = await createReservationService(42, validInput, kurangSatuDetik);
     expect(result.ok).toBe(false);
     if (!result.ok && result.error.type === "validation") {
       const pesan = result.error.errors.map((e) => e.message).join(" ");
-      expect(pesan).toContain("24 jam");
+      expect(pesan).toContain("14 hari");
     } else {
-      throw new Error("Seharusnya gagal validasi batas pengajuan 24 jam");
+      throw new Error("Seharusnya gagal validasi batas pengajuan 14 hari");
     }
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("menghitung batas 24 jam dari instant UTC lintas tanggal Asia/Jakarta (17.00 UTC = 00.00 WIB)", async () => {
+  it("menghitung batas pengajuan dari instant UTC lintas tanggal Asia/Jakarta (17.00 UTC = 00.00 WIB)", async () => {
     const tx = makeTxMock();
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
-    // 00.00 WIB 15 Sep = 17.00 UTC 14 Sep. Slot 07.00 WIB 16 Sep = 00.00 UTC 16 Sep.
+    // 00.00 WIB 15 Sep = 17.00 UTC 14 Sep. Slot 07.00 WIB 5 Okt = 00.00 UTC 5 Okt.
     const tengahMalamWib = new Date("2026-09-14T17:00:00.000Z");
-    const inputBesok = { ...validInput, date: "2026-09-16", startTime: "07:00", endTime: "07:30" };
-    const lolos = await createReservationService(42, inputBesok, tengahMalamWib);
+    const inputJauh = { ...validInput, date: "2026-10-05", startTime: "07:00", endTime: "07:30" };
+    const lolos = await createReservationService(42, inputJauh, tengahMalamWib);
     expect(lolos.ok).toBe(true);
 
-    // 23.59.59 WIB 15 Sep = 16.59.59 UTC 15 Sep; selisih ke slot tinggal ~7 jam.
-    const malamWib = new Date("2026-09-15T16:59:59.000Z");
-    const mepet = await createReservationService(42, inputBesok, malamWib);
+    // Slot 07.00 WIB 20 Sep = 00.00 UTC 20 Sep; selisih tinggal ~5 hari.
+    const inputMepet = { ...validInput, date: "2026-09-20", startTime: "07:00", endTime: "07:30" };
+    const mepet = await createReservationService(42, inputMepet, tengahMalamWib);
     expect(mepet.ok).toBe(false);
     if (!mepet.ok) expect(mepet.error.type).toBe("validation");
   });
