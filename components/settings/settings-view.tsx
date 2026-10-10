@@ -256,11 +256,11 @@ function GeneralSection() {
                 <Button
                   key={value}
                   type="button"
-                  variant={selected ? "secondary" : "outline"}
+                  variant={selected ? "soft" : "outline"}
                   size="icon"
                   aria-label={label}
                   aria-pressed={selected}
-                  className="border-border"
+                  className={selected ? "border-ring ring-2 ring-inset ring-ring" : "border-border"}
                   onClick={() => setTheme(value)}
                 >
                   <Icon aria-hidden="true" />
