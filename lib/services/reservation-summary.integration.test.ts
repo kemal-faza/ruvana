@@ -26,8 +26,8 @@ function requireLoopbackDatabaseUrl(value: string | undefined): string {
   return value;
 }
 
-// Tanggal jauh di masa depan (minimal 48 jam dari sekarang): imun aturan
-// pengajuan H-1 Tahap 7 dan aturan H-24 pembatalan.
+// Tanggal jauh di masa depan (minimal 336 jam dari sekarang): imun aturan
+// pengajuan H-14 dan aturan H-24 pembatalan.
 const TANGGAL = "2027-06-15";
 
 describe.skipIf(!databaseUrl)("integrasi PostgreSQL ringkasan reservasi petugas", () => {
