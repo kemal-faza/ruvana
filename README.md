@@ -47,7 +47,7 @@ Variabel yang digunakan oleh konfigurasi lokal:
 | `POSTGRES_PORT` | Port PostgreSQL lokal. |
 | `DATABASE_URL` | Koneksi Prisma dan aplikasi ke PostgreSQL. Wajib tersedia saat Prisma Client dibuat. |
 | `NEXT_PUBLIC_SITE_URL` | URL aplikasi untuk metadata publik; gunakan `http://localhost:3001` saat development karena `pnpm dev` menjalankan server pada port 3001. |
-| `SEED_DEMO_PASSWORD` | Kata sandi unik 16–72 byte untuk akun demo lokal. Wajib saat `pnpm db:seed`. |
+| `SEED_DEMO_PASSWORD` | Kata sandi unik 8–72 byte untuk akun demo lokal. Wajib saat `pnpm db:seed`. |
 
 Jangan simpan kredensial production di `.env.example` atau README.
 
@@ -123,7 +123,7 @@ pnpm build
 
 ### Admin awal dan akun demo yang pernah terpapar
 
-1. Siapkan `DATABASE_URL` production dan nilai unik untuk `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, serta `BOOTSTRAP_ADMIN_PASSWORD` (16–72 byte) melalui environment aman. Jalankan `pnpm db:bootstrap-admin` untuk membuat admin tepercaya tanpa kata sandi bawaan. Perintah menolak email yang sudah terdaftar.
+1. Siapkan `DATABASE_URL` production dan nilai unik untuk `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, serta `BOOTSTRAP_ADMIN_PASSWORD` (8–72 byte) melalui environment aman. Jalankan `pnpm db:bootstrap-admin` untuk membuat admin tepercaya tanpa kata sandi bawaan. Perintah menolak email yang sudah terdaftar.
 2. Berikan kata sandi demo lama yang terpapar melalui `COMPROMISED_DEMO_PASSWORD` di environment sementara; jangan menuliskannya di repo atau argumen perintah. Jalankan `pnpm db:remediate-demo` untuk audit tanpa perubahan. Tinjau jumlah reservasi, laporan, perubahan fasilitas, dan sesi aktif yang terkait sebelum melanjutkan.
 3. Setelah admin baru siap dan hasil audit ditinjau, jalankan `pnpm exec tsx prisma/remediate-demo-accounts.ts --apply`. Skrip mengacak kata sandi, menonaktifkan setiap akun yang cocok, dan mencabut sesinya dalam transaksi; data reservasi dan laporan tetap tersimpan. Skrip menolak perubahan bila tidak ada admin aktif lain yang aman.
 4. Pastikan login dengan kredensial demo lama menghasilkan 401. Audit log akses/auth production untuk aktivitas sebelumnya; tabel `sessions` hanya mencatat sesi yang masih ada dan tidak menyimpan seluruh riwayat login.

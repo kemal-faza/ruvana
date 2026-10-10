@@ -90,20 +90,23 @@ export function deleteAuthSession(tokenHash: string) {
   return prisma.session.deleteMany({ where: { tokenHash } });
 }
 
-export function findLoginAttempt(key: string) {
-  return prisma.loginAttempt.findUnique({ where: { key } });
-}
-
-export async function storeLoginFailure(key: string, cutoff: Date): Promise<void> {
-  await prisma.$executeRaw`
+// Reservasi slot dan pemeriksaan batas berjalan dalam satu upsert PostgreSQL.
+// Baris dengan key sama dikunci oleh ON CONFLICT sehingga request serentak
+// tidak dapat melewati batas sebelum pemeriksaan kata sandi selesai.
+export async function reserveLoginAttemptSlot(key: string, windowMinutes: number, limit: number): Promise<boolean> {
+  const rows = await prisma.$queryRaw<Array<{ failures: number }>>`
     INSERT INTO "login_attempts" ("key", "failures", "windowAt")
-    VALUES (${key}, 1, CURRENT_TIMESTAMP)
+    VALUES (${key}, 1, LOCALTIMESTAMP)
     ON CONFLICT ("key") DO UPDATE SET
-      "failures" = CASE WHEN "login_attempts"."windowAt" <= ${cutoff}
+      "failures" = CASE WHEN "login_attempts"."windowAt" <= LOCALTIMESTAMP - (${windowMinutes} * INTERVAL '1 minute')
         THEN 1 ELSE "login_attempts"."failures" + 1 END,
-      "windowAt" = CASE WHEN "login_attempts"."windowAt" <= ${cutoff}
-        THEN CURRENT_TIMESTAMP ELSE "login_attempts"."windowAt" END
+      "windowAt" = CASE WHEN "login_attempts"."windowAt" <= LOCALTIMESTAMP - (${windowMinutes} * INTERVAL '1 minute')
+        THEN LOCALTIMESTAMP ELSE "login_attempts"."windowAt" END
+    WHERE "login_attempts"."windowAt" <= LOCALTIMESTAMP - (${windowMinutes} * INTERVAL '1 minute')
+       OR "login_attempts"."failures" < ${limit}
+    RETURNING "failures"
   `;
+  return rows.length === 1;
 }
 
 export function deleteLoginAttempts(key: string) {

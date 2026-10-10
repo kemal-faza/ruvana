@@ -13,6 +13,7 @@ export const MASA_SESI_JAM = 12;
 export const RETENSI_IDEMPOTENCY_JAM = 24;
 export const BATAS_NAMA_AKUN_KARAKTER = 100;
 export const BATAS_EMAIL_AKUN_KARAKTER = 254;
+export const BATAS_PASSWORD_AKUN_MIN_BYTE = 8;
 export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 24; // H-24 jam sebelum mulai (PRD Bagian 20 menggantikan H-2 TASK lama)
 export const BATAS_PENGAJUAN_JAM = 336; // Pengajuan minimal H-14: waktu mulai sekurang-kurangnya 336 jam (14 hari) dari instant pengajuan (keputusan pemilik menggantikan H-1)
