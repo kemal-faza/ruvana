@@ -9,6 +9,7 @@ import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { reservasiNavigation } from "../navigation";
 import { shellAccountFromUser } from "@/config/navigation";
 import { requirePengguna } from "@/lib/auth";
+import { getMaintenanceCancellationSummaryService } from "@/lib/services/reservation-service";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +20,18 @@ export const metadata: Metadata = {
 
 export default async function RiwayatReservasiPage() {
   // Guard server (IAM-03): tanpa sesi ke /login, role lain ke /403.
-  // Riwayat dibaca komponen klien lewat API milik pengguna.
+  // Riwayat dibaca komponen klien lewat API milik pengguna; ringkasan banner
+  // pemeliharaan dihitung server agar tidak bergantung halaman yang sedang tampil.
   const pengguna = await requirePengguna();
   const account = shellAccountFromUser(pengguna);
+  // Banner hanya pelengkap: kegagalan hitungan tidak boleh menggagalkan halaman.
+  // Daftar riwayat tetap dirender dan menampilkan galatnya sendiri.
+  const pembatalanPemeliharaan = await getMaintenanceCancellationSummaryService(pengguna.id).catch(
+    (e: unknown) => {
+      console.error("Gagal menghitung ringkasan pembatalan pemeliharaan", e);
+      return { total: 0, namaFasilitas: [] };
+    },
+  );
 
   return (
     <AppShell navigation={reservasiNavigation} account={account}>
@@ -41,7 +51,7 @@ export default async function RiwayatReservasiPage() {
             Ajukan Reservasi
           </Button>
         </header>
-        <ReservationHistoryList />
+        <ReservationHistoryList pembatalanPemeliharaan={pembatalanPemeliharaan} />
       </main>
     </AppShell>
   );

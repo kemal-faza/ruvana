@@ -1,4 +1,4 @@
-import { BATAS_PEMBATALAN_JAM, PESAN_BATAS_PENGAJUAN, ZONA_WAKTU } from "@/config/business";
+import { BATAS_PEMBATALAN_JAM, PESAN_BATAS_PENGAJUAN, STATUS_RESERVASI_PEMELIHARAAN, ZONA_WAKTU } from "@/config/business";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ProblemFieldError } from "@/lib/http/problem";
@@ -256,6 +256,14 @@ export interface MyReservationCollection {
   };
 }
 
+/** Jumlah contoh nama fasilitas yang ditampilkan pada banner pemeliharaan. */
+const SAMPEL_BANNER_PEMELIHARAAN = 3;
+
+export interface MaintenanceCancellationSummary {
+  total: number;
+  namaFasilitas: string[];
+}
+
 export async function listMyReservationsService(
   userId: number,
   query: MyReservationListQuery,
@@ -279,6 +287,28 @@ export async function listMyReservationsService(
       },
     },
   };
+}
+
+/**
+ * Ringkasan pembatalan otomatis akibat pemeliharaan (RES-09) untuk banner
+ * riwayat: `total` adalah jumlah seluruh reservasi pengguna pada status itu,
+ * bukan jumlah baris halaman yang sedang dibuka. Nama fasilitas hanya contoh
+ * dari beberapa pembatalan terbaru.
+ */
+export async function getMaintenanceCancellationSummaryService(
+  userId: number,
+): Promise<MaintenanceCancellationSummary> {
+  await expirePendingReservations();
+  const [total, rows] = await Promise.all([
+    countMyReservations({ userId, status: STATUS_RESERVASI_PEMELIHARAAN }),
+    listMyReservations({
+      userId,
+      status: STATUS_RESERVASI_PEMELIHARAAN,
+      skip: 0,
+      take: SAMPEL_BANNER_PEMELIHARAAN,
+    }),
+  ]);
+  return { total, namaFasilitas: rows.map((row) => row.facility.nama) };
 }
 
 export async function getMyReservationService(

@@ -349,3 +349,56 @@ describe("ReservationHistoryList loading", () => {
     expect(await screen.findByText("Belum ada reservasi")).toBeInTheDocument();
   });
 });
+
+// Ringkasan datang dari server (halaman riwayat), jadi komponen hanya merender:
+// angkanya harus utuh walau daftar hanya memuat satu halaman atau sedang difilter.
+describe("ReservationHistoryList banner pemeliharaan", () => {
+  const RINGKASAN = { total: 5, namaFasilitas: ["Aula Utama", "Lab Kimia", "RK-101"] }
+
+  it("menampilkan total server, contoh nama fasilitas, dan sisa hitungan", async () => {
+    mockFetchRiwayat()
+    const { container } = render(<ReservationHistoryList pembatalanPemeliharaan={RINGKASAN} />)
+
+    expect(await screen.findByText("5 reservasi kamu dibatalkan karena pemeliharaan")).toBeInTheDocument()
+    expect(screen.getByText("Aula Utama, Lab Kimia, RK-101 dan 2 lainnya")).toBeInTheDocument()
+    expect((await axe(container)).violations).toEqual([])
+  }, 20000)
+
+  it("memakai bentuk tunggal tanpa sisa untuk satu pembatalan", async () => {
+    mockFetchRiwayat()
+    render(<ReservationHistoryList pembatalanPemeliharaan={{ total: 1, namaFasilitas: ["Lab Kimia"] }} />)
+
+    expect(await screen.findByText("1 reservasi kamu dibatalkan karena pemeliharaan")).toBeInTheDocument()
+    expect(screen.getByText("Lab Kimia")).toBeInTheDocument()
+    expect(screen.queryByText(/lainnya/)).not.toBeInTheDocument()
+  }, 20000)
+
+  it("tetap utuh saat daftar difilter ke status lain", async () => {
+    const user = userEvent.setup()
+    mockFetchRiwayat()
+    render(<ReservationHistoryList pembatalanPemeliharaan={RINGKASAN} />)
+
+    await screen.findByText("RK-102")
+    await pilihFilter(user, "Dibatalkan Petugas")
+    await screen.findByText("Belum ada reservasi")
+
+    expect(screen.getByText("5 reservasi kamu dibatalkan karena pemeliharaan")).toBeInTheDocument()
+    expect(screen.getByText("Aula Utama, Lab Kimia, RK-101 dan 2 lainnya")).toBeInTheDocument()
+  }, 20000)
+
+  it("tanpa banner saat total nol", async () => {
+    mockFetchRiwayat()
+    render(<ReservationHistoryList pembatalanPemeliharaan={{ total: 0, namaFasilitas: [] }} />)
+
+    await screen.findByText("RK-102")
+    expect(screen.queryByText(/dibatalkan karena pemeliharaan/)).not.toBeInTheDocument()
+  }, 20000)
+
+  it("tanpa banner saat ringkasan tidak diberikan", async () => {
+    mockFetchRiwayat()
+    render(<ReservationHistoryList />)
+
+    await screen.findByText("RK-102")
+    expect(screen.queryByText(/dibatalkan karena pemeliharaan/)).not.toBeInTheDocument()
+  }, 20000)
+});
