@@ -387,7 +387,7 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
                   </SelectContent>
                 </Select>
                 {adaSlotMepet && !galatField.jamMulai && (
-                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN}</FieldDescription>
+                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
                 )}
                 {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
