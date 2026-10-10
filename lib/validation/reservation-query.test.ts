@@ -26,7 +26,7 @@ describe("parseMyReservationListQuery", () => {
   });
 
   it("menerima semua status reservasi yang dikenal", () => {
-    for (const status of ["PENDING", "APPROVED", "REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"]) {
+    for (const status of ["PENDING", "APPROVED", "REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "CANCELLED_BY_MAINTENANCE", "EXPIRED"]) {
       const r = parseMyReservationListQuery(params(`status=${status}`));
       expect(r.ok).toBe(true);
     }

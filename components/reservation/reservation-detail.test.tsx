@@ -92,6 +92,41 @@ describe("ReservationDetail", () => {
     expect(screen.queryByText("Batalkan reservasi")).not.toBeInTheDocument()
   })
 
+  it("menampilkan banner pemeliharaan dan tautan fasilitas lain untuk pembatalan otomatis (RES-09)", async () => {
+    mockFetchOk({
+      ...data,
+      status: "CANCELLED_BY_MAINTENANCE",
+      alasan: "Fasilitas dalam perbaikan.",
+      processedAt: "2026-12-01T02:00:00.000Z",
+      processedBy: null,
+    } as unknown as ReservationResult)
+    render(<ReservationDetail id={91} />)
+
+    await screen.findByRole("heading", { name: "Aula Utama" })
+    expect(screen.getByRole("alert")).toBeInTheDocument()
+    expect(screen.getByText("Dibatalkan karena pemeliharaan fasilitas")).toBeInTheDocument()
+    expect(screen.getAllByText("Dibatalkan Pemeliharaan").length).toBeGreaterThan(0)
+    const tautan = screen.getByRole("button", { name: "Cari fasilitas lain" })
+    expect(tautan).toHaveAttribute("href", "/fasilitas")
+    expect(screen.getByText("Fasilitas dalam perbaikan.")).toBeInTheDocument()
+    expect(screen.queryByText("Batalkan reservasi")).not.toBeInTheDocument()
+  })
+
+  it("tidak menampilkan banner pemeliharaan untuk pembatalan petugas manual (RES-07)", async () => {
+    mockFetchOk({
+      ...data,
+      status: "CANCELLED_BY_OFFICER",
+      alasan: "Dibatalkan karena perbaikan mendadak pada fasilitas",
+      processedAt: "2026-12-01T02:00:00.000Z",
+      processedBy: 7,
+    } as unknown as ReservationResult)
+    render(<ReservationDetail id={91} />)
+
+    await screen.findByRole("heading", { name: "Aula Utama" })
+    expect(screen.queryByText("Dibatalkan karena pemeliharaan fasilitas")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Cari fasilitas lain" })).not.toBeInTheDocument()
+  })
+
   it("menampilkan status Dibatalkan Petugas dan alasan pembatalan mendesak (RES-07)", async () => {
     mockFetchOk({
       ...data,

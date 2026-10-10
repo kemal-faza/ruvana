@@ -265,6 +265,7 @@ describe("ReservationHistoryList filter status tampil label domain (RES-03)", ()
     { enum: "REJECTED", label: "Ditolak" },
     { enum: "CANCELLED_BY_USER", label: "Dibatalkan Pengguna" },
     { enum: "CANCELLED_BY_OFFICER", label: "Dibatalkan Petugas" },
+    { enum: "CANCELLED_BY_MAINTENANCE", label: "Dibatalkan Pemeliharaan" },
     { enum: "EXPIRED", label: "Kedaluwarsa" },
   ]
 
