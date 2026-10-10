@@ -1,5 +1,5 @@
 import { ReservationForm } from "@/components/reservation/reservation-form"
-import { TIPE_FASILITAS } from "@/config/business"
+import { BATAS_PENGAJUAN_JAM, TIPE_FASILITAS } from "@/config/business"
 import { computeFacilityAvailability } from "@/lib/reservations/availability"
 import { listPublicFacilities } from "@/lib/services/facility-service"
 import { getTodayDateAsiaJakarta, isValidDateFormat } from "@/lib/time/reservation-time"
@@ -27,11 +27,12 @@ export async function ReservationContent({
   const rawFacilityId = Array.isArray(query.facilityId) ? query.facilityId[0] : query.facilityId
   const rawDate = Array.isArray(query.date) ? query.date[0] : query.date
 
-  // Tanggal default H+2 kalender Asia/Jakarta agar seluruh slot lolos batas
-  // pengajuan H-1 berapa pun jam saat halaman dibuka.
+  // Tanggal default dihitung dari batas pengajuan + 1 hari buffer (H+15 untuk
+  // batas 14 hari) agar seluruh slot hari itu lolos berapa pun jam halaman dibuka.
   const fallbackDate = (() => {
     const [y, m, d] = getTodayDateAsiaJakarta(new Date()).split("-").map(Number)
-    return new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, (d ?? 1) + 2)).toISOString().slice(0, 10)
+    const hariBuffer = BATAS_PENGAJUAN_JAM / 24 + 1
+    return new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, (d ?? 1) + hariBuffer)).toISOString().slice(0, 10)
   })()
   const date = rawDate && isValidDateFormat(rawDate) ? rawDate : fallbackDate
 
