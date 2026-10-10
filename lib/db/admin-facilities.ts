@@ -92,3 +92,16 @@ export function updateAdminFacility(
 ) {
   return client.facility.update({ where: { id }, data, select: adminFacilitySelect });
 }
+
+/** Hitung riwayat (reservasi + laporan) yang menghalangi hapus fisik fasilitas. */
+export async function countFacilityHistory(client: Prisma.TransactionClient, facilityId: number) {
+  const [reservations, reports] = await Promise.all([
+    client.reservation.count({ where: { facilityId } }),
+    client.report.count({ where: { facilityId } }),
+  ]);
+  return reservations + reports;
+}
+
+export function deleteAdminFacility(client: Prisma.TransactionClient, id: number) {
+  return client.facility.delete({ where: { id }, select: { id: true, foto: true } });
+}

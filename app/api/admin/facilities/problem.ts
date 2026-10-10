@@ -26,3 +26,13 @@ export function duplicateName(instance: string) {
     instance,
   });
 }
+
+export function facilityHasHistory(instance: string) {
+  return problemResponse({
+    status: 409,
+    code: "FACILITY_HAS_HISTORY",
+    title: "Fasilitas memiliki riwayat",
+    detail: "Fasilitas dengan riwayat tidak dapat dihapus permanen. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya.",
+    instance,
+  });
+}

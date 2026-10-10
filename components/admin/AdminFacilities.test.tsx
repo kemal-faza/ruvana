@@ -187,4 +187,37 @@ describe("AdminFacilities", () => {
     URL.revokeObjectURL = originalRevoke;
     vi.unstubAllGlobals();
   });
+
+  it("menghapus fasilitas setelah konfirmasi", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderFixture();
+
+    await user.click(screen.getAllByRole("button", { name: /Hapus/ })[0]);
+    const sheet = within(await screen.findByRole("dialog"));
+    await user.click(sheet.getByRole("button", { name: "Hapus" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/facilities/1", { method: "DELETE" }),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("menampilkan saran nonaktifkan saat fasilitas beriwayat", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      json: async () => ({ detail: "Fasilitas memiliki riwayat sehingga tidak dapat dihapus permanen." }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderFixture();
+
+    await user.click(screen.getAllByRole("button", { name: /Hapus/ })[0]);
+    const sheet = within(await screen.findByRole("dialog"));
+    await user.click(sheet.getByRole("button", { name: "Hapus" }));
+
+    expect(await screen.findByText(/memiliki riwayat/i)).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
 });

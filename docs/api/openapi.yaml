@@ -1631,8 +1631,8 @@ paths:
            menghitung ulang availability dari APPROVED terkini. Untuk setiap perubahan
            status, sebelum mengembalikan 200 server wajib invalidate seluruh representasi
            public list/detail/availability yang terdampak; client wajib refetch representasi
-           tersebut. Minimal satu field wajib dikirim; tidak ada operasi DELETE dan nama
-           tetap unik.
+           tersebut. Minimal satu field wajib dikirim dan nama tetap unik; penghapusan
+           permanen dilakukan lewat operasi delete yang menolak fasilitas beriwayat.
       x-requirement-ids: [FAC-05, FAC-04, REP-04, RES-09, IAM-03]
       security: [{ cookieAuth: [] }]
       parameters:
@@ -1663,6 +1663,30 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/FacilityMutationConflict' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      operationId: deleteFacility
+      tags: [Administration]
+      summary: Menghapus permanen fasilitas tanpa riwayat
+      description: >-
+        Hanya role admin dengan status ACTIVE. Hapus permanen hanya diizinkan bila
+        fasilitas belum memiliki riwayat (reservasi atau laporan); bila ada, server
+        menolak dengan 409 dan menyarankan penonaktifan (status INACTIVE). Foto
+        unggahan fasilitas ikut dibersihkan dan representasi publik terdampak
+        di-invalidate sebelum 204.
+      x-requirement-ids: [FAC-05, IAM-03]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '204':
+          description: Fasilitas dihapus permanen.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/FacilityMutationConflict' }
         '500': { $ref: '#/components/responses/InternalServerError' }
   /api/admin/analitik/ekspor/csv:
     get:

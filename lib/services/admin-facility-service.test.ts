@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Prisma } from "@/generated/prisma/client";
 import {
   countAdminFacilities,
+  countFacilityHistory,
   createAdminFacility,
+  deleteAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
   updateAdminFacility,
@@ -14,6 +16,7 @@ import { removeFacilityPhotoObject, verifyFacilityPhotoUpload } from "@/lib/stor
 
 import {
   createFacility,
+  deleteFacility,
   getAdminFacility,
   listAdminFacilities,
   updateFacility,
@@ -36,6 +39,8 @@ vi.mock("@/lib/db/admin-facilities", () => ({
   findAdminFacilityById: vi.fn(),
   createAdminFacility: vi.fn(),
   updateAdminFacility: vi.fn(),
+  countFacilityHistory: vi.fn(),
+  deleteAdminFacility: vi.fn(),
 }));
 
 const now = new Date("2026-09-30T05:00:00Z");
@@ -303,3 +308,44 @@ describe("foto fasilitas pada mutasi admin", () => {
 function mockCreateTxForFoto() {
   mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn({ facility: { create: vi.fn() } }));
 }
+
+describe("deleteFacility", () => {
+  function mockDeleteTx(facility: Record<string, unknown> | null) {
+    const tx = { facility: { delete: vi.fn() } };
+    vi.mocked(lockFacilityById).mockResolvedValue(facility as never);
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    return tx;
+  }
+
+  it("menghapus fasilitas tanpa riwayat dan membersihkan blob foto", async () => {
+    mockDeleteTx(row({ foto: "facilities/7/x.jpg" }));
+    vi.mocked(countFacilityHistory).mockResolvedValue(0);
+    vi.mocked(deleteAdminFacility).mockResolvedValue({ id: 1, foto: "facilities/7/x.jpg" } as never);
+
+    const result = await deleteFacility(1);
+
+    expect(deleteAdminFacility).toHaveBeenCalledWith(expect.anything(), 1);
+    expect(removeFacilityPhotoObject).toHaveBeenCalledWith("facilities/7/x.jpg");
+    expect(result.ok).toBe(true);
+  });
+
+  it("menolak hapus bila fasilitas punya riwayat", async () => {
+    mockDeleteTx(row());
+    vi.mocked(countFacilityHistory).mockResolvedValue(2);
+
+    const result = await deleteFacility(1);
+
+    expect(deleteAdminFacility).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("has_history");
+  });
+
+  it("mengembalikan not_found bila fasilitas tidak ada", async () => {
+    mockDeleteTx(null);
+
+    const result = await deleteFacility(999);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("not_found");
+  });
+});

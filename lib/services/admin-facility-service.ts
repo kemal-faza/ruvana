@@ -3,7 +3,9 @@ import type { Role, StatusFasilitas, TipeFasilitas } from "@/generated/prisma/en
 import { lockFacilityById } from "@/lib/db/facilities";
 import {
   countAdminFacilities,
+  countFacilityHistory,
   createAdminFacility,
+  deleteAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
   findAdminFacilityLocations,
@@ -77,7 +79,8 @@ export type AdminFacilityMutationError =
   | { type: "not_found"; message: string }
   | { type: "transition"; message: string }
   | { type: "duplicate_name"; message: string }
-  | { type: "invalid_photo"; message: string };
+  | { type: "invalid_photo"; message: string }
+  | { type: "has_history"; message: string };
 
 type PersistSuccess<T> = (tx: Prisma.TransactionClient, result: T) => Promise<void>;
 
@@ -263,6 +266,47 @@ export async function updateFacility(
     }
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, error: { type: "duplicate_name", message: "Nama fasilitas sudah digunakan" } };
+    }
+    throw e;
+  }
+}
+
+/**
+ * Hapus permanen fasilitas. Hanya diizinkan bila fasilitas belum punya riwayat
+ * (reservasi/laporan); jika ada, gunakan penonaktifan (status INACTIVE). Foto
+ * unggahan ikut dibersihkan setelah baris terhapus.
+ */
+export async function deleteFacility(
+  facilityId: number,
+): Promise<{ ok: true } | { ok: false; error: AdminFacilityMutationError }> {
+  const riwayatPesan = "Fasilitas memiliki riwayat sehingga tidak dapat dihapus permanen.";
+  let fotoUntukDihapus: string | null = null;
+  try {
+    await prisma.$transaction(async (tx) => {
+      const facility = await lockFacilityById(tx, facilityId);
+      if (!facility) throw { kind: "not_found" as const };
+
+      if ((await countFacilityHistory(tx, facilityId)) > 0) throw { kind: "has_history" as const };
+
+      fotoUntukDihapus = facility.foto;
+      await deleteAdminFacility(tx, facilityId);
+    });
+
+    if (fotoUntukDihapus) await removeFacilityPhotoObject(fotoUntukDihapus);
+    return { ok: true };
+  } catch (e) {
+    if (e && typeof e === "object" && "kind" in e) {
+      const err = e as { kind: string };
+      if (err.kind === "not_found") {
+        return { ok: false, error: { type: "not_found", message: "Fasilitas tidak ditemukan" } };
+      }
+      if (err.kind === "has_history") {
+        return { ok: false, error: { type: "has_history", message: riwayatPesan } };
+      }
+    }
+    // Jaring pengaman FK RESTRICT bila ada riwayat yang lolos pengecekan.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
+      return { ok: false, error: { type: "has_history", message: riwayatPesan } };
     }
     throw e;
   }

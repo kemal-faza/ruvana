@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import {
   buildAdminFacilityWhere,
   countAdminFacilities,
+  countFacilityHistory,
   createAdminFacility,
+  deleteAdminFacility,
   findAdminFacilities,
   findAdminFacilityById,
   findAdminFacilityLocations,
@@ -88,5 +90,27 @@ describe("query admin", () => {
     expect(prisma.facility.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ select: { lokasi: true }, distinct: ["lokasi"], orderBy: { lokasi: "asc" } }),
     );
+  });
+});
+
+describe("riwayat dan hapus fasilitas", () => {
+  it("countFacilityHistory menjumlahkan reservasi dan laporan", async () => {
+    const tx = {
+      reservation: { count: vi.fn().mockResolvedValue(2) },
+      report: { count: vi.fn().mockResolvedValue(1) },
+    };
+
+    await expect(countFacilityHistory(tx as never, 7)).resolves.toBe(3);
+    expect(tx.reservation.count).toHaveBeenCalledWith({ where: { facilityId: 7 } });
+    expect(tx.report.count).toHaveBeenCalledWith({ where: { facilityId: 7 } });
+  });
+
+  it("deleteAdminFacility menghapus baris dan mengambil pathname foto", async () => {
+    const del = vi.fn().mockResolvedValue({ id: 7, foto: "facilities/1/x.jpg" });
+    const tx = { facility: { delete: del } };
+
+    await deleteAdminFacility(tx as never, 7);
+
+    expect(del).toHaveBeenCalledWith({ where: { id: 7 }, select: { id: true, foto: true } });
   });
 });

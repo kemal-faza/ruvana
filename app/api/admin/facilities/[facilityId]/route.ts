@@ -12,12 +12,12 @@ import {
   notFound,
   validationFailed,
 } from "@/lib/http/problem";
-import { getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
+import { deleteFacility, getAdminFacility, updateFacility } from "@/lib/services/admin-facility-service";
 import { parseFacilityId } from "@/lib/validation/facility-query";
 import { parseFacilityUpdateBody } from "@/lib/validation/admin-facility";
 
 import { guardAdmin } from "../guard";
-import { adminIdempotencyConflict, duplicateName } from "../problem";
+import { adminIdempotencyConflict, duplicateName, facilityHasHistory } from "../problem";
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
   const instance = request.nextUrl.pathname;
@@ -106,4 +106,36 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/
 
   revalidateFacilityViews(parsedId.value);
   return NextResponse.json(result.data, { status: 200, headers: { "Cache-Control": "no-store" } });
+}
+
+/** Hapus permanen fasilitas; ditolak bila masih punya riwayat (reservasi/laporan). */
+export async function DELETE(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {
+  const instance = request.nextUrl.pathname;
+  const session = await guardAdmin(request);
+  if (session instanceof NextResponse) return session;
+
+  const rejected = originError(request);
+  if (rejected) return rejected;
+
+  const { facilityId } = await ctx.params;
+  const parsedId = parseFacilityId(facilityId);
+  if (!parsedId.ok) return validationFailed(instance, parsedId.errors);
+
+  let result;
+  try {
+    result = await deleteFacility(parsedId.value);
+  } catch (error) {
+    console.error("Gagal menghapus fasilitas", error);
+    return internalError(instance);
+  }
+
+  if (!result.ok) {
+    if (result.error.type === "not_found") {
+      return notFound(instance, result.error.message);
+    }
+    return facilityHasHistory(instance);
+  }
+
+  revalidateFacilityViews(parsedId.value);
+  return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }

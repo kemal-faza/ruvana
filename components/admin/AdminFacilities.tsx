@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Plus, Search, Wrench } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Wrench } from "lucide-react";
 
 import { FASILITAS_UPLOAD, STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import {
@@ -150,6 +150,7 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<AdminFacility | null>(null);
   const [statusTarget, setStatusTarget] = useState<AdminFacility | null>(null);
+  const [hapusTarget, setHapusTarget] = useState<AdminFacility | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -271,6 +272,33 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
       );
     } catch {
       setFeedback("Gagal mengubah status fasilitas.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function kirimHapus(facility: AdminFacility) {
+    setPending(true);
+    resetFeedback();
+    try {
+      const response = await fetch(`/api/admin/facilities/${facility.id}`, { method: "DELETE" });
+
+      if (response.ok) {
+        setHapusTarget(null);
+        router.refresh();
+        return;
+      }
+
+      const body = await response.json().catch(() => null);
+      setHapusTarget(null);
+      setFeedback(
+        body && typeof body === "object" && "detail" in body
+          ? String((body as { detail: string }).detail)
+          : "Gagal menghapus fasilitas.",
+      );
+    } catch {
+      setHapusTarget(null);
+      setFeedback("Gagal menghapus fasilitas.");
     } finally {
       setPending(false);
     }
@@ -479,6 +507,18 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
                   <Wrench aria-hidden="true" className="size-4" />
                   Ubah status
                 </Button>
+                <Button
+                  variant="danger"
+                  className="min-h-11"
+                  disabled={pending}
+                  onClick={() => {
+                    resetFeedback();
+                    setHapusTarget(facility);
+                  }}
+                >
+                  <Trash2 aria-hidden="true" className="size-4" />
+                  Hapus
+                </Button>
               </div>
             </li>
           ))}
@@ -537,6 +577,16 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
           setStatusTarget(null);
         }}
         onSubmit={(event) => statusTarget && kirimStatus(event, statusTarget)}
+      />
+
+      <SheetHapus
+        facility={hapusTarget}
+        pending={pending}
+        onClose={() => {
+          resetFeedback();
+          setHapusTarget(null);
+        }}
+        onConfirm={() => hapusTarget && kirimHapus(hapusTarget)}
       />
     </main>
   );
@@ -804,6 +854,50 @@ function SheetStatus({
             </Button>
           </div>
         </form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function SheetHapus({
+  facility,
+  pending,
+  onClose,
+  onConfirm,
+}: {
+  facility: AdminFacility | null;
+  pending: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Sheet open={facility !== null} onOpenChange={(value) => !value && onClose()}>
+      <SheetContent
+        side="right"
+        overlayClassName="bg-black/5"
+        className="gap-0 overflow-hidden data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:h-[calc(100%-2rem)] data-[side=right]:rounded-2xl data-[side=right]:border data-[side=right]:shadow-xl data-[side=right]:sm:max-w-md"
+      >
+        <SheetHeader className="border-b border-border/60 pr-12">
+          <SheetTitle>Hapus fasilitas?</SheetTitle>
+          <SheetDescription>{facility?.nama}</SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          <div className="flex items-start gap-2 rounded-control border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <Trash2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <p>
+              Tindakan ini permanen dan tidak bisa dibatalkan. Fasilitas hanya dapat dihapus
+              bila belum punya riwayat reservasi atau laporan; jika ada, nonaktifkan saja.
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border/60 p-4">
+          <Button type="button" variant="ghost" className="min-h-11" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="button" variant="danger" className="min-h-11" disabled={pending} onClick={onConfirm}>
+            {pending ? "Menghapus..." : "Hapus"}
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
