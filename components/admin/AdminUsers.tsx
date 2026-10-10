@@ -298,7 +298,7 @@ export default function AdminUsers({
                 }}
                 placeholder="Cari nama atau email..."
                 aria-label="Cari nama atau email"
-                className="pl-9"
+                className="h-11 pl-9"
               />
             </div>
             <Select

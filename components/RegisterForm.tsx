@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, LockKeyhole, Mail, UserRound } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react"
 import { useEffect, useState, type FormEvent } from "react"
 
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
@@ -20,6 +20,7 @@ import { useHydrated } from "@/lib/use-hydrated"
 export default function RegisterForm() {
   const [state, setState] = useState<{ ok: boolean; pesan: string; fieldErrors?: Record<string, string[]> }>({ ok: false, pesan: "" })
   const [pending, setPending] = useState(false)
+  const [passwordVisible, setPasswordVisible] = useState(false)
   const hydrated = useHydrated()
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -176,15 +177,27 @@ export default function RegisterForm() {
                 <Input
                   id="daftar-password"
                   name="password"
-                  type="password"
+                  type={passwordVisible ? "text" : "password"}
                   autoComplete="new-password"
                   placeholder="Buat kata sandi"
                   required
                   onInput={(event) => event.currentTarget.setCustomValidity("")}
                   aria-invalid={!!state.fieldErrors?.password || undefined}
                   aria-describedby={state.fieldErrors?.password ? "daftar-password-error" : "daftar-password-help"}
-                  className="h-11 pl-10"
+                  className="h-11 pl-10 pr-12"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={passwordVisible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  aria-controls="daftar-password"
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                  className="absolute right-0 top-0 rounded-l-none"
+                >
+                  {passwordVisible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                </Button>
               </div>
               <p id="daftar-password-help" className="text-sm text-muted-foreground">
                 Kata sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.
