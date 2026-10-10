@@ -94,14 +94,14 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
     setSubmitting(true)
     setErrors({})
     setSubmissionMessage(null)
+    // Validasi di atas menolak `foto` kosong, jadi file pasti tersedia di sini.
+    const fileUntukUnggah = foto!
     let uploadedPathname: string | null = null
     try {
-      if (!foto) throw new Error("Foto wajib dilampirkan.")
-
       const tokenResponse = await fetch("/api/reports/photo-uploads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentType: foto.type, size: foto.size }),
+        body: JSON.stringify({ contentType: fileUntukUnggah.type, size: fileUntukUnggah.size }),
       })
       if (!tokenResponse.ok) {
         const problem = (await tokenResponse.json().catch(() => null)) as { detail?: unknown } | null
@@ -116,8 +116,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
 
       const uploadResponse = await fetch(upload.uploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": foto.type },
-        body: foto,
+        headers: { "Content-Type": fileUntukUnggah.type },
+        body: fileUntukUnggah,
       })
       if (!uploadResponse.ok) throw new Error("Foto gagal disimpan. Silakan coba lagi.")
 
@@ -126,8 +126,8 @@ export function ReportFormDialog({ open, onOpenChange, facilityOptions, onCreate
       formData.set("kategori", kategori)
       formData.set("deskripsi", deskripsi)
       formData.set("fotoPathname", upload.pathname)
-      formData.set("fotoType", foto.type)
-      formData.set("fotoSize", String(foto.size))
+      formData.set("fotoType", fileUntukUnggah.type)
+      formData.set("fotoSize", String(fileUntukUnggah.size))
 
       const result: CreateReportActionResult = await createReportAction(formData)
       if (result.ok) {
