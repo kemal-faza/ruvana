@@ -82,6 +82,10 @@ model Facility {
   lokasi            String
   kapasitas         Int
   deskripsi         String?
+  // Foto unggahan admin (FAC-05): pathname private Vercel Blob + metadata.
+  foto              String?         @unique(map: "facilities_foto_key")
+  fotoContentType   String?
+  fotoSize          Int?
   status            StatusFasilitas @default(ACTIVE)
   // Provenance status terbaru (PRD Bagian 10, REP-04): aktor + satu instant server.
   statusChangedAt   DateTime?       @db.Timestamptz(3)

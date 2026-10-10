@@ -158,3 +158,62 @@ describe("parseFacilityUpdateBody", () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe("metadata foto fasilitas", () => {
+  const dasar = { nama: "Aula", tipe: "aula", lokasi: "Gedung", kapasitas: 10 };
+
+  it("menerima fotoPathname, fotoType, dan fotoSize yang valid", () => {
+    const result = parseFacilityCreateBody({
+      ...dasar,
+      fotoPathname: "facilities/7/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg",
+      fotoType: "image/jpeg",
+      fotoSize: 1234,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.fotoPathname).toBe("facilities/7/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg");
+      expect(result.value.fotoType).toBe("image/jpeg");
+      expect(result.value.fotoSize).toBe(1234);
+    }
+  });
+
+  it("menolak tipe foto yang tidak didukung", () => {
+    const result = parseFacilityCreateBody({
+      ...dasar,
+      fotoPathname: "facilities/7/x.jpg",
+      fotoType: "image/gif",
+      fotoSize: 10,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContainEqual(expect.objectContaining({ field: "fotoType" }));
+  });
+
+  it("menolak ukuran foto melebihi batas", () => {
+    const result = parseFacilityCreateBody({
+      ...dasar,
+      fotoPathname: "facilities/7/x.jpg",
+      fotoType: "image/jpeg",
+      fotoSize: 6 * 1024 * 1024,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContainEqual(expect.objectContaining({ field: "fotoSize" }));
+  });
+
+  it("mengizinkan update menghapus foto lewat null", () => {
+    const result = parseFacilityUpdateBody({ fotoPathname: null });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.fotoPathname).toBeNull();
+  });
+
+  it("menolak field foto yang tidak dikenal", () => {
+    const result = parseFacilityUpdateBody({ foto: "x" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContainEqual(expect.objectContaining({ field: "foto" }));
+  });
+});
+

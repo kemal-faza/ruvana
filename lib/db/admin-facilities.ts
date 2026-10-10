@@ -9,6 +9,7 @@ const adminFacilitySelect = {
   lokasi: true,
   kapasitas: true,
   deskripsi: true,
+  foto: true,
   status: true,
   statusChangedAt: true,
   statusChangedBy: { select: { id: true, nama: true, role: true } },
@@ -27,6 +28,9 @@ export interface CreateFacilityData {
   lokasi: string;
   kapasitas: number;
   deskripsi?: string | null;
+  foto?: string | null;
+  fotoContentType?: string | null;
+  fotoSize?: number | null;
 }
 
 /** Klausa `where` admin yang murni; tanpa filter status berarti semua status termasuk INACTIVE. */
@@ -60,6 +64,11 @@ export function countAdminFacilities(filters: AdminFacilityFilters = {}) {
 
 export function findAdminFacilityById(id: number) {
   return prisma.facility.findUnique({ where: { id }, select: adminFacilitySelect });
+}
+
+/** Fasilitas yang memakai pathname foto tertentu; untuk cegah hapus blob yang masih terpakai. */
+export function findFacilityByFoto(foto: string) {
+  return prisma.facility.findFirst({ where: { foto }, select: { id: true } });
 }
 
 /** Nama lokasi unik untuk pilihan filter admin. */

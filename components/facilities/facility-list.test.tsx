@@ -14,6 +14,7 @@ const facility: PublicFacility = {
   kapasitas: 40,
   deskripsi: "Ruang kelas standar",
   status: "ACTIVE",
+  fotoUrl: null,
 }
 
 describe("FacilityList", () => {

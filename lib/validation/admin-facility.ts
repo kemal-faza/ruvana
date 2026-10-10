@@ -1,4 +1,4 @@
-import { STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
+import { STATUS_FASILITAS, TIPE_FASILITAS, FASILITAS_UPLOAD } from "@/config/business";
 import type { StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import type { ProblemFieldError } from "@/lib/http/problem";
 import { parsePositiveInt, BATAS_INT4 } from "@/lib/validation/facility-query";
@@ -7,6 +7,7 @@ const BATAS_NAMA = 100;
 const BATAS_LOKASI = 200;
 const BATAS_DESKRIPSI = 2000;
 const BATAS_SEARCH = 200;
+const BATAS_PATHNAME = 300;
 
 export type ParseResult<T> =
   | { ok: true; value: T }
@@ -27,6 +28,9 @@ export interface FacilityCreateInput {
   lokasi: string;
   kapasitas: number;
   deskripsi?: string | null;
+  fotoPathname?: string | null;
+  fotoType?: string;
+  fotoSize?: number;
 }
 
 export interface FacilityUpdateInput {
@@ -36,6 +40,10 @@ export interface FacilityUpdateInput {
   kapasitas?: number;
   deskripsi?: string | null;
   status?: StatusFasilitas;
+  // `null` menghapus foto; string mengganti; undefined membiarkan tidak berubah.
+  fotoPathname?: string | null;
+  fotoType?: string;
+  fotoSize?: number;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -203,6 +211,54 @@ function parseStatus(value: unknown, errors: ProblemFieldError[]): StatusFasilit
   return value as StatusFasilitas;
 }
 
+interface FotoFields {
+  fotoPathname?: string | null;
+  fotoType?: string;
+  fotoSize?: number;
+}
+
+/**
+ * `fotoPathname` string menandakan foto baru (butuh `fotoType`/`fotoSize` yang
+ * cocok), `null` menghapus foto, `undefined` membiarkan tidak berubah. Kepemilikan
+ * pathname dan keaslian konten diverifikasi di service, bukan di sini.
+ */
+function parseFotoMetadata(body: Record<string, unknown>, errors: ProblemFieldError[]): FotoFields {
+  const rawPathname = body.fotoPathname;
+  const result: FotoFields = {};
+
+  if (rawPathname === undefined) return result;
+  if (rawPathname === null) {
+    result.fotoPathname = null;
+    return result;
+  }
+  if (typeof rawPathname !== "string" || rawPathname.trim().length === 0 || rawPathname.length > BATAS_PATHNAME) {
+    errors.push({ field: "fotoPathname", code: "INVALID_TYPE", message: "fotoPathname tidak valid" });
+    return result;
+  }
+
+  result.fotoPathname = rawPathname;
+
+  const rawType = typeof body.fotoType === "string" ? body.fotoType.toLowerCase() : "";
+  if ((FASILITAS_UPLOAD.tipeDiizinkan as readonly string[]).includes(rawType)) {
+    result.fotoType = rawType;
+  } else {
+    errors.push({ field: "fotoType", code: "INVALID_CONTENT_TYPE", message: "Foto harus berupa JPEG, PNG, atau WebP." });
+  }
+
+  const rawSize = body.fotoSize;
+  if (typeof rawSize === "number" && Number.isSafeInteger(rawSize) && rawSize >= 1 && rawSize <= FASILITAS_UPLOAD.maksByte) {
+    result.fotoSize = rawSize;
+  } else {
+    errors.push({
+      field: "fotoSize",
+      code: "OUT_OF_RANGE",
+      message: `Ukuran foto maksimal ${FASILITAS_UPLOAD.maksByte} byte.`,
+    });
+  }
+
+  return result;
+}
+
 function rejectUnknownFields(body: Record<string, unknown>, allowed: readonly string[], errors: ProblemFieldError[]) {
   for (const key of Object.keys(body)) {
     if (!allowed.includes(key)) {
@@ -211,8 +267,8 @@ function rejectUnknownFields(body: Record<string, unknown>, allowed: readonly st
   }
 }
 
-const CREATE_FIELDS = ["nama", "tipe", "lokasi", "kapasitas", "deskripsi"] as const;
-const UPDATE_FIELDS = ["nama", "tipe", "lokasi", "kapasitas", "deskripsi", "status"] as const;
+const CREATE_FIELDS = ["nama", "tipe", "lokasi", "kapasitas", "deskripsi", "fotoPathname", "fotoType", "fotoSize"] as const;
+const UPDATE_FIELDS = ["nama", "tipe", "lokasi", "kapasitas", "deskripsi", "status", "fotoPathname", "fotoType", "fotoSize"] as const;
 
 export function parseFacilityCreateBody(body: unknown): ParseResult<FacilityCreateInput> {
   if (!isObject(body)) {
@@ -227,6 +283,7 @@ export function parseFacilityCreateBody(body: unknown): ParseResult<FacilityCrea
   const lokasi = parseBoundedString(body.lokasi, "lokasi", BATAS_LOKASI, { required: true }, errors);
   const kapasitas = parseKapasitas(body.kapasitas, true, errors);
   const deskripsi = parseDeskripsi(body.deskripsi, errors);
+  const foto = parseFotoMetadata(body, errors);
 
   if (errors.length > 0) return { ok: false, errors };
 
@@ -238,6 +295,7 @@ export function parseFacilityCreateBody(body: unknown): ParseResult<FacilityCrea
       lokasi: lokasi as string,
       kapasitas: kapasitas as number,
       ...(deskripsi !== undefined ? { deskripsi } : {}),
+      ...foto,
     },
   };
 }
@@ -256,6 +314,7 @@ export function parseFacilityUpdateBody(body: unknown): ParseResult<FacilityUpda
   const kapasitas = parseKapasitas(body.kapasitas, false, errors);
   const deskripsi = parseDeskripsi(body.deskripsi, errors);
   const status = parseStatus(body.status, errors);
+  const foto = parseFotoMetadata(body, errors);
 
   if (errors.length > 0) return { ok: false, errors };
 
@@ -266,6 +325,7 @@ export function parseFacilityUpdateBody(body: unknown): ParseResult<FacilityUpda
     ...(kapasitas !== undefined ? { kapasitas } : {}),
     ...(deskripsi !== undefined ? { deskripsi } : {}),
     ...(status !== undefined ? { status } : {}),
+    ...foto,
   };
 
   if (Object.keys(value).length === 0) {

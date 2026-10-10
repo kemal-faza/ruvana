@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pencil, Plus, Search, Wrench } from "lucide-react";
 
-import { STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
+import { FASILITAS_UPLOAD, STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import {
   BADGE_STATUS_FASILITAS,
   LABEL_SATUAN_KAPASITAS,
@@ -62,6 +62,37 @@ function extractFieldErrors(body: unknown): FieldErrors {
 function bacaDeskripsi(fd: FormData): string | null {
   const value = String(fd.get("deskripsi") ?? "").trim();
   return value === "" ? null : value;
+}
+
+async function uploadFacilityPhoto(file: File): Promise<{ pathname: string } | null> {
+  const tokenResponse = await fetch("/api/admin/facilities/photo-uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contentType: file.type, size: file.size }),
+  });
+  if (!tokenResponse.ok) return null;
+  const upload = (await tokenResponse.json().catch(() => null)) as { pathname?: string; uploadUrl?: string } | null;
+  if (!upload?.pathname || !upload.uploadUrl) return null;
+
+  const putResponse = await fetch(upload.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!putResponse.ok) return null;
+  return { pathname: upload.pathname };
+}
+
+async function discardFacilityUpload(pathname: string) {
+  try {
+    await fetch("/api/admin/facilities/photo-uploads", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pathname }),
+    });
+  } catch {
+    // Pembersihan best-effort; blob yatim bisa dibersihkan manual.
+  }
 }
 
 // Batas ini mencerminkan aturan di lib/validation/admin-facility.ts supaya form
@@ -122,6 +153,8 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   const [errors, setErrors] = useState<FieldErrors>({});
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // File foto disimpan di state (bukan FormData) agar ukurannya tetap utuh.
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
 
   function resetFeedback() {
     setErrors({});
@@ -135,15 +168,26 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   ) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    const payload = {
+    const fields = {
       nama: String(fd.get("nama") ?? "").trim(),
       tipe: String(fd.get("tipe") ?? ""),
       lokasi: String(fd.get("lokasi") ?? "").trim(),
       kapasitas: Number(fd.get("kapasitas")),
       deskripsi: bacaDeskripsi(fd),
     };
+    const payload: Record<string, unknown> = { ...fields };
 
-    const clientErrors = validasiFasilitas(payload);
+    const newFile = fotoFile && fotoFile.size > 0 ? fotoFile : null;
+    const hapusFoto = fd.get("hapusFoto") === "on";
+
+    const clientErrors = validasiFasilitas(fields);
+    if (newFile) {
+      if (!(FASILITAS_UPLOAD.tipeDiizinkan as readonly string[]).includes(newFile.type)) {
+        clientErrors.foto = "Foto harus berupa JPEG, PNG, atau WebP.";
+      } else if (newFile.size > FASILITAS_UPLOAD.maksByte) {
+        clientErrors.foto = "Ukuran foto maksimal 5 MB.";
+      }
+    }
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
       setFeedback("Periksa kembali isian yang ditandai.");
@@ -152,7 +196,22 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
 
     setPending(true);
     resetFeedback();
+    let uploadedPathname: string | null = null;
     try {
+      if (newFile) {
+        const upload = await uploadFacilityPhoto(newFile);
+        if (!upload) {
+          setFeedback("Gagal mengunggah foto. Coba lagi.");
+          return;
+        }
+        uploadedPathname = upload.pathname;
+        payload.fotoPathname = upload.pathname;
+        payload.fotoType = newFile.type.toLowerCase();
+        payload.fotoSize = newFile.size;
+      } else if (hapusFoto && mode === "edit") {
+        payload.fotoPathname = null;
+      }
+
       const response = await fetch(mode === "create" ? "/api/admin/facilities" : `/api/admin/facilities/${id}`, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
@@ -162,10 +221,13 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
       if (response.ok) {
         setCreateOpen(false);
         setEditing(null);
+        setFotoFile(null);
         router.refresh();
         return;
       }
 
+      // Simpan gagal: jangan tinggalkan blob yatim.
+      if (uploadedPathname) await discardFacilityUpload(uploadedPathname);
       const body = await response.json().catch(() => null);
       setErrors(extractFieldErrors(body));
       setFeedback(
@@ -174,6 +236,7 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
           : "Gagal menyimpan fasilitas.",
       );
     } catch {
+      if (uploadedPathname) await discardFacilityUpload(uploadedPathname);
       setFeedback("Gagal menyimpan fasilitas.");
     } finally {
       setPending(false);
@@ -456,9 +519,11 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
         pending={pending}
         onClose={() => {
           resetFeedback();
+          setFotoFile(null);
           setCreateOpen(false);
           setEditing(null);
         }}
+        onFotoChange={setFotoFile}
         onSubmit={(event) => kirimForm(event, editing ? "edit" : "create", editing?.id)}
       />
 
@@ -483,6 +548,7 @@ function FormFasilitas({
   errors,
   pending,
   onClose,
+  onFotoChange,
   onSubmit,
 }: {
   open: boolean;
@@ -490,9 +556,36 @@ function FormFasilitas({
   errors: FieldErrors;
   pending: boolean;
   onClose: () => void;
+  onFotoChange: (file: File | null) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const title = facility ? "Ubah fasilitas" : "Tambah fasilitas";
+  const fotoTersimpan = facility?.fotoUrl ?? null;
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [hapusFoto, setHapusFoto] = useState(false);
+  const tampilFoto = previewUrl ?? (hapusFoto ? null : fotoTersimpan);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function pilihFoto(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setPreviewUrl(null);
+      onFotoChange(null);
+      return;
+    }
+    onFotoChange(file);
+    setPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return URL.createObjectURL(file);
+    });
+    setHapusFoto(false);
+  }
+
   return (
     <Sheet open={open} onOpenChange={(value) => !value && onClose()}>
       <SheetContent
@@ -573,6 +666,39 @@ function FormFasilitas({
               aria-invalid={Boolean(errors.deskripsi)}
             />
             {errors.deskripsi && <FieldError>{errors.deskripsi}</FieldError>}
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="foto">Foto (opsional)</FieldLabel>
+            {tampilFoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tampilFoto} alt="Pratinjau foto fasilitas" className="aspect-video w-full rounded-card object-cover" />
+            ) : (
+              <div className="flex aspect-video w-full items-center justify-center rounded-card border border-dashed border-border text-sm text-muted-foreground">
+                Belum ada foto
+              </div>
+            )}
+            <input
+              id="foto"
+              name="foto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={pilihFoto}
+              className="text-sm file:mr-3 file:min-h-9 file:rounded-control file:border file:border-border file:bg-background file:px-3 file:text-sm"
+            />
+            <p className="text-xs text-muted-foreground">JPG, PNG, atau WebP · maksimal 5 MB.</p>
+            {fotoTersimpan && !previewUrl && (
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  name="hapusFoto"
+                  checked={hapusFoto}
+                  onChange={(event) => setHapusFoto(event.target.checked)}
+                />
+                Hapus foto saat ini
+              </label>
+            )}
+            {(errors.foto || errors.fotoPathname) && <FieldError>{errors.foto ?? errors.fotoPathname}</FieldError>}
           </Field>
           </div>
 

@@ -96,6 +96,11 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/
     if (result.error.type === "transition") {
       return idempotency.settle(invalidFacilityTransition(instance, result.error.message));
     }
+    if (result.error.type === "invalid_photo") {
+      return idempotency.settle(
+        validationFailed(instance, [{ field: "fotoPathname", code: "INVALID_PHOTO", message: result.error.message }]),
+      );
+    }
     return idempotency.settle(duplicateName(instance));
   }
 

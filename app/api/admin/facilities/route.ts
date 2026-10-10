@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Replay disimpan di dalam transaksi yang sama dengan pembuatan fasilitas,
     // mengikuti PATCH: klaim tidak boleh menggantung tanpa hasil bila proses mati
     // di antara commit dan penyimpanan.
-    result = await createFacility(parsed.value, async (tx, data) => {
+    result = await createFacility(session.id, parsed.value, async (tx, data) => {
       await idempotency.commit(tx, 201, data);
     });
   } catch (error) {
@@ -89,6 +89,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (!result.ok) {
+    if (result.error.type === "invalid_photo") {
+      return idempotency.settle(
+        validationFailed(instance, [{ field: "fotoPathname", code: "INVALID_PHOTO", message: result.error.message }]),
+      );
+    }
     return idempotency.settle(duplicateName(instance));
   }
 

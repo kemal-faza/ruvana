@@ -9,11 +9,14 @@ import {
   findAdminFacilityLocations,
   updateAdminFacility,
   type AdminFacilityFilters,
+  type CreateFacilityData,
 } from "@/lib/db/admin-facilities";
 import { canTransition } from "@/lib/facilities/status-transition";
+import { facilityPhotoUrl } from "@/lib/facilities/photo-url";
 import { handleFacilityStatusChanged } from "@/lib/reservations/maintenance-listener";
 import type { FacilityStatusChangedPayload } from "@/lib/facility-status-contract";
 import { prisma } from "@/lib/prisma";
+import { verifyFacilityPhotoUpload, removeFacilityPhotoObject } from "@/lib/storage/facility-photo";
 import type { AdminListQuery, FacilityCreateInput, FacilityUpdateInput } from "@/lib/validation/admin-facility";
 
 export interface AdminFacilityActor {
@@ -30,6 +33,7 @@ export interface AdminFacility {
   kapasitas: number;
   deskripsi: string | null;
   status: StatusFasilitas;
+  fotoUrl: string | null;
   statusChangedAt: string | null;
   statusChangedBy: AdminFacilityActor | null;
 }
@@ -47,6 +51,7 @@ interface AdminFacilityRow {
   kapasitas: number;
   deskripsi: string | null;
   status: StatusFasilitas;
+  foto: string | null;
   statusChangedAt: Date | null;
   statusChangedBy: AdminFacilityActor | null;
 }
@@ -60,6 +65,7 @@ function toAdminFacility(row: AdminFacilityRow): AdminFacility {
     kapasitas: row.kapasitas,
     deskripsi: row.deskripsi,
     status: row.status,
+    fotoUrl: facilityPhotoUrl(row.id, row.foto),
     statusChangedAt: row.statusChangedAt ? row.statusChangedAt.toISOString() : null,
     statusChangedBy: row.statusChangedBy
       ? { id: row.statusChangedBy.id, nama: row.statusChangedBy.nama, role: row.statusChangedBy.role }
@@ -70,7 +76,8 @@ function toAdminFacility(row: AdminFacilityRow): AdminFacility {
 export type AdminFacilityMutationError =
   | { type: "not_found"; message: string }
   | { type: "transition"; message: string }
-  | { type: "duplicate_name"; message: string };
+  | { type: "duplicate_name"; message: string }
+  | { type: "invalid_photo"; message: string };
 
 type PersistSuccess<T> = (tx: Prisma.TransactionClient, result: T) => Promise<void>;
 
@@ -110,14 +117,40 @@ export async function listAdminLocations(): Promise<string[]> {
 }
 
 export async function createFacility(
+  actorId: number,
   input: FacilityCreateInput,
   persistSuccess?: PersistSuccess<AdminFacility>,
 ): Promise<{ ok: true; data: AdminFacility } | { ok: false; error: AdminFacilityMutationError }> {
+  const data: CreateFacilityData = {
+    nama: input.nama,
+    tipe: input.tipe,
+    lokasi: input.lokasi,
+    kapasitas: input.kapasitas,
+    ...(input.deskripsi !== undefined ? { deskripsi: input.deskripsi } : {}),
+  };
+
+  let uploadedFoto: string | null = null;
+  if (typeof input.fotoPathname === "string") {
+    const verified = await verifyFacilityPhotoUpload(
+      input.fotoPathname,
+      actorId,
+      input.fotoType ?? "",
+      input.fotoSize ?? 0,
+    );
+    if (!verified) {
+      return { ok: false, error: { type: "invalid_photo", message: "Foto fasilitas tidak valid." } };
+    }
+    data.foto = input.fotoPathname;
+    data.fotoContentType = verified.contentType;
+    data.fotoSize = verified.size;
+    uploadedFoto = input.fotoPathname;
+  }
+
   try {
     // Pembuatan dan efek sampingnya (mis. simpan replay idempotency) satu transaksi,
     // mengikuti updateFacility.
     const result = await prisma.$transaction(async (tx) => {
-      const row = await createAdminFacility(tx, input);
+      const row = await createAdminFacility(tx, data);
       const response = toAdminFacility(row);
       await persistSuccess?.(tx, response);
       return response;
@@ -125,6 +158,8 @@ export async function createFacility(
 
     return { ok: true, data: result };
   } catch (e) {
+    // Jangan tinggalkan blob yatim bila pembuatan gagal (mis. nama duplikat).
+    if (uploadedFoto) await removeFacilityPhotoObject(uploadedFoto);
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, error: { type: "duplicate_name", message: "Nama fasilitas sudah digunakan" } };
     }
@@ -139,6 +174,22 @@ export async function updateFacility(
   now: Date = new Date(),
   persistSuccess?: PersistSuccess<AdminFacility>,
 ): Promise<{ ok: true; data: AdminFacility } | { ok: false; error: AdminFacilityMutationError }> {
+  // Verifikasi foto di luar transaksi (panggilan jaringan Blob) agar lock baris singkat.
+  let fotoBaru: { pathname: string; contentType: string; size: number } | null = null;
+  if (typeof input.fotoPathname === "string") {
+    const verified = await verifyFacilityPhotoUpload(
+      input.fotoPathname,
+      actorId,
+      input.fotoType ?? "",
+      input.fotoSize ?? 0,
+    );
+    if (!verified) {
+      return { ok: false, error: { type: "invalid_photo", message: "Foto fasilitas tidak valid." } };
+    }
+    fotoBaru = { pathname: input.fotoPathname, contentType: verified.contentType, size: verified.size };
+  }
+
+  let fotoLamaUntukDihapus: string | null = null;
   try {
     const result = await prisma.$transaction(async (tx) => {
       const facility = await lockFacilityById(tx, facilityId);
@@ -150,6 +201,21 @@ export async function updateFacility(
       if (input.lokasi !== undefined) data.lokasi = input.lokasi;
       if (input.kapasitas !== undefined) data.kapasitas = input.kapasitas;
       if (input.deskripsi !== undefined) data.deskripsi = input.deskripsi;
+
+      if (input.fotoPathname !== undefined) {
+        if (fotoBaru) {
+          data.foto = fotoBaru.pathname;
+          data.fotoContentType = fotoBaru.contentType;
+          data.fotoSize = fotoBaru.size;
+          if (facility.foto && facility.foto !== fotoBaru.pathname) fotoLamaUntukDihapus = facility.foto;
+        } else {
+          // fotoPathname === null: hapus foto, kembali ke placeholder statis.
+          data.foto = null;
+          data.fotoContentType = null;
+          data.fotoSize = null;
+          if (facility.foto) fotoLamaUntukDihapus = facility.foto;
+        }
+      }
 
       let statusBerubah = false;
       if (input.status !== undefined) {
@@ -183,6 +249,7 @@ export async function updateFacility(
       return response;
     });
 
+    if (fotoLamaUntukDihapus) await removeFacilityPhotoObject(fotoLamaUntukDihapus);
     return { ok: true, data: result };
   } catch (e) {
     if (e && typeof e === "object" && "kind" in e) {

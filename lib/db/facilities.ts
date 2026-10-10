@@ -12,6 +12,7 @@ const publicFacilitySelect = {
   kapasitas: true,
   deskripsi: true,
   status: true,
+  foto: true,
 } satisfies Prisma.FacilitySelect;
 
 export interface PublicFacilityFilters {

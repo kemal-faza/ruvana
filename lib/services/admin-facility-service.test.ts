@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/admin-facilities";
 import { lockFacilityById } from "@/lib/db/facilities";
 import { handleFacilityStatusChanged } from "@/lib/reservations/maintenance-listener";
+import { removeFacilityPhotoObject, verifyFacilityPhotoUpload } from "@/lib/storage/facility-photo";
 
 import {
   createFacility,
@@ -25,6 +26,10 @@ vi.mock("@/lib/prisma", () => ({
 }));
 vi.mock("@/lib/db/facilities", () => ({ lockFacilityById: vi.fn() }));
 vi.mock("@/lib/reservations/maintenance-listener", () => ({ handleFacilityStatusChanged: vi.fn() }));
+vi.mock("@/lib/storage/facility-photo", () => ({
+  verifyFacilityPhotoUpload: vi.fn(),
+  removeFacilityPhotoObject: vi.fn(),
+}));
 vi.mock("@/lib/db/admin-facilities", () => ({
   findAdminFacilities: vi.fn(),
   countAdminFacilities: vi.fn(),
@@ -45,6 +50,7 @@ function row(overrides: Record<string, unknown> = {}) {
     kapasitas: 40,
     deskripsi: null,
     status: "ACTIVE",
+    foto: null,
     statusChangedAt: null,
     statusChangedBy: null,
     ...overrides,
@@ -113,7 +119,7 @@ describe("createFacility", () => {
     const tx = mockCreateTx();
     vi.mocked(createAdminFacility).mockResolvedValue(row() as never);
 
-    const result = await createFacility(input);
+    const result = await createFacility(actor.id, input);
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.id).toBe(1);
@@ -125,7 +131,7 @@ describe("createFacility", () => {
     vi.mocked(createAdminFacility).mockResolvedValue(row() as never);
     const persist = vi.fn().mockResolvedValue(undefined);
 
-    await createFacility(input, persist);
+    await createFacility(actor.id, input, persist);
 
     expect(persist).toHaveBeenCalledWith(tx, expect.objectContaining({ id: 1 }));
   });
@@ -134,7 +140,7 @@ describe("createFacility", () => {
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn({}));
     vi.mocked(createAdminFacility).mockRejectedValue(p2002());
 
-    const result = await createFacility(input);
+    const result = await createFacility(actor.id, input);
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.type).toBe("duplicate_name");
@@ -220,3 +226,80 @@ describe("updateFacility", () => {
     if (!result.ok) expect(result.error.type).toBe("duplicate_name");
   });
 });
+
+describe("foto fasilitas pada mutasi admin", () => {
+  const fotoInput = {
+    nama: "RK-101",
+    tipe: "ruang_kelas" as const,
+    lokasi: "Gedung A",
+    kapasitas: 40,
+    fotoPathname: "facilities/7/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg",
+    fotoType: "image/jpeg",
+    fotoSize: 1234,
+  };
+
+  it("create memverifikasi foto lalu menyimpan metadata hasil verifikasi", async () => {
+    mockCreateTxForFoto();
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue({ contentType: "image/jpeg", size: 1200 });
+    vi.mocked(createAdminFacility).mockResolvedValue(row() as never);
+
+    const result = await createFacility(7, fotoInput);
+
+    expect(verifyFacilityPhotoUpload).toHaveBeenCalledWith(fotoInput.fotoPathname, 7, "image/jpeg", 1234);
+    expect(createAdminFacility).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ foto: fotoInput.fotoPathname, fotoContentType: "image/jpeg", fotoSize: 1200 }),
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("create menolak foto yang gagal diverifikasi", async () => {
+    mockCreateTxForFoto();
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue(null);
+
+    const result = await createFacility(7, fotoInput);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("invalid_photo");
+    expect(createAdminFacility).not.toHaveBeenCalled();
+  });
+
+  it("update mengganti foto dan menghapus blob lama", async () => {
+    mockTx(row({ foto: "facilities/7/old.jpg" }));
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue({ contentType: "image/png", size: 999 });
+
+    await updateFacility(7, 1, fotoInput, now);
+
+    expect(updateAdminFacility).toHaveBeenCalledWith(
+      expect.anything(),
+      1,
+      expect.objectContaining({ foto: fotoInput.fotoPathname, fotoContentType: "image/png", fotoSize: 999 }),
+    );
+    expect(removeFacilityPhotoObject).toHaveBeenCalledWith("facilities/7/old.jpg");
+  });
+
+  it("update dengan fotoPathname null menghapus foto", async () => {
+    mockTx(row({ foto: "facilities/7/old.jpg" }));
+
+    await updateFacility(7, 1, { fotoPathname: null }, now);
+
+    expect(updateAdminFacility).toHaveBeenCalledWith(
+      expect.anything(),
+      1,
+      expect.objectContaining({ foto: null, fotoContentType: null, fotoSize: null }),
+    );
+    expect(removeFacilityPhotoObject).toHaveBeenCalledWith("facilities/7/old.jpg");
+  });
+
+  it("update tanpa perubahan foto tidak menghapus blob", async () => {
+    mockTx(row({ foto: "facilities/7/old.jpg" }));
+
+    await updateFacility(7, 1, { nama: "RK-101 Baru" }, now);
+
+    expect(removeFacilityPhotoObject).not.toHaveBeenCalled();
+  });
+});
+
+function mockCreateTxForFoto() {
+  mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn({ facility: { create: vi.fn() } }));
+}

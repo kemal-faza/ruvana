@@ -316,6 +316,26 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/facilities/{facilityId}/photo:
+    get:
+      operationId: getFacilityPhoto
+      tags: [Facilities]
+      summary: Mengalihkan ke foto unggahan fasilitas
+      description: >-
+        Mengalihkan (307) ke signed URL private Blob berumur pendek. Fasilitas
+        yang tidak tampil publik atau tanpa foto unggahan dimasking sebagai not
+        found yang sama. Pathname Blob mentah tidak pernah dikirim ke klien.
+      x-requirement-ids: [FAC-01]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+      responses:
+        '307':
+          description: Alihkan ke signed URL foto fasilitas.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/facilities/{facilityId}/availability:
     get:
       operationId: getFacilityAvailability
@@ -1494,6 +1514,78 @@ paths:
         '409': { $ref: '#/components/responses/FacilityMutationConflict' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
         '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/admin/facilities/photo-uploads:
+    post:
+      operationId: createFacilityPhotoUpload
+      tags: [Administration]
+      summary: Menerbitkan URL unggah foto fasilitas
+      description: >-
+        Hanya role=admin dengan status=ACTIVE. Menerbitkan URL PUT bertanda tangan
+        ke private Vercel Blob yang terikat pathname acak, tipe konten, dan ukuran.
+        Pathname hasil unggah lalu dikirim pada body create/update fasilitas.
+      x-requirement-ids: [FAC-05]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [contentType, size]
+              properties:
+                contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                size: { type: integer, minimum: 1, maximum: 5242880 }
+      responses:
+        '200':
+          description: URL unggah diterbitkan.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [pathname, uploadUrl, validUntil]
+                properties:
+                  pathname: { type: string }
+                  uploadUrl: { type: string, format: uri }
+                  validUntil: { type: integer }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      operationId: deleteFacilityPhotoUpload
+      tags: [Administration]
+      summary: Membersihkan unggahan foto fasilitas yang belum terpasang
+      description: >-
+        Hanya role=admin. Menghapus blob milik pengunggah yang belum dikaitkan ke
+        fasilitas mana pun; blob yang sudah terpasang dibiarkan.
+      x-requirement-ids: [FAC-05]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [pathname]
+              properties:
+                pathname: { type: string }
+      responses:
+        '204':
+          description: Unggahan dibersihkan.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/MutationForbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/admin/facilities/{facilityId}:
     get:
       operationId: getAdminFacility
@@ -2277,6 +2369,9 @@ components:
         lokasi: { type: string, minLength: 1, maxLength: 200 }
         kapasitas: { type: integer, minimum: 1 }
         deskripsi: { type: [string, 'null'], maxLength: 2000 }
+        fotoPathname: { type: string, maxLength: 300, description: Pathname Blob hasil unggah; opsional. }
+        fotoType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        fotoSize: { type: integer, minimum: 1, maximum: 5242880 }
     FacilityUpdateRequest:
       type: object
       additionalProperties: false
@@ -2288,6 +2383,9 @@ components:
         kapasitas: { type: integer, minimum: 1 }
         deskripsi: { type: [string, 'null'], maxLength: 2000 }
         status: { $ref: '#/components/schemas/FacilityStatus' }
+        fotoPathname: { type: [string, 'null'], maxLength: 300, description: String mengganti foto, null menghapus, tidak dikirim membiarkan tidak berubah. }
+        fotoType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        fotoSize: { type: integer, minimum: 1, maximum: 5242880 }
     StaffFacilityStatusRequest:
       type: object
       additionalProperties: false
@@ -2297,7 +2395,7 @@ components:
     Facility:
       type: object
       additionalProperties: false
-      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status, statusChangedAt, statusChangedBy]
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status, fotoUrl, statusChangedAt, statusChangedBy]
       properties:
         id: { type: integer, minimum: 1, readOnly: true }
         nama: { type: string, minLength: 1, maxLength: 100 }
@@ -2305,6 +2403,7 @@ components:
         lokasi: { type: string, minLength: 1, maxLength: 200 }
         kapasitas: { type: integer, minimum: 1 }
         deskripsi: { type: [string, 'null'], maxLength: 2000 }
+        fotoUrl: { type: [string, 'null'], readOnly: true, description: URL same-origin foto unggahan; null bila memakai placeholder statis. }
         status: { $ref: '#/components/schemas/FacilityStatus' }
         statusChangedAt:
           anyOf:
@@ -2321,7 +2420,7 @@ components:
     PublicFacility:
       type: object
       additionalProperties: false
-      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status]
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status, fotoUrl]
       properties:
         id: { type: integer, minimum: 1, readOnly: true }
         nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
@@ -2329,6 +2428,7 @@ components:
         lokasi: { type: string, minLength: 1, maxLength: 200, readOnly: true }
         kapasitas: { type: integer, minimum: 1, readOnly: true }
         deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
+        fotoUrl: { type: [string, 'null'], readOnly: true, description: URL same-origin foto unggahan; null bila memakai placeholder statis. }
         status: { $ref: '#/components/schemas/PublicFacilityStatus' }
     FacilitySnapshot:
       type: object

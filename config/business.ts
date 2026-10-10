@@ -175,5 +175,13 @@ export const LAPORAN_UPLOAD = {
   maksUnggahPerJamIp: 60,
 } as const
 
+// Batas unggah foto fasilitas admin (FAC-05): JPEG/PNG/WebP, maksimal 5 MiB.
+export const FASILITAS_UPLOAD = {
+  tipeDiizinkan: ["image/jpeg", "image/png", "image/webp"] as const,
+  maksByte: 5 * 1024 * 1024,
+  masaBerlakuUrlUnggahMs: 10 * 60 * 1000,
+  masaBerlakuUrlBacaMs: 5 * 60 * 1000,
+} as const
+
 // Deskripsi laporan mengikuti batas global PRD (2.000 karakter).
 export const MAKS_DESKRIPSI_LAPORAN = 2000
