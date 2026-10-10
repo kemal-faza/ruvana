@@ -327,8 +327,9 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
     await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
 
-    // Pesan domain tampil apa adanya di dekat field, bukan pesan generik atau kode mentah.
-    expect(await screen.findByText("Reservasi minimal 14 hari sebelum waktu mulai.")).toBeInTheDocument()
+    // Pesan domain tampil apa adanya di dekat field (satu ejaan dengan teks
+    // bantu dan pesan server), bukan pesan generik atau kode mentah.
+    expect(await screen.findByText("Reservasi minimal 14 hari sebelum waktu mulai")).toBeInTheDocument()
     expect(document.activeElement?.id).toBe("jam-mulai")
     expect(container.textContent ?? "").not.toContain("INSUFFICIENT_LEAD_TIME")
 
