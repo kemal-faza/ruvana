@@ -220,7 +220,7 @@ Layout publik mengikuti tabel **Breakpoint** dengan memakai breakpoint bawaan Ta
 | Peran | Tujuan dan navigasi yang tersedia |
 |---|---|
 | Pengunjung | Menemukan fasilitas dan jadwal publik; lihat aturan privasi publik di **Desain konten** |
-| Pengguna | Dashboard, Fasilitas, Reservasi Saya, Laporan Saya |
+| Pengguna | Dashboard, Fasilitas, Reservasi, Laporan Saya |
 | Petugas | Dashboard, Persetujuan Reservasi, Laporan Kerusakan, status operasional fasilitas sesuai kewenangan |
 | Admin | Dashboard, Verifikasi Akun, Pengguna, Fasilitas, Analitik, Ekspor |
 
@@ -309,7 +309,7 @@ Istilah **available**, **selected**, **loading**, **success**, **error**, **empt
 
 ### 8. Masuk dan keluar
 
-1. Setelah masuk berhasil, pengguna diarahkan ke tujuan sesuai perannya: **Reservasi Saya** (`/reservasi/riwayat`) untuk pengguna, `/petugas` untuk petugas, dan `/admin/analitik` untuk admin.
+1. Setelah masuk berhasil, pengguna diarahkan ke tujuan sesuai perannya: **Reservasi** (`/reservasi/riwayat`) untuk pengguna, `/petugas` untuk petugas, dan `/admin/analitik` untuk admin.
 2. Perpindahan halaman setelah masuk atau keluar tidak memuat ulang seluruh aplikasi; hak akses halaman tujuan tetap ditentukan server pada permintaan berikutnya.
 3. Keluar mengakhiri sesi lalu kembali ke `/login`, dan permintaan berikutnya ke halaman terproteksi dialihkan ke `/login`.
 

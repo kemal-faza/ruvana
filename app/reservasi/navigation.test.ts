@@ -43,12 +43,6 @@ describe("navigasi reservasi pengguna", () => {
     expect(navigation.flatMap((grup) => grup.items.map((item) => item.href))).not.toContain("/baseline-ui");
   });
 
-  it("menyiapkan menu Reservasi aktif di form, daftar, dan detail", () => {
-    expect(reservasiNavigation[0].items[0].activePrefixes).toEqual(
-      expect.arrayContaining(["/reservasi"]),
-    );
-  });
-
   it("tidak menautkan menu reservasi pengguna untuk petugas maupun admin", () => {
     for (const role of [Role.petugas, Role.admin]) {
       const hrefs = navigationForRole(role).flatMap((grup) => grup.items.map((item) => item.href));

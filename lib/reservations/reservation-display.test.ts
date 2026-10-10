@@ -122,6 +122,7 @@ describe("pesanSuksesPengajuan", () => {
     const pesan = pesanSuksesPengajuan()
 
     expect(pesan).toContain("Menunggu")
+    expect(pesan).toContain("menu Reservasi")
     for (const enumMentah of ENUM_MENTAH) {
       expect(pesan).not.toContain(enumMentah)
     }
