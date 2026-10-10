@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Plus, Search, Wrench } from "lucide-react";
+import { Pencil, Plus, RotateCcw, Search, Trash2, Wrench } from "lucide-react";
 
-import { STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
+import { FASILITAS_UPLOAD, STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import {
   BADGE_STATUS_FASILITAS,
   LABEL_SATUAN_KAPASITAS,
@@ -14,7 +14,7 @@ import {
 } from "@/config/labels";
 import type { StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import { allowedTransitions } from "@/lib/facilities/status-transition";
-import type { AdminFacility, AdminFacilityCollection } from "@/lib/services/admin-facility-service";
+import type { AdminFacility, AdminFacilityCollection, ArchivedFacility } from "@/lib/services/admin-facility-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,7 +41,8 @@ interface AdminFacilitiesProps {
   items: AdminFacilityCollection["items"];
   meta: AdminFacilityCollection["meta"];
   locations: string[];
-  filters: { search?: string; type?: string; location?: string; status?: string };
+  archived: ArchivedFacility[];
+  filters: { search?: string; type?: string; location?: string; status?: string; perPage?: number };
 }
 
 type FieldErrors = Record<string, string>;
@@ -64,12 +65,45 @@ function bacaDeskripsi(fd: FormData): string | null {
   return value === "" ? null : value;
 }
 
+async function uploadFacilityPhoto(file: File): Promise<{ pathname: string } | null> {
+  const tokenResponse = await fetch("/api/admin/facilities/photo-uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contentType: file.type, size: file.size }),
+  });
+  if (!tokenResponse.ok) return null;
+  const upload = (await tokenResponse.json().catch(() => null)) as { pathname?: string; uploadUrl?: string } | null;
+  if (!upload?.pathname || !upload.uploadUrl) return null;
+
+  const putResponse = await fetch(upload.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!putResponse.ok) return null;
+  return { pathname: upload.pathname };
+}
+
+async function discardFacilityUpload(pathname: string) {
+  try {
+    await fetch("/api/admin/facilities/photo-uploads", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pathname }),
+    });
+  } catch {
+    // Pembersihan best-effort; blob yatim bisa dibersihkan manual.
+  }
+}
+
 // Batas ini mencerminkan aturan di lib/validation/admin-facility.ts supaya form
 // memberi umpan balik tanpa menunggu perjalanan ke server (AGENTS.md: form
 // penting juga memvalidasi di klien).
 const BATAS_NAMA = 100;
 const BATAS_LOKASI = 200;
 const BATAS_DESKRIPSI = 2000;
+// Batas bilangan bulat PostgreSQL (int4) untuk kolom kapasitas.
+const BATAS_KAPASITAS = 2_147_483_647;
 
 function validasiFasilitas(payload: {
   nama: string;
@@ -89,6 +123,7 @@ function validasiFasilitas(payload: {
 
   if (!Number.isSafeInteger(payload.kapasitas)) errors.kapasitas = "kapasitas harus bilangan bulat";
   else if (payload.kapasitas < 1) errors.kapasitas = "kapasitas harus minimal 1";
+  else if (payload.kapasitas > BATAS_KAPASITAS) errors.kapasitas = `kapasitas maksimal ${BATAS_KAPASITAS}`;
 
   if (payload.deskripsi !== null && payload.deskripsi.length > BATAS_DESKRIPSI) {
     errors.deskripsi = `deskripsi maksimal ${BATAS_DESKRIPSI} karakter`;
@@ -108,7 +143,7 @@ export default function AdminFacilities(props: AdminFacilitiesProps) {
   return <AdminFacilitiesView key={filterKey(props.filters)} {...props} />;
 }
 
-function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitiesProps) {
+function AdminFacilitiesView({ items, meta, locations, archived, filters }: AdminFacilitiesProps) {
   const router = useRouter();
   const [selectedLocation, setSelectedLocation] = useState(filters.location ?? "");
   const [selectedType, setSelectedType] = useState(filters.type ?? "");
@@ -116,9 +151,12 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<AdminFacility | null>(null);
   const [statusTarget, setStatusTarget] = useState<AdminFacility | null>(null);
+  const [hapusTarget, setHapusTarget] = useState<AdminFacility | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // File foto disimpan di state (bukan FormData) agar ukurannya tetap utuh.
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
 
   function resetFeedback() {
     setErrors({});
@@ -132,15 +170,26 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   ) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
-    const payload = {
+    const fields = {
       nama: String(fd.get("nama") ?? "").trim(),
       tipe: String(fd.get("tipe") ?? ""),
       lokasi: String(fd.get("lokasi") ?? "").trim(),
       kapasitas: Number(fd.get("kapasitas")),
       deskripsi: bacaDeskripsi(fd),
     };
+    const payload: Record<string, unknown> = { ...fields };
 
-    const clientErrors = validasiFasilitas(payload);
+    const newFile = fotoFile && fotoFile.size > 0 ? fotoFile : null;
+    const hapusFoto = fd.get("hapusFoto") === "on";
+
+    const clientErrors = validasiFasilitas(fields);
+    if (newFile) {
+      if (!(FASILITAS_UPLOAD.tipeDiizinkan as readonly string[]).includes(newFile.type)) {
+        clientErrors.foto = "Foto harus berupa JPEG, PNG, atau WebP.";
+      } else if (newFile.size > FASILITAS_UPLOAD.maksByte) {
+        clientErrors.foto = "Ukuran foto maksimal 5 MB.";
+      }
+    }
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
       setFeedback("Periksa kembali isian yang ditandai.");
@@ -149,7 +198,22 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
 
     setPending(true);
     resetFeedback();
+    let uploadedPathname: string | null = null;
     try {
+      if (newFile) {
+        const upload = await uploadFacilityPhoto(newFile);
+        if (!upload) {
+          setFeedback("Gagal mengunggah foto. Coba lagi.");
+          return;
+        }
+        uploadedPathname = upload.pathname;
+        payload.fotoPathname = upload.pathname;
+        payload.fotoType = newFile.type.toLowerCase();
+        payload.fotoSize = newFile.size;
+      } else if (hapusFoto && mode === "edit") {
+        payload.fotoPathname = null;
+      }
+
       const response = await fetch(mode === "create" ? "/api/admin/facilities" : `/api/admin/facilities/${id}`, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
@@ -159,10 +223,13 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
       if (response.ok) {
         setCreateOpen(false);
         setEditing(null);
+        setFotoFile(null);
         router.refresh();
         return;
       }
 
+      // Simpan gagal: jangan tinggalkan blob yatim.
+      if (uploadedPathname) await discardFacilityUpload(uploadedPathname);
       const body = await response.json().catch(() => null);
       setErrors(extractFieldErrors(body));
       setFeedback(
@@ -171,6 +238,7 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
           : "Gagal menyimpan fasilitas.",
       );
     } catch {
+      if (uploadedPathname) await discardFacilityUpload(uploadedPathname);
       setFeedback("Gagal menyimpan fasilitas.");
     } finally {
       setPending(false);
@@ -210,11 +278,63 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
     }
   }
 
+  async function kirimHapus(facility: AdminFacility) {
+    setPending(true);
+    resetFeedback();
+    try {
+      const response = await fetch(`/api/admin/facilities/${facility.id}`, { method: "DELETE" });
+
+      if (response.ok) {
+        setHapusTarget(null);
+        router.refresh();
+        return;
+      }
+
+      const body = await response.json().catch(() => null);
+      setHapusTarget(null);
+      setFeedback(
+        body && typeof body === "object" && "detail" in body
+          ? String((body as { detail: string }).detail)
+          : "Gagal menghapus fasilitas.",
+      );
+    } catch {
+      setHapusTarget(null);
+      setFeedback("Gagal menghapus fasilitas.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function kirimPulihkan(facility: ArchivedFacility) {
+    setPending(true);
+    resetFeedback();
+    try {
+      const response = await fetch(`/api/admin/facilities/${facility.id}/restore`, { method: "POST" });
+
+      if (response.ok) {
+        router.refresh();
+        return;
+      }
+
+      const body = await response.json().catch(() => null);
+      setFeedback(
+        body && typeof body === "object" && "detail" in body
+          ? String((body as { detail: string }).detail)
+          : "Gagal memulihkan fasilitas.",
+      );
+    } catch {
+      setFeedback("Gagal memulihkan fasilitas.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   const paginationQuery = new URLSearchParams();
   if (filters.search) paginationQuery.set("search", filters.search);
   if (filters.type) paginationQuery.set("type", filters.type);
   if (filters.location) paginationQuery.set("location", filters.location);
   if (filters.status) paginationQuery.set("status", filters.status);
+  if (filters.perPage && filters.perPage !== 20) paginationQuery.set("perPage", String(filters.perPage));
 
   function pageHref(page: number) {
     const params = new URLSearchParams(paginationQuery);
@@ -232,7 +352,13 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
             Tambah, ubah, dan atur status fasilitas. Perubahan tercermin pada halaman publik.
           </p>
         </div>
-        <Button className="min-h-11" onClick={() => setCreateOpen(true)}>
+        <Button
+          className="min-h-11"
+          onClick={() => {
+            resetFeedback();
+            setCreateOpen(true);
+          }}
+        >
           <Plus aria-hidden="true" className="size-4" />
           Tambah fasilitas
         </Button>
@@ -406,6 +532,18 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
                   <Wrench aria-hidden="true" className="size-4" />
                   Ubah status
                 </Button>
+                <Button
+                  variant="danger"
+                  className="min-h-11"
+                  disabled={pending}
+                  onClick={() => {
+                    resetFeedback();
+                    setHapusTarget(facility);
+                  }}
+                >
+                  <Trash2 aria-hidden="true" className="size-4" />
+                  Hapus
+                </Button>
               </div>
             </li>
           ))}
@@ -438,6 +576,52 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
         </nav>
       )}
 
+      <section className="flex flex-col gap-3" aria-labelledby="riwayat-hapus-title">
+        <div>
+          <h2 id="riwayat-hapus-title" className="font-heading text-lg font-semibold tracking-tight">
+            Riwayat penghapusan
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Fasilitas yang dihapus disimpan di sini dan bisa dipulihkan kembali.
+          </p>
+        </div>
+        {archived.length === 0 ? (
+          <p className="rounded-card border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            Belum ada fasilitas yang dihapus.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {archived.map((facility) => (
+              <li
+                key={facility.id}
+                className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-subtle sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-heading text-base font-semibold">{facility.nama}</span>
+                  <p className="text-sm text-muted-foreground">
+                    {LABEL_TIPE_FASILITAS[facility.tipe]} · {facility.lokasi} · {facility.kapasitas}{" "}
+                    {LABEL_SATUAN_KAPASITAS[facility.tipe]}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Dihapus {new Date(facility.deletedAt).toLocaleString("id-ID")}
+                    {facility.deletedByNama ? ` oleh ${facility.deletedByNama}` : ""}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={pending}
+                  onClick={() => kirimPulihkan(facility)}
+                >
+                  <RotateCcw aria-hidden="true" className="size-4" />
+                  Pulihkan
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <FormFasilitas
         key={editing ? `edit-${editing.id}` : createOpen ? "create" : "closed"}
         open={createOpen || editing !== null}
@@ -446,9 +630,11 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
         pending={pending}
         onClose={() => {
           resetFeedback();
+          setFotoFile(null);
           setCreateOpen(false);
           setEditing(null);
         }}
+        onFotoChange={setFotoFile}
         onSubmit={(event) => kirimForm(event, editing ? "edit" : "create", editing?.id)}
       />
 
@@ -463,6 +649,16 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
         }}
         onSubmit={(event) => statusTarget && kirimStatus(event, statusTarget)}
       />
+
+      <SheetHapus
+        facility={hapusTarget}
+        pending={pending}
+        onClose={() => {
+          resetFeedback();
+          setHapusTarget(null);
+        }}
+        onConfirm={() => hapusTarget && kirimHapus(hapusTarget)}
+      />
     </main>
   );
 }
@@ -473,6 +669,7 @@ function FormFasilitas({
   errors,
   pending,
   onClose,
+  onFotoChange,
   onSubmit,
 }: {
   open: boolean;
@@ -480,9 +677,36 @@ function FormFasilitas({
   errors: FieldErrors;
   pending: boolean;
   onClose: () => void;
+  onFotoChange: (file: File | null) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const title = facility ? "Ubah fasilitas" : "Tambah fasilitas";
+  const fotoTersimpan = facility?.fotoUrl ?? null;
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [hapusFoto, setHapusFoto] = useState(false);
+  const tampilFoto = previewUrl ?? (hapusFoto ? null : fotoTersimpan);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function pilihFoto(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setPreviewUrl(null);
+      onFotoChange(null);
+      return;
+    }
+    onFotoChange(file);
+    setPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return URL.createObjectURL(file);
+    });
+    setHapusFoto(false);
+  }
+
   return (
     <Sheet open={open} onOpenChange={(value) => !value && onClose()}>
       <SheetContent
@@ -563,6 +787,39 @@ function FormFasilitas({
               aria-invalid={Boolean(errors.deskripsi)}
             />
             {errors.deskripsi && <FieldError>{errors.deskripsi}</FieldError>}
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="foto">Foto (opsional)</FieldLabel>
+            {tampilFoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tampilFoto} alt="Pratinjau foto fasilitas" className="aspect-video w-full rounded-card object-cover" />
+            ) : (
+              <div className="flex aspect-video w-full items-center justify-center rounded-card border border-dashed border-border text-sm text-muted-foreground">
+                Belum ada foto
+              </div>
+            )}
+            <input
+              id="foto"
+              name="foto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={pilihFoto}
+              className="text-sm file:mr-3 file:min-h-9 file:rounded-control file:border file:border-border file:bg-background file:px-3 file:text-sm"
+            />
+            <p className="text-xs text-muted-foreground">JPG, PNG, atau WebP · maksimal 5 MB.</p>
+            {fotoTersimpan && !previewUrl && (
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  name="hapusFoto"
+                  checked={hapusFoto}
+                  onChange={(event) => setHapusFoto(event.target.checked)}
+                />
+                Hapus foto saat ini
+              </label>
+            )}
+            {(errors.foto || errors.fotoPathname) && <FieldError>{errors.foto ?? errors.fotoPathname}</FieldError>}
           </Field>
           </div>
 
@@ -668,6 +925,51 @@ function SheetStatus({
             </Button>
           </div>
         </form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function SheetHapus({
+  facility,
+  pending,
+  onClose,
+  onConfirm,
+}: {
+  facility: AdminFacility | null;
+  pending: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Sheet open={facility !== null} onOpenChange={(value) => !value && onClose()}>
+      <SheetContent
+        side="right"
+        overlayClassName="bg-black/5"
+        className="gap-0 overflow-hidden data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:h-[calc(100%-2rem)] data-[side=right]:rounded-2xl data-[side=right]:border data-[side=right]:shadow-xl data-[side=right]:sm:max-w-md"
+      >
+        <SheetHeader className="border-b border-border/60 pr-12">
+          <SheetTitle>Hapus fasilitas?</SheetTitle>
+          <SheetDescription>{facility?.nama}</SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          <div className="flex items-start gap-2 rounded-control border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <Trash2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <p>
+              Fasilitas akan dipindahkan ke riwayat penghapusan dan disembunyikan dari daftar
+              publik. Bisa dipulihkan kembali nanti. Hanya fasilitas tanpa riwayat reservasi atau
+              laporan yang dapat dihapus; jika ada riwayat, nonaktifkan saja.
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border/60 p-4">
+          <Button type="button" variant="ghost" className="min-h-11" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="button" variant="danger" className="min-h-11" disabled={pending} onClick={onConfirm}>
+            {pending ? "Menghapus..." : "Hapus"}
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );

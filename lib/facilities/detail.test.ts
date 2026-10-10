@@ -22,7 +22,12 @@ describe("detail fasilitas", () => {
       deskripsi: null,
       status: "ACTIVE",
     })
-    getFacilityAvailability.mockResolvedValue(null)
+    getFacilityAvailability.mockResolvedValue({
+      facilityId: 8,
+      date: "2026-09-15",
+      timezone: "Asia/Jakarta",
+      slots: [],
+    })
   })
 
   it("tidak memanggil service untuk identifier tidak valid", async () => {
@@ -42,6 +47,12 @@ describe("detail fasilitas", () => {
 
     expect(getFacilityAvailability).toHaveBeenCalledWith(8, "2026-09-15")
     expect(detail).toMatchObject({ facility: { id: 8 }, date: "2026-09-15" })
+  })
+
+  it("mengembalikan null ketika ketersediaan tidak tersedia (fasilitas tidak lagi publik)", async () => {
+    getFacilityAvailability.mockResolvedValue(null)
+
+    expect(await getFacilityDetail("8", "2026-09-15")).toBeNull()
   })
 
   it("membuat metadata dari data fasilitas di service", async () => {

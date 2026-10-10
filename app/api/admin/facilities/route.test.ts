@@ -92,6 +92,16 @@ describe("GET /api/admin/facilities", () => {
     expect(response.status).toBe(422);
     expect(listAdminFacilities).not.toHaveBeenCalled();
   });
+
+  it("500 problem+json ketika service gagal", async () => {
+    vi.mocked(listAdminFacilities).mockRejectedValue(new Error("db down"));
+
+    const response = await GET(new NextRequest("http://localhost:3000/api/admin/facilities"));
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("Content-Type")).toContain("application/problem+json");
+    expect((await response.json()).code).toBe("INTERNAL_ERROR");
+  });
 });
 
 describe("POST /api/admin/facilities", () => {

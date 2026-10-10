@@ -27,6 +27,7 @@ function fasilitas(overrides: Partial<StaffFacility> = {}): StaffFacility {
     kapasitas: 40,
     deskripsi: "Ruang kelas standar",
     status: "ACTIVE",
+    fotoUrl: null,
     statusChangedAt: null,
     statusChangedBy: null,
     ...overrides,
