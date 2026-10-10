@@ -32,20 +32,20 @@ describe("FacilityCard", () => {
   it("menautkan tombol detail ke /fasilitas/{id}", () => {
     render(<FacilityCard facility={facility} />)
 
-    const link = screen.getByRole("button", { name: /lihat detail/i })
+    const link = screen.getByRole("button", { name: /lihat & reservasi/i })
     expect(link).toHaveAttribute("href", "/fasilitas/1")
   })
 
   it("mendukung tautan detail pada jalur fasilitas publik", () => {
     render(<FacilityCard facility={facility} detailBasePath="/fasilitas" />)
 
-    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/fasilitas/1")
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute("href", "/fasilitas/1")
   })
 
   it("menyertakan tanggal pada tautan detail ketika diberikan", () => {
     render(<FacilityCard facility={facility} date="2026-10-15" />)
 
-    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute(
       "href",
       "/fasilitas/1?date=2026-10-15",
     )
@@ -67,7 +67,7 @@ describe("FacilityCard", () => {
     render(<FacilityCard facility={facility} />)
 
     const footer = screen
-      .getByRole("button", { name: /lihat detail/i })
+      .getByRole("button", { name: /lihat & reservasi/i })
       .closest("[data-slot='card-footer']")
 
     expect(footer).not.toBeNull()
@@ -77,7 +77,11 @@ describe("FacilityCard", () => {
   it("tidak menampilkan data reservasi atau identitas pemesan", () => {
     render(<FacilityCard facility={facility} />)
 
-    expect(screen.queryByText(/reservasi/i)).not.toBeInTheDocument()
+    // Tombol CTA menyebut "reservasi", jadi periksa ketiadaan data reservasi
+    // (status enum/label) dan identitas pemesan, bukan kata "reservasi".
+    for (const teks of ["PENDING", "APPROVED", "Disetujui", "Menunggu", "Pemesan"]) {
+      expect(screen.queryByText(teks, { exact: false })).not.toBeInTheDocument()
+    }
   })
 
   it("menampilkan badge Dalam Perbaikan untuk status UNDER_MAINTENANCE", () => {

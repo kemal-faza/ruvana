@@ -75,7 +75,7 @@ export function FacilityCard({ facility, eager = false, detailBasePath = "/fasil
           nativeButton={false}
           render={<Link href={`${detailBasePath}/${facility.id}${detailQuery}`} />}
         >
-          Lihat detail
+          Lihat &amp; reservasi
         </Button>
       </CardFooter>
     </Card>
