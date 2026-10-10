@@ -129,11 +129,12 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     terapkanKetersediaan(nextFacilityId, nextDate);
   }
 
-  // Availability dihitung server untuk prop facilityId. Bila user memilih
-  // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
-  // baru — perlakukan sebagai tidak diketahui (fallback: semua waktu aktif,
-  // server tetap memvalidasi dan menolak saat submit).
-  const availabilityForSelected = selectedFacilityId === facilityId ? availability : null;
+  // Availability dihitung server untuk pasangan prop facilityId+date. Bila
+  // pilihan user belum selaras dengan prop (navigasi lunak belum selesai),
+  // data itu bukan milik pilihan baru — perlakukan sebagai tidak diketahui
+  // (fallback: semua waktu aktif, server tetap memvalidasi saat submit).
+  const availabilityForSelected =
+    selectedFacilityId === facilityId && selectedDate === date ? availability : null;
 
   // Peta status per jam mulai dari availability server (null = tidak diketahui)
   const statusByStart = useMemo(() => {
@@ -147,15 +148,16 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
   }, [availabilityForSelected]);
 
   // Slot dalam jendela pengajuan H-14 dihitung dari waktu server, bukan jam
-  // klien. Aturan yang sama ditegakkan otoritatif oleh service saat submit.
+  // klien, dan mengikuti tanggal yang dipilih pengguna (tanggal itulah yang
+  // divalidasi dan dikirim). Aturan yang sama ditegakkan otoritatif oleh service.
   const mepetByStart = useMemo(() => {
     const acuan = new Date(serverNow);
     const map = new Map<string, boolean>();
     for (const time of VALID_START_TIMES) {
-      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(date, time), acuan));
+      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(selectedDate, time), acuan));
     }
     return map;
-  }, [date, serverNow]);
+  }, [selectedDate, serverNow]);
 
   const adaSlotMepet = useMemo(() => [...mepetByStart.values()].some(Boolean), [mepetByStart]);
 
@@ -198,8 +200,8 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
 
   const selectedFacility = facilities.find((f) => f.id === selectedFacilityId);
   let summary: string | null = null;
-  if (selectedFacility && date && startTime && endTime) {
-    const [year, month, day] = date.split("-").map(Number);
+  if (selectedFacility && selectedDate && startTime && endTime) {
+    const [year, month, day] = selectedDate.split("-").map(Number);
     const tanggal = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" }).format(
       new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
     );
@@ -280,9 +282,11 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     mengirimRef.current = true;
     setLoading(true);
     try {
+      // Tanggal pilihan pengguna, bukan prop `date`: saat navigasi lunak belum
+      // selesai, prop masih menunjuk tanggal sebelumnya.
       const body = {
         facilityId: selectedFacilityId,
-        date,
+        date: selectedDate,
         startTime,
         endTime,
         tujuanPenggunaan: tujuan.trim(),

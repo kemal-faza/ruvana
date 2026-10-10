@@ -501,3 +501,71 @@ describe("ReservationForm navigasi ketersediaan", () => {
     )
   }, 20000)
 })
+
+describe("ReservationForm pilihan pengguna vs data server", () => {
+  const propsDasar = {
+    facilities,
+    facilityId: 3,
+    date: "2026-12-02",
+    availability: null as null,
+    serverNow: "2026-09-01T00:00:00.000Z",
+  }
+
+  // Navigasi lunak yang belum selesai: router.push tercatat, tetapi prop
+  // fasilitas/tanggal belum ikut berubah.
+  async function pilihTanggalLain(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByLabelText("Tanggal"))
+    const hariLain = document.querySelector<HTMLButtonElement>('td[data-day="2026-12-10"] button')
+    expect(hariLain).not.toBeNull()
+    await user.click(hariLain as HTMLButtonElement)
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-12-10"))
+  }
+
+  it("mengirim tanggal yang terlihat di pemilih, bukan prop yang belum diterapkan", async () => {
+    const user = userEvent.setup()
+    const fetchMock = mockFetchOk()
+    render(<ReservationForm {...propsDasar} />)
+
+    await pilihTanggalLain(user)
+    expect(screen.getByLabelText("Tanggal")).toHaveTextContent("10 Des 2026")
+    await isiWaktuDanTujuan(user)
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    const init = fetchMock.mock.calls[0]?.[1]
+    expect(JSON.parse(String(init?.body))).toMatchObject({ date: "2026-12-10", facilityId: 3 })
+  }, 20000)
+
+  it("menampilkan ringkasan dengan tanggal yang dipilih, bukan tanggal prop", async () => {
+    const user = userEvent.setup()
+    render(<ReservationForm {...propsDasar} />)
+
+    await pilihTanggalLain(user)
+    await isiWaktuDanTujuan(user)
+
+    expect(screen.getByText(/Aula Utama · 10 Des · 09:00–10:00, 2 slot/)).toBeInTheDocument()
+    expect(screen.queryByText(/2 Des/)).not.toBeInTheDocument()
+  }, 20000)
+
+  it("tidak memakai ketersediaan tanggal lama setelah tanggal berganti", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm
+        {...propsDasar}
+        availability={{
+          facilityId: 3,
+          date: "2026-12-02",
+          timezone: "Asia/Jakarta",
+          slots: [{ startTime: "08:00", endTime: "08:30", available: false, blockedBy: "APPROVED" }],
+        }}
+      />,
+    )
+
+    await pilihTanggalLain(user)
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+
+    const opsi = await screen.findByRole("option", { name: "08:00" })
+    expect(opsi).not.toHaveAttribute("aria-disabled", "true")
+  }, 20000)
+
+})
