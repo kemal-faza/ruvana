@@ -30,13 +30,13 @@ import {
 type PersistSuccess<T> = (tx: Prisma.TransactionClient, result: T) => Promise<void>;
 
 /** Aktor petugas/admin; bentuk OpenAPI `StaffUser`. */
-export interface ReportStaffUser {
+interface ReportStaffUser {
   id: number;
   nama: string;
   role: Role;
 }
 
-export interface StaffReportFacility {
+interface StaffReportFacility {
   id: number;
   nama: string;
   tipe: TipeFasilitas;
@@ -49,7 +49,7 @@ export interface StaffReportFacility {
 }
 
 /** Pelapor tanpa kredensial; bentuk OpenAPI `SafeUser`. */
-export interface ReportReporter {
+interface ReportReporter {
   id: number;
   nama: string;
   email: string;
@@ -60,7 +60,7 @@ export interface ReportReporter {
 }
 
 /** Metadata foto tanpa URL private; bentuk OpenAPI `PhotoMetadata`. */
-export interface StaffReportPhoto {
+interface StaffReportPhoto {
   hasPhoto: boolean;
   contentType: string | null;
   size: number | null;
@@ -91,11 +91,11 @@ export interface StaffReportCollection {
   };
 }
 
-export type ReportProcessingServiceError =
+type ReportProcessingServiceError =
   | { type: "not_found"; message: string }
   | { type: "transition"; message: string };
 
-export type ReportProcessingResult =
+type ReportProcessingResult =
   | { ok: true; data: StaffReportResult }
   | { ok: false; error: ReportProcessingServiceError };
 
