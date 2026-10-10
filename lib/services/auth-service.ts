@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import { AccountStatus } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
-import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_NAMA_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business";
+import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_NAMA_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business";
 import { createSession, destroySession, getSessionUser, type SessionAccount } from "@/lib/auth";
 import { createPendingUser, findUserForLogin } from "@/lib/db/auth";
-import { clearLoginFailures, loginAttemptKey, loginBlocked, recordLoginFailure } from "@/lib/login-rate-limit";
+import { clearLoginFailures, loginAttemptKey, reserveLoginAttempt } from "@/lib/login-rate-limit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,7 +43,7 @@ export async function registerUser(body: unknown): Promise<RegisterResult> {
   if (!nama || nama.length > BATAS_NAMA_AKUN_KARAKTER) errors.push({ field: "nama", code: "NAME_INVALID", message: "Nama wajib diisi dan maksimal 100 karakter." });
   if (!EMAIL_RE.test(email) || email.length > BATAS_EMAIL_AKUN_KARAKTER) errors.push({ field: "email", code: "EMAIL_INVALID", message: "Format email tidak valid." });
   const passwordBytes = Buffer.byteLength(password, "utf8");
-  if (passwordBytes < 8 || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) errors.push({ field: "password", code: "PASSWORD_INVALID", message: "Kata sandi harus berukuran 8 sampai 72 byte UTF-8." });
+  if (passwordBytes < BATAS_PASSWORD_AKUN_MIN_BYTE || passwordBytes > BATAS_PASSWORD_AKUN_BYTE) errors.push({ field: "password", code: "PASSWORD_INVALID", message: `Kata sandi harus berukuran ${BATAS_PASSWORD_AKUN_MIN_BYTE} sampai ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.` });
   if (Object.keys(input).some((key) => !["nama", "email", "password"].includes(key))) errors.push({ field: "body", code: "UNKNOWN_FIELD", message: "Data pendaftaran tidak valid." });
   if (errors.length > 0) return { kind: "validation", errors };
 
@@ -76,12 +76,12 @@ export async function loginWithCredentials(body: unknown, ip: string): Promise<L
   if (errors.length > 0) return { kind: "validation", errors };
 
   const key = loginAttemptKey(email, ip);
-  if (await loginBlocked(key)) return { kind: "rate_limited" };
+  if (!(await reserveLoginAttempt(key))) return { kind: "rate_limited" };
 
   const user = await findUserForLogin(email);
   let passwordCocok = false;
   const passwordBytes = Buffer.byteLength(password, "utf8");
-  if (user && passwordBytes >= 8 && passwordBytes <= BATAS_PASSWORD_AKUN_BYTE) {
+  if (user && passwordBytes >= BATAS_PASSWORD_AKUN_MIN_BYTE && passwordBytes <= BATAS_PASSWORD_AKUN_BYTE) {
     try {
       passwordCocok = await bcrypt.compare(password, user.password);
     } catch {
@@ -89,7 +89,6 @@ export async function loginWithCredentials(body: unknown, ip: string): Promise<L
     }
   }
   if (!user || !passwordCocok || user.status !== AccountStatus.ACTIVE) {
-    await recordLoginFailure(key);
     return { kind: "invalid" };
   }
 

@@ -24,7 +24,7 @@ beforeEach(() => {
 describe("bootstrapAdmin", () => {
   it.each([
     ["email tidak valid", { email: "admin-tanpa-domain" }, "BOOTSTRAP_ADMIN_EMAIL"],
-    ["password kurang dari 16 byte", { password: "terlalu-pendek" }, "BOOTSTRAP_ADMIN_PASSWORD"],
+    ["password kurang dari 8 byte", { password: "pendek" }, "BOOTSTRAP_ADMIN_PASSWORD"],
     ["password lebih dari 72 byte", { password: "😀".repeat(19) }, "BOOTSTRAP_ADMIN_PASSWORD"],
   ])("menolak %s sebelum menulis", async (_name, override, message) => {
     await expect(bootstrapAdmin({ ...input, ...override }, database)).rejects.toThrow(message)
