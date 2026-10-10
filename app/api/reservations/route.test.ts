@@ -325,6 +325,7 @@ describe("GET /api/reservations filter status", () => {
       "REJECTED",
       "CANCELLED_BY_USER",
       "CANCELLED_BY_OFFICER",
+      "CANCELLED_BY_MAINTENANCE",
       "EXPIRED",
     ]) {
       const response = await GET(getRequest(`?status=${status}`));

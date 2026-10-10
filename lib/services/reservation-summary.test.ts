@@ -112,7 +112,7 @@ describe("getStaffReservationSummaryService", () => {
 
     expect(count).toHaveBeenCalledWith({
       where: {
-        status: { in: ["CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"] },
+        status: { in: ["CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "CANCELLED_BY_MAINTENANCE", "EXPIRED"] },
       },
     });
     expect(ringkasan.lainnya).toBe(6);
