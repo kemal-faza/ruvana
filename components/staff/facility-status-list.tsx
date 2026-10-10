@@ -149,53 +149,62 @@ export function FacilityStatusList({
         {items.map((facility) => {
           const tujuan = tujuanStatus(facility);
           const disorot = sorotFacilityId === facility.id;
+          const idKeteranganSorotan = `sorotan-fasilitas-${facility.id}`;
           return (
             <div
               key={facility.id}
               ref={disorot ? sorotRef : undefined}
               tabIndex={disorot ? -1 : undefined}
+              aria-describedby={disorot ? idKeteranganSorotan : undefined}
               className={disorot ? "rounded-card ring-2 ring-warning ring-offset-2 ring-offset-background" : undefined}
             >
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading text-lg">
-                  {facility.nama} · {LABEL_TIPE_FASILITAS[facility.tipe]}
-                </CardTitle>
-                <CardDescription>
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-                    {facility.lokasi}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Users aria-hidden="true" className="size-3.5 shrink-0" />
-                    Kapasitas {facility.kapasitas} orang
-                  </span>
-                </CardDescription>
-                <CardAction>
-                  <FacilityStatusBadge status={facility.status} />
-                </CardAction>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-                {facility.deskripsi && <p>{facility.deskripsi}</p>}
-                <p>{provenance(facility)}</p>
-                {facility.status === "INACTIVE" && (
-                  <p>Fasilitas nonaktif. Hanya admin yang dapat mengaktifkannya kembali.</p>
-                )}
-              </CardContent>
-              {tujuan && (
-                <div className="flex gap-3 px-6 pb-6">
-                  <Button
-                    type="button"
-                    variant={tujuan === "UNDER_MAINTENANCE" ? "danger-soft" : "primary"}
-                    className={BUTTON_ACTION_CLASS}
-                    disabled={actingId !== null}
-                    onClick={() => openKonfirmasi(facility)}
-                  >
-                    {labelTujuan(tujuan)}
-                  </Button>
-                </div>
+              {disorot && (
+                // Fokus dipindahkan ke kartu ini, jadi alasan sorotan diumumkan
+                // lewat deskripsi yang dibacakan bersama kartunya.
+                <p id={idKeteranganSorotan} className="sr-only">
+                  Fasilitas ini disorot dari tautan antrean laporan.
+                </p>
               )}
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-heading text-lg">
+                    {facility.nama} · {LABEL_TIPE_FASILITAS[facility.tipe]}
+                  </CardTitle>
+                  <CardDescription>
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+                      {facility.lokasi}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Users aria-hidden="true" className="size-3.5 shrink-0" />
+                      Kapasitas {facility.kapasitas} orang
+                    </span>
+                  </CardDescription>
+                  <CardAction>
+                    <FacilityStatusBadge status={facility.status} />
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+                  {facility.deskripsi && <p>{facility.deskripsi}</p>}
+                  <p>{provenance(facility)}</p>
+                  {facility.status === "INACTIVE" && (
+                    <p>Fasilitas nonaktif. Hanya admin yang dapat mengaktifkannya kembali.</p>
+                  )}
+                </CardContent>
+                {tujuan && (
+                  <div className="flex gap-3 px-6 pb-6">
+                    <Button
+                      type="button"
+                      variant={tujuan === "UNDER_MAINTENANCE" ? "danger-soft" : "primary"}
+                      className={BUTTON_ACTION_CLASS}
+                      disabled={actingId !== null}
+                      onClick={() => openKonfirmasi(facility)}
+                    >
+                      {labelTujuan(tujuan)}
+                    </Button>
+                  </div>
+                )}
+              </Card>
             </div>
           );
         })}
