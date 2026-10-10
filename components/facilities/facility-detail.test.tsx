@@ -7,6 +7,7 @@ import type { PublicFacility } from "@/lib/services/facility-service"
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/fasilitas",
 }))
 
 afterEach(cleanup)
