@@ -44,6 +44,7 @@ describe("RegisterForm", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal("fetch", fetchMock)
     render(<RegisterForm />)
+    expect(screen.getByText("Sebaiknya gunakan setidaknya 8 karakter.")).toBeInTheDocument()
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/Nama lengkap/), "Ayu")
     await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
@@ -53,5 +54,33 @@ describe("RegisterForm", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/register", expect.objectContaining({
       body: JSON.stringify({ nama: "Ayu", email: "ayu@kampus.ac.id", password: "éééé" }),
     }))
+  })
+
+  it("menolak kata sandi multibyte di bawah 8 byte dengan pesan sederhana", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+    render(<RegisterForm />)
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText(/Nama lengkap/), "Ayu")
+    await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
+    await user.type(screen.getByLabelText(/Kata sandi/), "ééé")
+    await user.click(screen.getByRole("button", { name: "Daftar" }))
+
+    expect((screen.getByLabelText(/Kata sandi/) as HTMLInputElement).validationMessage).toBe("Kata sandi terlalu pendek. Tambahkan beberapa karakter.")
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("menolak kata sandi multibyte di atas 72 byte dengan pesan sederhana", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+    render(<RegisterForm />)
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText(/Nama lengkap/), "Ayu")
+    await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
+    await user.type(screen.getByLabelText(/Kata sandi/), "é".repeat(37))
+    await user.click(screen.getByRole("button", { name: "Daftar" }))
+
+    expect((screen.getByLabelText(/Kata sandi/) as HTMLInputElement).validationMessage).toBe("Kata sandi terlalu panjang. Kurangi beberapa karakter.")
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

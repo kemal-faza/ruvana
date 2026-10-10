@@ -83,9 +83,9 @@ export default function LoginForm() {
                 fieldErrors.email = ["Format email tidak valid."]
               }
               if (!password) fieldErrors.password = ["Kata sandi wajib diisi."]
-              else if (passwordBytes < 8) fieldErrors.password = ["Kata sandi minimal 8 karakter."]
+              else if (passwordBytes < 8) fieldErrors.password = ["Kata sandi terlalu pendek. Tambahkan beberapa karakter."]
               else if (passwordBytes > BATAS_PASSWORD_AKUN_BYTE) {
-                fieldErrors.password = [`Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte UTF-8.`]
+                fieldErrors.password = ["Kata sandi terlalu panjang. Kurangi beberapa karakter."]
               }
               if (Object.keys(fieldErrors).length > 0) {
                 setState({ ok: false, pesan: "", fieldErrors })
@@ -175,10 +175,11 @@ export default function LoginForm() {
                     }))
                   }}
                   aria-invalid={passwordError ? true : undefined}
-                  aria-describedby={passwordError ? "login-password-error" : undefined}
+                  aria-describedby={passwordError ? "login-password-error" : "login-password-help"}
                   className="h-11 pl-10"
                 />
               </div>
+              <FieldDescription id="login-password-help">Sebaiknya gunakan setidaknya 8 karakter.</FieldDescription>
               {passwordError && (
                 <FieldError id="login-password-error">{passwordError}</FieldError>
               )}

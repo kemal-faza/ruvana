@@ -37,9 +37,9 @@ export default function RegisterForm() {
     )
     password.setCustomValidity(
       passwordLength < 8
-        ? "Kata sandi harus berukuran minimal 8 byte."
+        ? "Kata sandi terlalu pendek. Tambahkan beberapa karakter."
         : passwordLength > BATAS_PASSWORD_AKUN_BYTE
-          ? `Kata sandi maksimal ${BATAS_PASSWORD_AKUN_BYTE} byte.`
+          ? "Kata sandi terlalu panjang. Kurangi beberapa karakter."
           : "",
     )
     const firstInvalid = [nama, email, password].find((input) => !input.validity.valid)
@@ -183,7 +183,7 @@ export default function RegisterForm() {
                 />
               </div>
               <p id="daftar-password-help" className="text-sm text-muted-foreground">
-                Kata sandi berukuran 8–72 byte UTF-8.
+                Sebaiknya gunakan setidaknya 8 karakter.
               </p>
               {state.fieldErrors?.password && (
                 <FieldError id="daftar-password-error">{state.fieldErrors.password[0]}</FieldError>

@@ -22,6 +22,7 @@ it("memakai POST native ke halaman sendiri, bukan endpoint JSON", () => {
 
   expect(form).toHaveAttribute("method", "post")
   expect(form).not.toHaveAttribute("action")
+  expect(screen.getByText("Sebaiknya gunakan setidaknya 8 karakter.")).toBeInTheDocument()
 })
 
 it("menonaktifkan submit pada HTML sebelum hidrasi", () => {
@@ -57,8 +58,21 @@ it("menolak password multibyte di atas 72 byte sebelum request login", async () 
   await user.type(screen.getByLabelText(/Kata sandi/), "é".repeat(37))
   await user.click(screen.getByRole("button", { name: "Masuk" }))
 
-  await waitFor(() => expect(screen.getByText(/maksimal 72 byte UTF-8/)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText("Kata sandi terlalu panjang. Kurangi beberapa karakter.")).toBeInTheDocument())
   expect(screen.getByLabelText(/Kata sandi/)).toHaveAttribute("aria-invalid", "true")
+  expect(fetchMock).not.toHaveBeenCalled()
+})
+
+it("menolak kata sandi multibyte yang kurang dari 8 byte sebelum request login", async () => {
+  const fetchMock = vi.fn()
+  vi.stubGlobal("fetch", fetchMock)
+  render(<LoginForm />)
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
+  await user.type(screen.getByLabelText(/Kata sandi/), "ééé")
+  await user.click(screen.getByRole("button", { name: "Masuk" }))
+
+  await waitFor(() => expect(screen.getByText("Kata sandi terlalu pendek. Tambahkan beberapa karakter.")).toBeInTheDocument())
   expect(fetchMock).not.toHaveBeenCalled()
 })
 
