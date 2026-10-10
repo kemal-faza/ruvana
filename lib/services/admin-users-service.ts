@@ -103,7 +103,6 @@ export async function createManagedUser(
           role: role as Role,
           status: AccountStatus.ACTIVE,
           dibuatOleh: adminId,
-          waktuVerifikasi: new Date(),
         },
         select: { id: true, nama: true, email: true, role: true, status: true, waktuDaftar: true, waktuVerifikasi: true },
       });
