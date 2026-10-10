@@ -70,9 +70,9 @@ export function isPastDate(dateStr: string, now: Date = new Date()): boolean {
 }
 
 /**
- * Benar bila sisa waktu menuju mulai kurang dari batas pengajuan H-1
- * (BATAS_PENGAJUAN_JAM), dihitung sebagai selisih tepat dua instant —
- * sama seperti batas pembatalan H-24. Tepat 24 jam berarti tidak melanggar.
+ * Benar bila sisa waktu menuju mulai kurang dari batas pengajuan H-14
+ * (BATAS_PENGAJUAN_JAM = 336 jam), dihitung sebagai selisih tepat dua instant —
+ * sama seperti cara batas pembatalan H-24. Tepat 14 hari berarti tidak melanggar.
  * Dipakai bersama server (penolakan otoritatif) dan UI (penonaktifan slot).
  */
 export function isKurangDariBatasPengajuan(startsAt: Date, now: Date = new Date()): boolean {
