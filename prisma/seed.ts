@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { ALASAN_PERBAIKAN } from "../lib/reservations/maintenance-listener";
 import { validateSeedConfig } from "./seed-safety";
 
 const seedConfig = validateSeedConfig({
@@ -62,6 +63,54 @@ async function main() {
       update: {},
       create: { ...f, tipe: f.tipe as "ruang_kelas" | "aula" | "laboratorium" | "alat" | "lapangan", status: "ACTIVE" },
     });
+  }
+
+  // Reservasi contoh gugur pemeliharaan (dibuat bila belum ada — idempoten).
+  {
+    const hari = 24 * 60 * 60 * 1000;
+    const pengguna = await prisma.user.findFirstOrThrow({ where: { email: "pengguna@ruvana.test" } });
+    const petugas = await prisma.user.findFirstOrThrow({ where: { email: "petugas@ruvana.test" } });
+    const labKimia = await prisma.facility.findUniqueOrThrow({ where: { nama: "Lab Kimia" } });
+
+    const waktuPerubahan = new Date(Date.now() - hari);
+    await prisma.facility.update({
+      where: { id: labKimia.id },
+      data: { status: "UNDER_MAINTENANCE", statusChangedAt: waktuPerubahan, statusChangedById: petugas.id },
+    });
+
+    // Tanggal Jakarta +7 hari; slot 09:00–11:00 WIB (offset +420 menit, tanpa DST).
+    const jakartaKini = Date.now() + 420 * 60 * 1000;
+    const target = new Date(jakartaKini + 7 * hari);
+    const y = target.getUTCFullYear();
+    const m = target.getUTCMonth();
+    const d = target.getUTCDate();
+    const tanggal = new Date(Date.UTC(y, m, d));
+    const mulai = new Date(Date.UTC(y, m, d, 9, 0) - 420 * 60 * 1000);
+    const selesai = new Date(Date.UTC(y, m, d, 11, 0) - 420 * 60 * 1000);
+    const tujuan = "Praktikum kimia dasar";
+
+    const sudahAda = await prisma.reservation.findFirst({
+      where: { userId: pengguna.id, facilityId: labKimia.id, status: "CANCELLED_BY_MAINTENANCE", tujuanPenggunaan: tujuan },
+      select: { id: true },
+    });
+    if (!sudahAda) {
+      await prisma.reservation.create({
+        data: {
+          userId: pengguna.id,
+          facilityId: labKimia.id,
+          tanggal,
+          startTime: mulai,
+          endTime: selesai,
+          tujuanPenggunaan: tujuan,
+          status: "CANCELLED_BY_MAINTENANCE",
+          alasan: ALASAN_PERBAIKAN,
+          diprosesOleh: null,
+          waktuDiproses: waktuPerubahan,
+          createdAt: new Date(Date.now() - 3 * hari),
+          updatedAt: waktuPerubahan,
+        },
+      });
+    }
   }
 
   // Laporan contoh Modul 4 (hanya saat tabel masih kosong — idempoten).
@@ -224,7 +273,7 @@ async function main() {
     });
   }
 
-  console.log("Seed selesai: akun demo + fasilitas contoh + laporan contoh.");
+  console.log("Seed selesai: akun demo + fasilitas contoh + reservasi contoh + laporan contoh.");
 }
 
 main()
