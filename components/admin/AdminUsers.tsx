@@ -661,7 +661,7 @@ function SheetBuatAkun({
               }
             />
             <p id="buat-password-help" className="text-sm text-muted-foreground">
-              Kata Sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.
+              Kata sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter, maksimal {BATAS_PASSWORD_AKUN_BYTE} karakter.
             </p>
             {state.fieldErrors?.password && (
               <FieldError id="buat-password-error">
