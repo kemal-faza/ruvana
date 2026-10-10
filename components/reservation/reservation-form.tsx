@@ -433,11 +433,6 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
         </section>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
-          {ringkasan && (
-            <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              <p className="font-medium">{ringkasan}</p>
-            </div>
-          )}
           <section aria-label="Waktu" className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
@@ -575,6 +570,15 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
               <p aria-live="polite" className="text-sm text-muted-foreground">
                 {summary}
               </p>
+            )}
+
+            {ringkasan && (
+              <div
+                role="alert"
+                className="sticky bottom-3 z-10 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive shadow-subtle backdrop-blur-sm"
+              >
+                <p className="font-medium">{ringkasan}</p>
+              </div>
             )}
 
             <div className="flex flex-wrap gap-3">

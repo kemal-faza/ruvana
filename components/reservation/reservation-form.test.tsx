@@ -227,6 +227,8 @@ describe("ReservationForm konfirmasi pengajuan", () => {
 
     const ringkasan = await screen.findByText(/Periksa kembali isian berikut/)
     expect(ringkasan).toHaveTextContent("Periksa kembali isian berikut: Jam mulai, Jam selesai, Tujuan.")
+    // Ringkasan tampil di bagian aksi ("Tujuan & kirim"), bukan di atas form.
+    expect(ringkasan.closest('section[aria-label="Tujuan dan kirim"]')).not.toBeNull()
     expect(screen.getByText("Jam mulai wajib dipilih.")).toBeInTheDocument()
     expect(document.activeElement?.id).toBe("jam-mulai")
   }, 20000)
