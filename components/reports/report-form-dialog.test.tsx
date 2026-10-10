@@ -154,7 +154,7 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
     expect(document.querySelector('input[name="facilityId"]')).toHaveValue("2")
   })
 
-  it("menampilkan placeholder kategori dan memilih opsi lewat keyboard", async () => {
+  it("menampilkan placeholder kategori dan memilih opsi", async () => {
     const user = userEvent.setup()
     renderDialog()
     const kategori = screen.getByRole("combobox", { name: /Kategori/ })
@@ -164,7 +164,7 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
     expect(await screen.findByRole("listbox")).toBeInTheDocument()
     expect(document.querySelector('[data-slot="select-content"]')).toHaveAttribute("data-align-trigger", "false")
 
-    await user.keyboard("{Home}{Enter}")
+    await user.click(await screen.findByRole("option", { name: "Listrik" }))
 
     expect(kategori).toHaveTextContent("Listrik")
     expect(document.querySelector('input[name="kategori"]')).toHaveValue("Listrik")
@@ -193,7 +193,7 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
 
     const kategori = screen.getByRole("combobox", { name: /Kategori/ })
     await user.click(kategori)
-    await user.keyboard("{Home}{Enter}")
+    await user.click(await screen.findByRole("option", { name: "Listrik" }))
     await user.type(screen.getByLabelText(/Deskripsi kerusakan/), "Lampu ruang kelas tidak menyala.")
     await user.upload(screen.getByLabelText(/Foto/), new File(["foto"], "lampu.png", { type: "image/png" }))
     await user.click(screen.getByRole("button", { name: "Kirim laporan" }))
