@@ -272,15 +272,20 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
 
   it("menonaktifkan slot dalam jendela 14 hari dengan label Tidak tersedia plus teks bantu", async () => {
     const user = userEvent.setup()
-    renderBatasPengajuan()
+    const { container } = renderBatasPengajuan()
 
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
     const opsiMepet = await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
     expect(opsiMepet).toHaveAttribute("aria-disabled", "true")
     expect(await screen.findByRole("option", { name: "17:00" })).toBeInTheDocument()
-    expect(
-      screen.getByText("Reservasi minimal 14 hari sebelum waktu mulai."),
-    ).toBeInTheDocument()
+
+    // Teks bantu H-14 tampil di bagian "Fasilitas & tanggal", bukan di bagian Waktu.
+    const bagianTanggal = container.querySelector('section[aria-label="Fasilitas dan tanggal"]')
+    const bagianWaktu = container.querySelector('section[aria-label="Waktu"]')
+    expect(bagianTanggal).not.toBeNull()
+    expect(bagianWaktu).not.toBeNull()
+    expect(bagianTanggal).toHaveTextContent("Reservasi minimal 14 hari sebelum waktu mulai.")
+    expect(bagianWaktu).not.toHaveTextContent("Reservasi minimal 14 hari sebelum waktu mulai.")
   }, 20000)
 
   it("tidak menyiratkan slot mepet sebagai terisi", async () => {

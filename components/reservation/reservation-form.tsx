@@ -420,6 +420,9 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
               </Button>
             </div>
           </form>
+          {adaSlotMepet && !galatField.jamMulai && (
+            <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
+          )}
         </section>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
@@ -451,9 +454,6 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
                   <p aria-live="polite" className="text-sm text-muted-foreground">
                     Jam terpilih: {startTime}–{endTime}
                   </p>
-                )}
-                {adaSlotMepet && !galatField.jamMulai && (
-                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
                 )}
                 {!startTime && !galatField.jamMulai && !adaSlotMepet && (
                   <FieldDescription>Klik kotak jam untuk memilih waktu.</FieldDescription>
@@ -493,9 +493,6 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
                       })}
                     </SelectContent>
                   </Select>
-                  {adaSlotMepet && !galatField.jamMulai && (
-                    <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
-                  )}
                   {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
                   {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
                 </Field>
