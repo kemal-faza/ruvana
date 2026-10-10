@@ -146,4 +146,15 @@ describe("parseFacilityUpdateBody", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors[0]).toMatchObject({ field: "kapasitas", code: "INVALID_INTEGER" });
   });
+
+  it("menolak kapasitas di atas batas int4", () => {
+    const result = parseFacilityUpdateBody({ kapasitas: 2_147_483_648 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ field: "kapasitas", code: "OUT_OF_RANGE" });
+  });
+
+  it("menerima kapasitas tepat di batas int4", () => {
+    const result = parseFacilityUpdateBody({ kapasitas: 2_147_483_647 });
+    expect(result.ok).toBe(true);
+  });
 });

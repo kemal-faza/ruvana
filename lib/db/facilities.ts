@@ -85,13 +85,7 @@ export function findStaffFacilities() {
   });
 }
 
-// Untuk reservasi: perlu load fasilitas apapun termasuk INACTIVE untuk validasi, plus lock
-export function findFacilityById(id: number) {
-  return prisma.facility.findUnique({
-    where: { id },
-  });
-}
-
+// Untuk reservasi: perlu lock baris fasilitas agar cek konflik APPROVED tidak balapan.
 export async function lockFacilityById(tx: Prisma.TransactionClient, id: number) {
   // Row lock untuk mencegah race saat cek konflik APPROVED
   await tx.$queryRaw`SELECT id FROM "facilities" WHERE id = ${id} FOR UPDATE`;

@@ -41,7 +41,7 @@ interface AdminFacilitiesProps {
   items: AdminFacilityCollection["items"];
   meta: AdminFacilityCollection["meta"];
   locations: string[];
-  filters: { search?: string; type?: string; location?: string; status?: string };
+  filters: { search?: string; type?: string; location?: string; status?: string; perPage?: number };
 }
 
 type FieldErrors = Record<string, string>;
@@ -70,6 +70,8 @@ function bacaDeskripsi(fd: FormData): string | null {
 const BATAS_NAMA = 100;
 const BATAS_LOKASI = 200;
 const BATAS_DESKRIPSI = 2000;
+// Batas bilangan bulat PostgreSQL (int4) untuk kolom kapasitas.
+const BATAS_KAPASITAS = 2_147_483_647;
 
 function validasiFasilitas(payload: {
   nama: string;
@@ -89,6 +91,7 @@ function validasiFasilitas(payload: {
 
   if (!Number.isSafeInteger(payload.kapasitas)) errors.kapasitas = "kapasitas harus bilangan bulat";
   else if (payload.kapasitas < 1) errors.kapasitas = "kapasitas harus minimal 1";
+  else if (payload.kapasitas > BATAS_KAPASITAS) errors.kapasitas = `kapasitas maksimal ${BATAS_KAPASITAS}`;
 
   if (payload.deskripsi !== null && payload.deskripsi.length > BATAS_DESKRIPSI) {
     errors.deskripsi = `deskripsi maksimal ${BATAS_DESKRIPSI} karakter`;
@@ -215,6 +218,7 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
   if (filters.type) paginationQuery.set("type", filters.type);
   if (filters.location) paginationQuery.set("location", filters.location);
   if (filters.status) paginationQuery.set("status", filters.status);
+  if (filters.perPage && filters.perPage !== 20) paginationQuery.set("perPage", String(filters.perPage));
 
   function pageHref(page: number) {
     const params = new URLSearchParams(paginationQuery);
@@ -232,7 +236,13 @@ function AdminFacilitiesView({ items, meta, locations, filters }: AdminFacilitie
             Tambah, ubah, dan atur status fasilitas. Perubahan tercermin pada halaman publik.
           </p>
         </div>
-        <Button className="min-h-11" onClick={() => setCreateOpen(true)}>
+        <Button
+          className="min-h-11"
+          onClick={() => {
+            resetFeedback();
+            setCreateOpen(true);
+          }}
+        >
           <Plus aria-hidden="true" className="size-4" />
           Tambah fasilitas
         </Button>

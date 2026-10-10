@@ -7,6 +7,7 @@ import { claimIdempotentRoute, readIdempotencyKey } from "@/lib/http/idempotent-
 import { originError } from "@/lib/http/origin";
 import {
   badRequest,
+  internalError,
   invalidFacilityTransition,
   notFound,
   validationFailed,
@@ -27,9 +28,14 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/admin/fa
   const parsedId = parseFacilityId(facilityId);
   if (!parsedId.ok) return validationFailed(instance, parsedId.errors);
 
-  const facility = await getAdminFacility(parsedId.value);
-  if (!facility) return notFound(instance, "Fasilitas tidak ditemukan");
-  return NextResponse.json(facility, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const facility = await getAdminFacility(parsedId.value);
+    if (!facility) return notFound(instance, "Fasilitas tidak ditemukan");
+    return NextResponse.json(facility, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Gagal memuat detail fasilitas admin", error);
+    return internalError(instance);
+  }
 }
 
 export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/admin/facilities/[facilityId]">) {

@@ -1,7 +1,7 @@
 import { STATUS_FASILITAS, TIPE_FASILITAS } from "@/config/business";
 import type { StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 import type { ProblemFieldError } from "@/lib/http/problem";
-import { parsePositiveInt } from "@/lib/validation/facility-query";
+import { parsePositiveInt, BATAS_INT4 } from "@/lib/validation/facility-query";
 
 const BATAS_NAMA = 100;
 const BATAS_LOKASI = 200;
@@ -173,6 +173,10 @@ function parseKapasitas(value: unknown, required: boolean, errors: ProblemFieldE
   }
   if (value < 1) {
     errors.push({ field: "kapasitas", code: "OUT_OF_RANGE", message: "kapasitas harus minimal 1" });
+    return undefined;
+  }
+  if (value > BATAS_INT4) {
+    errors.push({ field: "kapasitas", code: "OUT_OF_RANGE", message: `kapasitas maksimal ${BATAS_INT4}` });
     return undefined;
   }
   return value;

@@ -5,7 +5,7 @@ import { revalidateFacilityViews } from "@/lib/facilities/revalidate";
 import { buildIdempotencyScope, hashCanonicalBody } from "@/lib/http/idempotency";
 import { claimIdempotentRoute, readIdempotencyKey } from "@/lib/http/idempotent-route";
 import { originError } from "@/lib/http/origin";
-import { badRequest, validationFailed } from "@/lib/http/problem";
+import { badRequest, internalError, validationFailed } from "@/lib/http/problem";
 import { createFacility, listAdminFacilities } from "@/lib/services/admin-facility-service";
 import { parseAdminListQuery, parseFacilityCreateBody } from "@/lib/validation/admin-facility";
 
@@ -31,8 +31,13 @@ export async function GET(request: NextRequest) {
   const parsed = parseAdminListQuery(params);
   if (!parsed.ok) return validationFailed(instance, parsed.errors);
 
-  const result = await listAdminFacilities(parsed.value);
-  return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const result = await listAdminFacilities(parsed.value);
+    return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Gagal memuat daftar fasilitas admin", error);
+    return internalError(instance);
+  }
 }
 
 export async function POST(request: NextRequest) {
