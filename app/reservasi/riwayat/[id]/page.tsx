@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { ReservationDetail } from "@/components/reservation/reservation-detail";
 import { ReservationSuccessBanner } from "@/components/reservation/reservation-success-banner";
 import { Button } from "@/components/ui/button";
+import { requirePengguna } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ function parseId(raw: string): number | null {
 }
 
 export default async function RiwayatDetailPage({ params, searchParams }: RiwayatDetailPageProps) {
+  // Guard server (IAM-03); layout /reservasi juga menjaga, ini pertahanan tambahan.
+  await requirePengguna();
   const { id } = await params;
   const reservationId = parseId(id);
   if (reservationId === null) notFound();
@@ -37,7 +40,7 @@ export default async function RiwayatDetailPage({ params, searchParams }: Riwaya
   const dariPengajuan = penanda === "1";
 
   return (
-    <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+    <>
       {dariPengajuan && <ReservationSuccessBanner />}
       <Button
         variant="ghost"
@@ -49,6 +52,6 @@ export default async function RiwayatDetailPage({ params, searchParams }: Riwaya
         Kembali ke Reservasi
       </Button>
       <ReservationDetail id={reservationId} />
-    </main>
+    </>
   );
 }

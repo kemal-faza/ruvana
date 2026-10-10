@@ -1,12 +1,15 @@
 import { listPublicFacilities, type PublicFacility, type PageMeta } from "@/lib/services/facility-service"
+import { parseCalendarDate } from "@/lib/time/jakarta"
 import { cleanSearchParams, parsePublicListQuery, type PublicListQuery } from "@/lib/validation/facility-query"
 
 export interface FacilityCatalogData {
   items: PublicFacility[]
   meta: PageMeta
   filterValue: Pick<PublicListQuery, "search" | "type" | "location" | "minCapacity">
-  paginationQuery: Pick<PublicListQuery, "search" | "type" | "location" | "minCapacity"> & { perPage?: number }
+  paginationQuery: Pick<PublicListQuery, "search" | "type" | "location" | "minCapacity"> & { perPage?: number; date?: string }
   hasActiveFilters: boolean
+  /** Tanggal pilihan dari landing, diteruskan ke detail fasilitas agar ketersediaan langsung tampil. */
+  date?: string
 }
 
 export async function getFacilityCatalog(
@@ -22,6 +25,9 @@ export async function getFacilityCatalog(
   const parsed = parsePublicListQuery(cleanSearchParams(params))
   const query: PublicListQuery = parsed.ok ? parsed.value : { page: 1, perPage: 20 }
 
+  const rawDate = typeof raw.date === "string" ? raw.date : undefined
+  const date = rawDate && parseCalendarDate(rawDate) ? rawDate : undefined
+
   const filterValue = {
     search: query.search,
     type: query.type,
@@ -31,6 +37,7 @@ export async function getFacilityCatalog(
   const paginationQuery = {
     ...filterValue,
     ...(query.perPage !== 20 ? { perPage: query.perPage } : {}),
+    ...(date ? { date } : {}),
   }
   const { items, meta } = await listPublicFacilities(query)
 
@@ -49,5 +56,6 @@ export async function getFacilityCatalog(
     filterValue,
     paginationQuery,
     hasActiveFilters: Boolean(query.search || query.type || query.location || query.minCapacity),
+    date,
   }
 }

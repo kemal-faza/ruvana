@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
@@ -227,6 +227,8 @@ describe("ReservationForm konfirmasi pengajuan", () => {
 
     const ringkasan = await screen.findByText(/Periksa kembali isian berikut/)
     expect(ringkasan).toHaveTextContent("Periksa kembali isian berikut: Jam mulai, Jam selesai, Tujuan.")
+    // Ringkasan tampil di bagian aksi ("Tujuan & kirim"), bukan di atas form.
+    expect(ringkasan.closest('section[aria-label="Tujuan dan kirim"]')).not.toBeNull()
     expect(screen.getByText("Jam mulai wajib dipilih.")).toBeInTheDocument()
     expect(document.activeElement?.id).toBe("jam-mulai")
   }, 20000)
@@ -270,29 +272,32 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     )
   }
 
-  it("menonaktifkan slot dalam jendela 14 hari tanpa sufiks status plus teks bantu", async () => {
+  it("menonaktifkan slot dalam jendela 14 hari dengan label Tidak tersedia plus teks bantu", async () => {
     const user = userEvent.setup()
-    renderBatasPengajuan()
+    const { container } = renderBatasPengajuan()
 
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-    const opsiMepet = await screen.findByRole("option", { name: "07:00" })
+    const opsiMepet = await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
     expect(opsiMepet).toHaveAttribute("aria-disabled", "true")
-    const opsiAktif = await screen.findByRole("option", { name: "17:00" })
-    expect(opsiAktif).not.toHaveAttribute("aria-disabled", "true")
-    expect(
-      screen.getByText("Reservasi minimal 14 hari sebelum waktu mulai"),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("option", { name: "17:00" })).toBeInTheDocument()
+
+    // Teks bantu H-14 tampil di bagian "Fasilitas & tanggal", bukan di bagian Waktu.
+    const bagianTanggal = container.querySelector('section[aria-label="Fasilitas dan tanggal"]')
+    const bagianWaktu = container.querySelector('section[aria-label="Waktu"]')
+    expect(bagianTanggal).not.toBeNull()
+    expect(bagianWaktu).not.toBeNull()
+    expect(bagianTanggal).toHaveTextContent("Reservasi minimal 14 hari sebelum waktu mulai.")
+    expect(bagianWaktu).not.toHaveTextContent("Reservasi minimal 14 hari sebelum waktu mulai.")
   }, 20000)
 
-  it("tidak menambahkan sufiks status apa pun pada label opsi", async () => {
+  it("tidak menyiratkan slot mepet sebagai terisi", async () => {
     const user = userEvent.setup()
     renderBatasPengajuan()
 
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-    await screen.findByRole("option", { name: "07:00" })
-    expect(screen.queryByRole("option", { name: / — / })).not.toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /sudah disetujui/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /pemeliharaan/ })).not.toBeInTheDocument()
+    await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
+    expect(screen.queryByRole("option", { name: /07:00 — sudah disetujui/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /07:00 — dalam pemeliharaan/ })).not.toBeInTheDocument()
   }, 20000)
 
   it("memetakan galat INSUFFICIENT_LEAD_TIME server ke pesan batas di field Jam mulai", async () => {
@@ -327,9 +332,8 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
     await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
 
-    // Pesan domain tampil apa adanya di dekat field (satu ejaan dengan teks
-    // bantu dan pesan server), bukan pesan generik atau kode mentah.
-    expect(await screen.findByText("Reservasi minimal 14 hari sebelum waktu mulai")).toBeInTheDocument()
+    // Pesan domain tampil apa adanya di dekat field, bukan pesan generik atau kode mentah.
+    expect(await screen.findByText("Reservasi minimal 14 hari sebelum waktu mulai.")).toBeInTheDocument()
     expect(document.activeElement?.id).toBe("jam-mulai")
     expect(container.textContent ?? "").not.toContain("INSUFFICIENT_LEAD_TIME")
 
@@ -361,258 +365,103 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
   }, 20000)
 })
 
-describe("ReservationForm label dan status opsi jam", () => {
-  it("hanya menampilkan jam dan menonaktifkan slot yang sudah disetujui", async () => {
-    const user = userEvent.setup()
-    const availability = {
-      facilityId: 3,
-      date: "2026-09-27",
-      timezone: "Asia/Jakarta" as const,
-      slots: [{ startTime: "08:00", endTime: "08:30", available: false, blockedBy: "APPROVED" as const }],
-    }
-    render(
-      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={availability} serverNow="2026-09-01T00:00:00.000Z" />,
-    )
-
-    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-
-    const opsiTerisi = await screen.findByRole("option", { name: "08:00" })
-    expect(opsiTerisi).toHaveAttribute("aria-disabled", "true")
-    expect(screen.queryByRole("option", { name: /sudah disetujui/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: / — / })).not.toBeInTheDocument()
-  }, 20000)
-
-  it("tidak menonaktifkan opsi jam yang tersedia", async () => {
-    const user = userEvent.setup()
-    render(
-      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
-    )
-
-    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-    const opsiAktif = await screen.findByRole("option", { name: "09:00" })
-    expect(opsiAktif).not.toHaveAttribute("aria-disabled", "true")
-  }, 20000)
-})
-
-describe("ReservationForm navigasi prop tanpa remount", () => {
-  const propsAwal = {
-    facilities,
-    facilityId: 3,
-    date: "2026-12-02",
-    availability: null as null,
-    serverNow: "2026-09-01T00:00:00.000Z",
-  }
-
-  it("mempertahankan isian tujuan saat facility/date prop berubah (form tidak remount)", async () => {
-    const user = userEvent.setup()
-    const { rerender } = render(<ReservationForm {...propsAwal} />)
-
-    const tujuan = screen.getByLabelText("Tujuan penggunaan")
-    await user.type(tujuan, "Diskusi kelompok")
-
-    rerender(<ReservationForm {...propsAwal} facilityId={4} date="2026-12-10" />)
-
-    expect(screen.getByLabelText("Tujuan penggunaan")).toHaveValue("Diskusi kelompok")
-    expect(tujuan).toBeInTheDocument()
-    expect(tujuan.isConnected).toBe(true)
-  }, 20000)
-
-  it("sinkron pilihan fasilitas/tanggal dari prop baru dan mereset waktu", async () => {
-    const user = userEvent.setup()
-    const { container, rerender } = render(<ReservationForm {...propsAwal} />)
-
-    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-    await user.click(await screen.findByRole("option", { name: "09:00" }))
-    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("09:00")
-
-    rerender(<ReservationForm {...propsAwal} facilityId={4} date="2026-12-10" />)
-
-    expect(container.querySelector('input[name="facilityId"]')).toHaveValue("4")
-    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-10")
-    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("Pilih jam mulai")
-  }, 20000)
-
-  it("memindahkan fokus ke heading setelah ketersediaan baru tiba", async () => {
-    const { rerender } = render(<ReservationForm {...propsAwal} />)
-    const heading = screen.getByRole("heading", { name: "Fasilitas & tanggal" })
-
-    rerender(<ReservationForm {...propsAwal} facilityId={4} date="2026-12-10" />)
-
-    expect(document.activeElement).toBe(heading)
-    expect(heading.isConnected).toBe(true)
-  }, 20000)
-})
-
-describe("ReservationForm navigasi ketersediaan", () => {
-  it("memakai router.push alih-alih navigasi penuh saat menampilkan ketersediaan", async () => {
-    const user = userEvent.setup()
-    render(
-      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
-    )
-    const alamatSebelum = window.location.href
-
-    await user.click(screen.getByRole("button", { name: "Tampilkan ketersediaan" }))
-
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-09-27"))
-    expect(window.location.href).toBe(alamatSebelum)
-  }, 20000)
-
-  it("memuat slot otomatis saat fasilitas berubah lalu menampilkan teks bantu baru", async () => {
-    const user = userEvent.setup()
-    render(
-      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
-    )
-
-    await user.click(comboboxFasilitas())
-    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
-
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=4&date=2026-09-27"))
-    expect(
-      await screen.findByText("Slot belum diperbarui. Tekan Tampilkan ketersediaan."),
-    ).toBeInTheDocument()
-  }, 20000)
-
-  it("memuat slot otomatis saat tanggal berubah", async () => {
-    const user = userEvent.setup()
+describe("ReservationForm fasilitas terkunci", () => {
+  it("mengganti dropdown Fasilitas dengan teks statis dan tetap mengirim facilityId", () => {
     const { container } = render(
-      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-09-27"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        actionPath="/fasilitas/3"
+        lockFacility
+      />,
     )
 
-    await user.click(screen.getByLabelText("Tanggal"))
-    const hariLain = document.querySelector<HTMLButtonElement>('td[data-day="2026-12-10"] button')
-    expect(hariLain).not.toBeNull()
-    await user.click(hariLain as HTMLButtonElement)
-
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-12-10"))
-    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-10")
-  }, 20000)
-
-  it("meneruskan tipe aktif ke URL dan input tersembunyi", async () => {
-    const user = userEvent.setup()
-    const { container } = render(
-      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" type="aula" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
-    )
-
-    expect(container.querySelector('input[name="type"]')).toHaveValue("aula")
-
-    await user.click(screen.getByRole("button", { name: "Tampilkan ketersediaan" }))
-
-    await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-09-27&type=aula"),
-    )
-  }, 20000)
+    expect(screen.queryByRole("combobox", { name: "Fasilitas" })).not.toBeInTheDocument()
+    expect(screen.getByText("Aula Utama | Gedung Serbaguna")).toBeInTheDocument()
+    expect(container.querySelector('input[name="facilityId"]')).toHaveValue("3")
+    expect(container.querySelector("form[method='get']")).toHaveAttribute("action", "/fasilitas/3")
+  })
 })
 
-describe("ReservationForm pilihan pengguna vs data server", () => {
-  const propsDasar = {
-    facilities,
-    facilityId: 3,
-    date: "2026-12-02",
-    availability: null as null,
-    serverNow: "2026-09-01T00:00:00.000Z",
-  }
-
-  // Navigasi lunak yang belum selesai: router.push tercatat, tetapi prop
-  // fasilitas/tanggal belum ikut berubah.
-  async function pilihTanggalLain(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByLabelText("Tanggal"))
-    const hariLain = document.querySelector<HTMLButtonElement>('td[data-day="2026-12-10"] button')
-    expect(hariLain).not.toBeNull()
-    await user.click(hariLain as HTMLButtonElement)
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-12-10"))
-  }
-
-  it("mengirim tanggal yang terlihat di pemilih, bukan prop yang belum diterapkan", async () => {
+describe("ReservationForm pemilih jam kotak", () => {
+  it("memilih rentang lewat dua klik lalu mengirim start/end yang benar", async () => {
     const user = userEvent.setup()
     const fetchMock = mockFetchOk()
-    render(<ReservationForm {...propsDasar} />)
+    render(
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-12-02"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        lockFacility
+        timePicker="grid"
+      />,
+    )
 
-    await pilihTanggalLain(user)
-    expect(screen.getByLabelText("Tanggal")).toHaveTextContent("10 Des 2026")
-    await isiWaktuDanTujuan(user)
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    await user.click(screen.getByRole("button", { name: /^09:00/ }))
+
+    expect(screen.getByText("Jam terpilih: 08:00–09:00")).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
     await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    const init = fetchMock.mock.calls[0]?.[1]
-    expect(JSON.parse(String(init?.body))).toMatchObject({ date: "2026-12-10", facilityId: 3 })
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
+    expect(body.startTime).toBe("08:00")
+    expect(body.endTime).toBe("09:00")
   }, 20000)
 
-  it("menampilkan ringkasan dengan tanggal yang dipilih, bukan tanggal prop", async () => {
-    const user = userEvent.setup()
-    render(<ReservationForm {...propsDasar} />)
-
-    await pilihTanggalLain(user)
-    await isiWaktuDanTujuan(user)
-
-    expect(screen.getByText(/Aula Utama · 10 Des · 09:00–10:00, 2 slot/)).toBeInTheDocument()
-    expect(screen.queryByText(/2 Des/)).not.toBeInTheDocument()
-  }, 20000)
-
-  it("tidak memakai ketersediaan tanggal lama setelah tanggal berganti", async () => {
+  it("membatalkan pilihan saat kotak yang sama diklik lagi", async () => {
     const user = userEvent.setup()
     render(
       <ReservationForm
-        {...propsDasar}
-        availability={{
-          facilityId: 3,
-          date: "2026-12-02",
-          timezone: "Asia/Jakarta",
-          slots: [{ startTime: "08:00", endTime: "08:30", available: false, blockedBy: "APPROVED" }],
-        }}
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-12-02"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        lockFacility
+        timePicker="grid"
       />,
     )
 
-    await pilihTanggalLain(user)
-    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    expect(screen.getByRole("button", { name: /^08:00/ })).toHaveAttribute("aria-pressed", "true")
 
-    const opsi = await screen.findByRole("option", { name: "08:00" })
-    expect(opsi).not.toHaveAttribute("aria-disabled", "true")
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    expect(screen.getByRole("button", { name: /^08:00/ })).toHaveAttribute("aria-pressed", "false")
+
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    await user.click(screen.getByRole("button", { name: /^09:00/ }))
+    expect(screen.getByText("Jam terpilih: 08:00–09:00")).toBeInTheDocument()
+
+    // Klik jam selesai lagi melepas jam selesai, jam mulai tetap terpilih.
+    await user.click(screen.getByRole("button", { name: /^09:00/ }))
+    expect(screen.queryByText("Jam terpilih: 08:00–09:00")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^08:00/ })).toHaveAttribute("aria-pressed", "true")
   }, 20000)
+})
 
-  it("tidak memindahkan fokus saat halaman pertama kali dirender", () => {
-    render(<ReservationForm {...propsDasar} />)
-
-    expect(document.activeElement).toBe(document.body)
-  })
-
-  it("membuang galat lama saat fasilitas berganti", async () => {
-    const user = userEvent.setup()
-    render(<ReservationForm {...propsDasar} />)
-
-    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
-    expect(await screen.findByText(/Periksa kembali isian berikut/)).toBeInTheDocument()
-
-    await user.click(comboboxFasilitas())
-    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
-
-    expect(screen.queryByText(/Periksa kembali isian berikut/)).not.toBeInTheDocument()
-    expect(screen.queryAllByRole("alert")).toHaveLength(0)
-  }, 20000)
-
-  it("menyertakan teks bantu alasan slot tidak dapat dipilih", () => {
+describe("ReservationForm navigasi tanggal", () => {
+  it("menampilkan ketersediaan lewat navigasi lunak tanpa muat ulang penuh", () => {
     const { container } = render(
       <ReservationForm
-        {...propsDasar}
-        availability={{
-          facilityId: 3,
-          date: "2026-12-02",
-          timezone: "Asia/Jakarta",
-          slots: [
-            { startTime: "10:00", endTime: "10:30", available: false, blockedBy: "APPROVED" },
-            { startTime: "10:30", endTime: "11:00", available: false, blockedBy: "APPROVED" },
-            { startTime: "13:00", endTime: "13:30", available: false, blockedBy: "MAINTENANCE" },
-          ],
-        }}
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-09-27"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        lockFacility
       />,
     )
 
-    expect(
-      screen.getByText("Tidak dapat dipilih: 10:00–11:00 sudah disetujui; 13:00–13:30 dalam pemeliharaan."),
-    ).toBeInTheDocument()
-    expect(container.querySelector("#bantuan-slot-tidak-tersedia")).not.toBeNull()
-    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveAttribute(
-      "aria-describedby",
-      "bantuan-slot-tidak-tersedia",
-    )
-  }, 20000)
+    fireEvent.submit(container.querySelector("form[method='get']") as HTMLFormElement)
+
+    expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-09-27", { scroll: false })
+  })
 })

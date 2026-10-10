@@ -1,19 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 import {
   BATAS_TUJUAN_MAX,
-  PESAN_BATAS_PENGAJUAN,
+  PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
   VALID_START_TIMES,
 } from "@/config/business";
-import { getValidEndTimes, ringkasSlotTidakTersedia, type FacilityAvailability } from "@/lib/reservations/slot-range";
+import { generateDailySlots } from "@/lib/availability/slots";
+import {
+  blockedByLabel,
+  getValidEndTimes,
+  type AvailabilitySlot,
+  type FacilityAvailability,
+} from "@/lib/reservations/slot-range";
 import {
   pesanSuksesPengajuan,
   petakanGalatField,
   ringkasGalatPengajuan,
 } from "@/lib/reservations/reservation-display";
 import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
+import { AvailabilityGrid } from "@/components/facilities/availability-grid";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -29,15 +37,26 @@ interface ReservationFormProps {
   facilities: FacilityOption[];
   facilityId: number;
   date: string;
-  /** Tipe fasilitas aktif dari query, diteruskan agar bertahan saat memuat slot. */
-  type?: string;
+  /** Jam mulai awal dari tautan slot ketersediaan (opsional). */
+  initialStartTime?: string;
   availability: FacilityAvailability | null;
   /** Instant waktu server (ISO UTC) saat halaman dirender — dasar hitung jendela 14 hari, bukan jam klien. */
   serverNow: string;
+  /** Target form GET "Tampilkan ketersediaan". Default halaman /reservasi. */
+  actionPath?: string;
+  /**
+   * Kunci fasilitas ke `facilityId` (mis. saat form ditempel di halaman detail
+   * fasilitas): dropdown Fasilitas diganti teks statis.
+   */
+  lockFacility?: boolean;
+  /** Bentuk pemilih jam: dropdown (`select`) atau grid kotak (`grid`). */
+  timePicker?: "select" | "grid";
 }
 
-export function ReservationForm({ facilities, facilityId, date, type: tipe, availability, serverNow }: ReservationFormProps) {
-  const [startTime, setStartTime] = useState("");
+const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
+
+export function ReservationForm({ facilities, facilityId, date, initialStartTime, availability, serverNow, actionPath = "/reservasi", lockFacility = false, timePicker = "select" }: ReservationFormProps) {
+  const [startTime, setStartTime] = useState(initialStartTime ?? "");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,96 +68,26 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
   const mengirimRef = useRef(false);
   const router = useRouter();
 
-  // Tanggal pilihan user yang belum tentu sama dengan tanggal server (prop).
-  const [selectedDate, setSelectedDate] = useState(date);
+  // Di mode grid, pemicu jam adalah tombol kotak; fokus galat diarahkan ke
+  // pemilih grid, bukan ke field dropdown yang tidak dirender.
+  const idJamMulai = timePicker === "grid" ? "pemilih-jam" : "jam-mulai";
+  const idJamSelesai = timePicker === "grid" ? "pemilih-jam" : "jam-selesai";
 
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
-  // dropdown (bukan prop facilityId dari halaman). Form TIDAK di-remount per
-  // facilityId+date lagi (key navigasi dihapus agar isian pengguna bertahan),
-  // jadi pilihan di bawah disinkronkan dari prop via efek ketika halaman
-  // ketersediaan baru tiba — termasuk saat back/forward mengubah URL tanpa
-  // melalui handler di bawah.
+  // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
+  // dimuat ulang via "Tampilkan ketersediaan"). Komponen di-remount per
+  // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
   const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
 
-  // Penanda pemilih tanggal: "Reset waktu" mengembalikan field Tanggal ke
-  // tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
+  // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
+  // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
   const [tanggalResetKe, setTanggalResetKe] = useState(0);
 
-  // Pelacak transisi navigasi lunak: selama slot baru dimuat, teks bantu
-  // menampilkan "Memuat slot…" alih-alih ajakan menekan tombol.
-  const [isPending, startTransition] = useTransition();
-
-  // Pembanding nilai prop "sebelumnya": mendeteksi perubahan yang datang dari
-  // luar handler (back/forward, tautan langsung). Ketersediaan baru milik
-  // pasangan fasilitas/tanggal lain, jadi pemilihan waktu ikut direset.
-  const prevFacilityRef = useRef(facilityId);
-  const prevDateRef = useRef(date);
-
-  useEffect(() => {
-    if (facilityId === prevFacilityRef.current) return;
-    prevFacilityRef.current = facilityId;
-    setSelectedFacilityId(facilityId);
-    setStartTime("");
-    setEndTime("");
-  }, [facilityId]);
-
-  useEffect(() => {
-    if (date === prevDateRef.current) return;
-    prevDateRef.current = date;
-    setSelectedDate(date);
-    setStartTime("");
-    setEndTime("");
-  }, [date]);
-
-  // Heading form difokuskan setelah ketersediaan baru diterapkan (prop
-  // fasilitas/tanggal berubah). Efek ini menggantikan fokus ulang yang dulu
-  // terjadi lewat remount per facilityId+date. Mount pertama dilewati agar
-  // fokus tidak berpindah tanpa tindakan pengguna saat halaman baru dibuka.
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const sudahMountRef = useRef(false);
-  useEffect(() => {
-    if (!sudahMountRef.current) {
-      sudahMountRef.current = true;
-      return;
-    }
-    headingRef.current?.focus();
-  }, [facilityId, date]);
-
-  // Pilihan belum selaras dengan data server (fasilitas/tanggal berubah tetapi
-  // ketersediaan belum dimuat ulang).
-  const belumDiterapkan = selectedFacilityId !== facilityId || selectedDate !== date;
-
-  // Navigasi lunak ke URL berbagi yang sama (?facilityId&date&type) tanpa
-  // memuat ulang seluruh dokumen. `type` hanya diikutkan bila memang aktif.
-  function terapkanKetersediaan(nextFacilityId: number, nextDate: string) {
-    const params = new URLSearchParams({
-      facilityId: String(nextFacilityId),
-      date: nextDate,
-    });
-    if (tipe) params.set("type", tipe);
-    startTransition(() => {
-      router.push(`/reservasi?${params.toString()}`);
-    });
-  }
-
-  // Cadangan submit tanpa JavaScript tetap lewat form GET; dengan JavaScript
-  // event ini mencegah reload penuh dan memakai router.push.
-  function onPilihKetersediaan(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isPending) return;
-    const data = new FormData(event.currentTarget);
-    const nextFacilityId = Number(data.get("facilityId"));
-    const nextDate = String(data.get("date") ?? "");
-    if (!Number.isInteger(nextFacilityId) || nextFacilityId < 1 || !nextDate) return;
-    terapkanKetersediaan(nextFacilityId, nextDate);
-  }
-
-  // Availability dihitung server untuk pasangan prop facilityId+date. Bila
-  // pilihan user belum selaras dengan prop (navigasi lunak belum selesai),
-  // data itu bukan milik pilihan baru — perlakukan sebagai tidak diketahui
-  // (fallback: semua waktu aktif, server tetap memvalidasi saat submit).
-  const availabilityForSelected =
-    selectedFacilityId === facilityId && selectedDate === date ? availability : null;
+  // Availability dihitung server untuk prop facilityId. Bila user memilih
+  // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
+  // baru — perlakukan sebagai tidak diketahui (fallback: semua waktu aktif,
+  // server tetap memvalidasi dan menolak saat submit).
+  const availabilityForSelected = selectedFacilityId === facilityId ? availability : null;
 
   // Peta status per jam mulai dari availability server (null = tidak diketahui)
   const statusByStart = useMemo(() => {
@@ -152,32 +101,38 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
   }, [availabilityForSelected]);
 
   // Slot dalam jendela pengajuan H-14 dihitung dari waktu server, bukan jam
-  // klien, dan mengikuti tanggal yang dipilih pengguna (tanggal itulah yang
-  // divalidasi dan dikirim). Aturan yang sama ditegakkan otoritatif oleh service.
+  // klien. Aturan yang sama ditegakkan otoritatif oleh service saat submit.
   const mepetByStart = useMemo(() => {
     const acuan = new Date(serverNow);
     const map = new Map<string, boolean>();
     for (const time of VALID_START_TIMES) {
-      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(selectedDate, time), acuan));
+      map.set(time, isKurangDariBatasPengajuan(asiaJakartaToUtc(date, time), acuan));
     }
     return map;
-  }, [selectedDate, serverNow]);
+  }, [date, serverNow]);
 
   const adaSlotMepet = useMemo(() => [...mepetByStart.values()].some(Boolean), [mepetByStart]);
-
-  // Teks bantu alasan slot tidak dapat dipilih (APPROVED/pemeliharaan):
-  // DESIGN.md mewajibkan keadaan nonaktif selalu disertai teks, bukan hanya
-  // warna. Label per opsi tidak dipakai agar dropdown tetap bersih.
-  const ringkasanBlokir = useMemo(
-    () => ringkasSlotTidakTersedia(availabilityForSelected?.slots ?? null),
-    [availabilityForSelected],
-  );
 
   // Opsi jam selesai: setelah jam mulai & seluruh slot di antaranya tersedia
   const validEndTimes = useMemo(
     () => (startTime ? getValidEndTimes(startTime, availabilityForSelected?.slots ?? null) : []),
     [startTime, availabilityForSelected],
   );
+
+  // Slot untuk pemilih jam berbentuk grid. Bila ketersediaan belum diketahui,
+  // pakai slot harian netral (semua aktif); server tetap memvalidasi saat submit.
+  const gridSlots = useMemo<AvailabilitySlot[]>(() => {
+    if (availabilityForSelected) return availabilityForSelected.slots;
+    return generateDailySlots().map((slot) => ({ ...slot, available: true, blockedBy: null }));
+  }, [availabilityForSelected]);
+
+  const disabledStarts = useMemo(() => {
+    const set = new Set<string>();
+    for (const [time, mepet] of mepetByStart) {
+      if (mepet) set.add(time);
+    }
+    return set;
+  }, [mepetByStart]);
 
   function handleStartChange(value: string | null) {
     if (!value) return;
@@ -188,12 +143,45 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     }
   }
 
-  // Error dan ringkasan lama merujuk pilihan fasilitas/tanggal sebelumnya, jadi
-  // dibuang saat pilihan berganti (dulu ter-reset otomatis oleh remount).
-  function bersihkanHasilSebelumnya() {
-    setResult(null);
-    setGalatField({});
-    setRingkasan(null);
+  function onSubmitDateForm(e: React.FormEvent<HTMLFormElement>) {
+    // Navigasi lunak lewat router (tanpa muat ulang penuh) agar posisi layar
+    // tidak melompat; native GET tetap menjadi fallback tanpa JavaScript.
+    e.preventDefault();
+    const params = new URLSearchParams();
+    for (const [key, value] of new FormData(e.currentTarget).entries()) {
+      if (typeof value === "string" && value.trim() !== "") params.set(key, value);
+    }
+    const query = params.toString();
+    router.push(query ? `${actionPath}?${query}` : actionPath, { scroll: false });
+  }
+
+  function handleSlotSelect(slot: AvailabilitySlot) {
+    // Klik ulang kotak yang sudah terpilih membatalkan pilihan (toggle): klik
+    // jam mulai lagi menghapus rentang, klik jam selesai lagi melepas jam selesai.
+    if (startTime && slot.startTime === startTime) {
+      setStartTime("");
+      setEndTime("");
+      return;
+    }
+    if (endTime && slot.startTime === endTime) {
+      setEndTime("");
+      return;
+    }
+    // Belum ada jam mulai atau kotak sebelum jam mulai: jadikan jam mulai baru.
+    if (!startTime || slot.startTime < startTime) {
+      setStartTime(slot.startTime);
+      setEndTime("");
+      return;
+    }
+    // Kotak setelah jam mulai: tetapkan jam selesai bila batasnya valid; bila
+    // tidak, jadikan jam mulai baru.
+    const validEnds = getValidEndTimes(startTime, availabilityForSelected?.slots ?? null);
+    if (validEnds.includes(slot.startTime)) {
+      setEndTime(slot.startTime);
+    } else {
+      setStartTime(slot.startTime);
+      setEndTime("");
+    }
   }
 
   function handleFacilityChange(value: string | null) {
@@ -205,25 +193,12 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     // user memilih ulang slot untuk fasilitas yang baru.
     setStartTime("");
     setEndTime("");
-    bersihkanHasilSebelumnya();
-    // Ganti fasilitas langsung memuat slot terbaru tanpa menunggu tombol.
-    terapkanKetersediaan(id, selectedDate);
-  }
-
-  function handleDateChange(value: string) {
-    if (!value || value === selectedDate) return;
-    setSelectedDate(value);
-    setStartTime("");
-    setEndTime("");
-    bersihkanHasilSebelumnya();
-    // Ganti tanggal langsung memuat slot terbaru tanpa menunggu tombol.
-    terapkanKetersediaan(selectedFacilityId, value);
   }
 
   const selectedFacility = facilities.find((f) => f.id === selectedFacilityId);
   let summary: string | null = null;
-  if (selectedFacility && selectedDate && startTime && endTime) {
-    const [year, month, day] = selectedDate.split("-").map(Number);
+  if (selectedFacility && date && startTime && endTime) {
+    const [year, month, day] = date.split("-").map(Number);
     const tanggal = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" }).format(
       new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1),
     );
@@ -264,14 +239,14 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
       fokusPertama ??= id;
     }
     if (!startTime) {
-      catat("jamMulai", "jam-mulai", "Jam mulai", "Jam mulai wajib dipilih.");
+      catat("jamMulai", idJamMulai, "Jam mulai", "Jam mulai wajib dipilih.");
     } else if (mepetByStart.get(startTime)) {
       // pertahanan client memakai waktu server saat render: slot dalam
       // jendela H-14 langsung ditolak tanpa menunggu respons server.
-      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN);
+      catat("jamMulai", idJamMulai, "Jam mulai", PESAN_BATAS_PENGAJUAN_FORM);
     }
     if (!endTime) {
-      catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
+      catat("jamSelesai", idJamSelesai, "Jam selesai", "Jam selesai wajib dipilih.");
     }
     // pertahanan terakhir di client: rentang tidak boleh melewati slot yang tidak tersedia.
     // Dilewati bila availability bukan milik fasilitas terpilih (server yang memvalidasi).
@@ -283,7 +258,7 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     ) {
       catat(
         "jamSelesai",
-        "jam-selesai",
+        idJamSelesai,
         "Jam selesai",
         "Rentang waktu melewati slot yang tidak tersedia. Pilih jam selesai lain.",
       );
@@ -304,11 +279,9 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
     mengirimRef.current = true;
     setLoading(true);
     try {
-      // Tanggal pilihan pengguna, bukan prop `date`: saat navigasi lunak belum
-      // selesai, prop masih menunjuk tanggal sebelumnya.
       const body = {
         facilityId: selectedFacilityId,
-        date: selectedDate,
+        date,
         startTime,
         endTime,
         tujuanPenggunaan: tujuan.trim(),
@@ -354,7 +327,7 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
           for (const item of pemetaan) {
             if (item.idKontrol === "jam-mulai")
               fieldServer.jamMulai = galatBatasPengajuan
-                ? PESAN_BATAS_PENGAJUAN
+                ? PESAN_BATAS_PENGAJUAN_FORM
                 : "Nilai jam mulai tidak valid. Periksa kembali.";
             if (item.idKontrol === "jam-selesai") fieldServer.jamSelesai = "Nilai jam selesai tidak valid. Periksa kembali.";
             if (item.idKontrol === "tujuan") fieldServer.tujuan = "Nilai tujuan tidak valid. Periksa kembali.";
@@ -383,41 +356,51 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
               1
             </span>
-            <h2 ref={headingRef} tabIndex={-1} className="text-sm font-semibold outline-none">Fasilitas & tanggal</h2>
+            <h2 className="text-sm font-semibold">Fasilitas & tanggal</h2>
             <Separator className="flex-1" />
           </div>
-          {/* Form GET native tetap jalan tanpa JavaScript (fallback reload
-              penuh); dengan JavaScript submit dicegat agar memuat ulang Server
-              Component lewat navigasi lunak. */}
-          <form method="get" action="/reservasi" onSubmit={onPilihKetersediaan} className="flex flex-col gap-5">
-            {tipe ? <input type="hidden" name="type" value={tipe} /> : null}
+          {/* Form GET native: memuat ulang Server Component agar
+              availability dihitung ulang untuk facilityId + date baru */}
+          <form method="get" action={actionPath} onSubmit={onSubmitDateForm} className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>
-                <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
-                  <SelectTrigger id="fasilitas" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
-                    <SelectValue placeholder="Pilih fasilitas">
-                      {(value: string) => {
-                        const match = facilities.find((f) => String(f.id) === value);
-                        return match ? `${match.nama} | ${match.lokasi}` : "Pilih fasilitas";
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {facilities.map((f) => (
-                      <SelectItem key={f.id} value={String(f.id)}>
-                        {f.nama} | {f.lokasi}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isPending ? (
-                  <FieldDescription aria-live="polite">Memuat slot…</FieldDescription>
-                ) : belumDiterapkan ? (
-                  <FieldDescription>
-                    Slot belum diperbarui. Tekan Tampilkan ketersediaan.
-                  </FieldDescription>
-                ) : null}
+                {lockFacility ? (
+                  <>
+                    <p
+                      id="fasilitas"
+                      className="flex min-h-11 items-center rounded-control border border-input bg-muted px-3 text-sm"
+                    >
+                      {selectedFacility ? `${selectedFacility.nama} | ${selectedFacility.lokasi}` : "Fasilitas"}
+                    </p>
+                    <input type="hidden" name="facilityId" value={String(selectedFacilityId)} />
+                  </>
+                ) : (
+                  <>
+                    <Select name="facilityId" value={String(selectedFacilityId)} onValueChange={handleFacilityChange}>
+                      <SelectTrigger id="fasilitas" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}>
+                        <SelectValue placeholder="Pilih fasilitas">
+                          {(value: string) => {
+                            const match = facilities.find((f) => String(f.id) === value);
+                            return match ? `${match.nama} | ${match.lokasi}` : "Pilih fasilitas";
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {facilities.map((f) => (
+                          <SelectItem key={f.id} value={String(f.id)}>
+                            {f.nama} | {f.lokasi}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedFacilityId !== facilityId && (
+                      <FieldDescription>
+                        Fasilitas berubah — klik Tampilkan ketersediaan untuk memuat slot terbaru sebelum memilih waktu.
+                      </FieldDescription>
+                    )}
+                  </>
+                )}
               </Field>
 
               <Field>
@@ -428,7 +411,6 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                   name="date"
                   aria-label="Tanggal"
                   defaultValue={date}
-                  onValueChange={handleDateChange}
                   className="min-h-11 rounded-lg border border-input px-3 text-sm hover:bg-muted"
                 />
               </Field>
@@ -439,14 +421,18 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
               </Button>
             </div>
           </form>
+          {adaSlotMepet && !galatField.jamMulai && (
+            <p
+              id="bantuan-batas-pengajuan"
+              className="flex items-center gap-2 rounded-card border border-border bg-warning-subdued px-4 py-3 text-sm text-warning-subdued-foreground"
+            >
+              <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+              <span>{PESAN_BATAS_PENGAJUAN_FORM}</span>
+            </p>
+          )}
         </section>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
-          {ringkasan && (
-            <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              <p className="font-medium">{ringkasan}</p>
-            </div>
-          )}
           <section aria-label="Waktu" className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
@@ -455,89 +441,92 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
               <h2 className="text-sm font-semibold">Waktu</h2>
               <Separator className="flex-1" />
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="jam-mulai">Jam mulai</FieldLabel>
-                <Select value={startTime} onValueChange={handleStartChange}>
-                  <SelectTrigger
-                    id="jam-mulai"
-                    className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
-                    // Rujuk deskripsi hanya saat ia dirender; saat galat field
-                    // menggantikannya, IDREF akan menggantung.
-                    aria-describedby={
-                      [
-                        adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : null,
-                        ringkasanBlokir.length > 0 && !galatField.jamMulai ? "bantuan-slot-tidak-tersedia" : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || undefined
-                    }
-                  >
-                    <SelectValue placeholder="Pilih jam mulai" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VALID_START_TIMES.map((time) => {
-                      const status = statusByStart.get(time);
-                      // Slot tidak tersedia (APPROVED, pemeliharaan, atau di
-                      // dalam batas pengajuan) tampil dengan label jam saja;
-                      // alasannya disampaikan sebagai teks bantu di bawah field
-                      // (DESIGN.md: nonaktif selalu disertai teks, bukan warna).
-                      const mepet = mepetByStart.get(time) ?? false;
-                      const disabled = mepet || (status ? !status.available : false);
-                      return (
-                        <SelectItem
-                          key={time}
-                          value={time}
-                          disabled={disabled}
-                          className="data-disabled:text-muted-foreground data-disabled:opacity-100!"
-                        >
-                          {time}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {adaSlotMepet && !galatField.jamMulai && (
-                  <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN}</FieldDescription>
+            {timePicker === "grid" ? (
+              <div id="pemilih-jam" tabIndex={-1} className="flex flex-col gap-3">
+                <AvailabilityGrid
+                  slots={gridSlots}
+                  selection={{
+                    selectedStart: startTime || null,
+                    selectedEnd: endTime || null,
+                    disabledStarts,
+                    onSelectSlot: handleSlotSelect,
+                  }}
+                />
+                {startTime && endTime && (
+                  <p aria-live="polite" className="text-sm text-muted-foreground">
+                    Jam terpilih: {startTime}–{endTime}
+                  </p>
                 )}
-                {ringkasanBlokir.length > 0 && !galatField.jamMulai && (
-                  <FieldDescription id="bantuan-slot-tidak-tersedia">
-                    Tidak dapat dipilih: {ringkasanBlokir.join("; ")}.
-                  </FieldDescription>
-                )}
-                {!startTime && !galatField.jamMulai && !adaSlotMepet && ringkasanBlokir.length === 0 && (
-                  <FieldDescription>Pilih jam mulai.</FieldDescription>
+                {!startTime && !galatField.jamMulai && !adaSlotMepet && (
+                  <FieldDescription>Klik kotak jam untuk memilih waktu.</FieldDescription>
                 )}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="jam-selesai">Jam selesai</FieldLabel>
-                <Select
-                  value={endTime}
-                  onValueChange={(v: string | null) => {
-                    if (v) setEndTime(v);
-                  }}
-                >
-                  <SelectTrigger id="jam-selesai" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`} disabled={!startTime}>
-                    <SelectValue placeholder="Pilih jam selesai" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {validEndTimes.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!startTime ? (
-                  <FieldDescription>Pilih jam mulai dulu.</FieldDescription>
-                ) : validEndTimes.length === 0 ? (
-                  <FieldDescription>Tidak ada jam selesai yang tersedia setelah jam ini.</FieldDescription>
-                ) : null}
                 {galatField.jamSelesai && <FieldError>{galatField.jamSelesai}</FieldError>}
-              </Field>
-            </div>
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="jam-mulai">Jam mulai</FieldLabel>
+                  <Select value={startTime} onValueChange={handleStartChange}>
+                    <SelectTrigger
+                      id="jam-mulai"
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+                      // Rujuk deskripsi hanya saat ia dirender; saat galat field
+                      // menggantikannya, IDREF akan menggantung.
+                      aria-describedby={
+                        adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
+                      }
+                    >
+                      <SelectValue placeholder="Pilih jam mulai" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VALID_START_TIMES.map((time) => {
+                        const status = statusByStart.get(time);
+                        // Slot mepet H-14 dinonaktifkan dengan label netral
+                        // "Tidak tersedia" — jangan menyiratkan slot terisi.
+                        const mepet = mepetByStart.get(time) ?? false;
+                        const disabled = mepet || (status ? !status.available : false);
+                        const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
+                        return (
+                          <SelectItem key={time} value={time} disabled={disabled}>
+                            {reason ? `${time} — ${reason}` : time}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                  {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="jam-selesai">Jam selesai</FieldLabel>
+                  <Select
+                    value={endTime}
+                    onValueChange={(v: string | null) => {
+                      if (v) setEndTime(v);
+                    }}
+                  >
+                    <SelectTrigger id="jam-selesai" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`} disabled={!startTime}>
+                      <SelectValue placeholder="Pilih jam selesai" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {validEndTimes.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!startTime ? (
+                    <FieldDescription>Pilih jam mulai dulu.</FieldDescription>
+                  ) : validEndTimes.length === 0 ? (
+                    <FieldDescription>Tidak ada jam selesai yang tersedia setelah jam ini.</FieldDescription>
+                  ) : null}
+                  {galatField.jamSelesai && <FieldError>{galatField.jamSelesai}</FieldError>}
+                </Field>
+              </div>
+            )}
             {!availabilityForSelected && (
               <p className="text-xs text-muted-foreground">
                 Ketersediaan slot tidak dapat dimuat; semua waktu ditampilkan aktif dan server tetap memvalidasi saat submit.
@@ -583,6 +572,15 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
               </p>
             )}
 
+            {ringkasan && (
+              <div
+                role="alert"
+                className="sticky bottom-3 z-10 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive shadow-subtle backdrop-blur-sm"
+              >
+                <p className="font-medium">{ringkasan}</p>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-3">
               <Button type="submit" loading={loading} disabled={loading} className={`${BUTTON_ACTION_CLASS} min-w-44`}>
                 {loading ? "Mengajukan..." : "Ajukan reservasi"}
@@ -595,9 +593,10 @@ export function ReservationForm({ facilities, facilityId, date, type: tipe, avai
                   setStartTime("");
                   setEndTime("");
                   // Tanggal ikut kembali ke tanggal yang sedang aktif di halaman.
-                  setSelectedDate(date);
                   setTanggalResetKe((ke) => ke + 1);
-                  bersihkanHasilSebelumnya();
+                  setResult(null);
+                  setGalatField({});
+                  setRingkasan(null);
                 }}
               >
                 Reset waktu

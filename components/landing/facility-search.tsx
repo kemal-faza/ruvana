@@ -38,7 +38,7 @@ export function FacilitySearch({ visible = true }: { visible?: boolean }) {
     >
       <form
         method="get"
-        action="/reservasi"
+        action="/fasilitas"
         className={cn(
           "grid grid-cols-1 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-subtle",
           "max-lg:grid-cols-2 max-md:p-search-inset",

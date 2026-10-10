@@ -8,10 +8,21 @@ import { Button } from "@/components/ui/button"
 import { AvailabilityDateForm } from "@/components/facilities/availability-date-form"
 import { AvailabilityGrid } from "@/components/facilities/availability-grid"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
+import { ReservationForm } from "@/components/reservation/reservation-form"
 import type { FacilityDetailData } from "@/lib/facilities/detail"
+
+/**
+ * Cara menampilkan ketersediaan: `form` menempel form reservasi (pengguna),
+ * `login` menautkan slot ke halaman masuk (pengunjung anonim), `none` statis
+ * untuk peran yang tidak memesan (petugas/admin).
+ */
+export type SlotLinkMode = "form" | "login" | "none"
 
 interface FacilityDetailContentProps extends FacilityDetailData {
   basePath: string
+  slotLinkMode?: SlotLinkMode
+  /** Instant waktu server untuk jendela pengajuan pada form reservasi. */
+  serverNow?: string
 }
 
 export function FacilityDetailContent({
@@ -20,10 +31,14 @@ export function FacilityDetailContent({
   today,
   availability,
   basePath,
+  slotLinkMode = "none",
+  serverNow,
 }: FacilityDetailContentProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
+
+  const slotHref = slotLinkMode === "login" ? () => "/login" : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -88,10 +103,26 @@ export function FacilityDetailContent({
       <div className="flex flex-col gap-4">
         <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
           <CalendarDays aria-hidden="true" className="size-5" />
-          Ketersediaan slot
+          {slotLinkMode === "form" ? "Ajukan reservasi" : "Ketersediaan slot"}
         </h2>
-        <AvailabilityDateForm facilityId={facility.id} date={date} today={today} basePath={basePath} />
-        {availability && <AvailabilityGrid slots={availability.slots} />}
+        {slotLinkMode === "form" ? (
+          <ReservationForm
+            key={`${facility.id}:${date}`}
+            facilities={[{ id: facility.id, nama: facility.nama, lokasi: facility.lokasi }]}
+            facilityId={facility.id}
+            date={date}
+            availability={availability}
+            serverNow={serverNow ?? new Date().toISOString()}
+            actionPath={`${basePath}/${facility.id}`}
+            lockFacility
+            timePicker="grid"
+          />
+        ) : (
+          <>
+            <AvailabilityDateForm facilityId={facility.id} date={date} today={today} basePath={basePath} />
+            {availability && <AvailabilityGrid slots={availability.slots} slotHref={slotHref} />}
+          </>
+        )}
       </div>
     </div>
   )

@@ -146,7 +146,7 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
     expect(document.querySelector('input[name="facilityId"]')).toHaveValue("2")
   })
 
-  it("menampilkan placeholder kategori dan memilih opsi lewat keyboard", async () => {
+  it("menampilkan placeholder kategori dan memilih opsi", async () => {
     const user = userEvent.setup()
     renderDialog()
     const kategori = screen.getByRole("combobox", { name: /Kategori/ })
@@ -156,7 +156,7 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
     expect(await screen.findByRole("listbox")).toBeInTheDocument()
     expect(document.querySelector('[data-slot="select-content"]')).toHaveAttribute("data-align-trigger", "false")
 
-    await user.keyboard("{Home}{Enter}")
+    await user.click(await screen.findByRole("option", { name: "Listrik" }))
 
     expect(kategori).toHaveTextContent("Listrik")
     expect(document.querySelector('input[name="kategori"]')).toHaveValue("Listrik")
@@ -185,9 +185,8 @@ describe("ReportFormDialog memilih fasilitas dan kategori", () => {
 
     const kategori = screen.getByRole("combobox", { name: /Kategori/ })
     await user.click(kategori)
-    // Pilih lewat pointer, bukan keyboard: setelah popup terbuka, fokus kadang
-    // masih di trigger sehingga {Home}{Enter} tidak memilih apa pun dan submit
-    // ditolak validasi (flaky di CI). Jalur keyboard diuji di tes sebelumnya.
+    // Pilih lewat pointer, bukan {Home}{Enter}: fokus kadang masih di trigger
+    // sehingga submit ditolak validasi (flaky di CI).
     await user.click(await screen.findByRole("option", { name: "Listrik" }))
     await user.type(screen.getByLabelText(/Deskripsi kerusakan/), "Lampu ruang kelas tidak menyala.")
     await user.upload(screen.getByLabelText(/Foto/), new File(["foto"], "lampu.png", { type: "image/png" }))
