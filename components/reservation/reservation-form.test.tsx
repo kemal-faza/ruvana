@@ -357,3 +357,63 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     expect((await axe(wilayahWaktu as HTMLElement)).violations).toEqual([])
   }, 20000)
 })
+
+describe("ReservationForm navigasi ketersediaan", () => {
+  it("memakai router.push alih-alih navigasi penuh saat menampilkan ketersediaan", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+    const alamatSebelum = window.location.href
+
+    await user.click(screen.getByRole("button", { name: "Tampilkan ketersediaan" }))
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-09-27"))
+    expect(window.location.href).toBe(alamatSebelum)
+  }, 20000)
+
+  it("memuat slot otomatis saat fasilitas berubah lalu menampilkan teks bantu baru", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    await user.click(comboboxFasilitas())
+    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=4&date=2026-09-27"))
+    expect(
+      await screen.findByText("Slot belum diperbarui. Tekan Tampilkan ketersediaan."),
+    ).toBeInTheDocument()
+  }, 20000)
+
+  it("memuat slot otomatis saat tanggal berubah", async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-12-02" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    await user.click(screen.getByLabelText("Tanggal"))
+    const hariLain = document.querySelector<HTMLButtonElement>('td[data-day="2026-12-10"] button')
+    expect(hariLain).not.toBeNull()
+    await user.click(hariLain as HTMLButtonElement)
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-12-10"))
+    expect(container.querySelector('input[name="date"]')).toHaveValue("2026-12-10")
+  }, 20000)
+
+  it("meneruskan tipe aktif ke URL dan input tersembunyi", async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" type="aula" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    expect(container.querySelector('input[name="type"]')).toHaveValue("aula")
+
+    await user.click(screen.getByRole("button", { name: "Tampilkan ketersediaan" }))
+
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-09-27&type=aula"),
+    )
+  }, 20000)
+})
