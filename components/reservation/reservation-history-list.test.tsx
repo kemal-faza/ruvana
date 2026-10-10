@@ -327,6 +327,115 @@ describe("ReservationHistoryList hierarki tombol", () => {
   })
 })
 
+describe("ReservationHistoryList muat ulang filter (RES-03)", () => {
+  const META_SATU = { page: 1, perPage: 10, totalItems: 1, totalPages: 1 }
+
+  it("tidak menampilkan skeleton dan mempertahankan daftar lama saat filter diganti", async () => {
+    const user = userEvent.setup()
+    let rilisBaru: ((value: Response) => void) | undefined
+    let panggilan = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: unknown) => {
+        void url
+        panggilan += 1
+        if (panggilan === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ items: [SATU_ITEM], meta: META_SATU }), { status: 200 }),
+          )
+        }
+        return new Promise<Response>((resolve) => {
+          rilisBaru = resolve
+        })
+      }),
+    )
+    const { container } = render(<ReservationHistoryList />)
+    await screen.findByText("RK-102")
+
+    await pilihFilter(user, "Dibatalkan Petugas")
+
+    // Daftar lama tetap tampil; skeleton tidak menggantikannya saat refetch.
+    expect(screen.getByText("RK-102")).toBeInTheDocument()
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBe(0)
+    // Indikator kecil di dekat filter dan daftar ditandai sedang memuat.
+    expect(screen.getByText("Memuat…")).toBeInTheDocument()
+    const areaSibuk = document.querySelector('[aria-busy="true"]')
+    expect(areaSibuk?.textContent ?? "").toContain("RK-102")
+
+    rilisBaru?.(
+      new Response(
+        JSON.stringify({ items: [], meta: { page: 1, perPage: 10, totalItems: 0, totalPages: 0 } }),
+        { status: 200 },
+      ),
+    )
+
+    expect(await screen.findByText("Belum ada reservasi")).toBeInTheDocument()
+    expect(screen.queryByText("Memuat…")).not.toBeInTheDocument()
+  }, 20000)
+
+  it("respons usang yang tiba belakangan diabaikan dan tidak memunculkan skeleton", async () => {
+    const user = userEvent.setup()
+    let rilisUsang!: (value: Response) => void
+    const janjiUsang = new Promise<Response>((resolve) => {
+      rilisUsang = resolve
+    })
+    let panggilan = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: unknown) => {
+        void url
+        panggilan += 1
+        if (panggilan === 1) {
+          return Promise.resolve(new Response(JSON.stringify({ items: [SATU_ITEM], meta: META_SATU }), { status: 200 }))
+        }
+        if (panggilan === 2) return janjiUsang
+        return Promise.resolve(new Response(JSON.stringify({ items: [{ ...SATU_ITEM, id: 88 }], meta: META_SATU }), { status: 200 }))
+      }),
+    )
+    const { container } = render(<ReservationHistoryList />)
+    await screen.findByText("RK-102")
+
+    await pilihFilter(user, "Menunggu")
+    await pilihFilter(user, "Disetujui")
+    await screen.findByRole("button", { name: "Lihat detail" })
+
+    rilisUsang(new Response(JSON.stringify({ items: [{ ...SATU_ITEM, id: 7 }], meta: META_SATU }), { status: 200 }))
+
+    await waitFor(() => expect(panggilan).toBeGreaterThanOrEqual(3))
+    // Respons usang tidak menimpa hasil filter terbaru.
+    expect(screen.getByRole("button", { name: "Lihat detail" })).toHaveAttribute("href", "/reservasi/riwayat/88")
+    expect(screen.getByText("RK-102")).toBeInTheDocument()
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull()
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBe(0)
+  }, 20000)
+
+  it("kegagalan jaringan mempertahankan daftar lama dan menampilkan pesan galat", async () => {
+    const user = userEvent.setup()
+    let gagal = false
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        if (gagal) return new Response("{}", { status: 500 })
+        return new Response(JSON.stringify({ items: [SATU_ITEM], meta: META_SATU }), { status: 200 })
+      }),
+    )
+    render(<ReservationHistoryList />)
+    await screen.findByText("RK-102")
+
+    gagal = true
+    await pilihFilter(user, "Dibatalkan Petugas")
+
+    const galat = await screen.findByRole("alert")
+    expect(galat).toHaveTextContent("Riwayat belum dapat dimuat.")
+    // Daftar lama tetap tampil; keadaan kosong tidak menimpa pesan galat.
+    expect(screen.getByText("RK-102")).toBeInTheDocument()
+    expect(screen.queryByText("Belum ada reservasi")).not.toBeInTheDocument()
+    expect(galat).toHaveTextContent("Coba lagi")
+  }, 20000)
+})
+
 describe("ReservationHistoryList loading", () => {
   it("menampilkan skeleton dan status saat data belum tiba", async () => {
     let rilisRespons: ((value: Response) => void) | undefined;

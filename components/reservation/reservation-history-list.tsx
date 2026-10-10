@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Loader2 } from "lucide-react";
 
 import { STATUS_RESERVASI } from "@/config/business";
 import { LABEL_STATUS_RESERVASI } from "@/config/labels";
@@ -15,6 +15,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SELECT_TRIGGER_ACTION_CLASS } from "@/components/ui/select-classes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { ReservationResult } from "@/lib/services/reservation-service";
 import type { StatusReservasi } from "@/generated/prisma/enums";
 
@@ -184,6 +185,9 @@ export function ReservationHistoryList({
   }
 
   const totalPages = data?.meta.totalPages ?? 0;
+  // Skeleton hanya untuk muat pertama; saat ganti filter daftar lama tetap
+  // tampil sekalian ditandai sedang memuat.
+  const refetching = Boolean(loading && data);
   const sisanyaBanner = pembatalanPemeliharaan
     ? Math.max(0, pembatalanPemeliharaan.total - pembatalanPemeliharaan.namaFasilitas.length)
     : 0;
@@ -209,6 +213,12 @@ export function ReservationHistoryList({
             ))}
           </SelectContent>
         </Select>
+        {refetching && (
+          <p aria-live="polite" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+            Memuat…
+          </p>
+        )}
       </Field>
 
       {pembatalanPemeliharaan && pembatalanPemeliharaan.total > 0 && (
@@ -232,7 +242,7 @@ export function ReservationHistoryList({
         </section>
       )}
 
-      {loading && (
+      {loading && !data && (
         <div role="status" aria-busy="true" className="flex flex-col gap-4">
           <div className="grid min-w-0 gap-4 sm:grid-cols-2" aria-hidden="true">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -278,7 +288,7 @@ export function ReservationHistoryList({
         </div>
       )}
 
-      {!loading && !galat && data && data.items.length === 0 && (
+      {!galat && data && data.items.length === 0 && (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -296,8 +306,14 @@ export function ReservationHistoryList({
         </Empty>
       )}
 
-      {!loading && !galat && data && data.items.length > 0 && (
-        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+      {data && data.items.length > 0 && (
+        <div
+          className={cn(
+            "grid min-w-0 gap-4 transition-opacity duration-motion-standard sm:grid-cols-2 motion-reduce:transition-none",
+            refetching && "opacity-60",
+          )}
+          aria-busy={refetching || undefined}
+        >
           {data.items.map((item) => (
             <Card key={item.id}>
               <CardHeader>
@@ -333,7 +349,7 @@ export function ReservationHistoryList({
         </div>
       )}
 
-      {!loading && !galat && data && totalPages > 1 && (
+      {data && data.items.length > 0 && totalPages > 1 && (
         <div className="flex items-center justify-between gap-3">
           <Button
             type="button"

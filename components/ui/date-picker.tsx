@@ -24,6 +24,8 @@ interface DatePickerProps {
   defaultValue?: string
   /** Nilai awal sebagai `Date` (mis. hasil parse manual di zona waktu lokal). */
   defaultDate?: Date
+  /** Dipanggil saat tanggal dipilih, dengan nilai `yyyy-MM-dd`. */
+  onValueChange?: (value: string) => void
   allowPastDates?: boolean
   className?: string
   disabled?: React.ComponentProps<typeof Calendar>["disabled"]
@@ -42,6 +44,7 @@ export function DatePicker({
   placeholder = "Pilih tanggal",
   defaultValue,
   defaultDate,
+  onValueChange,
   allowPastDates = false,
   className,
   disabled,
@@ -90,6 +93,7 @@ export function DatePicker({
             onSelect={(selected) => {
               setDate(selected)
               setOpen(false)
+              if (selected) onValueChange?.(format(selected, ISO_FORMAT))
             }}
           />
         </PopoverContent>

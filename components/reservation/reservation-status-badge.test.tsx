@@ -16,12 +16,35 @@ const SEMUA_STATUS: StatusReservasi[] = [
   "EXPIRED",
 ]
 
+// Kandungan token per status: setiap status memakai pasangan token semantik
+// yang berbeda agar dapat dibedakan tanpa warna saja; label tetap disediakan.
+const KELAS_VARIAN_RESERVASI: Record<StatusReservasi, string[]> = {
+  PENDING: ["bg-warning-subdued", "text-warning-subdued-foreground"],
+  APPROVED: ["bg-success-subdued", "text-success-subdued-foreground"],
+  REJECTED: ["bg-destructive-subdued", "text-destructive-subdued-foreground"],
+  CANCELLED_BY_USER: ["text-destructive"],
+  CANCELLED_BY_OFFICER: ["bg-destructive", "text-destructive-foreground"],
+  CANCELLED_BY_MAINTENANCE: ["bg-warning-subdued", "text-warning-subdued-foreground"],
+  EXPIRED: ["bg-status-neutral-surface", "text-status-neutral-text"],
+}
+
 afterEach(cleanup)
 
 describe("ReservationStatusBadge", () => {
   it.each(SEMUA_STATUS)("merender label domain Indonesia untuk %s", (status) => {
     render(<ReservationStatusBadge status={status} />)
 
+    expect(screen.getByText(LABEL_STATUS_RESERVASI[status])).toBeInTheDocument()
+  })
+
+  it.each(SEMUA_STATUS)("memakai varian warna semantik yang tepat untuk %s", (status) => {
+    const { container } = render(<ReservationStatusBadge status={status} />)
+
+    const badge = container.querySelector('[data-slot="badge"]')
+    for (const kelas of KELAS_VARIAN_RESERVASI[status]) {
+      expect(badge).toHaveClass(kelas)
+    }
+    // Label teks tetap tampil sebagai cue nonwarna.
     expect(screen.getByText(LABEL_STATUS_RESERVASI[status])).toBeInTheDocument()
   })
 

@@ -129,4 +129,25 @@ describe("kontrak Button", () => {
     expect(link).toHaveAttribute("aria-busy", "true")
     expect(link).toHaveAttribute("aria-disabled", "true")
   })
+
+  it("menampilkan label proses saat loading tanpa mengubah ukuran tombol", () => {
+    render(
+      <Button loading loadingLabel="Memproses…">
+        Simpan perubahan
+      </Button>,
+    )
+
+    const button = screen.getByRole("button", { name: "Memproses…" })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute("aria-busy", "true")
+    expect(screen.queryByRole("button", { name: "Simpan perubahan" })).not.toBeInTheDocument()
+  })
+
+  it("tetap memakai label normal saat tidak loading meski loadingLabel diisi", () => {
+    render(<Button loadingLabel="Memproses…">Simpan perubahan</Button>)
+
+    const button = screen.getByRole("button", { name: "Simpan perubahan" })
+    expect(button).toBeEnabled()
+    expect(button).not.toHaveAttribute("aria-busy")
+  })
 })
