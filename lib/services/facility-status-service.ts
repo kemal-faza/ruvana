@@ -9,7 +9,7 @@ import { handleFacilityStatusChanged } from "@/lib/reservations/maintenance-list
 
 type PersistSuccess<T> = (tx: Prisma.TransactionClient, result: T) => Promise<void>;
 
-export interface FacilityStatusActor {
+type FacilityStatusActor = {
   id: number;
   nama: string;
   role: Role;
@@ -28,7 +28,7 @@ export interface FacilityStatusResult {
   statusChangedBy: FacilityStatusActor | null;
 }
 
-export type FacilityStatusServiceError =
+type FacilityStatusServiceError =
   | { type: "not_found"; message: string }
   | { type: "transition"; message: string };
 

@@ -1,11 +1,9 @@
-// Kontrak interface "status fasilitas berubah" — didefinisikan sekali di Fase 0.
+// Kontrak antar-modul "status fasilitas berubah" (PRD Bagian 7.3, D-009).
 // Modul 3 (RES-09) = listener terhadap perubahan ini; Modul 4 (REP-04) = pemicu.
-// Tujuan: modul 3 & 4 bisa maju paralel tanpa saling menunggu implementasi.
+// Wiring dilakukan langsung: pemilik transaksi (facility-status-service / admin-facility-service)
+// memanggil listener handleFacilityStatusChanged dengan client transaksi yang sama.
 
-import type { Prisma } from "../generated/prisma/client";
 import type { StatusFasilitas } from "../generated/prisma/enums";
-
-export const FACILITY_STATUS_CHANGED = "facility.status.changed" as const;
 
 export interface FacilityStatusChangedPayload {
   facilityId: number;
@@ -14,18 +12,3 @@ export interface FacilityStatusChangedPayload {
   /** Petugas/aktor yang memicu perubahan */
   diubahOleh: number;
 }
-
-// Dokumentasi kontrak (dipakai Modul 3 & 4):
-// - Pemicu (Modul 4): lib/services/facility-status-service.ts membuka satu
-//   transaksi, menyimpan status + provenance, meneruskan client transaksi yang
-//   sama + payload ke listener, dan menunggu listener sebelum commit. Route
-//   REP-04 = PATCH /api/staff/facilities/{facilityId}/status.
-// - Listener (Modul 3, sudah diimplementasikan di
-//   lib/reservations/maintenance-listener.ts): saat payload statusBaru =
-//   'UNDER_MAINTENANCE', batalkan reservasi masa depan berstatus 'APPROVED'
-//   pada facilityId tsb (alasan otomatis). Listener tidak boleh membuka
-//   transaksi sendiri.
-export type FacilityStatusChangedListener = (
-  transaction: Prisma.TransactionClient,
-  payload: FacilityStatusChangedPayload,
-) => Promise<void>;
