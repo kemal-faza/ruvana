@@ -33,7 +33,7 @@ const slotBoxClass =
   "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border p-2 text-center"
 const availableClass = "border-transparent bg-success-subdued text-success-subdued-foreground"
 const blockedClass = "border-border bg-muted text-muted-foreground"
-const markedClass = "border-ring bg-success-subdued text-success-subdued-foreground"
+const markedClass = "border-primary bg-primary text-primary-foreground"
 
 function SlotContent({ startTime, label, Icon }: { startTime: string; label: string; Icon: LucideIcon }) {
   return (

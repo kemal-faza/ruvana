@@ -142,15 +142,38 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
     }
   }
 
+  function onSubmitDateForm(e: React.FormEvent<HTMLFormElement>) {
+    // Navigasi lunak lewat router (tanpa muat ulang penuh) agar posisi layar
+    // tidak melompat; native GET tetap menjadi fallback tanpa JavaScript.
+    e.preventDefault();
+    const params = new URLSearchParams();
+    for (const [key, value] of new FormData(e.currentTarget).entries()) {
+      if (typeof value === "string" && value.trim() !== "") params.set(key, value);
+    }
+    const query = params.toString();
+    router.push(query ? `${actionPath}?${query}` : actionPath, { scroll: false });
+  }
+
   function handleSlotSelect(slot: AvailabilitySlot) {
-    // Klik pertama (atau klik sebelum jam mulai) menetapkan jam mulai; klik
-    // setelahnya menetapkan jam selesai bila berada di batas valid, jika tidak
-    // perlakukan sebagai jam mulai baru.
-    if (!startTime || slot.startTime <= startTime) {
+    // Klik ulang kotak yang sudah terpilih membatalkan pilihan (toggle): klik
+    // jam mulai lagi menghapus rentang, klik jam selesai lagi melepas jam selesai.
+    if (startTime && slot.startTime === startTime) {
+      setStartTime("");
+      setEndTime("");
+      return;
+    }
+    if (endTime && slot.startTime === endTime) {
+      setEndTime("");
+      return;
+    }
+    // Belum ada jam mulai atau kotak sebelum jam mulai: jadikan jam mulai baru.
+    if (!startTime || slot.startTime < startTime) {
       setStartTime(slot.startTime);
       setEndTime("");
       return;
     }
+    // Kotak setelah jam mulai: tetapkan jam selesai bila batasnya valid; bila
+    // tidak, jadikan jam mulai baru.
     const validEnds = getValidEndTimes(startTime, availabilityForSelected?.slots ?? null);
     if (validEnds.includes(slot.startTime)) {
       setEndTime(slot.startTime);
@@ -337,7 +360,7 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
           </div>
           {/* Form GET native: memuat ulang Server Component agar
               availability dihitung ulang untuk facilityId + date baru */}
-          <form method="get" action={actionPath} className="flex flex-col gap-5">
+          <form method="get" action={actionPath} onSubmit={onSubmitDateForm} className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="fasilitas">Fasilitas</FieldLabel>

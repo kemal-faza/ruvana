@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
@@ -408,4 +408,53 @@ describe("ReservationForm pemilih jam kotak", () => {
     expect(body.startTime).toBe("08:00")
     expect(body.endTime).toBe("09:00")
   }, 20000)
+
+  it("membatalkan pilihan saat kotak yang sama diklik lagi", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-12-02"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        lockFacility
+        timePicker="grid"
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    expect(screen.getByRole("button", { name: /^08:00/ })).toHaveAttribute("aria-pressed", "true")
+
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    expect(screen.getByRole("button", { name: /^08:00/ })).toHaveAttribute("aria-pressed", "false")
+
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    await user.click(screen.getByRole("button", { name: /^09:00/ }))
+    expect(screen.getByText("Jam terpilih: 08:00–09:00")).toBeInTheDocument()
+
+    // Klik jam selesai lagi melepas jam selesai, jam mulai tetap terpilih.
+    await user.click(screen.getByRole("button", { name: /^09:00/ }))
+    expect(screen.queryByText("Jam terpilih: 08:00–09:00")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^08:00/ })).toHaveAttribute("aria-pressed", "true")
+  }, 20000)
+})
+
+describe("ReservationForm navigasi tanggal", () => {
+  it("menampilkan ketersediaan lewat navigasi lunak tanpa muat ulang penuh", () => {
+    const { container } = render(
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-09-27"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        lockFacility
+      />,
+    )
+
+    fireEvent.submit(container.querySelector("form[method='get']") as HTMLFormElement)
+
+    expect(pushMock).toHaveBeenCalledWith("/reservasi?facilityId=3&date=2026-09-27", { scroll: false })
+  })
 })
