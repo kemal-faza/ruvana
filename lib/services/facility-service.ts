@@ -1,5 +1,6 @@
 import type { PublicFacilityFilters } from "@/lib/db/facilities";
 import { countPublicFacilities, findPublicFacilities, findPublicFacilityById, findStaffFacilities } from "@/lib/db/facilities";
+import { facilityPhotoUrl } from "@/lib/facilities/photo-url";
 import type { Role, StatusFasilitas, TipeFasilitas } from "@/generated/prisma/enums";
 
 export interface PublicFacility {
@@ -10,6 +11,32 @@ export interface PublicFacility {
   kapasitas: number;
   deskripsi: string | null;
   status: "ACTIVE" | "UNDER_MAINTENANCE";
+  fotoUrl: string | null;
+}
+
+interface PublicFacilityRow {
+  id: number;
+  nama: string;
+  tipe: TipeFasilitas;
+  lokasi: string;
+  kapasitas: number;
+  deskripsi: string | null;
+  status: StatusFasilitas;
+  foto: string | null;
+}
+
+/** Buang pathname Blob mentah; klien hanya menerima URL same-origin. */
+function toPublicFacility(row: PublicFacilityRow): PublicFacility {
+  return {
+    id: row.id,
+    nama: row.nama,
+    tipe: row.tipe,
+    lokasi: row.lokasi,
+    kapasitas: row.kapasitas,
+    deskripsi: row.deskripsi,
+    status: row.status as PublicFacility["status"],
+    fotoUrl: facilityPhotoUrl(row.id, row.foto),
+  };
 }
 
 export interface PageMeta {
@@ -38,7 +65,7 @@ export async function listPublicFacilities({ page, perPage, ...filters }: Public
   ]);
 
   return {
-    items: items as PublicFacility[],
+    items: items.map(toPublicFacility),
     meta: {
       page,
       perPage,
@@ -50,7 +77,7 @@ export async function listPublicFacilities({ page, perPage, ...filters }: Public
 
 export async function getPublicFacility(id: number): Promise<PublicFacility | null> {
   const facility = await findPublicFacilityById(id);
-  return facility as PublicFacility | null;
+  return facility ? toPublicFacility(facility) : null;
 }
 
 /**
@@ -75,6 +102,7 @@ export async function listStaffFacilitiesService(): Promise<StaffFacility[]> {
     kapasitas: facility.kapasitas,
     deskripsi: facility.deskripsi,
     status: facility.status,
+    fotoUrl: facilityPhotoUrl(facility.id, facility.foto),
     statusChangedAt: facility.statusChangedAt ? facility.statusChangedAt.toISOString() : null,
     statusChangedBy: facility.statusChangedBy
       ? { id: facility.statusChangedBy.id, nama: facility.statusChangedBy.nama, role: facility.statusChangedBy.role }

@@ -11,6 +11,18 @@ vi.mock("@/lib/db/facilities", () => ({
   findStaffFacilities: vi.fn(),
 }));
 
+// Baris database (memuat pathname `foto`), sedangkan hasil service memakai `fotoUrl`.
+const mockRow = {
+  id: 1,
+  nama: "RK-101",
+  tipe: "ruang_kelas" as const,
+  lokasi: "Gedung A Lt.1",
+  kapasitas: 40,
+  deskripsi: "Ruang kelas standar",
+  status: "ACTIVE" as const,
+  foto: null,
+};
+
 const mockFacility = {
   id: 1,
   nama: "RK-101",
@@ -19,6 +31,7 @@ const mockFacility = {
   kapasitas: 40,
   deskripsi: "Ruang kelas standar",
   status: "ACTIVE" as const,
+  fotoUrl: null,
 };
 
 beforeEach(() => {
@@ -27,7 +40,7 @@ beforeEach(() => {
 
 describe("listPublicFacilities", () => {
   it("mengembalikan items dan meta yang benar", async () => {
-    vi.mocked(findPublicFacilities).mockResolvedValue([mockFacility]);
+    vi.mocked(findPublicFacilities).mockResolvedValue([mockRow]);
     vi.mocked(countPublicFacilities).mockResolvedValue(21);
 
     const result = await listPublicFacilities({ page: 2, perPage: 20 });
@@ -39,15 +52,24 @@ describe("listPublicFacilities", () => {
     });
   });
 
-  it("hanya mengandung tujuh field publik, tanpa data reservasi", async () => {
-    vi.mocked(findPublicFacilities).mockResolvedValue([mockFacility]);
+  it("hanya mengandung delapan field publik, tanpa data reservasi", async () => {
+    vi.mocked(findPublicFacilities).mockResolvedValue([mockRow]);
     vi.mocked(countPublicFacilities).mockResolvedValue(1);
 
     const result = await listPublicFacilities({ page: 1, perPage: 20 });
 
     expect(Object.keys(result.items[0]).sort()).toEqual(
-      ["deskripsi", "id", "kapasitas", "lokasi", "nama", "status", "tipe"].sort(),
+      ["deskripsi", "fotoUrl", "id", "kapasitas", "lokasi", "nama", "status", "tipe"].sort(),
     );
+  });
+
+  it("mengubah pathname foto menjadi URL same-origin", async () => {
+    vi.mocked(findPublicFacilities).mockResolvedValue([{ ...mockRow, foto: "facilities/7/abc.jpg" }]);
+    vi.mocked(countPublicFacilities).mockResolvedValue(1);
+
+    const result = await listPublicFacilities({ page: 1, perPage: 20 });
+
+    expect(result.items[0].fotoUrl).toBe("/api/facilities/1/photo");
   });
 
   it("tidak mengirim filter kosong ke db ketika tidak ada filter aktif", async () => {
@@ -79,7 +101,7 @@ describe("listPublicFacilities", () => {
   });
 
   it("menghitung totalPages dari count terfilter", async () => {
-    vi.mocked(findPublicFacilities).mockResolvedValue([mockFacility]);
+    vi.mocked(findPublicFacilities).mockResolvedValue([mockRow]);
     vi.mocked(countPublicFacilities).mockResolvedValue(5);
 
     const result = await listPublicFacilities({ page: 1, perPage: 2, search: "lab" });
@@ -91,7 +113,7 @@ describe("listPublicFacilities", () => {
 
 describe("getPublicFacility", () => {
   it("mengembalikan fasilitas ketika ditemukan", async () => {
-    vi.mocked(findPublicFacilityById).mockResolvedValue(mockFacility);
+    vi.mocked(findPublicFacilityById).mockResolvedValue(mockRow);
 
     const result = await getPublicFacility(1);
 
@@ -110,7 +132,7 @@ describe("getPublicFacility", () => {
 
 describe("listStaffFacilitiesService", () => {
   const row = {
-    ...mockFacility,
+    ...mockRow,
     status: "UNDER_MAINTENANCE" as const,
     statusChangedAt: new Date("2026-10-03T05:00:00.000Z"),
     statusChangedBy: { id: 7, nama: "Petugas Ruvana", role: "petugas" as const },

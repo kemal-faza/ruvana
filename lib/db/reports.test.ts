@@ -1,22 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockCount, mockFindMany, mockFindUnique, mockUserFindMany } = vi.hoisted(() => ({
+const { mockCount, mockFindMany, mockFindUnique, mockUserFindMany, mockFacilityFindFirst, mockFacilityFindMany } = vi.hoisted(() => ({
   mockCount: vi.fn(),
   mockFindMany: vi.fn(),
   mockFindUnique: vi.fn(),
   mockUserFindMany: vi.fn(),
+  mockFacilityFindFirst: vi.fn(),
+  mockFacilityFindMany: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     report: { count: mockCount, findMany: mockFindMany, findUnique: mockFindUnique },
     user: { findMany: mockUserFindMany },
+    facility: { findFirst: mockFacilityFindFirst, findMany: mockFacilityFindMany },
   },
 }));
 
 import {
   countStaffReports,
   countStaffReportsByStatus,
+  findFacilityById,
+  findReportFacilityOptions,
   findReportsByStatus,
   findStaffReportById,
   findStaffReportHandlers,
@@ -135,5 +140,29 @@ describe("kueri detail laporan petugas", () => {
       where: { id: { in: [7, 9] } },
       select: { id: true, nama: true, role: true },
     });
+  });
+});
+
+describe("guard fasilitas terarsip pada laporan", () => {
+  it("findFacilityById mengecualikan fasilitas terarsip", async () => {
+    mockFacilityFindFirst.mockResolvedValue(null);
+
+    await findFacilityById(1);
+
+    expect(mockFacilityFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 1, deletedAt: null } }),
+    );
+  });
+
+  it("findReportFacilityOptions mengecualikan fasilitas terarsip", async () => {
+    mockFacilityFindMany.mockResolvedValue([]);
+
+    await findReportFacilityOptions();
+
+    expect(mockFacilityFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: { in: ["ACTIVE", "UNDER_MAINTENANCE"] }, deletedAt: null },
+      }),
+    );
   });
 });

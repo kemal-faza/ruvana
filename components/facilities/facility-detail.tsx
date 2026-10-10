@@ -23,7 +23,7 @@ export function FacilityDetailContent({
 }: FacilityDetailContentProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
-  const photo = getFacilityPhoto(facility.nama, facility.tipe)
+  const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,6 +45,7 @@ export function FacilityDetailContent({
             fill
             sizes="(min-width: 1024px) 768px, 100vw"
             loading="eager"
+            unoptimized={facility.fotoUrl !== null}
             className="object-cover"
           />
         </div>

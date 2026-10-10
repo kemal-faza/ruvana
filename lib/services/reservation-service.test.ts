@@ -13,7 +13,7 @@ import { createReservationService } from "./reservation-service";
 import { asiaJakartaToUtc, calendarDateToUtcMidnight } from "@/lib/time/reservation-time";
 
 function makeTxMock(overrides: {
-  facility?: { id: number; status: string } | null;
+  facility?: { id: number; status: string; deletedAt?: Date | null } | null;
   overlapping?: Array<{ id: number; startTime: Date; endTime: Date }>;
   approvedOnDate?: Array<{ startTime: Date; endTime: Date }>;
   created?: unknown;
@@ -111,6 +111,14 @@ describe("createReservationService", () => {
 
   it("menolak fasilitas tidak ditemukan", async () => {
     const tx = makeTxMock({ facility: null });
+    mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+    const result = await createReservationService(42, validInput, now);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("not_found");
+  });
+
+  it("memperlakukan fasilitas terarsip (soft delete) seperti tidak ditemukan", async () => {
+    const tx = makeTxMock({ facility: { id: 1, status: "ACTIVE", deletedAt: new Date("2026-10-10T00:00:00Z") } });
     mockTransaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
     const result = await createReservationService(42, validInput, now);
     expect(result.ok).toBe(false);
