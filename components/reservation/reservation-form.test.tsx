@@ -378,3 +378,34 @@ describe("ReservationForm fasilitas terkunci", () => {
     expect(container.querySelector("form[method='get']")).toHaveAttribute("action", "/fasilitas/3")
   })
 })
+
+describe("ReservationForm pemilih jam kotak", () => {
+  it("memilih rentang lewat dua klik lalu mengirim start/end yang benar", async () => {
+    const user = userEvent.setup()
+    const fetchMock = mockFetchOk()
+    render(
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-12-02"
+        availability={null}
+        serverNow="2026-09-01T00:00:00.000Z"
+        lockFacility
+        timePicker="grid"
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /^08:00/ }))
+    await user.click(screen.getByRole("button", { name: /^09:00/ }))
+
+    expect(screen.getByText("Jam terpilih: 08:00–09:00")).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
+    expect(body.startTime).toBe("08:00")
+    expect(body.endTime).toBe("09:00")
+  }, 20000)
+})

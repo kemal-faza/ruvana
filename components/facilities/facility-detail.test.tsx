@@ -41,12 +41,13 @@ const base = {
 }
 
 describe("FacilityDetailContent", () => {
-  it("menempel form reservasi terkunci untuk pengguna", () => {
+  it("menempel form reservasi terkunci dengan pemilih jam kotak untuk pengguna", () => {
     render(<FacilityDetailContent {...base} slotLinkMode="form" serverNow="2026-09-01T00:00:00.000Z" />)
 
     expect(screen.getByRole("heading", { level: 2, name: "Ajukan reservasi" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Tampilkan ketersediaan" })).toBeInTheDocument()
     expect(screen.queryByRole("combobox", { name: "Fasilitas" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^08:00/ })).toBeInTheDocument()
   })
 
   it("menautkan slot tersedia ke halaman masuk untuk pengunjung anonim", () => {

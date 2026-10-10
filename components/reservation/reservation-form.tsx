@@ -7,9 +7,11 @@ import {
   PESAN_BATAS_PENGAJUAN as PESAN_BATAS_PENGAJUAN_DASAR,
   VALID_START_TIMES,
 } from "@/config/business";
+import { generateDailySlots } from "@/lib/availability/slots";
 import {
   blockedByLabel,
   getValidEndTimes,
+  type AvailabilitySlot,
   type FacilityAvailability,
 } from "@/lib/reservations/slot-range";
 import {
@@ -18,6 +20,7 @@ import {
   ringkasGalatPengajuan,
 } from "@/lib/reservations/reservation-display";
 import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
+import { AvailabilityGrid } from "@/components/facilities/availability-grid";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -45,11 +48,13 @@ interface ReservationFormProps {
    * fasilitas): dropdown Fasilitas diganti teks statis.
    */
   lockFacility?: boolean;
+  /** Bentuk pemilih jam: dropdown (`select`) atau grid kotak (`grid`). */
+  timePicker?: "select" | "grid";
 }
 
 const PESAN_BATAS_PENGAJUAN_FORM = `${PESAN_BATAS_PENGAJUAN_DASAR}.`;
 
-export function ReservationForm({ facilities, facilityId, date, initialStartTime, availability, serverNow, actionPath = "/reservasi", lockFacility = false }: ReservationFormProps) {
+export function ReservationForm({ facilities, facilityId, date, initialStartTime, availability, serverNow, actionPath = "/reservasi", lockFacility = false, timePicker = "select" }: ReservationFormProps) {
   const [startTime, setStartTime] = useState(initialStartTime ?? "");
   const [endTime, setEndTime] = useState("");
   const [tujuan, setTujuan] = useState("");
@@ -61,6 +66,11 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
   // render ulang tetap ditolak (tombol juga dinonaktifkan saat loading).
   const mengirimRef = useRef(false);
   const router = useRouter();
+
+  // Di mode grid, pemicu jam adalah tombol kotak; fokus galat diarahkan ke
+  // pemilih grid, bukan ke field dropdown yang tidak dirender.
+  const idJamMulai = timePicker === "grid" ? "pemilih-jam" : "jam-mulai";
+  const idJamSelesai = timePicker === "grid" ? "pemilih-jam" : "jam-selesai";
 
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
   // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
@@ -108,11 +118,44 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
     [startTime, availabilityForSelected],
   );
 
+  // Slot untuk pemilih jam berbentuk grid. Bila ketersediaan belum diketahui,
+  // pakai slot harian netral (semua aktif); server tetap memvalidasi saat submit.
+  const gridSlots = useMemo<AvailabilitySlot[]>(() => {
+    if (availabilityForSelected) return availabilityForSelected.slots;
+    return generateDailySlots().map((slot) => ({ ...slot, available: true, blockedBy: null }));
+  }, [availabilityForSelected]);
+
+  const disabledStarts = useMemo(() => {
+    const set = new Set<string>();
+    for (const [time, mepet] of mepetByStart) {
+      if (mepet) set.add(time);
+    }
+    return set;
+  }, [mepetByStart]);
+
   function handleStartChange(value: string | null) {
     if (!value) return;
     setStartTime(value);
     // Reset jam selesai bila tidak valid lagi untuk jam mulai yang baru
     if (endTime && !getValidEndTimes(value, availabilityForSelected?.slots ?? null).includes(endTime)) {
+      setEndTime("");
+    }
+  }
+
+  function handleSlotSelect(slot: AvailabilitySlot) {
+    // Klik pertama (atau klik sebelum jam mulai) menetapkan jam mulai; klik
+    // setelahnya menetapkan jam selesai bila berada di batas valid, jika tidak
+    // perlakukan sebagai jam mulai baru.
+    if (!startTime || slot.startTime <= startTime) {
+      setStartTime(slot.startTime);
+      setEndTime("");
+      return;
+    }
+    const validEnds = getValidEndTimes(startTime, availabilityForSelected?.slots ?? null);
+    if (validEnds.includes(slot.startTime)) {
+      setEndTime(slot.startTime);
+    } else {
+      setStartTime(slot.startTime);
       setEndTime("");
     }
   }
@@ -172,14 +215,14 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
       fokusPertama ??= id;
     }
     if (!startTime) {
-      catat("jamMulai", "jam-mulai", "Jam mulai", "Jam mulai wajib dipilih.");
+      catat("jamMulai", idJamMulai, "Jam mulai", "Jam mulai wajib dipilih.");
     } else if (mepetByStart.get(startTime)) {
       // pertahanan client memakai waktu server saat render: slot dalam
       // jendela H-14 langsung ditolak tanpa menunggu respons server.
-      catat("jamMulai", "jam-mulai", "Jam mulai", PESAN_BATAS_PENGAJUAN_FORM);
+      catat("jamMulai", idJamMulai, "Jam mulai", PESAN_BATAS_PENGAJUAN_FORM);
     }
     if (!endTime) {
-      catat("jamSelesai", "jam-selesai", "Jam selesai", "Jam selesai wajib dipilih.");
+      catat("jamSelesai", idJamSelesai, "Jam selesai", "Jam selesai wajib dipilih.");
     }
     // pertahanan terakhir di client: rentang tidak boleh melewati slot yang tidak tersedia.
     // Dilewati bila availability bukan milik fasilitas terpilih (server yang memvalidasi).
@@ -191,7 +234,7 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
     ) {
       catat(
         "jamSelesai",
-        "jam-selesai",
+        idJamSelesai,
         "Jam selesai",
         "Rentang waktu melewati slot yang tidak tersedia. Pilih jam selesai lain.",
       );
@@ -370,71 +413,98 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
               <h2 className="text-sm font-semibold">Waktu</h2>
               <Separator className="flex-1" />
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="jam-mulai">Jam mulai</FieldLabel>
-                <Select value={startTime} onValueChange={handleStartChange}>
-                  <SelectTrigger
-                    id="jam-mulai"
-                    className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
-                    // Rujuk deskripsi hanya saat ia dirender; saat galat field
-                    // menggantikannya, IDREF akan menggantung.
-                    aria-describedby={
-                      adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
-                    }
-                  >
-                    <SelectValue placeholder="Pilih jam mulai" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VALID_START_TIMES.map((time) => {
-                      const status = statusByStart.get(time);
-                      // Slot mepet H-14 dinonaktifkan dengan label netral
-                      // "Tidak tersedia" — jangan menyiratkan slot terisi.
-                      const mepet = mepetByStart.get(time) ?? false;
-                      const disabled = mepet || (status ? !status.available : false);
-                      const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
-                      return (
-                        <SelectItem key={time} value={time} disabled={disabled}>
-                          {reason ? `${time} — ${reason}` : time}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+            {timePicker === "grid" ? (
+              <div id="pemilih-jam" tabIndex={-1} className="flex flex-col gap-3">
+                <AvailabilityGrid
+                  slots={gridSlots}
+                  selection={{
+                    selectedStart: startTime || null,
+                    selectedEnd: endTime || null,
+                    disabledStarts,
+                    onSelectSlot: handleSlotSelect,
+                  }}
+                />
+                {startTime && endTime && (
+                  <p aria-live="polite" className="text-sm text-muted-foreground">
+                    Jam terpilih: {startTime}–{endTime}
+                  </p>
+                )}
                 {adaSlotMepet && !galatField.jamMulai && (
                   <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
                 )}
-                {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                {!startTime && !galatField.jamMulai && !adaSlotMepet && (
+                  <FieldDescription>Klik kotak jam untuk memilih waktu.</FieldDescription>
+                )}
                 {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="jam-selesai">Jam selesai</FieldLabel>
-                <Select
-                  value={endTime}
-                  onValueChange={(v: string | null) => {
-                    if (v) setEndTime(v);
-                  }}
-                >
-                  <SelectTrigger id="jam-selesai" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`} disabled={!startTime}>
-                    <SelectValue placeholder="Pilih jam selesai" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {validEndTimes.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!startTime ? (
-                  <FieldDescription>Pilih jam mulai dulu.</FieldDescription>
-                ) : validEndTimes.length === 0 ? (
-                  <FieldDescription>Tidak ada jam selesai yang tersedia setelah jam ini.</FieldDescription>
-                ) : null}
                 {galatField.jamSelesai && <FieldError>{galatField.jamSelesai}</FieldError>}
-              </Field>
-            </div>
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="jam-mulai">Jam mulai</FieldLabel>
+                  <Select value={startTime} onValueChange={handleStartChange}>
+                    <SelectTrigger
+                      id="jam-mulai"
+                      className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`}
+                      // Rujuk deskripsi hanya saat ia dirender; saat galat field
+                      // menggantikannya, IDREF akan menggantung.
+                      aria-describedby={
+                        adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined
+                      }
+                    >
+                      <SelectValue placeholder="Pilih jam mulai" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VALID_START_TIMES.map((time) => {
+                        const status = statusByStart.get(time);
+                        // Slot mepet H-14 dinonaktifkan dengan label netral
+                        // "Tidak tersedia" — jangan menyiratkan slot terisi.
+                        const mepet = mepetByStart.get(time) ?? false;
+                        const disabled = mepet || (status ? !status.available : false);
+                        const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
+                        return (
+                          <SelectItem key={time} value={time} disabled={disabled}>
+                            {reason ? `${time} — ${reason}` : time}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {adaSlotMepet && !galatField.jamMulai && (
+                    <FieldDescription id="bantuan-batas-pengajuan">{PESAN_BATAS_PENGAJUAN_FORM}</FieldDescription>
+                  )}
+                  {!startTime && !galatField.jamMulai && !adaSlotMepet && <FieldDescription>Pilih jam mulai.</FieldDescription>}
+                  {galatField.jamMulai && <FieldError>{galatField.jamMulai}</FieldError>}
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="jam-selesai">Jam selesai</FieldLabel>
+                  <Select
+                    value={endTime}
+                    onValueChange={(v: string | null) => {
+                      if (v) setEndTime(v);
+                    }}
+                  >
+                    <SelectTrigger id="jam-selesai" className={`${SELECT_TRIGGER_ACTION_CLASS} w-full`} disabled={!startTime}>
+                      <SelectValue placeholder="Pilih jam selesai" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {validEndTimes.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!startTime ? (
+                    <FieldDescription>Pilih jam mulai dulu.</FieldDescription>
+                  ) : validEndTimes.length === 0 ? (
+                    <FieldDescription>Tidak ada jam selesai yang tersedia setelah jam ini.</FieldDescription>
+                  ) : null}
+                  {galatField.jamSelesai && <FieldError>{galatField.jamSelesai}</FieldError>}
+                </Field>
+              </div>
+            )}
             {!availabilityForSelected && (
               <p className="text-xs text-muted-foreground">
                 Ketersediaan slot tidak dapat dimuat; semua waktu ditampilkan aktif dan server tetap memvalidasi saat submit.

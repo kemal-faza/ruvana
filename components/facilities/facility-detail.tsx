@@ -115,6 +115,7 @@ export function FacilityDetailContent({
             serverNow={serverNow ?? new Date().toISOString()}
             actionPath={`${basePath}/${facility.id}`}
             lockFacility
+            timePicker="grid"
           />
         ) : (
           <>
