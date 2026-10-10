@@ -360,6 +360,13 @@ promosi mempertahankan versi aplikasi yang sedang melayani traffic.
   variable platform, bukan di repository.
 - Migrasi production dijalankan dengan `prisma migrate deploy` terhadap
   `DATABASE_URL` dari environment Production Vercel, terpisah dari build.
+  Workflow memanggilnya lewat `scripts/apply-production-migrations.mjs` agar
+  berjalan pada host **direct**, bukan pooler: Prisma Migrate memakai advisory
+  lock tingkat sesi, dan di endpoint pooler kunci itu dapat timeout (`P1002`)
+  atau tertinggal sehingga rilis berikutnya gagal mengambilnya. Script memakai
+  `DATABASE_URL_UNPOOLED` bila variabel itu tersedia, dan bila tidak menurunkan
+  host direct dari `DATABASE_URL` dengan melepas akhiran `-pooler`. Script hanya
+  mencetak hostname, dengan URL disamarkan, sehingga kredensial tidak masuk log.
 - Secret GitHub environment `production` berisi `VERCEL_TOKEN`,
   `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, dan `CRON_SECRET` yang sama dengan nilai
   di Vercel Production agar pemeriksaan cron tidak perlu membaca nilai Secret.
@@ -380,6 +387,9 @@ promosi mempertahankan versi aplikasi yang sedang melayani traffic.
   `workflow_dispatch`; commit selain HEAD `main` dan commit yang CI-nya belum
   sukses tetap ditolak.
 - Build preview dan build paralel tidak menjalankan migrasi Production.
+- Foto laporan disimpan pada private Blob; PostgreSQL hanya menyimpan pathname
+  dan metadata. Unggahan berjalan langsung ke Blob melalui signed URL berumur
+  pendek dengan batas tipe konten dan ukuran, bukan melalui server aplikasi.
 - Batas free tier database dan storage harus dipantau sesuai PRD.
 
 ### Alternatif yang dipertimbangkan
