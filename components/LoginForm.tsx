@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, LockKeyhole, Mail } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { AuthPhotoPanel } from "@/components/AuthPhotoPanel"
@@ -23,6 +23,7 @@ export default function LoginForm() {
     fieldErrors: {} as Record<string, string[]>,
   })
   const [pending, setPending] = useState(false)
+  const [passwordVisible, setPasswordVisible] = useState(false)
   const hydrated = useHydrated()
 
   const emailError = state.fieldErrors?.email?.[0]
@@ -157,7 +158,7 @@ export default function LoginForm() {
                 <Input
                   id="login-password"
                   name="password"
-                  type="password"
+                  type={passwordVisible ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="Masukkan kata sandi"
                   required
@@ -170,8 +171,20 @@ export default function LoginForm() {
                   }}
                   aria-invalid={passwordError ? true : undefined}
                   aria-describedby={passwordError ? "login-password-error" : "login-password-help"}
-                  className="h-11 pl-10"
+                  className="h-11 pl-10 pr-12"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={passwordVisible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  aria-controls="login-password"
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                  className="absolute right-0 top-0 rounded-l-none"
+                >
+                  {passwordVisible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                </Button>
               </div>
               <FieldDescription id="login-password-help">Kata sandi minimal {BATAS_PASSWORD_AKUN_MIN_BYTE} karakter.</FieldDescription>
               {passwordError && (
