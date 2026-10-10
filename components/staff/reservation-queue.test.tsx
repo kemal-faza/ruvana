@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
@@ -182,5 +182,203 @@ describe("ReservationQueue loading", () => {
     }), { status: 200 }));
 
     expect(await screen.findByText("Belum ada reservasi yang menunggu.")).toBeInTheDocument();
+  });
+});
+
+const itemLain = {
+  ...item,
+  id: 93,
+  facility: { ...item.facility, id: 4, nama: "Ruang Rapat" },
+} as unknown as StaffReservationResult;
+
+function queueResponse(items: unknown[]): Response {
+  return new Response(JSON.stringify({
+    items,
+    meta: { page: 1, perPage: 10, totalItems: items.length, totalPages: items.length > 0 ? 1 : 0 },
+  }), { status: 200 });
+}
+
+function problemResponse(code: string, detail: string, status: number): Response {
+  return new Response(JSON.stringify({ code, detail }), {
+    status,
+    headers: { "Content-Type": "application/problem+json" },
+  });
+}
+
+function stubDialogMethods() {
+  Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+    value: function buka(this: HTMLDialogElement) { this.setAttribute("open", ""); },
+    configurable: true,
+    writable: true,
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, "close", {
+    value: function tutup(this: HTMLDialogElement) { this.removeAttribute("open"); },
+    configurable: true,
+    writable: true,
+  });
+}
+
+describe("ReservationQueue proses dan konflik (RES-06)", () => {
+  it("menampilkan Memproses… pada tombol Setujui yang sedang diproses", async () => {
+    const user = userEvent.setup();
+    let rilisApprove: ((value: Response) => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: unknown) => {
+        if (String(url).includes("/approve")) {
+          return new Promise<Response>((resolve) => { rilisApprove = resolve; });
+        }
+        return Promise.resolve(queueResponse([item]));
+      }),
+    );
+
+    render(<ReservationQueue />);
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00");
+    await user.click(screen.getByRole("button", { name: "Setujui" }));
+
+    const tombolProses = await screen.findByRole("button", { name: "Memproses…" });
+    expect(tombolProses).toBeDisabled();
+
+    rilisApprove?.(problemResponse("APPROVAL_CONFLICT", "Bentrok.", 409));
+    await screen.findByRole("alert");
+  });
+
+  it("konflik 409 tidak memicu refetch dan daftar tidak diganti skeleton", async () => {
+    const user = userEvent.setup();
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        const alamat = String(url);
+        calls.push(alamat);
+        if (alamat.includes("/approve")) {
+          return problemResponse("APPROVAL_CONFLICT", "Slot reservasi telah disetujui untuk reservasi lain.", 409);
+        }
+        return queueResponse([item]);
+      }),
+    );
+
+    render(<ReservationQueue />);
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00");
+    await user.click(screen.getByRole("button", { name: "Setujui" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Slot reservasi telah disetujui untuk reservasi lain.");
+    await waitFor(() => expect(alert).toHaveFocus());
+
+    expect(calls.filter((alamat) => alamat.includes("/api/staff/reservations?")).length).toBe(1);
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBe(0);
+    expect(screen.getByText("Aula Utama · 3 Des 2026 · 09:00–10:00")).toBeInTheDocument();
+  });
+
+  it("menampilkan pesan gagal di kartu item yang diklik", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        if (String(url).includes("/approve")) {
+          return problemResponse("APPROVAL_CONFLICT", "Bentrok dengan reservasi lain.", 409);
+        }
+        return queueResponse([item, itemLain]);
+      }),
+    );
+
+    render(<ReservationQueue />);
+    await screen.findByText("Ruang Rapat · 3 Des 2026 · 09:00–10:00");
+    await user.click(screen.getAllByRole("button", { name: "Setujui" })[1]);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Bentrok dengan reservasi lain.");
+
+    const kartu = alert.closest('[data-slot="card"]');
+    expect(kartu).not.toBeNull();
+    expect(kartu).toHaveTextContent("Ruang Rapat");
+    expect(kartu).not.toHaveTextContent("Aula Utama");
+    expect(within(kartu as HTMLElement).getByRole("alert")).toBe(alert);
+  });
+
+  it("kegagalan karena item sudah tidak PENDING memicu refetch", async () => {
+    const user = userEvent.setup();
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        const alamat = String(url);
+        calls.push(alamat);
+        if (alamat.includes("/approve")) {
+          return problemResponse("INVALID_RESERVATION_TRANSITION", "Reservasi tidak berada pada status yang dapat disetujui.", 409);
+        }
+        const jumlahMuat = calls.filter((a) => a.includes("/api/staff/reservations?")).length;
+        return jumlahMuat <= 1 ? queueResponse([item]) : queueResponse([]);
+      }),
+    );
+
+    render(<ReservationQueue />);
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00");
+    await user.click(screen.getByRole("button", { name: "Setujui" }));
+
+    await waitFor(() =>
+      expect(calls.filter((alamat) => alamat.includes("/api/staff/reservations?")).length).toBe(2),
+    );
+  });
+
+  it("modal tolak tetap terbuka saat validasi gagal", async () => {
+    const user = userEvent.setup();
+    stubDialogMethods();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        if (String(url).includes("/reject")) {
+          return problemResponse("VALIDATION_FAILED", "Alasan wajib diisi.", 422);
+        }
+        return queueResponse([item]);
+      }),
+    );
+
+    render(<ReservationQueue />);
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00");
+    await user.click(screen.getByRole("button", { name: "Tolak" }));
+
+    const dialog = document.querySelector("dialog") as HTMLDialogElement;
+    dialog.setAttribute("open", "");
+    await user.type(screen.getByLabelText("Alasan penolakan"), "Kapasitas penuh");
+    await user.click(screen.getByRole("button", { name: "Tolak reservasi" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Alasan wajib diisi.");
+    expect(dialog).toHaveAttribute("open");
+    expect(dialog.contains(alert)).toBe(true);
+  });
+
+  it("modal tolak ditutup dan antrean dimuat ulang saat item sudah tidak PENDING", async () => {
+    const user = userEvent.setup();
+    stubDialogMethods();
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown) => {
+        const alamat = String(url);
+        calls.push(alamat);
+        if (alamat.includes("/reject")) {
+          return problemResponse("INVALID_RESERVATION_TRANSITION", "Reservasi tidak berada pada status yang dapat ditolak.", 409);
+        }
+        const jumlahMuat = calls.filter((a) => a.includes("/api/staff/reservations?")).length;
+        return jumlahMuat <= 1 ? queueResponse([item]) : queueResponse([]);
+      }),
+    );
+
+    render(<ReservationQueue />);
+    await screen.findByText("Aula Utama · 3 Des 2026 · 09:00–10:00");
+    await user.click(screen.getByRole("button", { name: "Tolak" }));
+
+    const dialog = document.querySelector("dialog") as HTMLDialogElement;
+    dialog.setAttribute("open", "");
+    await user.type(screen.getByLabelText("Alasan penolakan"), "Kapasitas penuh");
+    await user.click(screen.getByRole("button", { name: "Tolak reservasi" }));
+
+    await waitFor(() => expect(dialog).not.toHaveAttribute("open"));
+    await waitFor(() =>
+      expect(calls.filter((alamat) => alamat.includes("/api/staff/reservations?")).length).toBe(2),
+    );
   });
 });
