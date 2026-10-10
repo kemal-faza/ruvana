@@ -20,7 +20,7 @@ import {
 const SEKARANG = new Date("2026-10-01T02:00:00.000Z");
 
 // Jumlah per kelompok sesuai RES-10. Slot uji memakai tanggal jauh di masa
-// depan (imun aturan pengajuan H-1 Tahap 7); batas mulai/selesai diuji lewat
+// depan (imun aturan pengajuan H-14); batas mulai/selesai diuji lewat
 // helper murni `sedangBerlangsung` di bawah.
 function mockHitung(jumlah: {
   menunggu: number;
