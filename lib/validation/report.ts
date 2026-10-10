@@ -7,7 +7,7 @@ export interface ReportSubmissionErrors {
   foto?: string;
 }
 
-export interface ReportFormInput {
+interface ReportFormInput {
   facilityId: number | null;
   kategori: string;
   deskripsi: string;
@@ -16,7 +16,7 @@ export interface ReportFormInput {
   fotoSize?: number | null;
 }
 
-export type ReportValidationResult =
+type ReportValidationResult =
   | { ok: true }
   | { ok: false; errors: ReportSubmissionErrors };
 
