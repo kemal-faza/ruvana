@@ -270,27 +270,29 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     )
   }
 
-  it("menonaktifkan slot dalam jendela 14 hari dengan label Tidak tersedia plus teks bantu", async () => {
+  it("menonaktifkan slot dalam jendela 14 hari tanpa sufiks status plus teks bantu", async () => {
     const user = userEvent.setup()
     renderBatasPengajuan()
 
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-    const opsiMepet = await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
+    const opsiMepet = await screen.findByRole("option", { name: "07:00" })
     expect(opsiMepet).toHaveAttribute("aria-disabled", "true")
-    expect(await screen.findByRole("option", { name: "17:00" })).toBeInTheDocument()
+    const opsiAktif = await screen.findByRole("option", { name: "17:00" })
+    expect(opsiAktif).not.toHaveAttribute("aria-disabled", "true")
     expect(
-      screen.getByText("Reservasi minimal 14 hari sebelum waktu mulai."),
+      screen.getByText("Reservasi minimal 14 hari sebelum waktu mulai"),
     ).toBeInTheDocument()
   }, 20000)
 
-  it("tidak menyiratkan slot mepet sebagai terisi", async () => {
+  it("tidak menambahkan sufiks status apa pun pada label opsi", async () => {
     const user = userEvent.setup()
     renderBatasPengajuan()
 
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
-    await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
-    expect(screen.queryByRole("option", { name: /07:00 — sudah disetujui/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /07:00 — dalam pemeliharaan/ })).not.toBeInTheDocument()
+    await screen.findByRole("option", { name: "07:00" })
+    expect(screen.queryByRole("option", { name: / — / })).not.toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /sudah disetujui/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /pemeliharaan/ })).not.toBeInTheDocument()
   }, 20000)
 
   it("memetakan galat INSUFFICIENT_LEAD_TIME server ke pesan batas di field Jam mulai", async () => {
@@ -355,6 +357,39 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     const wilayahWaktu = container.querySelector('section[aria-label="Waktu"]')
     expect(wilayahWaktu).not.toBeNull()
     expect((await axe(wilayahWaktu as HTMLElement)).violations).toEqual([])
+  }, 20000)
+})
+
+describe("ReservationForm label dan status opsi jam", () => {
+  it("hanya menampilkan jam dan menonaktifkan slot yang sudah disetujui", async () => {
+    const user = userEvent.setup()
+    const availability = {
+      facilityId: 3,
+      date: "2026-09-27",
+      timezone: "Asia/Jakarta" as const,
+      slots: [{ startTime: "08:00", endTime: "08:30", available: false, blockedBy: "APPROVED" as const }],
+    }
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={availability} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+
+    const opsiTerisi = await screen.findByRole("option", { name: "08:00" })
+    expect(opsiTerisi).toHaveAttribute("aria-disabled", "true")
+    expect(screen.queryByRole("option", { name: /sudah disetujui/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: / — / })).not.toBeInTheDocument()
+  }, 20000)
+
+  it("tidak menonaktifkan opsi jam yang tersedia", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm facilities={facilities} facilityId={3} date="2026-09-27" availability={null} serverNow="2026-09-01T00:00:00.000Z" />,
+    )
+
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+    const opsiAktif = await screen.findByRole("option", { name: "09:00" })
+    expect(opsiAktif).not.toHaveAttribute("aria-disabled", "true")
   }, 20000)
 })
 
