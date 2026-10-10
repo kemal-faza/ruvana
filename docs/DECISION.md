@@ -508,8 +508,8 @@ tidak disentuh.
 
 ### Konsekuensi
 
-- `config/business.ts`, service, form, test, README, PRD, dan OpenAPI harus
-  diselaraskan; `DESIGN.md` memuat snapshot yang perlu diperbarui terpisah.
+- `config/business.ts`, service, form, test, README, PRD, OpenAPI, dan snapshot
+  interaksi di `DESIGN.md` harus diselaraskan dengan aturan baru.
 - Test batas memakai 336 jam, bukan 24 jam; pembatalan tetap menguji H−24.
 - Reservasi `PENDING` yang sudah ada tidak diubah.
 
