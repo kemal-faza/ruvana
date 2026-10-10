@@ -183,10 +183,7 @@ export function ApprovedReservationList() {
             <EmptyMedia variant="icon">
               <CalendarX2 aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>Tidak ada reservasi disetujui</EmptyTitle>
-            <EmptyContent>
-              <EmptyDescription>Belum ada reservasi berstatus disetujui saat ini.</EmptyDescription>
-            </EmptyContent>
+            <EmptyTitle>Tidak ada reservasi yang disetujui</EmptyTitle>
           </EmptyHeader>
         </Empty>
       )}

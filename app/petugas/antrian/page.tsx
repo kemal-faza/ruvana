@@ -21,7 +21,7 @@ export default async function AntrianPage() {
         <p className="text-sm font-medium tracking-wide text-primary">Petugas</p>
         <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">Antrean reservasi</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Reservasi menunggu yang belum diproses. Setujui atau tolak dengan alasan.
+          Tinjau pengajuan, lalu setujui atau tolak dengan alasan.
         </p>
       </header>
       <ReservationQueue />
@@ -29,8 +29,7 @@ export default async function AntrianPage() {
         <header className="flex flex-col gap-2">
           <h2 className="font-heading text-xl font-semibold tracking-tight">Pembatalan mendesak</h2>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Batalkan reservasi yang sudah disetujui untuk kondisi mendesak. Alasan wajib diisi dan terlihat oleh
-            pemilik reservasi.
+            Pilih reservasi yang disetujui untuk dibatalkan dalam kondisi mendesak. Alasan wajib diisi dan akan terlihat oleh pemohon.
           </p>
         </header>
         <ApprovedReservationList />

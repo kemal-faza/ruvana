@@ -57,11 +57,8 @@ export default function LoginForm() {
         </header>
 
         <div className="w-full max-w-sm">
-          <div className="mb-8 space-y-2 text-center">
+          <div className="mb-8 text-center">
             <h1 id="login-title" className="text-2xl font-semibold tracking-tight">Masuk ke akun</h1>
-            <p className="text-sm/relaxed text-muted-foreground">
-              Gunakan email dan kata sandi akun yang telah aktif.
-            </p>
           </div>
 
           {/* `method="post"` adalah jaring pengaman: bila submit native terjadi

@@ -15,7 +15,7 @@ import {
 } from "@/lib/reservations/reservation-display";
 import { parseTimeToMinutes, asiaJakartaToUtc, isKurangDariBatasPengajuan } from "@/lib/time/reservation-time";
 import { BUTTON_ACTION_CLASS, Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -129,10 +129,6 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
   if (facilities.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Ajukan reservasi</CardTitle>
-          <CardDescription>Lengkapi detail di bawah untuk mengajukan reservasi.</CardDescription>
-        </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">Belum ada fasilitas tersedia.</p>
         </CardContent>
@@ -272,10 +268,6 @@ export function ReservationForm({ facilities, facilityId, date, availability, se
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Ajukan reservasi</CardTitle>
-        <CardDescription>Lengkapi detail di bawah untuk mengajukan reservasi.</CardDescription>
-      </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <section aria-label="Fasilitas dan tanggal" className="flex flex-col gap-5">
           <div className="flex items-center gap-3">

@@ -81,10 +81,6 @@ export function StaffDashboard({
   return (
     <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-shell min-w-0 flex-col gap-8 px-4 pt-8 pb-12 sm:gap-10 sm:px-7 sm:pt-12 sm:pb-16 lg:gap-12 lg:pt-section-top">
       <header className="max-w-heading">
-        <p className="mb-4 flex items-center gap-3 text-caption font-semibold tracking-eyebrow text-brand-olive uppercase">
-          Ringkasan operasional
-          <span aria-hidden="true" className="h-px w-eyebrow-rule bg-brand-olive" />
-        </p>
         <h1 className="mb-4 text-display-md font-semibold tracking-heading">Dashboard Petugas</h1>
         <p className="text-lede text-muted-foreground sm:text-lede-lg">
           Reservasi dan laporan yang perlu ditangani.
@@ -133,7 +129,7 @@ export function StaffDashboard({
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle id="reservasi-pending-title" className="text-base">Menunggu persetujuan</CardTitle>
-            <CardDescription>Reservasi aktif yang belum diproses.</CardDescription>
+            <CardDescription>Pengajuan yang menunggu keputusan petugas.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end justify-between gap-4">
             <p aria-live="polite" className="font-heading text-4xl font-semibold tabular-nums">
@@ -197,13 +193,10 @@ export function StaffDashboard({
 
       <section aria-labelledby="status-fasilitas-title" className="min-w-0 border-t border-border pt-6">
         <h2 id="status-fasilitas-title" className="font-heading text-lg font-semibold tracking-subtitle">
-          Status operasional fasilitas
+          Status fasilitas
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Periksa dan perbarui status fasilitas yang sedang dikelola.
-        </p>
         <Button render={<Link href="/petugas/fasilitas" />} variant="outline" className="mt-4 min-h-11 gap-2.5 px-4 text-sm">
-          Lihat status operasional fasilitas
+          Kelola fasilitas
           <ArrowRight aria-hidden="true" data-motion-icon="inline-end" />
         </Button>
       </section>

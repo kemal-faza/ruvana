@@ -210,7 +210,7 @@ export function ReservationQueue() {
             </EmptyMedia>
             <EmptyTitle>Antrean kosong</EmptyTitle>
             <EmptyContent>
-              <EmptyDescription>Tidak ada reservasi menunggu saat ini.</EmptyDescription>
+              <EmptyDescription>Reservasi baru akan muncul di sini setelah diajukan.</EmptyDescription>
             </EmptyContent>
           </EmptyHeader>
         </Empty>

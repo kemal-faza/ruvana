@@ -21,9 +21,6 @@ export function SiteFooter() {
             >
               ruvana
             </Link>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Ruang bersama, kegiatan lebih bermakna.
-            </p>
           </div>
 
           <nav
@@ -38,9 +35,7 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <p className="pt-4 text-xs text-muted-foreground">
-          © 2026 Ruvana. Semua kemungkinan, dimulai di kampus.
-        </p>
+        <p className="pt-4 text-xs text-muted-foreground">© 2026 Ruvana.</p>
       </div>
     </footer>
   )
