@@ -35,8 +35,14 @@ interface HistoryItemView {
   waktu: string;
   labelStatus: string;
   varianStatus: VarianBadgeReservasi;
+  status: StatusReservasi;
   tujuan: string;
   alasan: string | null;
+}
+
+interface RingkasanBanner {
+  total: number;
+  namaFasilitas: string[];
 }
 
 const PER_PAGE = 10;
@@ -72,12 +78,20 @@ function toHistoryItemView(item: ReservationResult): HistoryItemView {
     waktu: tampilan.waktu,
     labelStatus: tampilan.labelStatus,
     varianStatus: tampilan.varianStatus,
+    status: item.status as StatusReservasi,
     tujuan: item.tujuanPenggunaan,
     alasan: item.alasan,
   };
 }
 
-export function ReservationHistoryList() {
+export function ReservationHistoryList({
+  pembatalanPemeliharaan,
+}: {
+  // Ringkasan dihitung server (lihat halaman riwayat), bukan diturunkan dari
+  // halaman/filter yang sedang tampil, supaya angka banner tidak berubah saat
+  // pengguna berpindah halaman atau mengganti filter.
+  pembatalanPemeliharaan?: RingkasanBanner;
+}) {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<HistoryResponse | null>(null);
@@ -170,6 +184,9 @@ export function ReservationHistoryList() {
   }
 
   const totalPages = data?.meta.totalPages ?? 0;
+  const sisanyaBanner = pembatalanPemeliharaan
+    ? Math.max(0, pembatalanPemeliharaan.total - pembatalanPemeliharaan.namaFasilitas.length)
+    : 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -193,6 +210,27 @@ export function ReservationHistoryList() {
           </SelectContent>
         </Select>
       </Field>
+
+      {pembatalanPemeliharaan && pembatalanPemeliharaan.total > 0 && (
+        <section
+          role="status"
+          aria-labelledby="banner-riwayat-pemeliharaan"
+          className="flex flex-col gap-3 rounded-card border border-border bg-warning-subdued p-4 text-warning-subdued-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+        >
+          <div className="flex flex-col gap-1">
+            <h2 id="banner-riwayat-pemeliharaan" className="font-heading text-base font-semibold">
+              {pembatalanPemeliharaan.total === 1
+                ? "1 reservasi kamu dibatalkan karena pemeliharaan"
+                : `${pembatalanPemeliharaan.total} reservasi kamu dibatalkan karena pemeliharaan`}
+            </h2>
+            <p className="text-sm">
+              {pembatalanPemeliharaan.namaFasilitas.join(", ")}
+              {sisanyaBanner > 0 && ` dan ${sisanyaBanner} lainnya`}
+            </p>
+          </div>
+          <p className="text-sm shrink-0">Cari fasilitas lain untuk menggantinya.</p>
+        </section>
+      )}
 
       {loading && (
         <div role="status" aria-busy="true" className="flex flex-col gap-4">

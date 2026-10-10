@@ -16,8 +16,18 @@ describe("parseReportId", () => {
     expect(parseReportId("15")).toEqual({ ok: true, value: 15 });
   });
 
+  it("menerima nol di depan", () => {
+    expect(parseReportId("007")).toEqual({ ok: true, value: 7 });
+  });
+
   it("menolak identifier yang tidak valid", () => {
     for (const raw of ["0", "-1", "abc", "1.5", ""]) {
+      expect(parseReportId(raw).ok).toBe(false);
+    }
+  });
+
+  it("menolak id ber-spasi, bertanda, bernotasi, dan di luar safe integer", () => {
+    for (const raw of [" 15", "15 ", "+15", "1e3", "99999999999999999999"]) {
       expect(parseReportId(raw).ok).toBe(false);
     }
   });

@@ -7,23 +7,20 @@ export const TRANSISI_STATUS_ADMIN: Record<StatusFasilitas, readonly StatusFasil
   INACTIVE: ["ACTIVE"],
 };
 
-/** Matriks petugas (REP-04): hanya ACTIVE <-> UNDER_MAINTENANCE. */
-export const TRANSISI_STATUS_PETUGAS: Record<StatusFasilitas, readonly StatusFasilitas[]> = {
-  ACTIVE: ["UNDER_MAINTENANCE"],
-  UNDER_MAINTENANCE: ["ACTIVE"],
-  INACTIVE: [],
+// Jalur operasional petugas (REP-04, ACTIVE <-> UNDER_MAINTENANCE) tidak diulang
+// di sini: satu-satunya sumber kebenaran adalah config/business.ts
+// (TRANSISI_STATUS_FASILITAS_OPERASIONAL), yang dipakai langsung oleh
+// lib/services/facility-status-service.ts.
+const MATRIKS: Partial<Record<Role, Record<StatusFasilitas, readonly StatusFasilitas[]>>> = {
+  admin: TRANSISI_STATUS_ADMIN,
 };
 
-const MATRIKS: Record<Role, Record<StatusFasilitas, readonly StatusFasilitas[]>> = {
-  admin: TRANSISI_STATUS_ADMIN,
-  petugas: TRANSISI_STATUS_PETUGAS,
-  pengguna: { ACTIVE: [], UNDER_MAINTENANCE: [], INACTIVE: [] },
-};
+const TANPA_TRANSISI: readonly StatusFasilitas[] = [];
 
 export function allowedTransitions(from: StatusFasilitas, role: Role): readonly StatusFasilitas[] {
-  return MATRIKS[role][from];
+  return MATRIKS[role]?.[from] ?? TANPA_TRANSISI;
 }
 
 export function canTransition(from: StatusFasilitas, to: StatusFasilitas, role: Role): boolean {
-  return MATRIKS[role][from].includes(to);
+  return MATRIKS[role]?.[from]?.includes(to) ?? false;
 }

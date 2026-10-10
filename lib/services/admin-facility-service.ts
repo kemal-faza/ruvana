@@ -10,6 +10,7 @@ import {
   findAdminFacilityById,
   findAdminFacilityLocations,
   findArchivedFacilities,
+  findFacilityByFoto,
   restoreAdminFacility,
   updateAdminFacility,
   type AdminFacilityFilters,
@@ -121,6 +122,21 @@ export async function listAdminLocations(): Promise<string[]> {
   return rows.map((row) => row.lokasi);
 }
 
+/**
+ * Buang blob foto yang tidak jadi dipakai karena mutasi gagal. Dicek dulu ke
+ * database supaya blob yang ternyata sudah terpasang (mis. commit berhasil tapi
+ * respons gagal) tidak ikut terhapus. Best-effort: kegagalan bersih-bersih tidak
+ * boleh menutupi error asli.
+ */
+async function bersihkanFotoBelumTerpakai(pathname: string) {
+  try {
+    const terpasang = await findFacilityByFoto(pathname);
+    if (!terpasang) await removeFacilityPhotoObject(pathname);
+  } catch {
+    // Biarkan; blob yatim masih bisa dibersihkan manual.
+  }
+}
+
 export async function createFacility(
   actorId: number,
   input: FacilityCreateInput,
@@ -164,7 +180,7 @@ export async function createFacility(
     return { ok: true, data: result };
   } catch (e) {
     // Jangan tinggalkan blob yatim bila pembuatan gagal (mis. nama duplikat).
-    if (uploadedFoto) await removeFacilityPhotoObject(uploadedFoto);
+    if (uploadedFoto) await bersihkanFotoBelumTerpakai(uploadedFoto);
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, error: { type: "duplicate_name", message: "Nama fasilitas sudah digunakan" } };
     }
@@ -257,6 +273,8 @@ export async function updateFacility(
     if (fotoLamaUntukDihapus) await removeFacilityPhotoObject(fotoLamaUntukDihapus);
     return { ok: true, data: result };
   } catch (e) {
+    // Foto baru belum terpasang bila transaksi gagal; jangan tinggalkan blob yatim.
+    if (fotoBaru) await bersihkanFotoBelumTerpakai(fotoBaru.pathname);
     if (e && typeof e === "object" && "kind" in e) {
       const err = e as { kind: string; message?: string };
       if (err.kind === "not_found") {

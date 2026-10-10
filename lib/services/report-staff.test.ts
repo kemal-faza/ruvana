@@ -12,7 +12,6 @@ vi.mock("@/lib/db/reports", () => ({
   countReportsByUser: vi.fn(),
   countStaffReportsByStatus: vi.fn(),
   createReport: vi.fn(),
-  findDefaultReportOwner: vi.fn(),
   findFacilityById: vi.fn(),
   findReportFacilityOptions: vi.fn(),
   findReportsByStatus: vi.fn(),

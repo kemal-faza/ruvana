@@ -22,7 +22,7 @@ import { validateReportSubmission, type ReportSubmissionErrors } from "@/lib/val
 
 export type ReportStatus = StatusLaporan;
 
-export interface ReportHandler {
+interface ReportHandler {
   id: number;
   nama: string;
   role: Role;
@@ -30,7 +30,6 @@ export interface ReportHandler {
 
 export interface ReportItem {
   id: number;
-  facilityId: number;
   facilityNama: string;
   facilityTipe: TipeFasilitas;
   facilityLokasi: string;
@@ -42,25 +41,19 @@ export interface ReportItem {
   catatanResolusi: string | null;
   ditanganiOleh: ReportHandler | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface FacilityReportOption {
   id: number;
   nama: string;
   tipe: TipeFasilitas;
-  lokasi: string;
-  kapasitas: number;
-  status: StatusFasilitas;
 }
 
-export interface ListMyReportsParams {
+interface ListMyReportsParams {
   userId: number;
-  status?: ReportStatus;
 }
 
 export interface ReportListView {
-  userId: number;
   items: ReportItem[];
   total: number;
   totalByStatus: Record<ReportStatus, number>;
@@ -68,7 +61,7 @@ export interface ReportListView {
 
 export type StaffReportWorkStatus = (typeof STATUS_LAPORAN_KERJA_PETUGAS)[number];
 
-export interface StaffReportPreview {
+interface StaffReportPreview {
   id: number;
   facilityNama: string;
   kategori: string;
@@ -77,7 +70,7 @@ export interface StaffReportPreview {
   createdAt: string;
 }
 
-export interface StaffReportWorkStatusSummary {
+interface StaffReportWorkStatusSummary {
   total: number;
   items: StaffReportPreview[];
 }
@@ -91,17 +84,17 @@ const ALL_REPORT_STATUSES: readonly StatusLaporan[] = STATUS_LAPORAN;
 // Ambil maksimal 1.000 laporan per panggilan; filter dan paginasi saat ini di sisi klien.
 const AMBIL_MAKS_LAPORAN = 1000;
 
-export async function listMyReports({ userId, status }: ListMyReportsParams): Promise<ReportListView> {
+export async function listMyReports({ userId }: ListMyReportsParams): Promise<ReportListView> {
   const [rows, total, perStatus] = await Promise.all([
-    findReportsByUser({ userId, status, skip: 0, take: AMBIL_MAKS_LAPORAN }),
-    countReportsByUser(userId, status),
+    findReportsByUser({ userId, skip: 0, take: AMBIL_MAKS_LAPORAN }),
+    countReportsByUser(userId),
     countPerStatus(userId),
   ]);
 
   const handlers = await resolveHandlers(rows);
   const items = rows.map((row) => toReportItem(row, handlers));
 
-  return { userId, items, total, totalByStatus: perStatus };
+  return { items, total, totalByStatus: perStatus };
 }
 
 export async function listStaffReportWork(): Promise<StaffReportWorkView> {
@@ -140,11 +133,10 @@ async function resolveHandlers(rows: ReportWithFacility[]): Promise<Map<number, 
   return new Map(users.map((user) => [user.id, { id: user.id, nama: user.nama, role: user.role }]));
 }
 
-export function toReportItem(row: ReportWithFacility, handlers: Map<number, ReportHandler>): ReportItem {
+function toReportItem(row: ReportWithFacility, handlers: Map<number, ReportHandler>): ReportItem {
   const handler = row.ditanganiOleh != null ? (handlers.get(row.ditanganiOleh) ?? null) : null;
   return {
     id: row.id,
-    facilityId: row.facilityId,
     facilityNama: row.facility.nama,
     facilityTipe: row.facility.tipe,
     facilityLokasi: row.facility.lokasi,
@@ -156,7 +148,6 @@ export function toReportItem(row: ReportWithFacility, handlers: Map<number, Repo
     catatanResolusi: row.catatanResolusi,
     ditanganiOleh: handler,
     createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -168,7 +159,7 @@ export type CreateReportResult =
   | { ok: true; item: ReportItem }
   | { ok: false; errors: ReportSubmissionErrors; message: string };
 
-export interface CreateReportInput {
+interface CreateReportInput {
   userId: number;
   facilityId: number | null;
   kategori: string;
@@ -261,7 +252,7 @@ export async function createReport(input: CreateReportInput): Promise<CreateRepo
   return { ok: true, item: toReportItem(row, handlers) };
 }
 
-export async function discardPendingReportPhoto(userId: number, pathname: string) {
+async function discardPendingReportPhoto(userId: number, pathname: string) {
   if (!isOwnedReportPhotoPathname(pathname, userId)) return
   try {
     if (await findReportByFoto(pathname)) return

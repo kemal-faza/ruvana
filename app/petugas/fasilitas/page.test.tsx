@@ -14,8 +14,8 @@ vi.mock("@/lib/services/facility-service", async (importOriginal) => ({
   listStaffFacilitiesService,
 }));
 vi.mock("@/components/staff/facility-status-list", () => ({
-  FacilityStatusList: ({ facilities }: { facilities: unknown[] }) => (
-    <ul aria-label="Daftar status fasilitas">
+  FacilityStatusList: ({ facilities, sorotFacilityId }: { facilities: unknown[]; sorotFacilityId?: number | null }) => (
+    <ul aria-label="Daftar status fasilitas" data-sorot={sorotFacilityId ?? ""}>
       {facilities.map((facility) => (
         <li key={String((facility as { id: number }).id)}>
           {(facility as { nama: string }).nama} · {(facility as { status: string }).status}
@@ -80,5 +80,29 @@ describe("FasilitasPage", () => {
 
     const daftar = screen.getByRole("list", { name: "Daftar status fasilitas" });
     expect(daftar).toHaveTextContent("RK-101 · UNDER_MAINTENANCE");
+  });
+
+  it("meneruskan facilityId valid ke sorotan daftar", async () => {
+    render(await FasilitasPage({ searchParams: Promise.resolve({ facilityId: "3" }) }));
+
+    expect(screen.getByRole("list", { name: "Daftar status fasilitas" })).toHaveAttribute("data-sorot", "3");
+  });
+
+  it("memakai elemen pertama saat facilityId berupa array", async () => {
+    render(await FasilitasPage({ searchParams: Promise.resolve({ facilityId: ["3", "5"] }) }));
+
+    expect(screen.getByRole("list", { name: "Daftar status fasilitas" })).toHaveAttribute("data-sorot", "3");
+  });
+
+  it("mengabaikan facilityId tak valid tanpa sorotan", async () => {
+    for (const facilityId of ["nol", "0", "-2", "3.5"]) {
+      const { unmount } = render(
+        await FasilitasPage({ searchParams: Promise.resolve({ facilityId }) }),
+      );
+
+      expect(screen.getByRole("list", { name: "Daftar status fasilitas" })).toHaveAttribute("data-sorot", "");
+      unmount();
+      cleanup();
+    }
   });
 });

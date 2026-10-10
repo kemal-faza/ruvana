@@ -16,6 +16,7 @@ const ENUM_MENTAH: StatusReservasi[] = [
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
+  "CANCELLED_BY_MAINTENANCE",
   "EXPIRED",
 ]
 
@@ -84,7 +85,7 @@ describe("tampilanDetailReservasi", () => {
     expect(tampil).not.toHaveProperty("tujuanPenggunaan");
   });
 
-  it.each(["REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "EXPIRED"] as StatusReservasi[])(
+  it.each(["REJECTED", "CANCELLED_BY_USER", "CANCELLED_BY_OFFICER", "CANCELLED_BY_MAINTENANCE", "EXPIRED"] as StatusReservasi[])(
     "%s tidak menampilkan aksi pembatalan",
     (status) => {
       expect(tampilanDetailReservasi({ ...detailDasar, status }).dapatDibatalkan).toBe(false);

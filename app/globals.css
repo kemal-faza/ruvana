@@ -352,6 +352,9 @@
   html {
     @apply font-sans;
     scroll-behavior: smooth;
+    /* Cadangkan ruang scrollbar selalu supaya konten tidak bergeser horizontal
+       saat scrollbar muncul/hilang antar-navigasi. */
+    scrollbar-gutter: stable;
   }
 
   body {

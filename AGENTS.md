@@ -50,7 +50,7 @@ request's own loopback origin, so a moved dev server can still log in. Only one
 `next dev` may run per checkout — a second one refuses to start and points back
 at the existing server instead of silently moving to another port. The seed uses
 upserts and is safe to rerun. Stop PostgreSQL with `pnpm db:down`.
-Set a unique `SEED_DEMO_PASSWORD` (16–72 bytes) in `.env` before running the seed;
+Set a unique `SEED_DEMO_PASSWORD` (8–72 bytes) in `.env` before running the seed;
 non-local database URLs require `SEED_ALLOW_NON_LOCAL=1` explicitly.
 
 ### Rootless Podman on `/mnt/DATA`
@@ -147,8 +147,11 @@ Prisma types from `generated/prisma`, never directly from `@prisma/client`.
 - Vercel auto-deployment is disabled in `vercel.json`. Production releases run
   through the `Release Production` workflow, which stages a production
   deployment without moving the domain, checks Production variables, applies
-  `prisma migrate deploy`, then promotes the deployment. It runs automatically
-  when CI succeeds on `main`, or manually via `workflow_dispatch` on `main`.
+  `prisma migrate deploy` through the direct (non-pooler) database host via
+  `scripts/apply-production-migrations.mjs` — `DATABASE_URL_UNPOOLED` when set,
+  otherwise the pooler suffix is stripped from `DATABASE_URL` — then promotes the
+  deployment. It runs automatically when CI succeeds on `main`, or manually via
+  `workflow_dispatch` on `main`.
 
 ## Repository gotchas
 

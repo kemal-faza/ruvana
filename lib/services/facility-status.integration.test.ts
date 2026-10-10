@@ -183,7 +183,7 @@ describe.skipIf(!databaseUrl)("integrasi PostgreSQL emitter status fasilitas (RE
         where: { id: f.disetujuiMasaDepanId },
         select: { status: true, alasan: true, waktuDiproses: true },
       });
-      expect(dibatalkan?.status).toBe("CANCELLED_BY_OFFICER");
+      expect(dibatalkan?.status).toBe("CANCELLED_BY_MAINTENANCE");
       expect(dibatalkan?.alasan).toBe(ALASAN_PERBAIKAN);
       expect(dibatalkan?.waktuDiproses?.toISOString()).toBe(WAKTU_PERUBAHAN.toISOString());
 

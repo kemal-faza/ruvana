@@ -325,13 +325,16 @@ paths:
         Mengalihkan (307) ke signed URL private Blob berumur pendek. Fasilitas
         yang tidak tampil publik atau tanpa foto unggahan dimasking sebagai not
         found yang sama. Pathname Blob mentah tidak pernah dikirim ke klien.
+        Redirect boleh di-cache browser sesaat (Cache-Control private, max-age
+        lebih pendek dari masa berlaku signed URL) agar satu halaman katalog
+        tidak menerbitkan signed URL baru untuk setiap foto.
       x-requirement-ids: [FAC-01]
       security: []
       parameters:
         - $ref: '#/components/parameters/FacilityId'
       responses:
         '307':
-          description: Alihkan ke signed URL foto fasilitas.
+          description: Alihkan ke signed URL foto fasilitas; dapat di-cache browser sesaat.
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1352,7 +1355,7 @@ paths:
             Cache-Control: { $ref: '#/components/headers/NoStore' }
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Facility' }
+              schema: { $ref: '#/components/schemas/StaffFacilitySnapshot' }
               example:
                 id: 1
                 nama: RK-101
@@ -1445,7 +1448,7 @@ paths:
                   role: petugas
                   status: ACTIVE
                   waktuDaftar: '2026-09-09T06:00:00Z'
-                  waktuVerifikasi: '2026-09-09T06:00:00Z'
+                  waktuVerifikasi: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/MutationForbidden' }
@@ -1632,7 +1635,7 @@ paths:
            status, sebelum mengembalikan 200 server wajib invalidate seluruh representasi
            public list/detail/availability yang terdampak; client wajib refetch representasi
            tersebut. Minimal satu field wajib dikirim dan nama tetap unik; penghapusan
-           permanen dilakukan lewat operasi delete yang menolak fasilitas beriwayat.
+           dilakukan lewat operasi delete yang mengarsipkan fasilitas tanpa riwayat.
       x-requirement-ids: [FAC-05, FAC-04, REP-04, RES-09, IAM-03]
       security: [{ cookieAuth: [] }]
       parameters:
@@ -2271,13 +2274,14 @@ components:
                 instance: /api/admin/users
                 code: IDEMPOTENCY_KEY_REUSED
     FacilityMutationConflict:
-      description: Nama fasilitas, transisi status, atau Idempotency-Key menimbulkan konflik.
+      description: Nama fasilitas, transisi status, riwayat fasilitas, atau Idempotency-Key menimbulkan konflik.
       content:
         application/problem+json:
           schema:
             anyOf:
               - $ref: '#/components/schemas/FacilityMutationProblem'
               - $ref: '#/components/schemas/FacilityTransitionProblem'
+              - $ref: '#/components/schemas/FacilityHasHistoryProblem'
               - $ref: '#/components/schemas/IdempotencyConflictProblem'
           examples:
             name:
@@ -2296,6 +2300,14 @@ components:
                 detail: Transisi status fasilitas tidak diizinkan dari status saat ini.
                 instance: /api/admin/facilities/1
                 code: INVALID_FACILITY_TRANSITION
+            history:
+              value:
+                type: https://app.example.invalid/problems/facility-has-history
+                title: Fasilitas memiliki riwayat
+                status: 409
+                detail: Fasilitas dengan riwayat tidak dapat dihapus. Nonaktifkan fasilitas ini (status Nonaktif) sebagai gantinya.
+                instance: /api/admin/facilities/1
+                code: FACILITY_HAS_HISTORY
             idempotency:
               value:
                 type: https://app.example.invalid/problems/idempotency-key-reused
@@ -2334,7 +2346,7 @@ components:
       enum: [ACTIVE, UNDER_MAINTENANCE]
     ReservationStatus:
       type: string
-      enum: [PENDING, APPROVED, REJECTED, CANCELLED_BY_USER, CANCELLED_BY_OFFICER, EXPIRED]
+      enum: [PENDING, APPROVED, REJECTED, CANCELLED_BY_USER, CANCELLED_BY_OFFICER, CANCELLED_BY_MAINTENANCE, EXPIRED]
     ReportStatus:
       type: string
       enum: [NEW, IN_PROGRESS, RESOLVED, REJECTED]
@@ -2486,6 +2498,31 @@ components:
         kapasitas: { type: integer, minimum: 1, readOnly: true }
         deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
         status: { $ref: '#/components/schemas/FacilityStatus' }
+    StaffFacilitySnapshot:
+      type: object
+      additionalProperties: false
+      required: [id, nama, tipe, lokasi, kapasitas, deskripsi, status, statusChangedAt, statusChangedBy]
+      description: >-
+        Snapshot fasilitas untuk respons staf. Memuat provenance status terbaru,
+        tetapi bukan foto unggahan fasilitas.
+      properties:
+        id: { type: integer, minimum: 1, readOnly: true }
+        nama: { type: string, minLength: 1, maxLength: 100, readOnly: true }
+        tipe: { $ref: '#/components/schemas/FacilityType' }
+        lokasi: { type: string, minLength: 1, maxLength: 200, readOnly: true }
+        kapasitas: { type: integer, minimum: 1, readOnly: true }
+        deskripsi: { type: [string, 'null'], maxLength: 2000, readOnly: true }
+        status: { $ref: '#/components/schemas/FacilityStatus' }
+        statusChangedAt:
+          anyOf:
+            - $ref: '#/components/schemas/UtcInstant'
+            - type: 'null'
+          readOnly: true
+        statusChangedBy:
+          anyOf:
+            - $ref: '#/components/schemas/StaffUser'
+            - type: 'null'
+          readOnly: true
     ReservationCreateRequest:
       type: object
       additionalProperties: false
@@ -2541,7 +2578,7 @@ components:
       required: [id, facility, pemohon, date, timezone, startTime, endTime, startsAt, endsAt, tujuanPenggunaan, status, alasan, submittedAt, processedAt, processedBy]
       properties:
         id: { type: integer, minimum: 1, readOnly: true }
-        facility: { $ref: '#/components/schemas/Facility' }
+        facility: { $ref: '#/components/schemas/FacilitySnapshot' }
         pemohon: { $ref: '#/components/schemas/SafeUser' }
         date: { type: string, format: date, readOnly: true, description: Tanggal kalender Asia/Jakarta. }
         timezone: { type: string, const: Asia/Jakarta, readOnly: true }
@@ -2577,7 +2614,7 @@ components:
       required: [id, facility, pelapor, kategori, deskripsi, foto, status, catatanResolusi, ditanganiOleh, createdAt, processedAt]
       properties:
         id: { type: integer, minimum: 1, readOnly: true }
-        facility: { $ref: '#/components/schemas/Facility' }
+        facility: { $ref: '#/components/schemas/StaffFacilitySnapshot' }
         pelapor: { $ref: '#/components/schemas/SafeUser' }
         kategori: { $ref: '#/components/schemas/ReportCategory' }
         deskripsi: { type: string, minLength: 1, maxLength: 2000 }
@@ -2982,3 +3019,13 @@ components:
             status: { type: integer, const: 409 }
             code: { type: string, const: FACILITY_NAME_ALREADY_USED }
       unevaluatedProperties: false
+    FacilityHasHistoryProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemBase'
+        - type: object
+          required: [status, code]
+          properties:
+            status: { type: integer, const: 409 }
+            code: { type: string, const: FACILITY_HAS_HISTORY }
+      unevaluatedProperties: false
+      description: Fasilitas memiliki reservasi atau laporan sehingga tidak dapat diarsipkan.

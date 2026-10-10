@@ -18,6 +18,6 @@ export function handleFacilityStatusChanged(
   return tx.reservation.updateMany({
     // Batas eksklusif: reservasi yang mulai tepat saat perubahan sudah berjalan.
     where: { facilityId: payload.facilityId, status: "APPROVED", startTime: { gt: payload.waktu } },
-    data: { status: "CANCELLED_BY_OFFICER", alasan: ALASAN_PERBAIKAN, waktuDiproses: payload.waktu },
+    data: { status: "CANCELLED_BY_MAINTENANCE", alasan: ALASAN_PERBAIKAN, waktuDiproses: payload.waktu },
   });
 }

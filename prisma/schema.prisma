@@ -22,8 +22,8 @@ enum AccountStatus {
 
 model User {
   id              Int           @id @default(autoincrement())
-  nama            String
-  email           String        @unique
+  nama            String        @db.VarChar(100)
+  email           String        @unique @db.VarChar(254)
   password        String
   role            Role          @default(pengguna)
   status          AccountStatus @default(PENDING)
@@ -37,6 +37,7 @@ model User {
   reports               Report[]
   sessions              Session[]
   facilityStatusChanges Facility[]    @relation("FacilityStatusChangedBy")
+  facilityArchives      Facility[]    @relation("FacilityDeletedBy")
 
   @@map("users")
 }
@@ -56,7 +57,7 @@ model Session {
 model LoginAttempt {
   key       String   @id
   failures  Int      @default(0)
-  windowAt  DateTime
+  windowAt  DateTime @db.Timestamptz(3)
 
   @@map("login_attempts")
 }
@@ -92,7 +93,9 @@ model Facility {
   statusChangedBy   User?           @relation("FacilityStatusChangedBy", fields: [statusChangedById], references: [id])
   statusChangedById Int?
   // Arsip (soft delete FAC-05): baris tetap ada agar bisa dipulihkan.
+  // deletedByNama disimpan agar riwayat tetap terbaca bila akun admin dihapus.
   deletedAt         DateTime?       @db.Timestamptz(3)
+  deletedBy         User?           @relation("FacilityDeletedBy", fields: [deletedById], references: [id])
   deletedById       Int?
   deletedByNama     String?
   createdAt         DateTime        @default(now())
@@ -110,6 +113,7 @@ enum StatusReservasi {
   REJECTED
   CANCELLED_BY_USER
   CANCELLED_BY_OFFICER
+  CANCELLED_BY_MAINTENANCE
   EXPIRED
 }
 

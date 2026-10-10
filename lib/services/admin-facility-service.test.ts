@@ -9,6 +9,7 @@ import {
   findAdminFacilities,
   findAdminFacilityById,
   findArchivedFacilities,
+  findFacilityByFoto,
   restoreAdminFacility,
   updateAdminFacility,
 } from "@/lib/db/admin-facilities";
@@ -47,6 +48,7 @@ vi.mock("@/lib/db/admin-facilities", () => ({
   archiveAdminFacility: vi.fn(),
   restoreAdminFacility: vi.fn(),
   findArchivedFacilities: vi.fn(),
+  findFacilityByFoto: vi.fn(),
 }));
 
 const now = new Date("2026-09-30T05:00:00Z");
@@ -308,6 +310,53 @@ describe("foto fasilitas pada mutasi admin", () => {
     await updateFacility(7, 1, { nama: "RK-101 Baru" }, now);
 
     expect(removeFacilityPhotoObject).not.toHaveBeenCalled();
+  });
+
+  it("create yang gagal menghapus blob foto baru yang belum terpasang", async () => {
+    mockCreateTxForFoto();
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue({ contentType: "image/jpeg", size: 1200 });
+    vi.mocked(createAdminFacility).mockRejectedValue(p2002());
+    vi.mocked(findFacilityByFoto).mockResolvedValue(null);
+
+    const result = await createFacility(7, fotoInput);
+
+    expect(result.ok).toBe(false);
+    expect(findFacilityByFoto).toHaveBeenCalledWith(fotoInput.fotoPathname);
+    expect(removeFacilityPhotoObject).toHaveBeenCalledWith(fotoInput.fotoPathname);
+  });
+
+  it("update yang gagal menghapus blob foto baru yang belum terpasang", async () => {
+    mockTx(null);
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue({ contentType: "image/jpeg", size: 1200 });
+    vi.mocked(findFacilityByFoto).mockResolvedValue(null);
+
+    const result = await updateFacility(7, 1, fotoInput, now);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("not_found");
+    expect(findFacilityByFoto).toHaveBeenCalledWith(fotoInput.fotoPathname);
+    expect(removeFacilityPhotoObject).toHaveBeenCalledWith(fotoInput.fotoPathname);
+  });
+
+  it("update yang gagal membiarkan blob foto baru yang sudah terpasang", async () => {
+    mockTx(null);
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue({ contentType: "image/jpeg", size: 1200 });
+    vi.mocked(findFacilityByFoto).mockResolvedValue({ id: 1 } as never);
+
+    await updateFacility(7, 1, fotoInput, now);
+
+    expect(removeFacilityPhotoObject).not.toHaveBeenCalled();
+  });
+
+  it("kegagalan bersih-bersih tidak menutupi error asli", async () => {
+    mockTx(null);
+    vi.mocked(verifyFacilityPhotoUpload).mockResolvedValue({ contentType: "image/jpeg", size: 1200 });
+    vi.mocked(findFacilityByFoto).mockRejectedValue(new Error("db down"));
+
+    const result = await updateFacility(7, 1, fotoInput, now);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.type).toBe("not_found");
   });
 });
 

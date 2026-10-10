@@ -13,6 +13,7 @@ export const MASA_SESI_JAM = 12;
 export const RETENSI_IDEMPOTENCY_JAM = 24;
 export const BATAS_NAMA_AKUN_KARAKTER = 100;
 export const BATAS_EMAIL_AKUN_KARAKTER = 254;
+export const BATAS_PASSWORD_AKUN_MIN_BYTE = 8;
 export const BATAS_PASSWORD_AKUN_BYTE = 72;
 export const BATAS_PEMBATALAN_JAM = 24; // H-24 jam sebelum mulai (PRD Bagian 20 menggantikan H-2 TASK lama)
 export const BATAS_PENGAJUAN_JAM = 336; // Pengajuan minimal H-14: waktu mulai sekurang-kurangnya 336 jam (14 hari) dari instant pengajuan (keputusan pemilik menggantikan H-1)
@@ -96,12 +97,17 @@ export const ROLE = ["pengguna", "petugas", "admin"] as const;
 export const STATUS_AKUN = ["PENDING", "ACTIVE", "REJECTED", "DISABLED"] as const;
 export const STATUS_RESERVASI_MENUNGGU = "PENDING" as const;
 export const STATUS_RESERVASI_DISETUJUI = "APPROVED" as const;
+// Status eksklusif pembatalan otomatis akibat fasilitas UNDER_MAINTENANCE (RES-09,
+// REP-04); berbeda dari pembatalan petugas manual agar badge/filter/statistik
+// dapat membedakannya.
+export const STATUS_RESERVASI_PEMELIHARAAN = "CANCELLED_BY_MAINTENANCE" as const;
 export const STATUS_RESERVASI = [
   STATUS_RESERVASI_MENUNGGU,
   STATUS_RESERVASI_DISETUJUI,
   "REJECTED",
   "CANCELLED_BY_USER",
   "CANCELLED_BY_OFFICER",
+  STATUS_RESERVASI_PEMELIHARAAN,
   "EXPIRED",
 ] as const;
 export const STATUS_LAPORAN_BARU = "NEW" as const;
@@ -184,6 +190,10 @@ export const FASILITAS_UPLOAD = {
   maksByte: 5 * 1024 * 1024,
   masaBerlakuUrlUnggahMs: 10 * 60 * 1000,
   masaBerlakuUrlBacaMs: 5 * 60 * 1000,
+  // Redirect foto publik boleh di-cache browser sesaat supaya satu halaman
+  // katalog tidak memicu satu panggilan API Blob per kartu. Wajib lebih pendek
+  // dari masaBerlakuUrlBacaMs agar signed URL di cache tidak kedaluwarsa.
+  masaCacheRedirectFotoDetik: 60,
 } as const
 
 // Deskripsi laporan mengikuti batas global PRD (2.000 karakter).
