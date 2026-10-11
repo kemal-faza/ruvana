@@ -71,6 +71,58 @@ describe("ReservationForm nama kontrol", () => {
   })
 })
 
+describe("ReservationForm sinkronisasi prop tanpa remount", () => {
+  const propsAwal = {
+    facilities,
+    facilityId: 3,
+    date: "2026-12-02",
+    availability: null,
+    serverNow: "2026-09-01T00:00:00.000Z",
+  }
+
+  it("mempertahankan isian tujuan dan mereset waktu saat tanggal berganti", async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(<ReservationForm {...propsAwal} />)
+
+    await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+    await user.click(await screen.findByRole("option", { name: "09:00" }))
+
+    rerender(<ReservationForm {...propsAwal} date="2026-12-10" />)
+
+    expect(screen.getByLabelText("Tujuan penggunaan")).toHaveValue("Diskusi kelompok")
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("Pilih jam mulai")
+  }, 20000)
+
+  it("mempertahankan isian tujuan dan menyinkronkan fasilitas saat prop berganti", async () => {
+    const user = userEvent.setup()
+    const { container, rerender } = render(<ReservationForm {...propsAwal} />)
+
+    await user.type(screen.getByLabelText("Tujuan penggunaan"), "Diskusi kelompok")
+    await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
+    await user.click(await screen.findByRole("option", { name: "09:00" }))
+
+    rerender(<ReservationForm {...propsAwal} facilityId={4} />)
+
+    expect(container.querySelector('input[name="facilityId"]')).toHaveValue("4")
+    expect(screen.getByLabelText("Tujuan penggunaan")).toHaveValue("Diskusi kelompok")
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveTextContent("Pilih jam mulai")
+  }, 20000)
+
+  it("membuang ringkasan galat lama saat tanggal berganti", async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(<ReservationForm {...propsAwal} />)
+
+    await user.click(screen.getByRole("button", { name: "Ajukan reservasi" }))
+    expect(await screen.findByText(/Periksa kembali isian berikut/)).toBeInTheDocument()
+
+    rerender(<ReservationForm {...propsAwal} date="2026-12-10" />)
+
+    expect(screen.queryByText(/Periksa kembali isian berikut/)).not.toBeInTheDocument()
+    expect(screen.queryAllByRole("alert")).toHaveLength(0)
+  }, 20000)
+})
+
 describe("ReservationForm reset waktu", () => {
   it("mengembalikan jam dan tanggal ke keadaan halaman", async () => {
     const user = userEvent.setup()

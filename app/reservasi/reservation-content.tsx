@@ -51,9 +51,11 @@ export async function ReservationContent({
   // instant ini, bukan dari jam klien.
   const serverNow = new Date().toISOString()
 
+  // Tanpa `key` per facilityId+date: form menyinkronkan prop baru lewat efek dan
+  // hanya mereset pilihan waktu, sehingga isian tujuan pengguna tidak hilang saat
+  // menekan "Tampilkan ketersediaan".
   return (
     <ReservationForm
-      key={`${facilityId}:${date}:${initialStartTime ?? ""}`}
       facilities={facilities}
       facilityId={facilityId}
       date={date}

@@ -107,7 +107,6 @@ export function FacilityDetailContent({
         </h2>
         {slotLinkMode === "form" ? (
           <ReservationForm
-            key={`${facility.id}:${date}`}
             facilities={[{ id: facility.id, nama: facility.nama, lokasi: facility.lokasi }]}
             facilityId={facility.id}
             date={date}

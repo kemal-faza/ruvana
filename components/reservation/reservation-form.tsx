@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TriangleAlert } from "lucide-react";
 import {
@@ -75,13 +75,40 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
 
   // Sumber kebenaran tunggal fasilitas yang akan disubmit: pilihan user di
   // dropdown (bukan prop facilityId yang hanya berubah setelah halaman
-  // dimuat ulang via "Tampilkan ketersediaan"). Komponen di-remount per
-  // facilityId+date (key di page), jadi inisialisasi ini selalu segar.
+  // dimuat ulang via "Tampilkan ketersediaan").
   const [selectedFacilityId, setSelectedFacilityId] = useState(facilityId);
 
   // Penanda remount pemilih tanggal: "Reset waktu" mengembalikan field Tanggal
   // ke tanggal yang sedang aktif di halaman, bukan ke perubahan yang belum diterapkan.
   const [tanggalResetKe, setTanggalResetKe] = useState(0);
+
+  // Prop fasilitas/tanggal berubah lewat navigasi lunak "Tampilkan ketersediaan"
+  // (atau back/forward) tanpa me-remount form, supaya isian pengguna bertahan.
+  // Pilihan waktu dan hasil submit lama merujuk data yang tidak berlaku lagi,
+  // jadi keduanya direset — hanya tujuan yang dipertahankan.
+  const prevFacilityIdRef = useRef(facilityId);
+  const prevDateRef = useRef(date);
+
+  useEffect(() => {
+    if (facilityId === prevFacilityIdRef.current) return;
+    prevFacilityIdRef.current = facilityId;
+    setSelectedFacilityId(facilityId);
+    setStartTime("");
+    setEndTime("");
+    setResult(null);
+    setGalatField({});
+    setRingkasan(null);
+  }, [facilityId]);
+
+  useEffect(() => {
+    if (date === prevDateRef.current) return;
+    prevDateRef.current = date;
+    setStartTime("");
+    setEndTime("");
+    setResult(null);
+    setGalatField({});
+    setRingkasan(null);
+  }, [date]);
 
   // Availability dihitung server untuk prop facilityId. Bila user memilih
   // fasilitas lain tanpa memuat ulang, slotnya tidak berlaku untuk pilihan
