@@ -556,7 +556,9 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
             )}
             {!availabilityForSelected && (
               <p className="text-xs text-muted-foreground">
-                Ketersediaan slot tidak dapat dimuat; semua waktu ditampilkan aktif dan server tetap memvalidasi saat submit.
+                {selectedFacilityId !== facilityId
+                  ? "Slot fasilitas ini belum dimuat; semua waktu ditampilkan aktif sampai ketersediaan dimuat. Server tetap memvalidasi saat submit."
+                  : "Ketersediaan slot tidak dapat dimuat; semua waktu ditampilkan aktif dan server tetap memvalidasi saat submit."}
               </p>
             )}
           </section>

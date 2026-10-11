@@ -123,6 +123,46 @@ describe("ReservationForm sinkronisasi prop tanpa remount", () => {
   }, 20000)
 })
 
+describe("ReservationForm penjelasan slot belum dimuat", () => {
+  const propsDasar = {
+    facilities,
+    facilityId: 3,
+    date: "2026-12-02",
+    availability: null,
+    serverNow: "2026-09-01T00:00:00.000Z",
+  }
+
+  it("menerangkan slot belum dimuat saat fasilitas dipilih tapi belum diterapkan", async () => {
+    const user = userEvent.setup()
+    render(
+      <ReservationForm
+        {...propsDasar}
+        availability={{
+          facilityId: 3,
+          date: "2026-12-02",
+          timezone: "Asia/Jakarta",
+          slots: [{ startTime: "08:00", endTime: "08:30", available: true, blockedBy: null }],
+        }}
+      />,
+    )
+
+    expect(screen.queryByText(/belum dimuat/)).not.toBeInTheDocument()
+
+    await user.click(comboboxFasilitas())
+    await user.click(await screen.findByRole("option", { name: "Lab Komputer 1 | Gedung B Lt.2" }))
+
+    expect(screen.getByText(/Slot fasilitas ini belum dimuat/)).toBeInTheDocument()
+    expect(screen.queryByText(/Ketersediaan slot tidak dapat dimuat/)).not.toBeInTheDocument()
+  }, 20000)
+
+  it("memakai pesan kegagalan muat hanya saat ketersediaan memang tidak tersedia", () => {
+    render(<ReservationForm {...propsDasar} />)
+
+    expect(screen.getByText(/Ketersediaan slot tidak dapat dimuat/)).toBeInTheDocument()
+    expect(screen.queryByText(/Slot fasilitas ini belum dimuat/)).not.toBeInTheDocument()
+  })
+})
+
 describe("ReservationForm reset waktu", () => {
   it("mengembalikan jam dan tanggal ke keadaan halaman", async () => {
     const user = userEvent.setup()
