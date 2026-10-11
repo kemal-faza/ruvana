@@ -16,9 +16,17 @@ interface FacilityCardProps {
   date?: string
   /** Muat foto segera; pakai untuk card pertama yang berpotensi jadi LCP. */
   eager?: boolean
+  /** False untuk peran yang tidak memesan (petugas/admin): label aksi jadi netral. */
+  canStartReservation?: boolean
 }
 
-export function FacilityCard({ facility, eager = false, detailBasePath = "/fasilitas", date }: FacilityCardProps) {
+export function FacilityCard({
+  facility,
+  eager = false,
+  detailBasePath = "/fasilitas",
+  date,
+  canStartReservation = true,
+}: FacilityCardProps) {
   const isAlat = facility.tipe === "alat"
   const KapasitasIcon = isAlat ? Package : Users
   const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
@@ -75,7 +83,7 @@ export function FacilityCard({ facility, eager = false, detailBasePath = "/fasil
           nativeButton={false}
           render={<Link href={`${detailBasePath}/${facility.id}${detailQuery}`} />}
         >
-          Lihat &amp; reservasi
+          {canStartReservation ? <>Lihat &amp; reservasi</> : "Lihat detail"}
         </Button>
       </CardFooter>
     </Card>

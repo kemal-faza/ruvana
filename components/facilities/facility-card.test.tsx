@@ -51,6 +51,14 @@ describe("FacilityCard", () => {
     )
   })
 
+  it("memakai label netral saat pengunjung tidak bisa memesan", () => {
+    render(<FacilityCard facility={facility} canStartReservation={false} />)
+
+    const link = screen.getByRole("button", { name: /lihat detail/i })
+    expect(link).toHaveAttribute("href", "/fasilitas/1")
+    expect(screen.queryByRole("button", { name: /reservasi/i })).not.toBeInTheDocument()
+  })
+
   it("memuat foto secara eager saat diminta agar cepat menjadi LCP", () => {
     const { container } = render(<FacilityCard facility={facility} eager />)
 

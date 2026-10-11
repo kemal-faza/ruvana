@@ -14,6 +14,8 @@ interface FacilityListProps {
   date?: string
   /** True ketika ada filter/pencarian aktif, supaya empty state membedakan "kosong" vs "tidak cocok". */
   hasActiveFilters?: boolean
+  /** Diteruskan ke kartu: apakah pengunjung bisa memulai reservasi dari detail. */
+  canStartReservation?: boolean
 }
 
 export function FacilityList({
@@ -22,6 +24,7 @@ export function FacilityList({
   basePath = "/fasilitas",
   detailBasePath = "/fasilitas",
   date,
+  canStartReservation = true,
 }: FacilityListProps) {
   if (items.length === 0) {
     if (hasActiveFilters) {
@@ -70,7 +73,14 @@ export function FacilityList({
   return (
     <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((facility, index) => (
-        <FacilityCard key={facility.id} facility={facility} eager={index === 0} detailBasePath={detailBasePath} date={date} />
+        <FacilityCard
+          key={facility.id}
+          facility={facility}
+          eager={index === 0}
+          detailBasePath={detailBasePath}
+          date={date}
+          canStartReservation={canStartReservation}
+        />
       ))}
     </div>
   )
