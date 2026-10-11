@@ -2,7 +2,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function RiwayatReservasiLoading() {
   return (
-    <div className="flex flex-col gap-6" aria-busy="true" aria-label="Memuat riwayat reservasi">
+    // role="status" membuat aria-busy dan teks sr-only di bawahnya benar-benar
+    // diumumkan; aria-label di div tanpa role akan diabaikan sehingga hanya
+    // akan menggandakan pengumuman yang sama.
+    <div role="status" aria-busy="true" className="flex flex-col gap-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between" aria-hidden="true">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-56 max-w-full" />
