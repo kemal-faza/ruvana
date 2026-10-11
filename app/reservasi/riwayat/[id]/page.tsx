@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react";
 import { ReservationDetail } from "@/components/reservation/reservation-detail";
 import { ReservationSuccessBanner } from "@/components/reservation/reservation-success-banner";
 import { Button } from "@/components/ui/button";
-import { requirePengguna } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +26,9 @@ function parseId(raw: string): number | null {
 }
 
 export default async function RiwayatDetailPage({ params, searchParams }: RiwayatDetailPageProps) {
-  // Guard server (IAM-03); layout /reservasi juga menjaga, ini pertahanan tambahan.
-  await requirePengguna();
+  // Guard IAM-03 dipegang layout /reservasi (requirePengguna) untuk seluruh
+  // segmen; memanggilnya lagi di sini hanya menambah satu query sesi + user
+  // tanpa menambah jaminan.
   const { id } = await params;
   const reservationId = parseId(id);
   if (reservationId === null) notFound();

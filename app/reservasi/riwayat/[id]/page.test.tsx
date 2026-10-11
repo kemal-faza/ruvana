@@ -1,11 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { Role } from "@/generated/prisma/enums"
-
-const { requirePengguna } = vi.hoisted(() => ({ requirePengguna: vi.fn() }))
-
-vi.mock("@/lib/auth", () => ({ requirePengguna }))
 vi.mock("next/navigation", () => ({
   usePathname: () => "/reservasi/riwayat/91",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
@@ -28,7 +23,6 @@ function mockFetchDetailKosong() {
 
 describe("RiwayatDetailPage banner pengajuan", () => {
   it("menampilkan banner sukses saat dibuka dengan param baru=1", async () => {
-    requirePengguna.mockResolvedValue({ id: 1, nama: "Siti Aminah", email: "siti@example.com", role: Role.pengguna })
     mockFetchDetailKosong()
 
     render(
@@ -42,7 +36,6 @@ describe("RiwayatDetailPage banner pengajuan", () => {
   })
 
   it("tidak menampilkan banner saat dibuka dari riwayat tanpa param", async () => {
-    requirePengguna.mockResolvedValue({ id: 1, nama: "Siti Aminah", email: "siti@example.com", role: Role.pengguna })
     mockFetchDetailKosong()
 
     render(
