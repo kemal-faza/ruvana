@@ -4,6 +4,7 @@ import { axe } from "vitest-axe"
 
 import { AccountStatus, Role } from "@/generated/prisma/enums"
 import ReservasiLayout from "@/app/reservasi/layout"
+import ReservasiLoading from "@/app/reservasi/loading"
 import { resetMatchMedia, setMatchMedia } from "@/vitest.setup"
 
 const mocks = vi.hoisted(() => ({ requirePengguna: vi.fn(), pathname: "/reservasi/riwayat" }))
@@ -48,6 +49,17 @@ describe("ReservasiLayout", () => {
     expect(skipLink).toHaveAttribute("href", "#konten")
     expect(screen.getByRole("main")).toHaveAttribute("id", "konten")
     expect((await axe(container)).violations).toEqual([])
+  })
+
+  it("menyisakan satu landmark main saat skeleton rute menggantikan konten", async () => {
+    setMatchMedia("(max-width: 1023px)", false)
+    mocks.requirePengguna.mockResolvedValue({ ...account, role: Role.pengguna })
+
+    const { container } = render(await ReservasiLayout({ children: <ReservasiLoading /> }))
+
+    expect(screen.getByRole("status")).toBeInTheDocument()
+    expect(container.querySelectorAll("main")).toHaveLength(1)
+    expect(container.querySelectorAll('[id="konten"]')).toHaveLength(1)
   })
 
   it("menampilkan navigasi pengguna untuk pengguna terautentikasi", async () => {
