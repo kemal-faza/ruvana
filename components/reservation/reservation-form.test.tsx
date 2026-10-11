@@ -123,8 +123,7 @@ describe("ReservationForm sinkronisasi prop tanpa remount", () => {
   }, 20000)
 })
 
-describe("ReservationForm penjelasan slot belum dimuat", () => {
-  const propsDasar = {
+describe("ReservationForm penjelasan slot belum dimuat", () => {  const propsDasar = {
     facilities,
     facilityId: 3,
     date: "2026-12-02",
@@ -508,6 +507,25 @@ describe("ReservationForm pemilih jam kotak", () => {
     expect(body.startTime).toBe("08:00")
     expect(body.endTime).toBe("09:00")
   }, 20000)
+
+  it("merujuk callout batas pengajuan dari pemilih jam kotak", () => {
+    // 5 Des 2026 hanya berjarak 4 hari dari serverNow, jadi seluruh slotnya
+    // berada di dalam jendela pengajuan H-14.
+    const { container } = render(
+      <ReservationForm
+        facilities={[{ id: 3, nama: "Aula Utama", lokasi: "Gedung Serbaguna" }]}
+        facilityId={3}
+        date="2026-12-05"
+        availability={null}
+        serverNow="2026-12-01T00:00:00.000Z"
+        lockFacility
+        timePicker="grid"
+      />,
+    )
+
+    expect(screen.getByText("Reservasi minimal 14 hari sebelum waktu mulai.")).toBeInTheDocument()
+    expect(container.querySelector("#pemilih-jam")).toHaveAttribute("aria-describedby", "bantuan-batas-pengajuan")
+  })
 
   it("membatalkan pilihan saat kotak yang sama diklik lagi", async () => {
     const user = userEvent.setup()

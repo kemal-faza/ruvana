@@ -469,7 +469,14 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
               <Separator className="flex-1" />
             </div>
             {timePicker === "grid" ? (
-              <div id="pemilih-jam" tabIndex={-1} className="flex flex-col gap-3">
+              <div
+                id="pemilih-jam"
+                tabIndex={-1}
+                // Sama seperti trigger dropdown di mode select: rujuk callout
+                // hanya saat ia dirender, supaya IDREF tidak menggantung.
+                aria-describedby={adaSlotMepet && !galatField.jamMulai ? "bantuan-batas-pengajuan" : undefined}
+                className="flex flex-col gap-3"
+              >
                 <AvailabilityGrid
                   slots={gridSlots}
                   selection={{
