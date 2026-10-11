@@ -77,7 +77,10 @@ export function FacilitySearch({ visible = true }: { visible?: boolean }) {
         </div>
 
         <div data-slot="search-field" className={fieldClass}>
-          {/* Tanggal diteruskan ke alur reservasi; tipe menyaring pilihan fasilitas di sana. */}
+          {/* Tanggal diteruskan ke katalog fasilitas: ia ikut pada filter,
+              pagination, dan tautan detail sehingga ketersediaan di halaman
+              fasilitas langsung tampil pada tanggal pilihan. Tipe menyaring
+              daftar fasilitas di sana. */}
           <DatePicker name="date" aria-label="Pilih tanggal" />
         </div>
 

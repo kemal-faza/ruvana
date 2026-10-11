@@ -49,7 +49,7 @@ export default async function RiwayatDetailPage({ params, searchParams }: Riwaya
         render={<Link href="/reservasi/riwayat" />}
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Kembali ke Reservasi
+        Kembali ke Riwayat Reservasi
       </Button>
       <ReservationDetail id={reservationId} />
     </>
