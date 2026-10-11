@@ -515,7 +515,15 @@ export function ReservationForm({ facilities, facilityId, date, initialStartTime
                         const disabled = mepet || (status ? !status.available : false);
                         const reason = mepet ? "Tidak tersedia" : status ? blockedByLabel(status.blockedBy) : null;
                         return (
-                          <SelectItem key={time} value={time} disabled={disabled}>
+                          <SelectItem
+                            key={time}
+                            value={time}
+                            disabled={disabled}
+                            // Opsi nonaktif kini membawa alasan ("08:00 — sudah
+                            // disetujui"), jadi opasitas bawaan 50% dilepas agar
+                            // teksnya tetap terbaca tanpa menyiratkan bisa dipilih.
+                            className="data-disabled:text-muted-foreground data-disabled:opacity-100!"
+                          >
                             {reason ? `${time} — ${reason}` : time}
                           </SelectItem>
                         );

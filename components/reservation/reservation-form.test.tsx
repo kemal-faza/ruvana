@@ -371,6 +371,7 @@ describe("ReservationForm batas pengajuan 14 hari", () => {
     await user.click(screen.getByRole("combobox", { name: "Jam mulai" }))
     const opsiMepet = await screen.findByRole("option", { name: "07:00 — Tidak tersedia" })
     expect(opsiMepet).toHaveAttribute("aria-disabled", "true")
+    expect(opsiMepet).toHaveClass("data-disabled:opacity-100!")
     expect(await screen.findByRole("option", { name: "17:00" })).toBeInTheDocument()
 
     // Teks bantu H-14 tampil di bagian "Fasilitas & tanggal", bukan di bagian Waktu.
