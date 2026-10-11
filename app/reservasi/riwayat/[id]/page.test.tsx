@@ -2,7 +2,6 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("next/navigation", () => ({
-  notFound: vi.fn(),
   usePathname: () => "/reservasi/riwayat/91",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
 }))
@@ -48,19 +47,5 @@ describe("RiwayatDetailPage banner pengajuan", () => {
 
     expect(await screen.findByText("Reservasi tidak ditemukan")).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Reservasi berhasil diajukan" })).not.toBeInTheDocument()
-  })
-
-  it("tidak merender shell karena disediakan layout segmen", async () => {
-    mockFetchDetailKosong()
-
-    render(
-      await RiwayatDetailPage({
-        params: Promise.resolve({ id: "91" }),
-        searchParams: Promise.resolve({}),
-      }),
-    )
-
-    expect(screen.queryByRole("navigation", { name: "Navigasi utama" })).not.toBeInTheDocument()
-    expect(screen.getAllByRole("main")).toHaveLength(1)
   })
 })

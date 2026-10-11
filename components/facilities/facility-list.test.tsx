@@ -47,6 +47,6 @@ describe("FacilityList", () => {
   it("menautkan detail fasilitas ke rute publik", () => {
     render(<FacilityList items={[facility]} basePath="/fasilitas" detailBasePath="/fasilitas" />)
 
-    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/fasilitas/1")
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute("href", "/fasilitas/1")
   })
 })

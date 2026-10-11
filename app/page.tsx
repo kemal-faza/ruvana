@@ -53,7 +53,7 @@ const steps = [
   },
   {
     title: "Pantau pengajuan",
-    description: "Periksa status dan keputusan petugas di halaman Reservasi Saya.",
+    description: "Periksa status dan keputusan petugas di halaman Riwayat Reservasi.",
   },
 ]
 

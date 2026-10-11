@@ -26,6 +26,8 @@ import type { TipeFasilitas } from "@/generated/prisma/enums"
 
 interface FacilityFilterFormProps {
   actionPath?: string
+  /** Tanggal pilihan dari landing; disisipkan sebagai field tersembunyi agar tidak hilang saat filter diterapkan. */
+  date?: string
   value?: {
     search?: string
     type?: string
@@ -69,7 +71,7 @@ export function FacilityFilterForm(props: FacilityFilterFormProps) {
   return <FacilityFilterFormFields key={filterKey(props.value)} {...props} />
 }
 
-function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: FacilityFilterFormProps) {
+function FacilityFilterFormFields({ value, actionPath = "/fasilitas", date }: FacilityFilterFormProps) {
   // `alat` menyimpan jumlah unit, bukan kapasitas orang, jadi label kontrol
   // kapasitas menyesuaikan tipe yang sedang dipilih.
   const [search, setSearch] = useState(value?.search ?? "")
@@ -88,6 +90,7 @@ function FacilityFilterFormFields({ value, actionPath = "/fasilitas" }: Facility
       aria-label="Filter fasilitas"
       className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4 shadow-subtle sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto_auto]"
     >
+      {date && <input type="hidden" name="date" value={date} />}
       <Field>
         <FieldTitle className="min-h-10">Kata kunci</FieldTitle>
         <div className={controlClass}>

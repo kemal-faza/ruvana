@@ -43,27 +43,25 @@ afterEach(() => {
 });
 
 describe("RiwayatReservasiPage", () => {
-  it("memakai judul halaman Reservasi dan tombol Ajukan Reservasi menuju form pengajuan", async () => {
-    setMatchMedia("(max-width: 1023px)", false);
-    requirePengguna.mockResolvedValue(penggunaAktif());
+  it("mengalihkan pengunjung tanpa sesi ke halaman masuk", async () => {
+    requirePengguna.mockRejectedValue(new Error("redirect:/login"));
 
-    render(await RiwayatReservasiPage());
+    await expect(RiwayatReservasiPage()).rejects.toThrow("redirect:/login");
 
-    expect(screen.getByRole("heading", { level: 1, name: "Reservasi" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ajukan Reservasi" })).toHaveAttribute(
-      "href",
-      "/reservasi",
-    );
+    expect(requirePengguna).toHaveBeenCalledOnce();
   });
 
-  it("tidak merender shell karena disediakan layout segmen", async () => {
+  it("memakai judul halaman Riwayat Reservasi dan tombol Ajukan Reservasi menuju daftar fasilitas", async () => {
     setMatchMedia("(max-width: 1023px)", false);
     requirePengguna.mockResolvedValue(penggunaAktif());
 
     render(await RiwayatReservasiPage());
 
-    expect(screen.queryByRole("navigation", { name: "Navigasi utama" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1, name: "Riwayat Reservasi" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ajukan Reservasi" })).toHaveAttribute(
+      "href",
+      "/fasilitas",
+    );
   });
 
   it("menghitung ringkasan pemeliharaan milik sesi dan meneruskannya ke daftar riwayat", async () => {

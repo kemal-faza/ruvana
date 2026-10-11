@@ -54,6 +54,21 @@ describe("FacilityFilterForm", () => {
     expect(container.querySelector("input[name='minCapacity']")).not.toBeNull()
   })
 
+  it("menyisipkan tanggal tersembunyi agar tetap terbawa saat filter diterapkan", () => {
+    const { container } = render(<FacilityFilterForm date="2026-10-15" />)
+
+    const hidden = container.querySelector("input[name='date']")
+    expect(hidden).not.toBeNull()
+    expect(hidden).toHaveAttribute("type", "hidden")
+    expect(hidden).toHaveValue("2026-10-15")
+  })
+
+  it("tidak menyisipkan tanggal tersembunyi tanpa nilai", () => {
+    const { container } = render(<FacilityFilterForm />)
+
+    expect(container.querySelector("input[name='date']")).toBeNull()
+  })
+
   it("menyediakan tombol Terapkan dan tautan Reset ke /fasilitas", () => {
     render(<FacilityFilterForm />)
 

@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { getFacilityCatalog, redirect } = vi.hoisted(() => ({
+import { Role } from "@/generated/prisma/enums"
+
+const { getFacilityCatalog, redirect, getSessionUser } = vi.hoisted(() => ({
   getFacilityCatalog: vi.fn(),
   redirect: vi.fn(() => { throw new Error("redirect") }),
+  getSessionUser: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({ redirect }))
 vi.mock("@/lib/facilities/catalog", () => ({ getFacilityCatalog }))
+vi.mock("@/lib/auth", () => ({ getSessionUser }))
 vi.mock("@/components/facilities/facility-catalog", () => ({
   FacilityCatalog: () => null,
 }))
@@ -17,6 +21,8 @@ describe("halaman fasilitas", () => {
   beforeEach(() => {
     getFacilityCatalog.mockReset()
     redirect.mockClear()
+    getSessionUser.mockReset()
+    getSessionUser.mockResolvedValue(null)
     getFacilityCatalog.mockResolvedValue({
       items: [],
       meta: { page: 2, perPage: 20, totalItems: 60, totalPages: 3 },
@@ -47,5 +53,18 @@ describe("halaman fasilitas", () => {
       .rejects.toThrow("redirect")
 
     expect(redirect).toHaveBeenCalledExactlyOnceWith("/fasilitas?search=lab&page=2")
+  })
+
+  it.each([
+    { peran: "pengunjung anonim", user: null, harapan: true },
+    { peran: "pengguna", user: { id: 1, role: Role.pengguna }, harapan: true },
+    { peran: "petugas", user: { id: 2, role: Role.petugas }, harapan: false },
+    { peran: "admin", user: { id: 3, role: Role.admin }, harapan: false },
+  ])("menandai alur reservasi kartu untuk $peran", async ({ user, harapan }) => {
+    getSessionUser.mockResolvedValue(user)
+
+    const page = await FasilitasPage({ searchParams: Promise.resolve({}) })
+
+    expect(page.props.canStartReservation).toBe(harapan)
   })
 })

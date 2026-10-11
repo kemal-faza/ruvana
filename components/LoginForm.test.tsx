@@ -49,6 +49,34 @@ it("membuka riwayat reservasi setelah pengguna berhasil login", async () => {
   expect(navigation.refresh).toHaveBeenCalledOnce()
 })
 
+it("kembali ke tujuan next setelah pengguna berhasil login", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () =>
+    new Response(JSON.stringify({ user: { role: "pengguna" } }), { status: 200 }),
+  ))
+  render(<LoginForm next="/reservasi?facilityId=8&date=2026-10-20&startTime=08%3A00" />)
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText(/Email/), "ayu@kampus.ac.id")
+  await user.type(screen.getByLabelText(/Kata sandi/), "rahasia123")
+  await user.click(screen.getByRole("button", { name: "Masuk" }))
+
+  await waitFor(() =>
+    expect(navigation.replace).toHaveBeenCalledWith("/reservasi?facilityId=8&date=2026-10-20&startTime=08%3A00"),
+  )
+})
+
+it("mengabaikan next untuk peran petugas agar tidak mendarat di luar dasbornya", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () =>
+    new Response(JSON.stringify({ user: { role: "petugas" } }), { status: 200 }),
+  ))
+  render(<LoginForm next="/reservasi?facilityId=8" />)
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText(/Email/), "petugas@kampus.ac.id")
+  await user.type(screen.getByLabelText(/Kata sandi/), "rahasia123")
+  await user.click(screen.getByRole("button", { name: "Masuk" }))
+
+  await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/petugas"))
+})
+
 it("menolak password multibyte di atas 72 byte sebelum request login", async () => {
   const fetchMock = vi.fn()
   vi.stubGlobal("fetch", fetchMock)

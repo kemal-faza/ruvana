@@ -18,12 +18,12 @@ describe("FacilitySearch", () => {
     expect(canShowFacilitySearch(Role.admin)).toBe(false)
   })
 
-  it("mengirim form pencarian ke rute reservasi dengan method get", () => {
+  it("mengirim form pencarian ke daftar fasilitas dengan method get", () => {
     const { container } = render(<FacilitySearch />)
 
     const form = container.querySelector("form")
     expect(form).toHaveAttribute("method", "get")
-    expect(form).toHaveAttribute("action", "/reservasi")
+    expect(form).toHaveAttribute("action", "/fasilitas")
   })
 
   it("menyembunyikan alur reservasi untuk peran petugas dan admin", () => {

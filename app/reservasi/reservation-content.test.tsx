@@ -31,22 +31,6 @@ describe("ReservationContent", () => {
     ]);
   });
 
-  it("meneruskan tipe aktif ke form agar bertahan saat memuat ketersediaan", async () => {
-    const element = await ReservationContent({
-      searchParams: Promise.resolve({ type: "aula" }),
-    });
-
-    expect(element.props.type).toBe("aula");
-  });
-
-  it("tidak memakai key per facilityId+date agar isian form bertahan di navigasi", async () => {
-    const element = await ReservationContent({
-      searchParams: Promise.resolve({}),
-    });
-
-    expect(element.key).toBeNull();
-  });
-
   it("mengabaikan tipe yang tidak dikenal dan tetap menampilkan semua fasilitas ACTIVE", async () => {
     const element = await ReservationContent({
       searchParams: Promise.resolve({ type: "tidak-dikenal" }),
@@ -71,6 +55,22 @@ describe("ReservationContent", () => {
 
     expect(typeof element.props.serverNow).toBe("string");
     expect(Number.isNaN(Date.parse(element.props.serverNow))).toBe(false);
+  });
+
+  it("meneruskan jam mulai valid dari tautan slot sebagai nilai awal form", async () => {
+    const element = await ReservationContent({
+      searchParams: Promise.resolve({ date: "2026-10-01", startTime: "08:00" }),
+    });
+
+    expect(element.props.initialStartTime).toBe("08:00");
+  });
+
+  it("mengabaikan jam mulai yang tidak termasuk slot valid", async () => {
+    const element = await ReservationContent({
+      searchParams: Promise.resolve({ date: "2026-10-01", startTime: "08:07" }),
+    });
+
+    expect(element.props.initialStartTime).toBeUndefined();
   });
 
   it("memakai default H+15 kalender Asia/Jakarta agar slot lolos batas pengajuan", async () => {

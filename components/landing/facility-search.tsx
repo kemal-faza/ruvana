@@ -38,7 +38,7 @@ export function FacilitySearch({ visible = true }: { visible?: boolean }) {
     >
       <form
         method="get"
-        action="/reservasi"
+        action="/fasilitas"
         className={cn(
           "grid grid-cols-1 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 shadow-subtle",
           "max-lg:grid-cols-2 max-md:p-search-inset",
@@ -77,7 +77,10 @@ export function FacilitySearch({ visible = true }: { visible?: boolean }) {
         </div>
 
         <div data-slot="search-field" className={fieldClass}>
-          {/* Tanggal diteruskan ke alur reservasi; tipe menyaring pilihan fasilitas di sana. */}
+          {/* Tanggal diteruskan ke katalog fasilitas: ia ikut pada filter,
+              pagination, dan tautan detail sehingga ketersediaan di halaman
+              fasilitas langsung tampil pada tanggal pilihan. Tipe menyaring
+              daftar fasilitas di sana. */}
           <DatePicker name="date" aria-label="Pilih tanggal" />
         </div>
 

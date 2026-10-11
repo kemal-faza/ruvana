@@ -32,14 +32,31 @@ describe("FacilityCard", () => {
   it("menautkan tombol detail ke /fasilitas/{id}", () => {
     render(<FacilityCard facility={facility} />)
 
-    const link = screen.getByRole("button", { name: /lihat detail/i })
+    const link = screen.getByRole("button", { name: /lihat & reservasi/i })
     expect(link).toHaveAttribute("href", "/fasilitas/1")
   })
 
   it("mendukung tautan detail pada jalur fasilitas publik", () => {
     render(<FacilityCard facility={facility} detailBasePath="/fasilitas" />)
 
-    expect(screen.getByRole("button", { name: /lihat detail/i })).toHaveAttribute("href", "/fasilitas/1")
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute("href", "/fasilitas/1")
+  })
+
+  it("menyertakan tanggal pada tautan detail ketika diberikan", () => {
+    render(<FacilityCard facility={facility} date="2026-10-15" />)
+
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute(
+      "href",
+      "/fasilitas/1?date=2026-10-15",
+    )
+  })
+
+  it("memakai label netral saat pengunjung tidak bisa memesan", () => {
+    render(<FacilityCard facility={facility} canStartReservation={false} />)
+
+    const link = screen.getByRole("button", { name: /lihat detail/i })
+    expect(link).toHaveAttribute("href", "/fasilitas/1")
+    expect(screen.queryByRole("button", { name: /reservasi/i })).not.toBeInTheDocument()
   })
 
   it("memuat foto secara eager saat diminta agar cepat menjadi LCP", () => {
@@ -58,7 +75,7 @@ describe("FacilityCard", () => {
     render(<FacilityCard facility={facility} />)
 
     const footer = screen
-      .getByRole("button", { name: /lihat detail/i })
+      .getByRole("button", { name: /lihat & reservasi/i })
       .closest("[data-slot='card-footer']")
 
     expect(footer).not.toBeNull()
@@ -66,9 +83,16 @@ describe("FacilityCard", () => {
   })
 
   it("tidak menampilkan data reservasi atau identitas pemesan", () => {
-    render(<FacilityCard facility={facility} />)
+    const { container } = render(<FacilityCard facility={facility} />)
 
-    expect(screen.queryByText(/reservasi/i)).not.toBeInTheDocument()
+    // Kartu publik hanya boleh menyebut "reservasi" lewat label aksi menuju
+    // detail; kemunculan lain berarti data reservasi bocor ke katalog.
+    expect(container.textContent?.match(/reservasi/gi)).toHaveLength(1)
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute("href", "/fasilitas/1")
+
+    for (const teks of ["PENDING", "APPROVED", "Disetujui", "Menunggu", "Pemesan", "Nama pemesan"]) {
+      expect(screen.queryByText(teks, { exact: false })).not.toBeInTheDocument()
+    }
   })
 
   it("menampilkan badge Dalam Perbaikan untuk status UNDER_MAINTENANCE", () => {

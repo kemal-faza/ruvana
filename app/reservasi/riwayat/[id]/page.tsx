@@ -26,6 +26,9 @@ function parseId(raw: string): number | null {
 }
 
 export default async function RiwayatDetailPage({ params, searchParams }: RiwayatDetailPageProps) {
+  // Guard IAM-03 dipegang layout /reservasi (requirePengguna) untuk seluruh
+  // segmen; memanggilnya lagi di sini hanya menambah satu query sesi + user
+  // tanpa menambah jaminan.
   const { id } = await params;
   const reservationId = parseId(id);
   if (reservationId === null) notFound();
@@ -37,7 +40,7 @@ export default async function RiwayatDetailPage({ params, searchParams }: Riwaya
   const dariPengajuan = penanda === "1";
 
   return (
-    <main id="konten" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+    <>
       {dariPengajuan && <ReservationSuccessBanner />}
       <Button
         variant="ghost"
@@ -46,9 +49,9 @@ export default async function RiwayatDetailPage({ params, searchParams }: Riwaya
         render={<Link href="/reservasi/riwayat" />}
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Kembali ke Reservasi
+        Kembali ke Riwayat Reservasi
       </Button>
       <ReservationDetail id={reservationId} />
-    </main>
+    </>
   );
 }
