@@ -9,6 +9,7 @@ import { AvailabilityDateForm } from "@/components/facilities/availability-date-
 import { AvailabilityGrid } from "@/components/facilities/availability-grid"
 import { FacilityStatusBadge } from "@/components/facilities/facility-status-badge"
 import { ReservationForm } from "@/components/reservation/reservation-form"
+import type { AvailabilitySlot } from "@/lib/availability/slots"
 import type { FacilityDetailData } from "@/lib/facilities/detail"
 
 /**
@@ -38,7 +39,16 @@ export function FacilityDetailContent({
   const KapasitasIcon = isAlat ? Package : Users
   const photo = facility.fotoUrl ?? getFacilityPhoto(facility.nama, facility.tipe)
 
-  const slotHref = slotLinkMode === "login" ? () => "/login" : undefined
+  // Pengunjung anonim: slot tersedia menuju halaman masuk dengan tujuan kembali
+  // ke form pengajuan (/reservasi) yang sudah terisi fasilitas, tanggal, dan jam
+  // mulai — supaya konteks yang sedang dilihat tidak hilang setelah masuk.
+  const slotHref =
+    slotLinkMode === "login"
+      ? (slot: AvailabilitySlot) => {
+          const tujuan = `/reservasi?facilityId=${facility.id}&date=${date}&startTime=${slot.startTime}`
+          return `/login?next=${encodeURIComponent(tujuan)}`
+        }
+      : undefined
 
   return (
     <div className="flex flex-col gap-6">
