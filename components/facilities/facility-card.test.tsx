@@ -83,11 +83,14 @@ describe("FacilityCard", () => {
   })
 
   it("tidak menampilkan data reservasi atau identitas pemesan", () => {
-    render(<FacilityCard facility={facility} />)
+    const { container } = render(<FacilityCard facility={facility} />)
 
-    // Tombol CTA menyebut "reservasi", jadi periksa ketiadaan data reservasi
-    // (status enum/label) dan identitas pemesan, bukan kata "reservasi".
-    for (const teks of ["PENDING", "APPROVED", "Disetujui", "Menunggu", "Pemesan"]) {
+    // Kartu publik hanya boleh menyebut "reservasi" lewat label aksi menuju
+    // detail; kemunculan lain berarti data reservasi bocor ke katalog.
+    expect(container.textContent?.match(/reservasi/gi)).toHaveLength(1)
+    expect(screen.getByRole("button", { name: /lihat & reservasi/i })).toHaveAttribute("href", "/fasilitas/1")
+
+    for (const teks of ["PENDING", "APPROVED", "Disetujui", "Menunggu", "Pemesan", "Nama pemesan"]) {
       expect(screen.queryByText(teks, { exact: false })).not.toBeInTheDocument()
     }
   })
