@@ -11,12 +11,17 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { BATAS_EMAIL_AKUN_KARAKTER, BATAS_PASSWORD_AKUN_MIN_BYTE, BATAS_PASSWORD_AKUN_BYTE } from "@/config/business"
-import { getPostLoginPath } from "@/lib/auth-routing"
+import { resolvePostLoginPath } from "@/lib/auth-routing"
 import { useHydrated } from "@/lib/use-hydrated"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function LoginForm() {
+/**
+ * `next` adalah tujuan kembali yang sudah divalidasi server dari query string,
+ * mis. pengguna mengklik slot ketersediaan fasilitas sebelum punya sesi. Nilai
+ * yang tidak sah sudah menjadi null di app/login/page.tsx.
+ */
+export default function LoginForm({ next = null }: { next?: string | null }) {
   const router = useRouter()
   const [state, setState] = useState({
     pesan: "",
@@ -95,7 +100,7 @@ export default function LoginForm() {
                 })
                 const result = await response.json()
                 if (response.ok) {
-                  router.replace(getPostLoginPath(result.user.role))
+                  router.replace(resolvePostLoginPath(result.user.role, next))
                   router.refresh()
                   return
                 }
